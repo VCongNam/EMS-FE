@@ -14,7 +14,7 @@ const SideMenu = () => {
     ];
 
     return (
-        <aside className="w-72 bg-primary text-white flex flex-col fixed inset-y-0 left-0 z-50 shadow-2xl">
+        <aside className="w-72 bg-[#355872] text-white flex flex-col fixed inset-y-0 left-0 z-50 shadow-2xl">
             <div className="p-8 border-b border-white/10 flex items-center gap-3">
                 <div className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/30">
                     <span className="text-2xl">🎓</span>
@@ -30,8 +30,8 @@ const SideMenu = () => {
                             key={item.path}
                             to={item.path}
                             className={`flex items-center gap-3 p-4 rounded-2xl transition-all duration-300 font-medium ${isActive
-                                    ? 'bg-white text-primary shadow-lg'
-                                    : 'hover:bg-white/10 text-white/70 hover:text-white'
+                                ? 'bg-white text-[#355872] shadow-lg'
+                                : 'hover:bg-white/10 text-white/70 hover:text-white'
                                 }`}
                         >
                             <span className="text-xl">{item.icon}</span>

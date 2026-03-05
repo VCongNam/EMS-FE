@@ -1,8 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
-
-
 @theme {
   --color-primary: #355872;
   --color-primary-hover: #2a465b;
@@ -16,14 +14,27 @@
 
   --radius-xl: 16px;
   --shadow-premium: 0 20px 25px -5px rgb(53 88 114 / 0.15), 0 8px 10px -6px rgb(53 88 114 / 0.1);
+
+  /* Layout Spacing */
+  --spacing-header: 70px;
 }
 
 :root {
-  /* Keep these for vanilla CSS if needed, or reference Tailwind theme */
+  --primary: #355872;
+  --primary-hover: #2a465b;
+  --secondary: #7AAACE;
+  --accent: #9CD5FF;
+  --background: #F7F8F0;
+  --surface: #FFFFFF;
+  --text-main: #1E293B;
+  --text-muted: #64748B;
+  --border: #E2E8F0;
+
   --header-height: 70px;
   --container-max-width: 1200px;
   --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
 
 * {
   margin: 0;

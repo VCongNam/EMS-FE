@@ -15,12 +15,12 @@ const Header = () => {
     ];
 
     return (
-        <header className="h-[var(--header-height)] fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-b border-border z-[1000] flex items-center">
+        <header className="h-[70px] fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-b border-border z-[1000] flex items-center">
             <div className="container flex justify-between items-center w-full relative">
 
                 {/* Left: Logo & Name */}
                 <div className="flex-1 flex justify-start">
-                    <Link to="/" className="flex items-center gap-2 text-2xl font-bold text-primary font-['Outfit']">
+                    <Link to="/" className="flex items-center gap-2 text-2xl font-bold text-[#355872] font-['Outfit']">
                         <img src={logo} alt="EMS Logo" className="w-10 h-10 object-contain" />
                         <span className="tracking-tight">EMS</span>
                     </Link>
@@ -32,10 +32,10 @@ const Header = () => {
                         <Link
                             key={link.name}
                             to={link.path}
-                            className="text-[15px] font-medium text-text-muted hover:text-primary transition-all duration-300 relative group"
+                            className="text-[15px] font-medium text-text-muted hover:text-[#355872] transition-all duration-300 relative group"
                         >
                             {link.name}
-                            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full"></span>
+                            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#355872] transition-all duration-300 group-hover:w-full"></span>
                         </Link>
                     ))}
                 </nav>

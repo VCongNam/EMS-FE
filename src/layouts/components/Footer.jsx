@@ -1,33 +1,58 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import logo from '../../assets/images/emsIcon.png';
 
 const Footer = () => {
     const currentYear = new Date().getFullYear();
 
+    const navLinks = [
+        { name: 'Trang chủ', path: '/' },
+        { name: 'Về chúng tôi', path: '/about' },
+        { name: 'Tính năng', path: '/features' },
+        { name: 'Giá cả', path: '/pricing' },
+        { name: 'Liên hệ', path: '/contact' },
+    ];
+
     return (
-        <footer className="bg-surface border-t border-border py-16 mt-16">
-            <div className="container grid grid-cols-1 md:grid-cols-2 gap-16">
-                <div className="flex flex-col gap-4">
-                    <div className="flex items-center gap-2 text-2xl font-bold text-primary font-['Outfit']">
-                        <img src={logo} alt="EMS Logo" className="w-10 h-10 object-contain" />
-                        <span>EMS</span>
+        <footer className="bg-white border-t border-border pt-16 pb-8 mt-16">
+            <div className="container flex flex-col items-center">
+                {/* Top: Centered Logo */}
+                <div className="!mb-10 animate-fade-in text-center">
+                    <Link to="/" className="flex flex-col items-center gap-3 text-3xl font-bold text-[#355872] font-['Outfit'] group">
+                        <img
+                            src={logo}
+                            alt="EMS Logo"
+                            className="w-14 h-14 object-contain transition-transform duration-500 group-hover:scale-110"
+                        />
+                        <span className="tracking-tight">Extra Management System</span>
+                    </Link>
+                </div>
+
+                {/* Middle: Centered Navigation Links */}
+                <nav className="flex flex-wrap justify-center gap-x-8 gap-y-4 !mb-12 max-w-2xl px-4">
+                    {navLinks.map((link) => (
+                        <Link
+                            key={link.name}
+                            to={link.path}
+                            className="text-[15px] font-medium text-text-muted hover:text-[#355872] transition-all duration-300 relative group"
+                        >
+                            {link.name}
+                            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#355872] transition-all duration-300 group-hover:w-full"></span>
+                        </Link>
+                    ))}
+                </nav>
+
+                {/* Bottom Separator & Details */}
+                <div className="w-full border-t border-border pt-10 flex flex-col items-center gap-8">
+                    {/* Copyright & Secondary Links */}
+                    <div className="flex flex-col items-center gap-4 text-text-muted text-[14px] text-center">
+                        <p>&copy; {currentYear} EMS Project. All rights reserved.</p>
+                        <div className="flex flex-wrap justify-center gap-6">
+                            <Link to="/privacy" className="hover:text-[#355872] transition-colors">Bảo mật</Link>
+                            <Link to="/terms" className="hover:text-[#355872] transition-colors">Điều khoản</Link>
+                            <Link to="/sitemap" className="hover:text-[#355872] transition-colors">Sitemap</Link>
+                        </div>
                     </div>
-                    <p className="text-text-muted max-w-xs">
-                        Hệ thống quản lý giáo dục thông minh và hiện đại.
-                    </p>
-                </div>
-
-                <div className="flex flex-col gap-4">
-                    <h4 className="font-bold text-lg">Liên kết</h4>
-                    <ul className="flex flex-col gap-2">
-                        <li><a href="#" className="text-text-muted hover:text-primary transition-colors">Hỗ trợ</a></li>
-                        <li><a href="#" className="text-text-muted hover:text-primary transition-colors">Chính sách</a></li>
-                        <li><a href="#" className="text-text-muted hover:text-primary transition-colors">Liên hệ</a></li>
-                    </ul>
-                </div>
-
-                <div className="col-span-1 md:col-span-2 border-t border-border pt-8 text-center text-text-muted text-sm">
-                    <p>&copy; {currentYear} EMS Project. All rights reserved.</p>
                 </div>
             </div>
         </footer>

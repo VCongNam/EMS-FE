@@ -7,7 +7,7 @@ const MainLayout = () => {
     return (
         <div className="flex flex-col min-h-screen bg-background">
             <Header />
-            <main className="flex-1 pt-[var(--header-height)]">
+            <main className="flex-1 ">
                 <Outlet />
             </main>
             <Footer />

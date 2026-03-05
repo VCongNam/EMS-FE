@@ -11,7 +11,7 @@ const DashboardLayout = () => {
             {/* Main Content Area */}
             <div className="flex-1 ml-72 flex flex-col">
                 {/* Dashboard Top Header */}
-                <header className="h-20 px-8 flex justify-between items-center bg-surface/50 backdrop-blur-md border-b border-border sticky top-0 z-40">
+                <header className="h-header px-8 flex justify-between items-center bg-surface/50 backdrop-blur-md border-b border-border sticky top-0 z-40">
                     <div>
                         <h2 className="text-xl font-bold text-text-main font-['Outfit'] tracking-tight">Trình quản lý EMS</h2>
                     </div>
