@@ -24,7 +24,7 @@ const Footer = () => {
                             alt="EMS Logo"
                             className="w-14 h-14 object-contain transition-transform duration-500 group-hover:scale-110"
                         />
-                        <span className="tracking-tight">Extra Management System</span>
+                        <span className="tracking-tight">Extra-Class Management System</span>
                     </Link>
                 </div>
 

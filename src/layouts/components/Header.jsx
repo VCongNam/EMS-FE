@@ -15,7 +15,7 @@ const Header = () => {
     ];
 
     return (
-        <header className="h-[70px] fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-b border-border z-[1000] flex items-center">
+        <header className="h-[70px] bg-white/80 backdrop-blur-xl border-b border-border z-[1000] flex items-center">
             <div className="container flex justify-between items-center w-full relative">
 
                 {/* Left: Logo & Name */}
