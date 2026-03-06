@@ -20,7 +20,7 @@ const Header = () => {
 
                 {/* Left: Logo & Name */}
                 <div className="flex-1 flex justify-start">
-                    <Link to="/" className="flex items-center gap-2 text-2xl font-bold text-[#355872] font-['Outfit']">
+                    <Link to="/" className="flex items-center gap-2 text-2xl font-bold text-[#355872] font-['Google Sans']">
                         <img src={logo} alt="EMS Logo" className="w-10 h-10 object-contain" />
                         <span className="tracking-tight">EMS</span>
                     </Link>

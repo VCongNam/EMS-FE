@@ -18,7 +18,7 @@ const Footer = () => {
             <div className="container flex flex-col items-center">
                 {/* Top: Centered Logo */}
                 <div className="!mb-10 animate-fade-in text-center">
-                    <Link to="/" className="flex flex-col items-center gap-3 text-3xl font-bold text-[#355872] font-['Outfit'] group">
+                    <Link to="/" className="flex flex-col items-center gap-3 text-3xl font-bold text-[#355872] font-['Google Sans'] group">
                         <img
                             src={logo}
                             alt="EMS Logo"
