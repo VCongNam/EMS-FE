@@ -1,13 +1,46 @@
 import React from 'react';
 import Button from '../../../components/ui/Button';
-import heroImg from '../../../assets/images/heroPic2.jpg';
-import heroImg2 from '../../../assets/images/heroPic3.jpg';
+import heroImg from '../../../assets/images/heroPic1.png';
+import heroImg2 from '../../../assets/images/heroPic2.png';
+import heroImg3 from '../../../assets/images/heroPic3.png';
+import feature1 from '../../../assets/images/feature1.png';
+import feature2 from '../../../assets/images/feature2.png';
+import feature3 from '../../../assets/images/feature3.png';
+import feature4 from '../../../assets/images/feature4.png';
+import FeatureCard from '../components/FeatureCard';
 
 const LandingPage = () => {
+    const features = [
+        {
+            icon: <img src={feature1} alt="feature1" />,
+            title: 'Quản lý lớp học trực quan',
+            description: 'Dễ dàng sắp xếp lịch học, phân bổ giáo viên và quản lý học viên với giao diện thân thiện.',
+            iconColor: 'text-yellow-600',
+        },
+        {
+            icon: <img src={feature2} alt="feature2" />,
+            title: 'Tương tác trong lớp',
+            description: 'Diễn đàn thảo luận, điểm danh trực tuyến và báo cáo chi tiết giúp theo dõi sự tham gia của học viên.',
+            iconColor: 'text-orange-600',
+        },
+        {
+            icon: <img src={feature3} alt="feature3" />,
+            title: 'Phù hợp quy mô trong nước',
+            description: 'Hệ thống tập trung vào nhu cầu quản lý lớp học tại Việt Nam, hỗ trợ đa dạng cấp học và hình thức đào tạo.',
+            iconColor: 'text-green-600',
+        },
+        {
+            icon: <img src={feature4} alt="feature4" />,
+            title: 'Chính sách học phí linh hoạt',
+            description: 'Cho phép quản lý học phí, giảm trừ hoặc miễn phí theo từng lớp, từng học viên.',
+            iconColor: 'text-purple-600',
+        }
+    ];
+
     return (
-        <div className="overflow-x-hidden">
+        <div className="overflow-x-hidden container">
             {/* Hero Section */}
-            <section className="container-fluid !px-50 !pt-16 grid grid-cols-1 lg:grid-cols-5 items-center justify-between py-16 lg:py-24 gap-12 lg:gap-16 animate-fade-in">
+            <section className="container-fluid  !pt-16 grid grid-cols-1 lg:grid-cols-5 items-center justify-between py-16 lg:py-24 gap-12 lg:gap-16 animate-fade-in">
                 <div className="lg:col-span-3 text-center lg:text-left">
                     <h3 className="text-4xl lg:text-6xl font-bold !mb-6 leading-tight">
                         Nâng tầm chuyên nghiệp cho mô hình giáo dục của bạn.
@@ -22,28 +55,51 @@ const LandingPage = () => {
                     </div>
                 </div>
 
-                <div className="lg:col-span-2 w-full mt-12 lg:mt-0">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:grid-rows-2 w-full h-full max-w-[600px] lg:max-w-none mx-auto lg:mx-0">
-                        {/* Ảnh chính to nhất chiếm 2/3 diện tích */}
-                        <div className="md:col-span-2 md:row-span-2 rounded-[32px] overflow-hidden shadow-[0_20px_40px_-15px_rgba(53,88,114,0.3)] transition-transform duration-500 hover:-translate-y-2 hover:shadow-[0_25px_50px_-15px_rgba(53,88,114,0.4)]">
-                            <img src={heroImg} alt="Hero Main Dashboard" className="w-full h-full object-cover" />
+                <div className="lg:col-span-2 w-full mt-12 lg:mt-0 px-4">
+                    <div className="grid grid-cols-2 gap-4 lg:gap-6 w-full max-w-[500px] lg:max-w-none mx-auto lg:mx-0">
+                        {/* Ảnh dọc chữ nhật to */}
+                        <div className="row-span-2 rounded-[32px] overflow-hidden shadow-[0_20px_40px_-15px_rgba(53,88,114,0.3)] transition-transform duration-500 hover:-translate-y-2 hover:shadow-[0_25px_50px_-15px_rgba(53,88,114,0.4)]">
+                            <img src={heroImg} alt="Hero Main Vertical" className="w-full h-full object-cover min-h-[400px] lg:min-h-[500px]" />
                         </div>
 
-                        {/* 2 ảnh phụ nằm bên cạnh */}
-                        <div className="rounded-[24px] overflow-hidden shadow-lg transition-transform duration-500 hover:-translate-y-1 hover:shadow-xl mt-4 md:mt-0 aspect-video md:aspect-auto">
-                            <img src={heroImg2} alt="Hero Feature 1" className="w-full h-full object-cover" />
+                        {/* 2 ảnh vuông nằm bên cạnh */}
+                        <div className="rounded-[24px] overflow-hidden shadow-lg transition-transform duration-500 hover:-translate-y-1 hover:shadow-xl aspect-square">
+                            <img src={heroImg2} alt="Hero Square 1" className="w-full h-full object-cover" />
                         </div>
-                        <div className="rounded-[24px] overflow-hidden shadow-lg transition-transform duration-500 hover:-translate-y-1 hover:shadow-xl mb-4 md:mb-0 aspect-video md:aspect-auto">
-                            <img src={heroImg} alt="Hero Feature 2" className="w-full h-full object-cover" />
+                        <div className="rounded-[24px] overflow-hidden shadow-lg transition-transform duration-500 hover:-translate-y-1 hover:shadow-xl aspect-square">
+                            <img src={heroImg3} alt="Hero Square 2" className="w-full h-full object-cover" />
                         </div>
                     </div>
                 </div>
             </section >
 
             {/* Features Section */}
-            < section className="container py-24 text-center" >
+            <section className="!pt-16">
+                <div className="text-center mb-16">
+                    <h2 className="text-4xl lg:text-5xl font-extrabold text-[#2D3142] font-['Outfit']">
+                        Tại sao lại lựa chọn <span className="text-primary font-bold">EMS ?</span>
+                    </h2>
+                </div>
 
-            </section >
+                <div className=" !py-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8">
+                    {features.map((feature, index) => (
+                        <FeatureCard
+                            key={index}
+                            {...feature}
+                        />
+                    ))}
+                </div>
+            </section>
+
+            {/* How it works Section */}
+            <section className="!pt-16">
+                <div className="text-center mb-16">
+                    <h2 className="text-4xl lg:text-5xl font-extrabold text-[#2D3142] font-['Outfit']">
+                        Cách thức hoạt động
+                    </h2>
+
+                </div>
+            </section>
         </div >
     );
 };
