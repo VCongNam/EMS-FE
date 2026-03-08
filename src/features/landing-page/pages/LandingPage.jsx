@@ -8,6 +8,9 @@ import feature2 from '../../../assets/images/feature2.png';
 import feature3 from '../../../assets/images/feature3.png';
 import feature4 from '../../../assets/images/feature4.png';
 import FeatureCard from '../components/FeatureCard';
+import StepCard from '../components/StepCard';
+import CTASection from '../../../components/common/CTASection';
+import ImageCarousel from '../../../components/common/ImageCarousel';
 
 const LandingPage = () => {
     const features = [
@@ -37,10 +40,59 @@ const LandingPage = () => {
         }
     ];
 
+    const steps = [
+        {
+            number: '01',
+            title: 'Đăng ký & Khởi tạo',
+            description: 'Tạo tài khoản và thiết lập thông tin trung tâm ban đầu chỉ trong vài phút.',
+            icon: 'solar:rocket-2-linear'
+        },
+        {
+            number: '02',
+            title: 'Quản lý Lớp & Học viên',
+            description: 'Import danh mục, sắp xếp lịch học và phân quyền cho giáo viên/trợ giảng.',
+            icon: 'solar:users-group-rounded-linear'
+        },
+        {
+            number: '03',
+            title: 'Vận hành & Tự động hóa',
+            description: 'Theo dõi điểm danh, học phí và tự động gửi báo cáo tiến độ cho phụ huynh.',
+            icon: 'solar:chart-2-linear'
+        }
+    ];
+
+    const carouselImages = [
+        {
+            src: 'https://placehold.co/1280x720/355872/ffffff?text=Trang+Tổng+Quan',
+            alt: 'Trang tổng quan',
+            caption: 'Bảng điều khiển tổng quan — theo dõi mọi thứ trong một màn hình'
+        },
+        {
+            src: 'https://placehold.co/1280x720/2D3142/ffffff?text=Quản+Lý+Lớp+Học',
+            alt: 'Quản lý lớp học',
+            caption: 'Quản lý lớp học — sắp xếp lịch học và phân công giáo viên dễ dàng'
+        },
+        {
+            src: 'https://placehold.co/1280x720/7AAACE/ffffff?text=Báo+Cáo+Học+Phí',
+            alt: 'Báo cáo học phí',
+            caption: 'Báo cáo học phí — theo dõi doanh thu và lịch sử thanh toán'
+        },
+        {
+            src: 'https://placehold.co/1280x720/4a6fa5/ffffff?text=Điểm+Danh+Trực+Tuyến',
+            alt: 'Điểm danh trực tuyến',
+            caption: 'Điểm danh trực tuyến — ghi nhận sự tham gia của học viên tức thì'
+        },
+        {
+            src: 'https://placehold.co/1280x720/5d8a8a/ffffff?text=Báo+Cáo+Phụ+Huynh',
+            alt: 'Báo cáo phụ huynh',
+            caption: 'Báo cáo phụ huynh — tự động gửi tiến độ học tập định kỳ'
+        },
+    ];
+
     return (
         <div className="overflow-x-hidden container">
             {/* Hero Section */}
-            <section className="container-fluid  !pt-16 grid grid-cols-1 lg:grid-cols-5 items-center justify-between py-16 lg:py-24 gap-12 lg:gap-16 animate-fade-in">
+            <section className="container-fluid bg !pt-16 grid grid-cols-1 lg:grid-cols-5 items-center justify-between py-16 lg:py-24 gap-12 lg:gap-16 animate-fade-in">
                 <div className="lg:col-span-3 text-center lg:text-left">
                     <h3 className="text-4xl lg:text-6xl font-bold !mb-6 leading-tight">
                         Nâng tầm chuyên nghiệp cho mô hình giáo dục của bạn.
@@ -92,14 +144,40 @@ const LandingPage = () => {
             </section>
 
             {/* How it works Section */}
-            <section className="!pt-16">
-                <div className="text-center mb-16">
-                    <h2 className="text-4xl lg:text-5xl font-extrabold text-[#2D3142] font-['Outfit']">
-                        Cách thức hoạt động
+            <section className=" relative overflow-hidden">
+                <div className="text-center mb-24">
+                    <h2 className="text-4xl lg:text-5xl font-extrabold text-[#2D3142] font-['Outfit'] tracking-tight">
+                        Bắt đầu <span className="text-primary font-bold">dễ dàng</span>
                     </h2>
+                    <p className="text-text-muted text-lg !mb-4 max-w-2xl !mx-auto text-center">
+                        Quy trình thiết lập đơn giản giúp bạn tối ưu hóa việc quản lý lớp học của mình chỉ trong <span className="text-primary font-bold">3 bước.</span>
+                    </p>
+                </div>
 
+                <div className="relative">
+                    {/* Central Timeline Line (Desktop) */}
+                    <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-px border-l-2 border-dashed border-border -translate-x-1/2" />
+
+                    <div className="space-y-20 md:space-y-32">
+                        {steps.map((step, index) => (
+                            <StepCard
+                                key={index}
+                                {...step}
+                                isReversed={index % 2 !== 0}
+                            />
+                        ))}
+                    </div>
                 </div>
             </section>
+            {/* Picture Section */}
+            <ImageCarousel
+                images={carouselImages}
+                title="Hình ảnh thực tế"
+                subtitle="Khám phá giao diện trực quan và đầy đủ tính năng của EMS."
+            />
+
+            {/* CTA Section */}
+            <CTASection />
         </div >
     );
 };

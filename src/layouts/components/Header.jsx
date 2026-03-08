@@ -32,7 +32,7 @@ const Header = () => {
                         <Link
                             key={link.name}
                             to={link.path}
-                            className="text-[15px] font-medium text-text-muted hover:text-[#355872] transition-all duration-300 relative group"
+                            className="text-[17px] font-medium text-text-muted hover:text-[#355872] transition-all duration-300 relative group"
                         >
                             {link.name}
                             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#355872] transition-all duration-300 group-hover:w-full"></span>
@@ -43,12 +43,12 @@ const Header = () => {
                 {/* Right: Action Buttons (Desktop) */}
                 <div className="hidden lg:flex items-center justify-end gap-3 flex-1">
                     <Link to="/login">
-                        <Button variant="outline" size="md">Đăng nhập</Button>
+                        <Button variant="outline" size="lg">Đăng nhập</Button>
                     </Link>
                     <Link to="/register">
                         <Button
                             variant="primary"
-                            size="md"
+                            size="lg"
                             className="!bg-gradient-to-r !p-3 !from-[#355872] !to-[#7AAACE] !text-white border-none shadow-[0_10px_20px_-5px_rgba(53,88,114,0.4)] hover:shadow-[0_15px_30px_-5px_rgba(53,88,114,0.5)] hover:scale-105 transition-all duration-300 animate-shine"
                         >
                             Tham gia ngay
