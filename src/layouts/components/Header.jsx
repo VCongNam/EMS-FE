@@ -10,7 +10,7 @@ const Header = () => {
         { name: 'Trang chủ', path: '/' },
         { name: 'Về chúng tôi', path: '/about' },
         { name: 'Tính năng', path: '/features' },
-        { name: 'Giá cả', path: '/pricing' },
+        { name: 'Bảng giá', path: '/pricing' },
         { name: 'Liên hệ', path: '/contact' },
     ];
 
