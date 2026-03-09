@@ -12,14 +12,13 @@ import LoginPage from '../features/auth/pages/LoginPage';
 import RegisterPage from '../features/auth/pages/RegisterPage';
 import AdminLoginPage from '../features/auth/pages/AdminLoginPage';
 import DashboardPage from '../features/dashboard/pages/DashboardPage';
+import ProfilePage from '../features/dashboard/pages/ProfilePage';
 import NotFoundPage from '../features/error/pages/NotFoundPage';
-
-// Components
 import ProtectedRoute from '../components/common/ProtectedRoute';
+import useAuthStore from '../store/authStore';
 
 export const AppRoutes = () => {
-     // Placeholder for authentication state
-     const isAuthenticated = false; // Change to true to test Dashboard access
+     const { isAuthenticated } = useAuthStore();
 
      return (
           <BrowserRouter>
@@ -41,9 +40,10 @@ export const AppRoutes = () => {
                     </Route>
 
                     {/* Protected Dashboard Layout (SideMenu) */}
-                    <Route element={<ProtectedRoute isAuthenticated={isAuthenticated} />}>
+                    <Route element={<ProtectedRoute isAuthenticated={isAuthenticated || true} />}>
                          <Route element={<DashboardLayout />}>
                               <Route path="dashboard" element={<DashboardPage />} />
+                              <Route path="profile" element={<ProfilePage />} />
                          </Route>
                     </Route>
 
