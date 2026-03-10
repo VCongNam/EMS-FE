@@ -25,7 +25,7 @@ const DashboardLayout = () => {
                     >
                         <Icon icon="material-symbols:menu-rounded" className="text-2xl" />
                     </button>
-                    <h2 className="text-lg sm:text-xl font-bold text-text-main font-['Outfit'] tracking-tight truncate">
+                    <h2 className="text-lg !pl-2 sm:text-xl font-bold text-text-main font-['Outfit'] tracking-tight truncate">
                         Trình quản lý EMS
                     </h2>
                 </header>

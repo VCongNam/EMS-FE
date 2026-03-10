@@ -13,6 +13,7 @@ import RegisterPage from '../features/auth/pages/RegisterPage';
 import AdminLoginPage from '../features/auth/pages/AdminLoginPage';
 import DashboardPage from '../features/dashboard/pages/DashboardPage';
 import ProfilePage from '../features/dashboard/pages/ProfilePage';
+import TeacherClassListPage from '../features/dashboard/pages/TeacherClassListPage';
 import NotFoundPage from '../features/error/pages/NotFoundPage';
 import ProtectedRoute from '../components/common/ProtectedRoute';
 import useAuthStore from '../store/authStore';
@@ -44,6 +45,7 @@ export const AppRoutes = () => {
                          <Route element={<DashboardLayout />}>
                               <Route path="dashboard" element={<DashboardPage />} />
                               <Route path="profile" element={<ProfilePage />} />
+                              <Route path="teacher/classes" element={<TeacherClassListPage />} />
                          </Route>
                     </Route>
 

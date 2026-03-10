@@ -18,7 +18,7 @@ const SideMenu = ({ isOpen, onClose }) => {
         ],
         teacher: [
             { name: 'Tổng quan', path: '/dashboard', icon: 'material-symbols:dashboard-rounded' },
-            { name: 'Quản lý Lớp học', path: '/classes', icon: 'material-symbols:school-rounded' },
+            { name: 'Quản lý Lớp học', path: '/teacher/classes', icon: 'material-symbols:school-rounded' },
             { name: 'Quản lý Học sinh', path: '/group-rounded', icon: 'material-symbols:group-rounded' },
             { name: 'Lịch dạy', path: '/schedule', icon: 'material-symbols:calendar-month-rounded' },
             { name: 'Trang cá nhân', path: '/profile', icon: 'material-symbols:person-rounded' },
