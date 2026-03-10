@@ -46,7 +46,7 @@ const SideMenu = ({ isOpen, onClose }) => {
 
             <aside
                 className={`w-72 bg-[#355872] text-white flex flex-col fixed inset-y-0 left-0 z-[70] shadow-2xl transition-transform duration-300 transform 
-                ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
+                    ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
             >
                 <div className="!p-5 border-b border-white/10 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
@@ -87,7 +87,19 @@ const SideMenu = ({ isOpen, onClose }) => {
                     })}
                 </nav>
 
-                <div className="!p-5 border-t border-white/10">
+                <div className="!p-5 border-t border-white/10 flex flex-col gap-4">
+                    <div className="flex items-center gap-3 px-2">
+                        <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center border border-white/20 shrink-0">
+                            <Icon icon="material-symbols:person-rounded" className="text-2xl text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold text-white leading-none truncate">{user?.fullName || 'Người dùng'}</p>
+                            <p className="text-xs text-white/70 mt-1 truncate">
+                                {role === 'student' ? 'Học sinh' : role === 'teacher' ? 'Giáo viên' : role === 'assistant' ? 'Trợ giảng' : 'Thành viên'}
+                            </p>
+                        </div>
+                    </div>
+
                     <button
                         onClick={() => {
                             logout();

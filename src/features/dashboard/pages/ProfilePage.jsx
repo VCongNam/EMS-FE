@@ -23,12 +23,7 @@ const ProfilePage = () => {
         <div className="container mx-auto py-10">
             {/* Header / Banner Section */}
             <div className="relative">
-                <div className="h-48 sm:h-64 rounded-[2rem] bg-gradient-to-r from-[#355872] to-[#4a7a9c] overflow-hidden shadow-lg border border-white/10">
-                    <div className="absolute inset-0 opacity-20 pointer-events-none">
-                        <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[80%] rounded-full bg-white blur-[100px]"></div>
-                        <div className="absolute bottom-[-20%] left-[-5%] w-[30%] h-[60%] rounded-full bg-white blur-[80px]"></div>
-                    </div>
-                </div>
+            
 
                 <div className="!px-8 -mt-20 sm:-mt-24 flex flex-col sm:flex-row items-end justify-between gap-6 relative z-10">
                     <div className="flex flex-col sm:flex-row items-end gap-6 w-full sm:w-auto">
