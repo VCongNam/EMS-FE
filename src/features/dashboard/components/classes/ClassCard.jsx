@@ -15,10 +15,10 @@ const getStatusConfig = (status) => {
     }
 };
 
-const ClassCard = ({ classData }) => {
+const ClassCard = ({ classData, onEdit, onArchive, onUnarchive }) => {
     const navigate = useNavigate();
     const statusConfig = getStatusConfig(classData.status);
-    const progressPercent = classData.progress.totalSessions > 0 
+    const progressPercent = classData.progress?.totalSessions > 0 
         ? Math.round((classData.progress.currentSession / classData.progress.totalSessions) * 100) 
         : 0;
     
@@ -72,12 +72,39 @@ const ClassCard = ({ classData }) => {
                     {/* Options Dropdown */}
                     {showOptions && (
                         <div className="absolute right-0 top-full !mt-1 w-36 bg-surface border border-border rounded-xl shadow-xl z-20 overflow-hidden !py-1 animate-fade-in-up">
-                            <button className="w-full text-left !px-4 !py-2 text-sm text-text-main hover:bg-primary/5 hover:text-primary transition-colors flex items-center gap-2">
+                            <button 
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowOptions(false);
+                                    if(onEdit) onEdit();
+                                }}
+                                className="w-full text-left !px-4 !py-2 text-sm text-text-main hover:bg-primary/5 hover:text-primary transition-colors flex items-center gap-2"
+                            >
                                 <Icon icon="material-symbols:edit-rounded" /> Chỉnh sửa
                             </button>
-                            <button className="w-full text-left !px-4 !py-2 text-sm text-text-main hover:bg-primary/5 hover:text-primary transition-colors flex items-center gap-2">
-                                <Icon icon="material-symbols:archive-rounded" /> Lưu trữ
-                            </button>
+                            {classData.status !== 'archived' ? (
+                                <button 
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowOptions(false);
+                                        if (onArchive) onArchive();
+                                    }}
+                                    className="w-full text-left !px-4 !py-2 text-sm text-orange-600 hover:bg-orange-50 transition-colors flex items-center gap-2"
+                                >
+                                    <Icon icon="material-symbols:archive-rounded" /> Lưu trữ
+                                </button>
+                            ) : (
+                                <button 
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowOptions(false);
+                                        if (onUnarchive) onUnarchive();
+                                    }}
+                                    className="w-full text-left !px-4 !py-2 text-sm text-green-600 hover:bg-green-50 transition-colors flex items-center gap-2"
+                                >
+                                    <Icon icon="material-symbols:unarchive-rounded" /> Bỏ lưu trữ
+                                </button>
+                            )}
                             <button className="w-full text-left !px-4 !py-2 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2 border-t border-border !mt-1 !pt-2">
                                 <Icon icon="material-symbols:delete-rounded" /> Xóa
                             </button>

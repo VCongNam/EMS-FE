@@ -51,6 +51,12 @@ const ClassListFilter = ({
                 >
                     Đã kết thúc
                 </button>
+                <button
+                    onClick={() => onFilterChange('archived')}
+                    className={`!px-4 !py-2 rounded-xl font-medium text-sm transition-all border flex items-center gap-2 ${filterStatus === 'archived' ? 'bg-orange-600 text-outline border-orange-600 shadow-md shadow-orange-600/20' : 'bg-background hover:bg-surface border-border text-text-muted hover:text-text-main'}`}
+                >
+                    Lưu trữ
+                </button>
             </div>
         </div>
     );

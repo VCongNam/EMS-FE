@@ -4,30 +4,78 @@ import Button from '../../../components/ui/Button';
 import ClassCard from '../components/classes/ClassCard';
 import ClassListFilter from '../components/classes/ClassListFilter';
 import CreateClassModal from '../components/classes/CreateClassModal';
+import ConfirmModal from '../../../components/ui/ConfirmModal';
 import { mockClasses } from '../data/mockClasses';
 
 const TeacherClassListPage = () => {
+    const [mockClassesData, setMockClassesData] = useState(mockClasses);
     const [searchQuery, setSearchQuery] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedClass, setSelectedClass] = useState(null);
+    const [confirmModal, setConfirmModal] = useState({ isOpen: false, type: '', classId: null });
+
+    const handleOpenCreateModal = () => {
+        setSelectedClass(null);
+        setIsModalOpen(true);
+    };
+
+    const handleOpenEditModal = (classData) => {
+        setSelectedClass(classData);
+        setIsModalOpen(true);
+    };
+
+    const handleSaveClass = (formData) => {
+        if (selectedClass) {
+            console.log('Update class', selectedClass.id, formData);
+        } else {
+            console.log('Create new class', formData);
+        }
+        setIsModalOpen(false);
+    };
+
+    const openConfirmArchive = (classId) => {
+        setConfirmModal({ isOpen: true, type: 'archive', classId });
+    };
+
+    const openConfirmUnarchive = (classId) => {
+        setConfirmModal({ isOpen: true, type: 'unarchive', classId });
+    };
+
+    const handleConfirmAction = () => {
+        if (confirmModal.type === 'archive') {
+            setMockClassesData(prev => prev.map(cls => 
+                cls.id === confirmModal.classId ? { ...cls, status: 'archived' } : cls
+            ));
+        } else if (confirmModal.type === 'unarchive') {
+            setMockClassesData(prev => prev.map(cls => 
+                cls.id === confirmModal.classId ? { ...cls, status: 'ongoing' } : cls // Mặc định mở lại về ongoing
+            ));
+        }
+        setConfirmModal({ isOpen: false, type: '', classId: null });
+    };
+
+    const closeConfirmModal = () => {
+        setConfirmModal({ isOpen: false, type: '', classId: null });
+    };
 
     // Filter logic
     const filteredClasses = useMemo(() => {
-        return mockClasses.filter(cls => {
+        return mockClassesData.filter(cls => {
             const matchesSearch = cls.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 cls.code.toLowerCase().includes(searchQuery.toLowerCase());
 
-            const matchesFilter = filterStatus === 'all' || cls.status === filterStatus;
+            const matchesFilter = filterStatus === 'all' ? cls.status !== 'archived' : cls.status === filterStatus;
 
             return matchesSearch && matchesFilter;
         });
-    }, [searchQuery, filterStatus]);
+    }, [searchQuery, filterStatus, mockClassesData]);
 
     // Statistics
     const stats = {
-        total: mockClasses.length,
-        ongoing: mockClasses.filter(c => c.status === 'ongoing').length,
-        upcoming: mockClasses.filter(c => c.status === 'upcoming').length,
+        total: mockClassesData.filter(c => c.status !== 'archived').length,
+        ongoing: mockClassesData.filter(c => c.status === 'ongoing').length,
+        upcoming: mockClassesData.filter(c => c.status === 'upcoming').length,
     };
 
     return (
@@ -45,7 +93,7 @@ const TeacherClassListPage = () => {
                 </div>
 
                 <div className="flex gap-3">
-                    <Button variant="outline" className="!px-6 !py-3 rounded-xl shadow-md w-full sm:w-auto" onClick={() => setIsModalOpen(true)}>
+                    <Button variant="outline" className="!px-6 !py-3 rounded-xl !border  shadow-md w-full sm:w-auto" onClick={handleOpenCreateModal}>
                         <Icon icon="material-symbols:add-circle-rounded" className="text-xl" />
                         Tạo lớp học mới
                     </Button>
@@ -66,24 +114,31 @@ const TeacherClassListPage = () => {
             {filteredClasses.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-fade-in-up">
                     {filteredClasses.map((cls) => (
-                        <ClassCard key={cls.id} classData={cls} />
+                        <ClassCard 
+                            key={cls.id} 
+                            classData={cls} 
+                            onEdit={() => handleOpenEditModal(cls)} 
+                            onArchive={() => openConfirmArchive(cls.id)}
+                            onUnarchive={() => openConfirmUnarchive(cls.id)}
+                        />
                     ))}
                 </div>
             ) : (
-                <div className="bg-surface rounded-2xl border border-border !p-12 text-center shadow-sm">
-                    <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mx-auto !mb-6">
+                <div className="bg-surface rounded-2xl border border-border !p-12 flex flex-col items-center justify-center text-center shadow-sm min-h-[300px]">
+                    <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center !mb-6">
                         <Icon icon="material-symbols:search-off-rounded" className="text-5xl text-primary" />
                     </div>
                     <h3 className="text-xl font-bold text-text-main !mb-2">Không tìm thấy lớp học nào</h3>
-                    <p className="text-text-muted max-w-md mx-auto !mb-6">
+                    <p className="text-text-muted max-w-md !mb-6">
                         Thử thay đổi từ khóa tìm kiếm hoặc bỏ chọn các bộ lọc để xem toàn bộ danh sách lớp học của bạn.
                     </p>
                     <Button
-                        variant="secondary"
+                        variant="outline"
                         onClick={() => {
                             setSearchQuery('');
                             setFilterStatus('all');
                         }}
+                        className='!px-6 !py-2 !border'
                     >
                         Xóa bộ lọc
                     </Button>
@@ -91,7 +146,23 @@ const TeacherClassListPage = () => {
             )}
         </div>
 
-        <CreateClassModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+        <CreateClassModal 
+            isOpen={isModalOpen} 
+            onClose={() => setIsModalOpen(false)} 
+            initialData={selectedClass}
+            onSubmit={handleSaveClass}
+        />
+
+        <ConfirmModal
+            isOpen={confirmModal.isOpen}
+            onClose={closeConfirmModal}
+            onConfirm={handleConfirmAction}
+            title={confirmModal.type === 'archive' ? 'Xác nhận lưu trữ lớp học' : 'Xác nhận mở lại lớp học'}
+            message={confirmModal.type === 'archive' ? 'Bạn có chắc chắn muốn lưu trữ lớp học này không? Lớp học sẽ được ẩn đi và chuyển sang thẻ Đã lưu trữ.' : 'Bạn có chắc chắn muốn bỏ lưu trữ và mở lại lớp học này không?'}
+            confirmText="Đồng ý"
+            cancelText="Hủy"
+            type={confirmModal.type === 'archive' ? 'warning' : 'info'}
+        />
     </>
     );
 };

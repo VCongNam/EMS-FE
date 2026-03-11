@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Icon } from '@iconify/react';
 
@@ -32,9 +32,28 @@ const InputField = ({ label, required, children, error }) => (
     </div>
 );
 
-const CreateClassModal = ({ isOpen, onClose }) => {
+const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
     const [form, setForm] = useState(initialForm);
     const [errors, setErrors] = useState({});
+
+    useEffect(() => {
+        if (isOpen) {
+            if (initialData) {
+                setForm({
+                    className: initialData.name || '',
+                    subject: initialData.subject || '', // Tạm thời để trống nếu mock chưa có
+                    gradeLevel: initialData.gradeLevel || '', 
+                    startDate: '', // Cần parse từ mock nếu có
+                    endDate: '',
+                    maxCapacity: initialData.students?.max || '',
+                    days: initialData.days || [],
+                });
+            } else {
+                setForm(initialForm);
+            }
+            setErrors({});
+        }
+    }, [isOpen, initialData]);
 
     if (!isOpen) return null;
 
@@ -76,14 +95,15 @@ const CreateClassModal = ({ isOpen, onClose }) => {
             setErrors(newErrors);
             return;
         }
-        // TODO: Gọi API tạo lớp học
-        console.log('Create Class:', form);
+        if (onSubmit) {
+            onSubmit(form);
+        } else {
+            console.log('Create Class:', form);
+        }
         handleClose();
     };
 
     const handleClose = () => {
-        setForm(initialForm);
-        setErrors({});
         onClose();
     };
 
@@ -105,11 +125,15 @@ const CreateClassModal = ({ isOpen, onClose }) => {
                     <div className="flex items-center justify-between !p-6 border-b border-border sticky top-0 bg-surface/95 backdrop-blur-md z-10 rounded-t-3xl">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
-                                <Icon icon="material-symbols:add-circle-rounded" className="text-primary text-xl" />
+                                <Icon icon={initialData ? "material-symbols:edit-rounded" : "material-symbols:add-circle-rounded"} className="text-primary text-xl" />
                             </div>
                             <div>
-                                <h2 className="text-lg font-bold text-text-main font-['Outfit']">Tạo lớp học mới</h2>
-                                <p className="text-xs text-text-muted">Điền thông tin để khởi tạo lớp học</p>
+                                <h2 className="text-lg font-bold text-text-main font-['Outfit']">
+                                    {initialData ? 'Cập nhật thông tin lớp học' : 'Tạo lớp học mới'}
+                                </h2>
+                                <p className="text-xs text-text-muted">
+                                    {initialData ? 'Chỉnh sửa các thông tin của lớp học' : 'Điền thông tin để khởi tạo lớp học'}
+                                </p>
                             </div>
                         </div>
                         <button
@@ -227,8 +251,8 @@ const CreateClassModal = ({ isOpen, onClose }) => {
                             onClick={handleSubmit}
                             className="flex-1 !px-4 !py-3 rounded-xl bg-primary text-outline font-semibold hover:bg-primary-hover transition-all shadow-md shadow-primary/20 flex items-center justify-center gap-2"
                         >
-                            <Icon icon="material-symbols:add-circle-rounded" className="text-lg" />
-                            Tạo lớp học
+                            <Icon icon={initialData ? "material-symbols:save-rounded" : "material-symbols:add-circle-rounded"} className="text-lg" />
+                            {initialData ? 'Lưu thay đổi' : 'Tạo lớp học'}
                         </button>
                     </div>
                 </div>
