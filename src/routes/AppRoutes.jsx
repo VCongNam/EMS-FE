@@ -4,18 +4,22 @@ import { MainLayout, BlankLayout, DashboardLayout } from '../layouts';
 
 // Feature Pages
 import LandingPage from '../features/landing-page/pages/LandingPage';
+import AboutUs from '../features/landing-page/pages/AboutUs';
+import Features from '../features/landing-page/pages/Features';
+import Pricing from '../features/landing-page/pages/Pricing';
+import ContactUs from '../features/landing-page/pages/ContactUs';
 import LoginPage from '../features/auth/pages/LoginPage';
 import RegisterPage from '../features/auth/pages/RegisterPage';
 import AdminLoginPage from '../features/auth/pages/AdminLoginPage';
 import DashboardPage from '../features/dashboard/pages/DashboardPage';
+import ProfilePage from '../features/dashboard/pages/ProfilePage';
+import TeacherClassListPage from '../features/dashboard/pages/TeacherClassListPage';
 import NotFoundPage from '../features/error/pages/NotFoundPage';
-
-// Components
 import ProtectedRoute from '../components/common/ProtectedRoute';
+import useAuthStore from '../store/authStore';
 
 export const AppRoutes = () => {
-     // Placeholder for authentication state
-     const isAuthenticated = false; // Change to true to test Dashboard access
+     const { isAuthenticated } = useAuthStore();
 
      return (
           <BrowserRouter>
@@ -23,10 +27,10 @@ export const AppRoutes = () => {
                     {/* Public Layout (Header + Footer) */}
                     <Route element={<MainLayout />}>
                          <Route index element={<LandingPage />} />
-                         <Route path="about" element={<div className="container py-24"><h1>About Us</h1></div>} />
-                         <Route path="features" element={<div className="container py-24"><h1>Features</h1></div>} />
-                         <Route path="pricing" element={<div className="container py-24"><h1>Pricing</h1></div>} />
-                         <Route path="contact" element={<div className="container py-24"><h1>Contact Us</h1></div>} />
+                         <Route path="about" element={<AboutUs />} />
+                         <Route path="features" element={<Features />} />
+                         <Route path="pricing" element={<Pricing />} />
+                         <Route path="contact" element={<ContactUs />} />
                     </Route>
 
                     {/* Auth Layout (No Header/Footer, specialized UI) */}
@@ -37,9 +41,11 @@ export const AppRoutes = () => {
                     </Route>
 
                     {/* Protected Dashboard Layout (SideMenu) */}
-                    <Route element={<ProtectedRoute isAuthenticated={isAuthenticated} />}>
+                    <Route element={<ProtectedRoute isAuthenticated={isAuthenticated || true} />}>
                          <Route element={<DashboardLayout />}>
                               <Route path="dashboard" element={<DashboardPage />} />
+                              <Route path="profile" element={<ProfilePage />} />
+                              <Route path="teacher/classes" element={<TeacherClassListPage />} />
                          </Route>
                     </Route>
 

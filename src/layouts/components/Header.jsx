@@ -10,17 +10,17 @@ const Header = () => {
         { name: 'Trang chủ', path: '/' },
         { name: 'Về chúng tôi', path: '/about' },
         { name: 'Tính năng', path: '/features' },
-        { name: 'Giá cả', path: '/pricing' },
+        { name: 'Bảng giá', path: '/pricing' },
         { name: 'Liên hệ', path: '/contact' },
     ];
 
     return (
-        <header className="h-[var(--header-height)] fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-b border-border z-[1000] flex items-center">
+        <header className="h-[70px] bg-white/80 backdrop-blur-xl border-b border-border z-[1000] flex items-center">
             <div className="container flex justify-between items-center w-full relative">
 
                 {/* Left: Logo & Name */}
                 <div className="flex-1 flex justify-start">
-                    <Link to="/" className="flex items-center gap-2 text-2xl font-bold text-primary font-['Outfit']">
+                    <Link to="/" className="flex items-center gap-2 text-2xl font-bold text-[#355872] font-['Google Sans']">
                         <img src={logo} alt="EMS Logo" className="w-10 h-10 object-contain" />
                         <span className="tracking-tight">EMS</span>
                     </Link>
@@ -32,10 +32,10 @@ const Header = () => {
                         <Link
                             key={link.name}
                             to={link.path}
-                            className="text-[15px] font-medium text-text-muted hover:text-primary transition-all duration-300 relative group"
+                            className="text-[17px] font-medium text-text-muted hover:text-[#355872] transition-all duration-300 relative group"
                         >
                             {link.name}
-                            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full"></span>
+                            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#355872] transition-all duration-300 group-hover:w-full"></span>
                         </Link>
                     ))}
                 </nav>
@@ -43,12 +43,12 @@ const Header = () => {
                 {/* Right: Action Buttons (Desktop) */}
                 <div className="hidden lg:flex items-center justify-end gap-3 flex-1">
                     <Link to="/login">
-                        <Button variant="outline" size="md">Đăng nhập</Button>
+                        <Button variant="outline" size="lg">Đăng nhập</Button>
                     </Link>
                     <Link to="/register">
                         <Button
                             variant="primary"
-                            size="md"
+                            size="lg"
                             className="!bg-gradient-to-r !p-3 !from-[#355872] !to-[#7AAACE] !text-white border-none shadow-[0_10px_20px_-5px_rgba(53,88,114,0.4)] hover:shadow-[0_15px_30px_-5px_rgba(53,88,114,0.5)] hover:scale-105 transition-all duration-300 animate-shine"
                         >
                             Tham gia ngay
