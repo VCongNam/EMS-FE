@@ -15,7 +15,7 @@ const getStatusConfig = (status) => {
     }
 };
 
-const ClassCard = ({ classData, onEdit, onArchive, onUnarchive }) => {
+const ClassCard = ({ classData, onEdit, onArchive, onUnarchive, onViewDetails }) => {
     const navigate = useNavigate();
     const statusConfig = getStatusConfig(classData.status);
     const progressPercent = classData.progress?.totalSessions > 0 
@@ -40,9 +40,8 @@ const ClassCard = ({ classData, onEdit, onArchive, onUnarchive }) => {
         // Không navigate nếu click vào dropdown options
         if (optionsRef.current && optionsRef.current.contains(e.target)) return;
         
-        // Chuyển hướng tới chi tiết lớp (hiện tại thì click tạm chưa có route thật)
-        console.log("Navigate to class details");
-        // navigate(`/classes/${classData.id}`);
+        // Chuyển hướng tới tab Bảng tin của chi tiết lớp
+        navigate(`/teacher/classes/${classData.id}/stream`);
     };
 
     return (
@@ -72,6 +71,16 @@ const ClassCard = ({ classData, onEdit, onArchive, onUnarchive }) => {
                     {/* Options Dropdown */}
                     {showOptions && (
                         <div className="absolute right-0 top-full !mt-1 w-36 bg-surface border border-border rounded-xl shadow-xl z-20 overflow-hidden !py-1 animate-fade-in-up">
+                            <button 
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowOptions(false);
+                                    if(onViewDetails) onViewDetails();
+                                }}
+                                className="w-full text-left !px-4 !py-2 text-sm text-text-main hover:bg-primary/5 hover:text-primary transition-colors flex items-center gap-2"
+                            >
+                                <Icon icon="material-symbols:visibility-rounded" /> Xem chi tiết
+                            </button>
                             <button 
                                 onClick={(e) => {
                                     e.stopPropagation();

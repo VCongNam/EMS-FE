@@ -18,6 +18,10 @@ const initialForm = {
     gradeLevel: '',
     startDate: '',
     endDate: '',
+    startTime: '',
+    endTime: '',
+    room: '',
+    tuitionFee: '',
     maxCapacity: '',
     days: [],
 };
@@ -45,6 +49,10 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
                     gradeLevel: initialData.gradeLevel || '', 
                     startDate: '', // Cần parse từ mock nếu có
                     endDate: '',
+                    startTime: initialData.startTime || '',
+                    endTime: initialData.endTime || '',
+                    room: initialData.room || '',
+                    tuitionFee: initialData.tuitionFee || '',
                     maxCapacity: initialData.students?.max || '',
                     days: initialData.days || [],
                 });
@@ -79,12 +87,22 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
         if (!form.subject.trim()) newErrors.subject = 'Môn học không được để trống.';
         if (!form.gradeLevel.trim()) newErrors.gradeLevel = 'Khối lớp không được để trống.';
         if (!form.startDate) newErrors.startDate = 'Vui lòng chọn ngày bắt đầu.';
-        if (!form.endDate) newErrors.endDate = 'Vui lòng chọn ngày kết thúc.';
+        
         if (form.startDate && form.endDate && form.endDate <= form.startDate) {
             newErrors.endDate = 'Ngày kết thúc phải sau ngày bắt đầu.';
         }
-        if (!form.maxCapacity || parseInt(form.maxCapacity) < 1) {
+        
+        if (!form.startTime) newErrors.startTime = 'Vui lòng chọn giờ bắt đầu.';
+        if (!form.endTime) newErrors.endTime = 'Vui lòng chọn giờ kết thúc.';
+        if (form.startTime && form.endTime && form.endTime <= form.startTime) {
+            newErrors.endTime = 'Giờ kết thúc phải sau giờ bắt đầu.';
+        }
+
+        if (form.maxCapacity && parseInt(form.maxCapacity) < 1) {
             newErrors.maxCapacity = 'Sĩ số phải là số nguyên dương.';
+        }
+        if (form.tuitionFee && parseInt(form.tuitionFee) < 0) {
+            newErrors.tuitionFee = 'Học phí không hợp lệ.';
         }
         return newErrors;
     };
@@ -190,7 +208,7 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
                                     className={`w-full !my-1 !px-4 !py-3 bg-background border rounded-xl outline-none transition-all text-text-main font-medium focus:border-primary focus:ring-4 focus:ring-primary/5 ${errors.startDate ? 'border-red-400 ring-2 ring-red-100' : 'border-border'}`}
                                 />
                             </InputField>
-                            <InputField label="Ngày kết thúc" required error={errors.endDate}>
+                            <InputField label="Ngày kết thúc (Không bắt buộc)" error={errors.endDate}>
                                 <input
                                     type="date"
                                     value={form.endDate}
@@ -200,15 +218,58 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
                             </InputField>
                         </div>
 
-                        {/* Max Capacity */}
-                        <InputField label="Sĩ số tối đa" required error={errors.maxCapacity}>
+                        {/* Start Time & End Time */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <InputField label="Giờ bắt đầu" required error={errors.startTime}>
+                                <input
+                                    type="time"
+                                    value={form.startTime}
+                                    onChange={e => handleChange('startTime', e.target.value)}
+                                    className={`w-full !my-1 !px-4 !py-3 bg-background border rounded-xl outline-none transition-all text-text-main font-medium focus:border-primary focus:ring-4 focus:ring-primary/5 ${errors.startTime ? 'border-red-400 ring-2 ring-red-100' : 'border-border'}`}
+                                />
+                            </InputField>
+                            <InputField label="Giờ kết thúc" required error={errors.endTime}>
+                                <input
+                                    type="time"
+                                    value={form.endTime}
+                                    onChange={e => handleChange('endTime', e.target.value)}
+                                    className={`w-full !my-1 !px-4 !py-3 bg-background border rounded-xl outline-none transition-all text-text-main font-medium focus:border-primary focus:ring-4 focus:ring-primary/5 ${errors.endTime ? 'border-red-400 ring-2 ring-red-100' : 'border-border'}`}
+                                />
+                            </InputField>
+                        </div>
+
+                        {/* Room & Max Capacity */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <InputField label="Phòng học (Không bắt buộc)" error={errors.room}>
+                                <input
+                                    type="text"
+                                    placeholder="Ví dụ: P.201"
+                                    value={form.room}
+                                    onChange={e => handleChange('room', e.target.value)}
+                                    className={`w-full !my-1 !px-4 !py-3 bg-background border rounded-xl outline-none transition-all text-text-main font-medium placeholder:font-normal placeholder:text-text-muted/50 focus:border-primary focus:ring-4 focus:ring-primary/5 ${errors.room ? 'border-red-400 ring-2 ring-red-100' : 'border-border'}`}
+                                />
+                            </InputField>
+                            <InputField label="Sĩ số tối đa (Không bắt buộc)" error={errors.maxCapacity}>
+                                <input
+                                    type="number"
+                                    min={1}
+                                    placeholder="Ví dụ: 30"
+                                    value={form.maxCapacity}
+                                    onChange={e => handleChange('maxCapacity', e.target.value)}
+                                    className={`w-full !my-1 !px-4 !py-3 bg-background border rounded-xl outline-none transition-all text-text-main font-medium placeholder:font-normal placeholder:text-text-muted/50 focus:border-primary focus:ring-4 focus:ring-primary/5 ${errors.maxCapacity ? 'border-red-400 ring-2 ring-red-100' : 'border-border'}`}
+                                />
+                            </InputField>
+                        </div>
+
+                        {/* Tuition Fee */}
+                        <InputField label="Học phí (VNĐ) (Không bắt buộc)" error={errors.tuitionFee}>
                             <input
                                 type="number"
-                                min={1}
-                                placeholder="Ví dụ: 30"
-                                value={form.maxCapacity}
-                                onChange={e => handleChange('maxCapacity', e.target.value)}
-                                className={`w-full !my-1 !px-4 !py-3 bg-background border rounded-xl outline-none transition-all text-text-main font-medium placeholder:font-normal placeholder:text-text-muted/50 focus:border-primary focus:ring-4 focus:ring-primary/5 ${errors.maxCapacity ? 'border-red-400 ring-2 ring-red-100' : 'border-border'}`}
+                                min={0}
+                                placeholder="Ví dụ: 1500000"
+                                value={form.tuitionFee}
+                                onChange={e => handleChange('tuitionFee', e.target.value)}
+                                className={`w-full !my-1 !px-4 !py-3 bg-background border rounded-xl outline-none transition-all text-text-main font-medium placeholder:font-normal placeholder:text-text-muted/50 focus:border-primary focus:ring-4 focus:ring-primary/5 ${errors.tuitionFee ? 'border-red-400 ring-2 ring-red-100' : 'border-border'}`}
                             />
                         </InputField>
 

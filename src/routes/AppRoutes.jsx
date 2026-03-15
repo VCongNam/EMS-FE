@@ -14,6 +14,11 @@ import AdminLoginPage from '../features/auth/pages/AdminLoginPage';
 import DashboardPage from '../features/dashboard/pages/DashboardPage';
 import ProfilePage from '../features/dashboard/pages/ProfilePage';
 import TeacherClassListPage from '../features/dashboard/pages/TeacherClassListPage';
+import ClassDetailLayout from '../features/dashboard/components/classes/detail/ClassDetailLayout';
+import ClassStreamPage from '../features/dashboard/components/classes/detail/ClassStreamPage';
+import ClassworkPage from '../features/dashboard/components/classes/detail/ClassworkPage';
+import ClassPeoplePage from '../features/dashboard/components/classes/detail/ClassPeoplePage';
+import ClassGradesPage from '../features/dashboard/components/classes/detail/ClassGradesPage';
 import NotFoundPage from '../features/error/pages/NotFoundPage';
 import ProtectedRoute from '../components/common/ProtectedRoute';
 import useAuthStore from '../store/authStore';
@@ -46,6 +51,13 @@ export const AppRoutes = () => {
                               <Route path="dashboard" element={<DashboardPage />} />
                               <Route path="profile" element={<ProfilePage />} />
                               <Route path="teacher/classes" element={<TeacherClassListPage />} />
+                              <Route path="teacher/classes/:classId" element={<ClassDetailLayout />}>
+                                  <Route index element={<Navigate to="stream" replace />} />
+                                  <Route path="stream" element={<ClassStreamPage />} />
+                                  <Route path="classwork" element={<ClassworkPage />} />
+                                  <Route path="people" element={<ClassPeoplePage />} />
+                                  <Route path="grades" element={<ClassGradesPage />} />
+                              </Route>
                          </Route>
                     </Route>
 
