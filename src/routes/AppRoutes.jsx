@@ -14,6 +14,11 @@ import AdminLoginPage from '../features/auth/pages/AdminLoginPage';
 import DashboardPage from '../features/dashboard/pages/DashboardPage';
 import ProfilePage from '../features/dashboard/pages/ProfilePage';
 import TeacherClassListPage from '../features/dashboard/pages/TeacherClassListPage';
+import ClassDetailLayout from '../features/dashboard/components/classes/detail/ClassDetailLayout';
+import ClassStreamPage from '../features/dashboard/components/classes/detail/ClassStreamPage';
+import ClassworkPage from '../features/dashboard/components/classes/detail/ClassworkPage';
+import ClassPeoplePage from '../features/dashboard/components/classes/detail/ClassPeoplePage';
+import ClassGradesPage from '../features/dashboard/components/classes/detail/ClassGradesPage';
 import NotFoundPage from '../features/error/pages/NotFoundPage';
 import ProtectedRoute from '../components/common/ProtectedRoute';
 import useAuthStore from '../store/authStore';
@@ -62,22 +67,22 @@ export const AppRoutes = () => {
                               <Route path="dashboard" element={<DashboardPage />} />
                               <Route path="profile" element={<ProfilePage />} />
                               <Route path="teacher/classes" element={<TeacherClassListPage />} />
-                              
+
                               {/* Student Management */}
                               <Route path="students/class-members" element={<ViewClassMembersPage />} />
                               <Route path="students/create" element={<CreateStudentAccountPage />} />
                               <Route path="students/assign" element={<AssignStudentToClassPage />} />
-                              
+
                               {/* TA Management */}
                               <Route path="ta/list" element={<ViewTAListPage />} />
                               <Route path="ta/assign" element={<AssignTAToClassPage />} />
                               <Route path="ta/permissions" element={<SetTAPermissionsPage />} />
-                              
+
                               {/* Schedule & Attendance */}
                               <Route path="schedule" element={<ViewSchedulePage />} />
                               <Route path="attendance/take" element={<TakeAttendancePage />} />
                               <Route path="attendance/update" element={<UpdateAttendanceRecordPage />} />
-                              
+
                               {/* User Authorization (Admin) */}
                               <Route path="admin/authorization" element={<UserAuthorizationPage />} />
                          </Route>

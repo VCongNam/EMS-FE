@@ -4,6 +4,7 @@ import Button from '../../../components/ui/Button';
 import ClassCard from '../components/classes/ClassCard';
 import ClassListFilter from '../components/classes/ClassListFilter';
 import CreateClassModal from '../components/classes/CreateClassModal';
+import ClassDetailsModal from '../components/classes/ClassDetailsModal';
 import ConfirmModal from '../../../components/ui/ConfirmModal';
 import { mockClasses } from '../data/mockClasses';
 
@@ -13,6 +14,7 @@ const TeacherClassListPage = () => {
     const [filterStatus, setFilterStatus] = useState('all');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedClass, setSelectedClass] = useState(null);
+    const [viewClass, setViewClass] = useState(null);
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, type: '', classId: null });
 
     const handleOpenCreateModal = () => {
@@ -23,6 +25,10 @@ const TeacherClassListPage = () => {
     const handleOpenEditModal = (classData) => {
         setSelectedClass(classData);
         setIsModalOpen(true);
+    };
+
+    const handleOpenViewModal = (classData) => {
+        setViewClass(classData);
     };
 
     const handleSaveClass = (formData) => {
@@ -118,6 +124,7 @@ const TeacherClassListPage = () => {
                             key={cls.id} 
                             classData={cls} 
                             onEdit={() => handleOpenEditModal(cls)} 
+                            onViewDetails={() => handleOpenViewModal(cls)}
                             onArchive={() => openConfirmArchive(cls.id)}
                             onUnarchive={() => openConfirmUnarchive(cls.id)}
                         />
@@ -151,6 +158,13 @@ const TeacherClassListPage = () => {
             onClose={() => setIsModalOpen(false)} 
             initialData={selectedClass}
             onSubmit={handleSaveClass}
+        />
+
+        <ClassDetailsModal
+            isOpen={!!viewClass}
+            onClose={() => setViewClass(null)}
+            classData={viewClass}
+            onEdit={(cls) => handleOpenEditModal(cls)}
         />
 
         <ConfirmModal
