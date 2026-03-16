@@ -2,7 +2,7 @@ import React from 'react';
 
 const DashboardPage = () => {
     return (
-        <div className="container py-10">
+        <div className="container">
             <h1 className="text-3xl font-bold mb-2">Bảng điều khiển (Dashboard)</h1>
             <p className="text-text-muted">Chào mừng bạn quay trở lại! Dưới đây là tóm tắt hoạt động của bạn.</p>
 

@@ -1,34 +1,37 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
+import { Icon } from '@iconify/react';
 import SideMenu from './components/SideMenu';
+import DevRoleSwitcher from '../components/dev/DevRoleSwitcher';
 
 const DashboardLayout = () => {
+    const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+
     return (
         <div className="flex min-h-screen bg-background">
             {/* Sidebar */}
-            <SideMenu />
+            <SideMenu isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+
+            {/* Dev Only Switcher*/}
+            <DevRoleSwitcher />
 
             {/* Main Content Area */}
-            <div className="flex-1 ml-72 flex flex-col">
-                {/* Dashboard Top Header */}
-                <header className="h-20 px-8 flex justify-between items-center bg-surface/50 backdrop-blur-md border-b border-border sticky top-0 z-40">
-                    <div>
-                        <h2 className="text-xl font-bold text-text-main font-['Outfit'] tracking-tight">Trình quản lý EMS</h2>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                        <div className="text-right hidden sm:block">
-                            <p className="text-sm font-bold text-text-main leading-none">Admin User</p>
-                            <p className="text-xs text-text-muted mt-1">Hệ thống Quản trị</p>
-                        </div>
-                        <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center border border-primary/20">
-                            <span className="text-xl">👤</span>
-                        </div>
-                    </div>
+            <div className={`flex-1 flex flex-col transition-all duration-300 ${isSidebarOpen ? 'lg:!pl-72' : 'lg:!pl-72'}`}>
+                {/* Mobile Dashboard Header (Hidden on Desktop) */}
+                <header className="lg:hidden h-header px-4 sm:px-8 flex items-center bg-surface/50 backdrop-blur-md border-b border-border sticky top-0 z-40">
+                    <button
+                        onClick={() => setIsSidebarOpen(true)}
+                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-surface border border-border text-text-main shadow-sm mr-4"
+                    >
+                        <Icon icon="material-symbols:menu-rounded" className="text-2xl" />
+                    </button>
+                    <h2 className="text-lg !pl-2 sm:text-xl font-bold text-text-main font-['Outfit'] tracking-tight truncate">
+                        Trình quản lý EMS
+                    </h2>
                 </header>
 
                 {/* Page Content */}
-                <main className="p-8 animate-fade-in flex-1">
+                <main className="!p-4 sm:p-8 animate-fade-in flex-1">
                     <Outlet />
                 </main>
             </div>
