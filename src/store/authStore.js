@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { jwtDecode } from 'jwt-decode';
 
 const useAuthStore = create(
     persist(
@@ -7,12 +8,43 @@ const useAuthStore = create(
             user: null,
             isAuthenticated: false,
 
-            login: (userData) => {
-                // userData should include role: 'student' | 'teacher' | 'assistant'
-                set({
-                    user: userData,
-                    isAuthenticated: true,
-                });
+            login: (loginResponse) => {
+                try {
+                    const token = loginResponse.token;
+                    if (token) {
+                        const decoded = jwtDecode(token);
+                        const rawRole = decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
+                        
+                        let role = "student";
+                        if (rawRole === "Teacher") role = "teacher";
+                        else if (rawRole === "Assistant") role = "assistant";
+                        
+                        const userData = {
+                            id: loginResponse.accountId,
+                            email: loginResponse.email,
+                            fullName: loginResponse.fullName,
+                            role: role,
+                            token: token
+                        };
+
+                        set({
+                            user: userData,
+                            isAuthenticated: true,
+                        });
+                    } else {
+                        // fallback for old standard logic
+                        set({
+                            user: loginResponse,
+                            isAuthenticated: true,
+                        });
+                    }
+                } catch (error) {
+                    console.error("Failed to decode token", error);
+                    set({
+                        user: loginResponse,
+                        isAuthenticated: true,
+                    });
+                }
             },
 
             logout: () => {

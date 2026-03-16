@@ -67,6 +67,13 @@ export const AppRoutes = () => {
                               <Route path="dashboard" element={<DashboardPage />} />
                               <Route path="profile" element={<ProfilePage />} />
                               <Route path="teacher/classes" element={<TeacherClassListPage />} />
+                              <Route path="teacher/classes/:classId" element={<ClassDetailLayout />}>
+                                  <Route index element={<Navigate to="stream" replace />} />
+                                  <Route path="stream" element={<ClassStreamPage />} />
+                                  <Route path="classwork" element={<ClassworkPage />} />
+                                  <Route path="people" element={<ClassPeoplePage />} />
+                                  <Route path="grades" element={<ClassGradesPage />} />
+                              </Route>
 
                               {/* Student Management */}
                               <Route path="students/class-members" element={<ViewClassMembersPage />} />
