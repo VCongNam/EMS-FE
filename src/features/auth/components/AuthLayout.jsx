@@ -1,56 +1,86 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
-const AuthLayout = ({ children, title, subtitle }) => {
+const AuthLayout = ({ children, title, subtitle, panelContent }) => {
     return (
-        <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
-            {/* Background Decorative Elements */}
-            <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px]"></div>
-            <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-secondary/20 rounded-full blur-[120px]"></div>
+        <div className="min-h-screen bg-background flex items-stretch">
+            {/* Left Panel - Branding */}
+            <div className="hidden lg:flex lg:w-5/12 xl:w-1/2 bg-primary flex-col justify-between p-12 relative overflow-hidden">
+                {/* Subtle geometric decoration */}
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-32 translate-x-32" />
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24" />
 
-            <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 bg-surface rounded-[40px] shadow-premium overflow-hidden border border-border/50 relative z-10">
-                {/* Left Side: Branding/Image */}
-                <div className="hidden lg:flex flex-col justify-between p-12 bg-primary relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary to-secondary opacity-90"></div>
-
-                    <div className="relative z-10">
-                        <div className="flex items-center gap-3 text-white mb-12">
-                            <div className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/30">
-                                <span className="text-2xl">🎓</span>
-                            </div>
-                            <span className="text-2xl font-bold font-['Outfit'] tracking-tight">EMS Project</span>
+                {/* Logo */}
+                <div className="relative z-10">
+                    <Link to="/" className="flex items-center gap-3 group">
+                        <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-md">
+                            <span className="text-primary font-bold text-lg leading-none" style={{ fontFamily: 'Outfit, sans-serif' }}>E</span>
                         </div>
+                        <span className="text-white text-xl font-bold tracking-tight" style={{ fontFamily: 'Outfit, sans-serif' }}>EMS</span>
+                    </Link>
+                </div>
 
-                        <h1 className="text-5xl font-bold text-white mb-6 leading-tight">
-                            Elevate your <br />
-                            <span className="text-accent">Learning Journey</span>
-                        </h1>
-                        <p className="text-white/70 text-lg max-w-sm">
-                            Hệ thống quản lý giáo dục thông minh giúp bạn tối ưu hóa quy trình dạy và học một cách hiện đại nhất.
-                        </p>
-                    </div>
+                {/* Center content */}
+                <div className="relative z-10 flex-1 flex flex-col justify-center py-16">
+                    {panelContent ? panelContent : (
+                        <>
+                            <div className="mb-6">
+                                <span className="inline-block px-3 py-1 bg-white/15 text-white/90 text-xs font-semibold rounded-full uppercase tracking-wider">
+                                    Hệ thống Quản lý Giáo dục
+                                </span>
+                            </div>
+                            <h1 className="text-4xl xl:text-5xl font-bold text-white leading-tight mb-6">
+                                Nền tảng quản lý<br />
+                                <span className="text-accent">thông minh</span><br />
+                                cho giáo dục
+                            </h1>
+                            <p className="text-white/65 text-base leading-relaxed max-w-xs">
+                                Quản lý lớp học, điểm số và lịch học một cách hiệu quả. Kết nối giáo viên, trợ giảng và học sinh trong một nền tảng duy nhất.
+                            </p>
+                        </>
+                    )}
 
-                    <div className="relative z-10 mt-auto pt-10 border-t border-white/10">
-                        <p className="text-white/50 text-sm">
-                            © {new Date().getFullYear()} EMS. All rights reserved.
-                        </p>
+                    {/* Stats */}
+                    <div className="mt-12 grid grid-cols-3 gap-6">
+                        {[
+                            { value: '500+', label: 'Lớp học' },
+                            { value: '10K+', label: 'Học sinh' },
+                            { value: '99%', label: 'Hài lòng' },
+                        ].map((stat) => (
+                            <div key={stat.label}>
+                                <p className="text-white text-2xl font-bold">{stat.value}</p>
+                                <p className="text-white/50 text-xs mt-0.5">{stat.label}</p>
+                            </div>
+                        ))}
                     </div>
                 </div>
 
-                {/* Right Side: Auth Form */}
-                <div className="p-8 md:p-16 flex flex-col justify-center">
-                    <div className="max-w-md mx-auto w-full">
-                        <div className="mb-10 lg:hidden flex items-center gap-2 text-primary font-bold">
-                            <span className="text-2xl">🎓</span>
-                            <span className="text-xl font-['Outfit']">EMS</span>
-                        </div>
+                {/* Footer */}
+                <div className="relative z-10">
+                    <p className="text-white/35 text-xs">
+                        © {new Date().getFullYear()} EMS Project. All rights reserved.
+                    </p>
+                </div>
+            </div>
 
-                        <div className="mb-8">
-                            <h2 className="text-3xl font-bold text-text-main mb-2 tracking-tight">{title}</h2>
-                            <p className="text-text-muted">{subtitle}</p>
+            {/* Right Panel - Form */}
+            <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-10 lg:p-14 overflow-y-auto">
+                {/* Mobile logo */}
+                <div className="lg:hidden mb-8 self-start">
+                    <Link to="/" className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                            <span className="text-white font-bold text-sm" style={{ fontFamily: 'Outfit, sans-serif' }}>E</span>
                         </div>
+                        <span className="text-primary text-lg font-bold" style={{ fontFamily: 'Outfit, sans-serif' }}>EMS</span>
+                    </Link>
+                </div>
 
-                        {children}
+                <div className="w-full max-w-md">
+                    <div className="mb-8">
+                        <h2 className="text-2xl md:text-3xl font-bold text-text-main mb-2 text-balance">{title}</h2>
+                        <p className="text-text-muted leading-relaxed">{subtitle}</p>
                     </div>
+                    {children}
                 </div>
             </div>
         </div>

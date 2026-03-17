@@ -10,6 +10,7 @@
   --color-text-main: #1E293B;
   --color-text-muted: #64748B;
   --color-border: #E2E8F0;
+  --color-border-focus: #355872;
 
   --radius-xl: 16px;
   --shadow-premium: 0 20px 25px -5px rgb(53 88 114 / 0.15), 0 8px 10px -6px rgb(53 88 114 / 0.1);
