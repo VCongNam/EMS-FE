@@ -2,7 +2,6 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import SideMenu from './components/SideMenu';
-import DevRoleSwitcher from '../components/dev/DevRoleSwitcher';
 
 const DashboardLayout = () => {
     const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
@@ -12,8 +11,7 @@ const DashboardLayout = () => {
             {/* Sidebar */}
             <SideMenu isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
-            {/* Dev Only Switcher*/}
-            <DevRoleSwitcher />
+        
 
             {/* Main Content Area */}
             <div className={`flex-1 flex flex-col transition-all duration-300 ${isSidebarOpen ? 'lg:!pl-72' : 'lg:!pl-72'}`}>

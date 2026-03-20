@@ -24,9 +24,7 @@ import ProtectedRoute from '../components/common/ProtectedRoute';
 import useAuthStore from '../store/authStore';
 
 // New Features Imports
-import ViewClassMembersPage from '../features/student-management/pages/ViewClassMembersPage';
-import CreateStudentAccountPage from '../features/student-management/pages/CreateStudentAccountPage';
-import AssignStudentToClassPage from '../features/student-management/pages/AssignStudentToClassPage';
+import StudentManagementPage from '../features/student-management/pages/StudentManagementPage';
 import ViewTAListPage from '../features/ta-management/pages/ViewTAListPage';
 import AssignTAToClassPage from '../features/ta-management/pages/AssignTAToClassPage';
 import SetTAPermissionsPage from '../features/ta-management/pages/SetTAPermissionsPage';
@@ -74,12 +72,10 @@ export const AppRoutes = () => {
                               </Route>
 
                               {/* Student Management */}
-                              <Route path="students/class-members" element={<ViewClassMembersPage />} />
-                              <Route path="students/create" element={<CreateStudentAccountPage />} />
-                              <Route path="students/assign" element={<AssignStudentToClassPage />} />
+                              <Route path="students" element={<StudentManagementPage />} />
 
                               {/* TA Management */}
-                              <Route path="ta/list" element={<ViewTAListPage />} />
+                              <Route path="assistants" element={<ViewTAListPage />} />
                               <Route path="ta/assign" element={<AssignTAToClassPage />} />
                               <Route path="ta/permissions" element={<SetTAPermissionsPage />} />
 
