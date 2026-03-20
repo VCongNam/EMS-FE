@@ -7,6 +7,7 @@ const RegisterPage = () => {
     // State cho việc chọn Role MOCKUP: 'teacher' | 'ta'
     const [role, setRole] = useState('teacher');
     const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const handleRegister = (e) => {
         e.preventDefault();
@@ -47,26 +48,14 @@ const RegisterPage = () => {
             </div>
 
             <form className="animate-fade-in-up !space-y-5" onSubmit={handleRegister}>
-                <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm font-semibold text-text-main !mb-2">Họ</label>
-                        <div className="relative group">
-                            <input
-                                type="text"
-                                placeholder="Nguyễn"
-                                className="w-full !px-4 !py-3.5 rounded-xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all text-text-main font-medium placeholder:text-text-muted/50"
-                            />
-                        </div>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-semibold text-text-main !mb-2">Tên</label>
-                        <div className="relative group">
-                            <input
-                                type="text"
-                                placeholder="Văn A"
-                                className="w-full !px-4 !py-3.5 rounded-xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all text-text-main font-medium placeholder:text-text-muted/50"
-                            />
-                        </div>
+                <div>
+                    <label className="block text-sm font-semibold text-text-main !mb-2">Họ và tên</label>
+                    <div className="relative group">
+                        <input
+                            type="text"
+                            placeholder="Nguyễn Văn A"
+                            className="w-full !px-4 !py-3.5 rounded-xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all text-text-main font-medium placeholder:text-text-muted/50"
+                        />
                     </div>
                 </div>
 
@@ -80,19 +69,6 @@ const RegisterPage = () => {
                         />
                     </div>
                 </div>
-
-                {role === 'teacher' && (
-                    <div className="animate-fade-in">
-                        <label className="block text-sm font-semibold text-text-main !mb-2">Trường / Tổ chức</label>
-                        <div className="relative group">
-                            <input
-                                type="text"
-                                placeholder="VD: THPT Chuyên Hà Nội"
-                                className="w-full !px-4 !py-3.5 rounded-xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all text-text-main font-medium placeholder:text-text-muted/50"
-                            />
-                        </div>
-                    </div>
-                )}
 
                 <div>
                     <label className="block text-sm font-semibold text-text-main !mb-2">Mật khẩu</label>
@@ -108,6 +84,24 @@ const RegisterPage = () => {
                             className="absolute inset-y-0 right-0 !pr-4 flex items-center text-sm font-semibold text-text-muted hover:text-primary transition-colors"
                         >
                             {showPassword ? "Ẩn" : "Hiện"}
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <label className="block text-sm font-semibold text-text-main !mb-2">Nhập lại mật khẩu</label>
+                    <div className="relative group">
+                        <input
+                            type={showConfirmPassword ? "text" : "password"}
+                            placeholder="Nhập lại mật khẩu của bạn"
+                            className="w-full !pl-4 !pr-16 !py-3.5 rounded-xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all text-text-main font-medium placeholder:text-text-muted/50 font-mono tracking-wider"
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            className="absolute inset-y-0 right-0 !pr-4 flex items-center text-sm font-semibold text-text-muted hover:text-primary transition-colors"
+                        >
+                            {showConfirmPassword ? "Ẩn" : "Hiện"}
                         </button>
                     </div>
                 </div>
