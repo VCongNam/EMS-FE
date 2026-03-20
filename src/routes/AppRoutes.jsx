@@ -34,7 +34,6 @@ import ViewSchedulePage from '../features/schedule-attendance/pages/ViewSchedule
 import TakeAttendancePage from '../features/schedule-attendance/pages/TakeAttendancePage';
 import UpdateAttendanceRecordPage from '../features/schedule-attendance/pages/UpdateAttendanceRecordPage';
 import ForgotPasswordPage from '../features/auth/pages/ForgotPasswordPage';
-import ResetPasswordPage from '../features/auth/pages/ResetPasswordPage';
 import UserAuthorizationPage from '../features/dashboard/pages/UserAuthorizationPage';
 
 export const AppRoutes = () => {
@@ -58,7 +57,6 @@ export const AppRoutes = () => {
                          <Route path="register" element={<RegisterPage />} />
                          <Route path="admin/login" element={<AdminLoginPage />} />
                          <Route path="forgot-password" element={<ForgotPasswordPage />} />
-                         <Route path="reset-password" element={<ResetPasswordPage />} />
                     </Route>
 
                     {/* Protected Dashboard Layout (SideMenu) */}

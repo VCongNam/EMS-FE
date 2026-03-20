@@ -1,25 +1,44 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Button from '../../../components/ui/Button';
 import AuthLayout from '../components/AuthLayout';
 
 const ForgotPasswordPage = () => {
+    const navigate = useNavigate();
+    const [step, setStep] = useState(1);
     const [email, setEmail] = useState('');
-    const [submitted, setSubmitted] = useState(false);
+    const [formData, setFormData] = useState({ code: '', password: '', confirmPassword: '' });
+    
+    // Toggle password visibility
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-    const handleSubmit = (e) => {
+    const handleEmailSubmit = (e) => {
         e.preventDefault();
-        // Call API to send reset link
-        setSubmitted(true);
+        // Call API to send reset link/code
+        setStep(2);
+    };
+
+    const handlePasswordSubmit = (e) => {
+        e.preventDefault();
+        if (formData.password !== formData.confirmPassword) {
+            alert('Mật khẩu xác nhận không khớp!');
+            return;
+        }
+        // Call API to reset password using email, code, and new password
+        setStep(3);
+        setTimeout(() => {
+            navigate('/login');
+        }, 3000);
     };
 
     return (
         <AuthLayout
-            title="Quên Mật Khẩu"
-            subtitle="Nhập email của bạn để nhận liên kết khôi phục."
+            title={step === 1 ? "Quên Mật Khẩu" : step === 2 ? "Đặt Mật Khẩu Mới" : "Thành công"}
+            subtitle={step === 1 ? "Nhập email của bạn để nhận mã khôi phục." : step === 2 ? "Nhập mã đã được gửi đến email và mật khẩu mới." : ""}
         >
-            {!submitted ? (
-                <form onSubmit={handleSubmit} className="animate-fade-in-up !space-y-6">
+            {step === 1 && (
+                <form onSubmit={handleEmailSubmit} className="animate-fade-in-up !space-y-6">
                     <div className="!space-y-2">
                         <label className="block text-sm font-semibold text-text-main !mb-2">Email đăng ký</label>
                         <div className="relative group">
@@ -40,7 +59,7 @@ const ForgotPasswordPage = () => {
                             size="lg"
                             className="w-full !py-4 text-[15px] !text-primary rounded-xl font-bold shadow-premium-primary hover:shadow-premium-primary-hover hover:-translate-y-0.5 transition-all duration-300 bg-primary text-white flex items-center justify-center gap-2"
                         >
-                            Gửi liên kết khôi phục
+                            Nhận mã khôi phục
                         </Button>
                     </div>
 
@@ -50,22 +69,106 @@ const ForgotPasswordPage = () => {
                         </Link>
                     </div>
                 </form>
-            ) : (
-                <div className="text-center animate-fade-in !py-8">
-                    <div className="bg-green-50 border border-green-200 text-green-700 !p-5 rounded-2xl !mb-6">
-                        <p className="font-semibold text-sm leading-relaxed">
-                            Chúng tôi đã gửi một liên kết khôi phục mật khẩu tới địa chỉ email <br />
-                            <strong className="text-green-800 text-base">{email}</strong><br />
-                            Vui lòng kiểm tra hộp thư đến.
-                        </p>
+            )}
+
+            {step === 2 && (
+                <form onSubmit={handlePasswordSubmit} className="animate-fade-in-up !space-y-6">
+                    <div className="!space-y-5">
+                        <div className="bg-green-50 border border-green-200 text-green-700 !p-4 rounded-xl text-sm">
+                            Mã khôi phục đã được gửi tới <strong className="text-green-800">{email}</strong>
+                        </div>
+                        
+                        {/* Reset Code */}
+                        <div>
+                            <label className="block text-sm font-semibold text-text-main !mb-2">
+                                Mã khôi phục
+                            </label>
+                            <input
+                                type="text"
+                                required
+                                value={formData.code}
+                                onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                                placeholder="Nhập mã 6 chữ số"
+                                className="w-full !px-4 !py-3.5 rounded-xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all text-text-main font-medium placeholder:text-text-muted/50 tracking-widest"
+                            />
+                        </div>
+
+                        {/* New Password */}
+                        <div>
+                            <label className="block text-sm font-semibold text-text-main !mb-2">
+                                Mật khẩu mới
+                            </label>
+                            <div className="relative group">
+                                <input
+                                    type={showPassword ? "text" : "password"}
+                                    required
+                                    value={formData.password}
+                                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                    placeholder="••••••••"
+                                    className="w-full !pl-4 !pr-16 !py-3.5 rounded-xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all text-text-main font-medium placeholder:text-text-muted/50 font-mono tracking-wider"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute inset-y-0 right-0 !pr-4 flex items-center text-sm font-semibold text-text-muted hover:text-primary transition-colors"
+                                >
+                                    {showPassword ? "Ẩn" : "Hiện"}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Confirm Password */}
+                        <div>
+                            <label className="block text-sm font-semibold text-text-main !mb-2">
+                                Xác nhận mật khẩu
+                            </label>
+                            <div className="relative group">
+                                <input
+                                    type={showConfirmPassword ? "text" : "password"}
+                                    required
+                                    value={formData.confirmPassword}
+                                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                                    placeholder="••••••••"
+                                    className="w-full !pl-4 !pr-16 !py-3.5 rounded-xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all text-text-main font-medium placeholder:text-text-muted/50 font-mono tracking-wider"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                    className="absolute inset-y-0 right-0 !pr-4 flex items-center text-sm font-semibold text-text-muted hover:text-primary transition-colors"
+                                >
+                                    {showConfirmPassword ? "Ẩn" : "Hiện"}
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                    <Button
-                        variant="outline"
-                        onClick={() => window.location.href = '/login'}
-                        className="w-full !py-4 font-bold rounded-2xl border-2 hover:bg-background transition-colors text-text-main"
-                    >
-                        Trở về trang Đăng nhập
-                    </Button>
+
+                    <div className="!pt-2 !space-y-4">
+                        <Button
+                            type="submit"
+                            size="lg"
+                            className="w-full !py-4 text-[15px] !text-primary rounded-xl font-bold shadow-premium-primary hover:shadow-premium-primary-hover hover:-translate-y-0.5 transition-all duration-300 bg-primary text-white flex items-center justify-center gap-2"
+                        >
+                            Lưu mật khẩu & Đăng nhập
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setStep(1)}
+                            className="w-full !py-4 font-bold rounded-xl border-2 hover:bg-background transition-colors text-text-main"
+                        >
+                            Quay lại
+                        </Button>
+                    </div>
+                </form>
+            )}
+
+            {step === 3 && (
+                <div className="text-center animate-fade-in !py-8">
+                    <div className="w-16 h-16 bg-green-100/50 rounded-full flex items-center justify-center mx-auto !mb-6">
+                        <span className="text-3xl text-green-600">✓</span>
+                    </div>
+                    <h3 className="text-2xl font-bold text-text-main !mb-3">Thành công!</h3>
+                    <p className="text-text-muted">Mật khẩu của bạn đã được thay đổi. Hệ thống sẽ tự động chuyển hướng về trang đăng nhập...</p>
                 </div>
             )}
         </AuthLayout>
