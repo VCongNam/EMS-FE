@@ -1,81 +1,177 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Icon } from '@iconify/react';
-import Button from '../../../components/ui/Button'; // Ensure this path aligns with your structure
+import { Link, useNavigate } from 'react-router-dom';
+import Button from '../../../components/ui/Button';
+import AuthLayout from '../components/AuthLayout';
 
 const ForgotPasswordPage = () => {
+    const navigate = useNavigate();
+    const [step, setStep] = useState(1);
     const [email, setEmail] = useState('');
-    const [submitted, setSubmitted] = useState(false);
+    const [formData, setFormData] = useState({ code: '', password: '', confirmPassword: '' });
+    
+    // Toggle password visibility
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-    const handleSubmit = (e) => {
+    const handleEmailSubmit = (e) => {
         e.preventDefault();
-        // Call API to send reset link
-        setSubmitted(true);
+        // Call API to send reset link/code
+        setStep(2);
+    };
+
+    const handlePasswordSubmit = (e) => {
+        e.preventDefault();
+        if (formData.password !== formData.confirmPassword) {
+            alert('Mật khẩu xác nhận không khớp!');
+            return;
+        }
+        // Call API to reset password using email, code, and new password
+        setStep(3);
+        setTimeout(() => {
+            navigate('/login');
+        }, 3000);
     };
 
     return (
-        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
-            <div className="w-full max-w-md bg-surface p-8 rounded-[2rem] border border-border shadow-xl">
-                <div className="text-center mb-8">
-                    <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-primary/20 shadow-inner">
-                        <Icon icon="material-symbols:lock-reset-rounded" className="text-4xl text-primary" />
+        <AuthLayout
+            title={step === 1 ? "Quên Mật Khẩu" : step === 2 ? "Đặt Mật Khẩu Mới" : "Thành công"}
+            subtitle={step === 1 ? "Nhập email của bạn để nhận mã khôi phục." : step === 2 ? "Nhập mã đã được gửi đến email và mật khẩu mới." : ""}
+        >
+            {step === 1 && (
+                <form onSubmit={handleEmailSubmit} className="animate-fade-in-up !space-y-6">
+                    <div className="!space-y-2">
+                        <label className="block text-sm font-semibold text-text-main !mb-2">Email đăng ký</label>
+                        <div className="relative group">
+                            <input
+                                type="email"
+                                required
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="name@school.edu.vn"
+                                className="w-full !px-4 !py-3.5 bg-background border border-border rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all text-text-main font-medium placeholder:text-text-muted/50"
+                            />
+                        </div>
                     </div>
-                    <h1 className="text-3xl font-extrabold text-text-main font-['Outfit'] tracking-tight">Quên Mật Khẩu</h1>
-                    <p className="text-text-muted mt-2 font-medium">Nhập email của bạn để nhận liên kết khôi phục</p>
-                </div>
 
-                {!submitted ? (
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        <div className="space-y-2">
-                            <label className="block text-sm font-bold text-text-main ml-1 uppercase tracking-widest text-xs">Email đăng ký</label>
-                            <div className="relative">
-                                <Icon icon="material-symbols:mail-rounded" className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted text-xl" />
-                                <input 
-                                    type="email" 
+                    <div className="!pt-2">
+                        <Button
+                            type="submit"
+                            size="lg"
+                            className="w-full !py-4 text-[15px] !text-primary rounded-xl font-bold shadow-premium-primary hover:shadow-premium-primary-hover hover:-translate-y-0.5 transition-all duration-300 bg-primary text-white flex items-center justify-center gap-2"
+                        >
+                            Nhận mã khôi phục
+                        </Button>
+                    </div>
+
+                    <div className="text-center !mt-6">
+                        <Link to="/login" className="text-sm font-bold text-text-muted hover:text-primary transition-colors flex items-center justify-center gap-2">
+                            <span>←</span> Quay lại Đăng nhập
+                        </Link>
+                    </div>
+                </form>
+            )}
+
+            {step === 2 && (
+                <form onSubmit={handlePasswordSubmit} className="animate-fade-in-up !space-y-6">
+                    <div className="!space-y-5">
+                        <div className="bg-green-50 border border-green-200 text-green-700 !p-4 rounded-xl text-sm">
+                            Mã khôi phục đã được gửi tới <strong className="text-green-800">{email}</strong>
+                        </div>
+                        
+                        {/* Reset Code */}
+                        <div>
+                            <label className="block text-sm font-semibold text-text-main !mb-2">
+                                Mã khôi phục
+                            </label>
+                            <input
+                                type="text"
+                                required
+                                value={formData.code}
+                                onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                                placeholder="Nhập mã 6 chữ số"
+                                className="w-full !px-4 !py-3.5 rounded-xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all text-text-main font-medium placeholder:text-text-muted/50 tracking-widest"
+                            />
+                        </div>
+
+                        {/* New Password */}
+                        <div>
+                            <label className="block text-sm font-semibold text-text-main !mb-2">
+                                Mật khẩu mới
+                            </label>
+                            <div className="relative group">
+                                <input
+                                    type={showPassword ? "text" : "password"}
                                     required
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="Enter your email" 
-                                    className="w-full pl-12 pr-4 py-4 bg-background border border-border rounded-2xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all font-semibold"
+                                    value={formData.password}
+                                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                    placeholder="••••••••"
+                                    className="w-full !pl-4 !pr-16 !py-3.5 rounded-xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all text-text-main font-medium placeholder:text-text-muted/50 font-mono tracking-wider"
                                 />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute inset-y-0 right-0 !pr-4 flex items-center text-sm font-semibold text-text-muted hover:text-primary transition-colors"
+                                >
+                                    {showPassword ? "Ẩn" : "Hiện"}
+                                </button>
                             </div>
                         </div>
 
-                        <Button 
+                        {/* Confirm Password */}
+                        <div>
+                            <label className="block text-sm font-semibold text-text-main !mb-2">
+                                Xác nhận mật khẩu
+                            </label>
+                            <div className="relative group">
+                                <input
+                                    type={showConfirmPassword ? "text" : "password"}
+                                    required
+                                    value={formData.confirmPassword}
+                                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                                    placeholder="••••••••"
+                                    className="w-full !pl-4 !pr-16 !py-3.5 rounded-xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all text-text-main font-medium placeholder:text-text-muted/50 font-mono tracking-wider"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                    className="absolute inset-y-0 right-0 !pr-4 flex items-center text-sm font-semibold text-text-muted hover:text-primary transition-colors"
+                                >
+                                    {showConfirmPassword ? "Ẩn" : "Hiện"}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="!pt-2 !space-y-4">
+                        <Button
                             type="submit"
-                            className="w-full py-4 text-lg font-bold shadow-lg shadow-primary/20 rounded-2xl"
+                            size="lg"
+                            className="w-full !py-4 text-[15px] !text-primary rounded-xl font-bold shadow-premium-primary hover:shadow-premium-primary-hover hover:-translate-y-0.5 transition-all duration-300 bg-primary text-white flex items-center justify-center gap-2"
                         >
-                            Gửi liên kết khôi phục
+                            Lưu mật khẩu & Đăng nhập
                         </Button>
-                        
-                        <div className="text-center">
-                            <Link to="/login" className="text-sm font-bold text-text-muted hover:text-primary transition-colors flex items-center justify-center gap-1">
-                                <Icon icon="material-symbols:arrow-back-rounded" />
-                                Quay lại Đăng nhập
-                            </Link>
-                        </div>
-                    </form>
-                ) : (
-                    <div className="text-center space-y-6 animate-fade-in">
-                        <div className="bg-green-50 border border-green-200 text-green-700 p-4 rounded-2xl">
-                            <p className="font-semibold text-sm">Chúng tôi đã gửi một liên kết khôi phục mật khẩu tới địa chỉ email <strong>{email}</strong>. Vui lòng kiểm tra hộp thư đến.</p>
-                        </div>
-                        <Button 
+                        <Button
+                            type="button"
                             variant="outline"
-                            onClick={() => window.location.href='/login'}
-                            className="w-full py-4 font-bold rounded-2xl"
+                            onClick={() => setStep(1)}
+                            className="w-full !py-4 font-bold rounded-xl border-2 hover:bg-background transition-colors text-text-main"
                         >
-                            Trở về trang Đăng nhập
+                            Quay lại
                         </Button>
                     </div>
-                )}
-            </div>
-            {/* Background Decorations */}
-            <div className="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
-                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-3xl"></div>
-                <div className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] bg-blue-500/5 rounded-full blur-3xl"></div>
-            </div>
-        </div>
+                </form>
+            )}
+
+            {step === 3 && (
+                <div className="text-center animate-fade-in !py-8">
+                    <div className="w-16 h-16 bg-green-100/50 rounded-full flex items-center justify-center mx-auto !mb-6">
+                        <span className="text-3xl text-green-600">✓</span>
+                    </div>
+                    <h3 className="text-2xl font-bold text-text-main !mb-3">Thành công!</h3>
+                    <p className="text-text-muted">Mật khẩu của bạn đã được thay đổi. Hệ thống sẽ tự động chuyển hướng về trang đăng nhập...</p>
+                </div>
+            )}
+        </AuthLayout>
     );
 };
 

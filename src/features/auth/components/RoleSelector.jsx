@@ -1,30 +1,26 @@
 import React from 'react';
 
 const RoleSelector = ({ activeRole, onRoleChange }) => {
+    const roles = [
+        { id: 'student', label: 'Học sinh' },
+        { id: 'teacher', label: 'Giáo viên' },
+        { id: 'assistant', label: 'Trợ giảng' }
+    ];
+
     return (
-        <div className="mb-8">
-            <div className="inline-flex w-full p-1.5 bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 shadow-lg shadow-primary/10">
+        <div className="flex p-1 bg-background rounded-xl border border-border mb-8">
+            {roles.map(role => (
                 <button
-                    onClick={() => onRoleChange('student')}
-                    className={`flex-1 py-3 px-6 rounded-xl font-medium flex items-center justify-center gap-2 transition-all duration-300 ${activeRole === 'student'
-                        ? 'bg-primary text-white shadow-[0_8px_16px_0_rgba(53,88,114,0.3)] scale-105'
-                        : 'text-text-muted hover:text-primary/80 hover:bg-white/20'
+                    key={role.id}
+                    onClick={() => onRoleChange(role.id)}
+                    className={`flex-1 py-3 px-2 rounded-[10px] transition-all duration-300 font-medium text-sm flex items-center justify-center ${activeRole === role.id
+                        ? 'bg-primary text-white shadow-md'
+                        : 'text-text-muted hover:text-primary'
                         }`}
                 >
-                    <span className="text-xl">👨‍🎓</span>
-                    Học sinh
+                    {role.label}
                 </button>
-                <button
-                    onClick={() => onRoleChange('teacher')}
-                    className={`flex-1 py-3 px-6 rounded-xl font-medium flex items-center justify-center gap-2 transition-all duration-300 ${activeRole === 'teacher'
-                        ? 'bg-primary text-white shadow-[0_8px_16px_0_rgba(53,88,114,0.3)] scale-105'
-                        : 'text-text-muted hover:text-primary/80 hover:bg-white/20'
-                        }`}
-                >
-                    <span className="text-xl">👨‍🏫</span>
-                    Giáo viên
-                </button>
-            </div>
+            ))}
         </div>
     );
 };
