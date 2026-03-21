@@ -69,7 +69,7 @@ const StudentManagementPage = () => {
                     </div>
                 </div>
                 <Button
-                    variant="primary"
+                    
                     onClick={() => setIsCreateModalOpen(true)}
                     className="w-full md:w-auto whitespace-nowrap shadow-primary/30 shadow-lg !py-3 !px-6"
                 >
