@@ -54,19 +54,7 @@ const ViewTAListPage = () => {
     return (
         <div className="w-full !mx-auto !space-y-6 animate-fade-in !pb-8">
 
-            {/* Header Section */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center !gap-6 bg-surface !p-6 rounded-[2rem] border border-border shadow-sm">
-                <div className="flex items-center !gap-4">
-                    <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-inner shrink-0">
-                        <Icon icon="material-symbols:badge-rounded" className="text-3xl" />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl sm:text-3xl font-bold text-text-main">Quản lý Trợ giảng</h1>
-                        <p className="text-text-muted !mt-1 text-sm sm:text-base">Danh sách và thông tin trợ giảng trên hệ thống</p>
-                    </div>
-                </div>
-                
-            </div>
+
 
             {/* Filters Section */}
             <div className="bg-surface !p-4 sm:!p-6 rounded-[2rem] border border-border shadow-sm !space-y-4">
