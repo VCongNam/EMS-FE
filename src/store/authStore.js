@@ -14,11 +14,11 @@ const useAuthStore = create(
                     if (token) {
                         const decoded = jwtDecode(token);
                         const rawRole = decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
-                        
+
                         let role = "student";
                         if (rawRole === "Teacher") role = "teacher";
                         else if (rawRole === "Assistant") role = "assistant";
-                        
+
                         const userData = {
                             id: loginResponse.accountId,
                             email: loginResponse.email,

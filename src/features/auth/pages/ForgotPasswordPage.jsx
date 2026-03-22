@@ -2,34 +2,88 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Button from '../../../components/ui/Button';
 import AuthLayout from '../components/AuthLayout';
+import { getApiUrl } from '../../../config/api';
 
 const ForgotPasswordPage = () => {
     const navigate = useNavigate();
     const [step, setStep] = useState(1);
     const [email, setEmail] = useState('');
     const [formData, setFormData] = useState({ code: '', password: '', confirmPassword: '' });
-    
+
     // Toggle password visibility
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-    const handleEmailSubmit = (e) => {
+    // UI states
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+
+    const handleEmailSubmit = async (e) => {
         e.preventDefault();
-        // Call API to send reset link/code
-        setStep(2);
+        setError(null);
+        setLoading(true);
+
+        try {
+            const response = await fetch(getApiUrl('/api/Auth/forgot-password'), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Gửi yêu cầu thất bại. Vui lòng thử lại!');
+            }
+
+            // Call API to send reset link/code
+            setStep(2);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const handlePasswordSubmit = (e) => {
+    const handlePasswordSubmit = async (e) => {
         e.preventDefault();
+        setError(null);
+
         if (formData.password !== formData.confirmPassword) {
-            alert('Mật khẩu xác nhận không khớp!');
+            setError('Mật khẩu xác nhận không khớp!');
             return;
         }
-        // Call API to reset password using email, code, and new password
-        setStep(3);
-        setTimeout(() => {
-            navigate('/login');
-        }, 3000);
+
+        setLoading(true);
+
+        try {
+            const response = await fetch(getApiUrl('/api/Auth/reset-password'), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    email: email,
+                    otpCode: formData.code,
+                    newPassword: formData.password
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Mã xác nhận không hợp lệ hoặc đã hết hạn.');
+            }
+
+            setStep(3);
+            setTimeout(() => {
+                navigate('/login');
+            }, 3000);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -39,6 +93,12 @@ const ForgotPasswordPage = () => {
         >
             {step === 1 && (
                 <form onSubmit={handleEmailSubmit} className="animate-fade-in-up !space-y-6">
+                    {error && (
+                        <div className="!p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-medium">
+                            {error}
+                        </div>
+                    )}
+
                     <div className="!space-y-2">
                         <label className="block text-sm font-semibold text-text-main !mb-2">Email đăng ký</label>
                         <div className="relative group">
@@ -57,9 +117,10 @@ const ForgotPasswordPage = () => {
                         <Button
                             type="submit"
                             size="lg"
-                            className="w-full !py-4 text-[15px] !text-primary rounded-xl font-bold shadow-premium-primary hover:shadow-premium-primary-hover hover:-translate-y-0.5 transition-all duration-300 bg-primary text-white flex items-center justify-center gap-2"
+                            disabled={loading}
+                            className="w-full !py-4 text-[15px] !text-primary rounded-xl font-bold shadow-premium-primary hover:shadow-premium-primary-hover hover:-translate-y-0.5 transition-all duration-300 bg-primary text-white disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
                         >
-                            Nhận mã khôi phục
+                            {loading ? 'Đang gửi...' : 'Nhận mã khôi phục'}
                         </Button>
                     </div>
 
@@ -73,11 +134,17 @@ const ForgotPasswordPage = () => {
 
             {step === 2 && (
                 <form onSubmit={handlePasswordSubmit} className="animate-fade-in-up !space-y-6">
+                    {error && (
+                        <div className="!p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-medium">
+                            {error}
+                        </div>
+                    )}
+
                     <div className="!space-y-5">
                         <div className="bg-green-50 border border-green-200 text-green-700 !p-4 rounded-xl text-sm">
                             Mã khôi phục đã được gửi tới <strong className="text-green-800">{email}</strong>
                         </div>
-                        
+
                         {/* Reset Code */}
                         <div>
                             <label className="block text-sm font-semibold text-text-main !mb-2">
@@ -146,9 +213,10 @@ const ForgotPasswordPage = () => {
                         <Button
                             type="submit"
                             size="lg"
-                            className="w-full !py-4 text-[15px] !text-primary rounded-xl font-bold shadow-premium-primary hover:shadow-premium-primary-hover hover:-translate-y-0.5 transition-all duration-300 bg-primary text-white flex items-center justify-center gap-2"
+                            disabled={loading}
+                            className="w-full !py-4 text-[15px] !text-primary rounded-xl font-bold shadow-premium-primary hover:shadow-premium-primary-hover hover:-translate-y-0.5 transition-all duration-300 bg-primary text-white disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
                         >
-                            Lưu mật khẩu & Đăng nhập
+                            {loading ? 'Đang lưu...' : 'Lưu mật khẩu & Đăng nhập'}
                         </Button>
                         <Button
                             type="button"

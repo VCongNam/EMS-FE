@@ -32,6 +32,7 @@ import ViewSchedulePage from '../features/schedule-attendance/pages/ViewSchedule
 import TakeAttendancePage from '../features/schedule-attendance/pages/TakeAttendancePage';
 import UpdateAttendanceRecordPage from '../features/schedule-attendance/pages/UpdateAttendanceRecordPage';
 import ForgotPasswordPage from '../features/auth/pages/ForgotPasswordPage';
+import VerifyEmailPage from '../features/auth/pages/VerifyEmailPage';
 import UserAuthorizationPage from '../features/dashboard/pages/UserAuthorizationPage';
 
 export const AppRoutes = () => {
@@ -53,6 +54,7 @@ export const AppRoutes = () => {
                     <Route element={<BlankLayout />}>
                          <Route path="login" element={<LoginPage />} />
                          <Route path="register" element={<RegisterPage />} />
+                         <Route path="verify-email" element={<VerifyEmailPage />} />
                          <Route path="admin/login" element={<AdminLoginPage />} />
                          <Route path="forgot-password" element={<ForgotPasswordPage />} />
                     </Route>
@@ -64,11 +66,11 @@ export const AppRoutes = () => {
                               <Route path="profile" element={<ProfilePage />} />
                               <Route path="teacher/classes" element={<TeacherClassListPage />} />
                               <Route path="teacher/classes/:classId" element={<ClassDetailLayout />}>
-                                  <Route index element={<Navigate to="stream" replace />} />
-                                  <Route path="stream" element={<ClassStreamPage />} />
-                                  <Route path="classwork" element={<ClassworkPage />} />
-                                  <Route path="people" element={<ClassPeoplePage />} />
-                                  <Route path="grades" element={<ClassGradesPage />} />
+                                   <Route index element={<Navigate to="stream" replace />} />
+                                   <Route path="stream" element={<ClassStreamPage />} />
+                                   <Route path="classwork" element={<ClassworkPage />} />
+                                   <Route path="people" element={<ClassPeoplePage />} />
+                                   <Route path="grades" element={<ClassGradesPage />} />
                               </Route>
 
                               {/* Student Management */}

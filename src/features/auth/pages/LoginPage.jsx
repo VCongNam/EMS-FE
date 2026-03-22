@@ -41,8 +41,17 @@ const LoginPage = () => {
 
             // Navigate tương ứng với store set -> Cần lấy state mới nhất
             const stateStore = useAuthStore.getState();
-            if (stateStore.user?.role === 'teacher') {
+            const role = stateStore.user?.role;
+            
+            // Redirect based on user role
+            if (role === 'teacher') {
                 navigate('/teacher/classes');
+            } else if (role === 'assistant') {
+                navigate('/dashboard'); 
+            } else if (role === 'student') {
+                navigate('/dashboard'); 
+            } else if (role === 'admin') {
+                navigate('/admin/authorization'); // Based on routing rules
             } else {
                 navigate('/dashboard');
             }

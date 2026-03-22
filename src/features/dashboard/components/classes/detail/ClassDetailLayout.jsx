@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink, useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Icon } from '@iconify/react';
-import { mockClasses } from '../../../data/mockClasses';
+import { getApiUrl } from '../../../../../config/api';
+import useAuthStore from '../../../../../store/authStore';
 
 const ClassDetailLayout = () => {
     const { classId } = useParams();
@@ -9,11 +10,40 @@ const ClassDetailLayout = () => {
     const location = useLocation();
     const [dropdownOpen, setDropdownOpen] = useState(false);
 
-    const classInfo = mockClasses.find(c => c.id === classId) || {
-        name: 'Lớp học không tồn tại',
+    const [classInfo, setClassInfo] = useState({
+        name: 'Đang tải thông tin...',
         code: 'N/A',
         status: 'unknown'
-    };
+    });
+
+    useEffect(() => {
+        const fetchClassDetail = async () => {
+            const token = useAuthStore.getState().user?.token;
+            if (!token || !classId) return;
+            
+            try {
+                const res = await fetch(getApiUrl(`/api/Class/${classId}`), {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    setClassInfo({
+                        name: data.className || 'Chưa đặt tên lớp',
+                        code: data.room || 'N/A',
+                        status: data.status?.toLowerCase() || 'ongoing'
+                    });
+                } else {
+                    setClassInfo({ name: 'Không tìm thấy lớp học', code: '404', status: 'error' });
+                }
+            } catch (err) {
+                console.error("Lỗi lấy thông tin lớp:", err);
+                setClassInfo({ name: 'Lỗi tải dữ liệu', code: 'Error', status: 'error' });
+            }
+        };
+
+        fetchClassDetail();
+    }, [classId]);
 
     const tabs = [
         { path: 'stream', label: 'Bảng tin', icon: 'material-symbols:stream-rounded' },
