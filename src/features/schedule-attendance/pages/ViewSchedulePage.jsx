@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
+import { toast } from 'react-toastify';
 
 const ViewSchedulePage = () => {
     const [currentWeek, setCurrentWeek] = useState('02/10 - 08/10/2026');
@@ -12,13 +13,11 @@ const ViewSchedulePage = () => {
     ];
 
     const handleDelete = (id) => {
-        if(window.confirm('Bạn có chắc chắn muốn xóa lịch học này?')) {
-            alert('Đã xóa buổi học!');
-        }
+        toast.success('Đã xóa buổi học!');
     };
 
     const handleEdit = (id) => {
-        alert('Mở form Edit (Tính năng chưa implement toàn bộ)');
+        toast.info('Tính năng chỉnh sửa đang được phát triển.');
     };
 
     return (

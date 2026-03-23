@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import Button from '../../../components/ui/Button';
 import AuthLayout from '../components/AuthLayout';
 
@@ -22,7 +23,7 @@ const ForgotPasswordPage = () => {
     const handlePasswordSubmit = (e) => {
         e.preventDefault();
         if (formData.password !== formData.confirmPassword) {
-            alert('Mật khẩu xác nhận không khớp!');
+            toast.error('Mật khẩu xác nhận không khớp!');
             return;
         }
         // Call API to reset password using email, code, and new password

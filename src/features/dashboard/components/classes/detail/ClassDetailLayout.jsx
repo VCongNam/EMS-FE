@@ -19,7 +19,8 @@ const ClassDetailLayout = () => {
         { path: 'stream', label: 'Bảng tin', icon: 'material-symbols:stream-rounded' },
         { path: 'classwork', label: 'Bài tập', icon: 'material-symbols:assignment-rounded' },
         { path: 'people', label: 'Thành viên', icon: 'material-symbols:group-rounded' },
-        { path: 'grades', label: 'Điểm số', icon: 'material-symbols:grading-rounded' }
+        { path: 'grades', label: 'Điểm số', icon: 'material-symbols:grading-rounded' },
+        { path: 'schedule', label: 'Lịch học', icon: 'solar:calendar-bold-duotone' },
     ];
 
     const activeTab = tabs.find(tab =>

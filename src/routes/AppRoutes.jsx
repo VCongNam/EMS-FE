@@ -1,6 +1,8 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { MainLayout, BlankLayout, DashboardLayout } from '../layouts';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // Feature Pages
 import LandingPage from '../features/landing-page/pages/LandingPage';
@@ -19,6 +21,7 @@ import ClassStreamPage from '../features/dashboard/components/classes/detail/Cla
 import ClassworkPage from '../features/dashboard/components/classes/detail/ClassworkPage';
 import ClassPeoplePage from '../features/dashboard/components/classes/detail/ClassPeoplePage';
 import ClassGradesPage from '../features/dashboard/components/classes/detail/ClassGradesPage';
+import ClassSchedulePage from '../features/dashboard/components/classes/detail/ClassSchedulePage';
 import NotFoundPage from '../features/error/pages/NotFoundPage';
 import ProtectedRoute from '../components/common/ProtectedRoute';
 import useAuthStore from '../store/authStore';
@@ -29,6 +32,7 @@ import TAManagementPage from '../features/ta-management/pages/TAManagementPage';
 import ViewSchedulePage from '../features/schedule-attendance/pages/ViewSchedulePage';
 import TakeAttendancePage from '../features/schedule-attendance/pages/TakeAttendancePage';
 import UpdateAttendanceRecordPage from '../features/schedule-attendance/pages/UpdateAttendanceRecordPage';
+import ScheduleManagementPage from '../features/schedule-management/pages/ScheduleManagementPage';
 import ForgotPasswordPage from '../features/auth/pages/ForgotPasswordPage';
 import UserAuthorizationPage from '../features/dashboard/pages/UserAuthorizationPage';
 
@@ -37,6 +41,16 @@ export const AppRoutes = () => {
 
      return (
           <BrowserRouter>
+               <ToastContainer
+                    position="top-right"
+                    autoClose={3000}
+                    hideProgressBar={false}
+                    newestOnTop
+                    closeOnClick
+                    pauseOnHover
+                    draggable
+                    theme="colored"
+               />
                <Routes>
                     {/* Public Layout (Header + Footer) */}
                     <Route element={<MainLayout />}>
@@ -67,6 +81,7 @@ export const AppRoutes = () => {
                                   <Route path="classwork" element={<ClassworkPage />} />
                                   <Route path="people" element={<ClassPeoplePage />} />
                                   <Route path="grades" element={<ClassGradesPage />} />
+                                  <Route path="schedule" element={<ClassSchedulePage />} />
                               </Route>
 
                               {/* Student Management */}
@@ -79,6 +94,9 @@ export const AppRoutes = () => {
                               <Route path="schedule" element={<ViewSchedulePage />} />
                               <Route path="attendance/take" element={<TakeAttendancePage />} />
                               <Route path="attendance/update" element={<UpdateAttendanceRecordPage />} />
+
+                              {/* Schedule Management */}
+                              <Route path="schedule-management" element={<ScheduleManagementPage />} />
 
                               {/* User Authorization (Admin) */}
                               <Route path="admin/authorization" element={<UserAuthorizationPage />} />

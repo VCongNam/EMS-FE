@@ -22,6 +22,7 @@ const SideMenu = ({ isOpen, onClose }) => {
             { name: 'Quản lý Học sinh', path: '/students', icon: 'material-symbols:group-rounded' },
             { name: 'Quản lý Trợ giảng', path: '/assistants', icon: 'material-symbols:handshake-rounded' },
             { name: 'Lịch dạy', path: '/schedule', icon: 'material-symbols:calendar-month-rounded' },
+            { name: 'Quản lý Lịch học', path: '/schedule-management', icon: 'solar:calendar-add-bold-duotone' },
             { name: 'Trang cá nhân', path: '/profile', icon: 'material-symbols:person-rounded' },
         ],
         assistant: [

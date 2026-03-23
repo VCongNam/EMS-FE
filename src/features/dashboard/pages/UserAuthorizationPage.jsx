@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
+import { toast } from 'react-toastify';
 
 const UserAuthorizationPage = () => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -24,7 +25,7 @@ const UserAuthorizationPage = () => {
     };
 
     const handleRoleChange = (userId, newRole) => {
-        alert(`Quyền của người dùng ${userId} đã được đổi thành ${newRole}`);
+        toast.success(`Quyền của người dùng ${userId} đã được đổi thành ${newRole}`);
     };
 
     return (

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
+import { toast } from 'react-toastify';
 
 const UpdateAttendanceRecordPage = () => {
     const [selectedDate, setSelectedDate] = useState('02/10/2026');
@@ -19,7 +20,7 @@ const UpdateAttendanceRecordPage = () => {
     };
 
     const handleSave = () => {
-        alert('Cập nhật lịch sử điểm danh thành công!');
+        toast.success('Cập nhật lịch sử điểm danh thành công!');
         setIsEditing(false);
     };
 
