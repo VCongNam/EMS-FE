@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
 import { toast } from 'react-toastify';
 import SetupRecurringScheduleModal from './components/SetupRecurringScheduleModal';
+import AttendanceModal from './components/AttendanceModal';
 
 // --- Mock Data ---
 const MOCK_GENERATED_LESSONS = [
@@ -41,6 +42,11 @@ const ClassSchedulePage = () => {
     const [filterStatus, setFilterStatus] = useState('all');
     const [deletingId, setDeletingId] = useState(null);
 
+    // Attendance state
+    const [attendanceTarget, setAttendanceTarget] = useState(null); // { lesson, existingRecord }
+    // Records: { [lessonId]: student[] }
+    const [attendanceRecords, setAttendanceRecords] = useState({});
+
     const filteredLessons = filterStatus === 'all' ? lessons : lessons.filter(l => l.status === filterStatus);
 
     const handleSaveSche = (data) => {
@@ -61,6 +67,23 @@ const ClassSchedulePage = () => {
         setScheduleConfig(null);
         setLessons([]);
         toast.success('Đã xóa lịch định kỳ và toàn bộ buổi học.');
+    };
+
+    const handleOpenAttendance = (lesson) => {
+        setAttendanceTarget({
+            lesson,
+            existingRecord: attendanceRecords[lesson.id] || null,
+        });
+    };
+
+    const handleSaveAttendance = (lessonId, students) => {
+        // Persist the attendance record
+        setAttendanceRecords(prev => ({ ...prev, [lessonId]: students }));
+        // Mark lesson as completed
+        setLessons(prev =>
+            prev.map(l => l.id === lessonId ? { ...l, status: 'completed' } : l)
+        );
+        setAttendanceTarget(null);
     };
 
     // ── Empty State ──
@@ -262,20 +285,36 @@ const ClassSchedulePage = () => {
                                         </span>
 
                                         {/* Actions */}
-                                        <div className="flex items-center !gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                                            <button
-                                                title="Chỉnh sửa buổi học"
-                                                className="!p-2 text-text-muted hover:text-primary hover:bg-primary/10 rounded-xl transition-colors border border-transparent hover:border-primary/20"
-                                            >
-                                                <Icon icon="material-symbols:edit-calendar-rounded" className="text-lg" />
-                                            </button>
-                                            <button
-                                                title="Xóa buổi học"
-                                                onClick={() => handleDeleteLesson(lesson.id)}
-                                                className="!p-2 text-text-muted hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors border border-transparent hover:border-red-200"
-                                            >
-                                                <Icon icon="material-symbols:delete-outline-rounded" className="text-lg" />
-                                            </button>
+                                        <div className="flex items-center !gap-2">
+                                            {/* Attendance button */}
+                                            {lesson.status === 'scheduled' && (
+                                                <button
+                                                    onClick={() => handleOpenAttendance(lesson)}
+                                                    className="flex items-center !gap-1.5 !px-3 !py-1.5 text-xs font-bold !bg-primary text-white rounded-xl shadow-sm hover:bg-primary/90 transition-all whitespace-nowrap"
+                                                >
+                                                    <Icon icon="material-symbols:fact-check-rounded" className="text-sm" />
+                                                    Điểm danh
+                                                </button>
+                                            )}
+                                            {lesson.status === 'completed' && (
+                                                <button
+                                                    onClick={() => handleOpenAttendance(lesson)}
+                                                    className="flex items-center !gap-1.5 !px-3 !py-1.5 text-xs font-semibold text-primary border border-primary/30 bg-primary/5 rounded-xl hover:bg-primary/10 transition-all whitespace-nowrap"
+                                                >
+                                                    <Icon icon="material-symbols:visibility-rounded" className="text-sm" />
+                                                    Xem / Sửa DD
+                                                </button>
+                                            )}
+                                            {/* Delete */}
+                                            <div className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                                <button
+                                                    title="Xóa buổi học"
+                                                    onClick={() => handleDeleteLesson(lesson.id)}
+                                                    className="!p-2 text-text-muted hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors border border-transparent hover:border-red-200"
+                                                >
+                                                    <Icon icon="material-symbols:delete-outline-rounded" className="text-lg" />
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -285,12 +324,21 @@ const ClassSchedulePage = () => {
                 )}
             </div>
 
-            {/* Modal */}
+            {/* Schedule Config Modal */}
             <SetupRecurringScheduleModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 onSave={handleSaveSche}
                 initialData={scheduleConfig}
+            />
+
+            {/* Attendance Modal */}
+            <AttendanceModal
+                isOpen={!!attendanceTarget}
+                lesson={attendanceTarget?.lesson}
+                existingRecord={attendanceTarget?.existingRecord}
+                onClose={() => setAttendanceTarget(null)}
+                onSave={handleSaveAttendance}
             />
         </div>
     );

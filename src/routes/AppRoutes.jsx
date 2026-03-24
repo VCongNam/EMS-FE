@@ -23,6 +23,7 @@ import ClassworkPage from '../features/dashboard/components/classes/detail/Class
 import ClassPeoplePage from '../features/dashboard/components/classes/detail/ClassPeoplePage';
 import ClassGradesPage from '../features/dashboard/components/classes/detail/ClassGradesPage';
 import ClassSchedulePage from '../features/dashboard/components/classes/detail/ClassSchedulePage';
+import ClassAttendancePage from '../features/dashboard/components/classes/detail/ClassAttendancePage';
 import NotFoundPage from '../features/error/pages/NotFoundPage';
 import ProtectedRoute from '../components/common/ProtectedRoute';
 import useAuthStore from '../store/authStore';
@@ -83,6 +84,7 @@ export const AppRoutes = () => {
                                   <Route path="people" element={<ClassPeoplePage />} />
                                   <Route path="grades" element={<ClassGradesPage />} />
                                   <Route path="schedule" element={<ClassSchedulePage />} />
+                                  <Route path="attendance" element={<ClassAttendancePage />} />
                               </Route>
 
                               {/* TA Classes */}
@@ -94,6 +96,7 @@ export const AppRoutes = () => {
                                   <Route path="people" element={<ClassPeoplePage />} />
                                   <Route path="grades" element={<ClassGradesPage />} />
                                   <Route path="schedule" element={<ClassSchedulePage />} />
+                                  <Route path="attendance" element={<ClassAttendancePage />} />
                               </Route>
 
                               {/* Student Management */}
