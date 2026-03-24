@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
+import { toast } from 'react-toastify';
 
 const SetTAPermissionsPage = () => {
     const [selectedTA, setSelectedTA] = useState('TA001');
@@ -25,7 +26,7 @@ const SetTAPermissionsPage = () => {
     };
 
     const handleSave = () => {
-        alert('Đã cập nhật quyền cho Trợ giảng thành công!');
+        toast.success('Đã cập nhật quyền cho Trợ giảng thành công!');
     };
 
     const permissionItems = [

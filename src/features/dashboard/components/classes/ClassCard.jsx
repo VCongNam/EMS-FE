@@ -15,7 +15,7 @@ const getStatusConfig = (status) => {
     }
 };
 
-const ClassCard = ({ classData, onEdit, onArchive, onUnarchive, onViewDetails }) => {
+const ClassCard = ({ classData, onEdit, onArchive, onUnarchive, onViewDetails, basePath = '/teacher/classes' }) => {
     const navigate = useNavigate();
     const statusConfig = getStatusConfig(classData.status);
     const progressPercent = classData.progress?.totalSessions > 0 
@@ -41,7 +41,7 @@ const ClassCard = ({ classData, onEdit, onArchive, onUnarchive, onViewDetails })
         if (optionsRef.current && optionsRef.current.contains(e.target)) return;
         
         // Chuyển hướng tới tab Bảng tin của chi tiết lớp
-        navigate(`/teacher/classes/${classData.id}/stream`);
+        navigate(`${basePath}/${classData.id}/stream`);
     };
 
     return (

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
+import { toast } from 'react-toastify';
 import Button from "../../../components/ui/Button";
 const CreateStudentAccountPage = () => {
     const [formData, setFormData] = useState({
@@ -20,7 +21,7 @@ const CreateStudentAccountPage = () => {
         e.preventDefault();
         // Handle form submission API call here
         console.log('Form submitted:', formData);
-        alert('Đã tạo tài khoản học sinh thành công!');
+        toast.success('Đã tạo tài khoản học sinh thành công!');
     };
 
     return (

@@ -12,7 +12,7 @@ const DevRoleSwitcher = () => {
                 {[
                     { id: 'student', label: 'HS', icon: 'material-symbols:person-rounded' },
                     { id: 'teacher', label: 'GV', icon: 'material-symbols:school-rounded' },
-                    { id: 'assistant', label: 'TG', icon: 'material-symbols:handshake-rounded' }
+                    { id: 'TA', label: 'TG', icon: 'material-symbols:handshake-rounded' }
                 ].map((r) => (
                     <button
                         key={r.id}

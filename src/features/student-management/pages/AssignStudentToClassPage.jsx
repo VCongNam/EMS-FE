@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
+import { toast } from 'react-toastify';
 
 const AssignStudentToClassPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
@@ -30,14 +31,14 @@ const AssignStudentToClassPage = () => {
 
     const handleAssign = () => {
         if (!selectedClass) {
-            alert('Vui lòng chọn một lớp học!');
+            toast.warning('Vui lòng chọn một lớp học!');
             return;
         }
         if (selectedStudents.length === 0) {
-            alert('Vui lòng chọn ít nhất một học sinh!');
+            toast.warning('Vui lòng chọn ít nhất một học sinh!');
             return;
         }
-        alert(`Đã xếp ${selectedStudents.length} học sinh vào lớp đã chọn!`);
+        toast.success(`Đã xếp ${selectedStudents.length} học sinh vào lớp đã chọn!`);
         setSelectedStudents([]);
     };
 

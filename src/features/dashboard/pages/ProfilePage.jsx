@@ -16,7 +16,7 @@ const ProfilePage = () => {
     const roleLabels = {
         student: 'Học sinh',
         teacher: 'Giáo viên',
-        assistant: 'Trợ giảng'
+        TA: 'Trợ giảng'
     };
 
     return (
@@ -114,7 +114,7 @@ const ProfilePage = () => {
                 {/* Right Column: Detailed Sections */}
                 <div className="lg:col-span-8 space-y-6">
                     {/* General Bio Section (Visible to Teachers/Assistants) */}
-                    {(user?.role === 'teacher' || user?.role === 'assistant') && (
+                    {(user?.role === 'teacher' || user?.role === 'TA') && (
                         <div className="bg-surface !p-8 rounded-[2rem] border border-border shadow-sm">
                             <div className="flex items-center justify-between mb-8">
                                 <h3 className="text-xl font-bold text-text-main flex items-center gap-3">
@@ -216,7 +216,7 @@ const ProfilePage = () => {
                         </div>
                     )}
 
-                    {(user?.role === 'teacher' || user?.role === 'assistant') && (
+                    {(user?.role === 'teacher' || user?.role === 'TA') && (
                         <div className="bg-surface !mt-2 !p-8 rounded-[2rem] border border-border shadow-sm animate-fade-in-up">
                             <h3 className="text-xl font-bold text-text-main mb-8 flex items-center gap-3">
                                 <Icon icon="material-symbols:account-balance-wallet" className="text-2xl text-primary" /> Thông tin thanh toán

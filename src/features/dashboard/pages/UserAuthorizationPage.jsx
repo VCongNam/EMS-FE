@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
+import { toast } from 'react-toastify';
 
 const UserAuthorizationPage = () => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -8,7 +9,7 @@ const UserAuthorizationPage = () => {
     const users = [
         { id: 'ADM001', name: 'Admin Tổng', email: 'admin@ems.edu.vn', role: 'admin', status: 'Active' },
         { id: 'TCH001', name: 'Giáo viên Toán', email: 'math@ems.edu.vn', role: 'teacher', status: 'Active' },
-        { id: 'TA001', name: 'Lê Thảo Nhi', email: 'nhi@ta.edu.vn', role: 'assistant', status: 'Active' },
+        { id: 'TA001', name: 'Lê Thảo Nhi', email: 'nhi@ta.edu.vn', role: 'TA', status: 'Active' },
         { id: 'STU001', name: 'Nguyễn Văn A', email: 'studentA@ems.edu.vn', role: 'student', status: 'Inactive' },
     ];
 
@@ -16,7 +17,7 @@ const UserAuthorizationPage = () => {
         const roles = {
             admin: { label: 'Admin', color: 'bg-red-100 text-red-700' },
             teacher: { label: 'Giáo viên', color: 'bg-blue-100 text-blue-700' },
-            assistant: { label: 'Trợ giảng', color: 'bg-purple-100 text-purple-700' },
+            TA: { label: 'Trợ giảng', color: 'bg-purple-100 text-purple-700' },
             student: { label: 'Học sinh', color: 'bg-green-100 text-green-700' },
         };
         const mapped = roles[role] || { label: 'Unknown', color: 'bg-gray-100 text-gray-700' };
@@ -24,7 +25,7 @@ const UserAuthorizationPage = () => {
     };
 
     const handleRoleChange = (userId, newRole) => {
-        alert(`Quyền của người dùng ${userId} đã được đổi thành ${newRole}`);
+        toast.success(`Quyền của người dùng ${userId} đã được đổi thành ${newRole}`);
     };
 
     return (
@@ -47,7 +48,7 @@ const UserAuthorizationPage = () => {
                         <option value="all">Tất cả nhóm quyền</option>
                         <option value="admin">Admin</option>
                         <option value="teacher">Giáo viên</option>
-                        <option value="assistant">Trợ giảng</option>
+                        <option value="TA">Trợ giảng</option>
                         <option value="student">Học sinh</option>
                     </select>
                     <div className="relative flex-1 sm:w-64">
@@ -113,7 +114,7 @@ const UserAuthorizationPage = () => {
                                             <option value="" disabled>Chuyển quyền...</option>
                                             <option value="admin">Cấp quyền Admin</option>
                                             <option value="teacher">Cấp quyền Giáo viên</option>
-                                            <option value="assistant">Cấp quyền Trợ giảng</option>
+                                            <option value="TA">Cấp quyền Trợ giảng</option>
                                             <option value="student">Cấp quyền Học sinh</option>
                                         </select>
                                     </td>

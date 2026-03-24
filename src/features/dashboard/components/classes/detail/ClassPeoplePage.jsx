@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
+import { toast } from 'react-toastify';
 import Button from "../../../../../components/ui/Button";
 import AddStudentModal from './components/AddStudentModal';
 
@@ -34,7 +35,7 @@ const ClassPeoplePage = () => {
                 ...members
             ]);
         } else {
-            alert('Học viên này đã ở trong lớp!');
+            toast.warning('Học viên này đã ở trong lớp!');
         }
     };
 

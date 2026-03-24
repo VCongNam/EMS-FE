@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
+import { toast } from 'react-toastify';
 
 const TakeAttendancePage = () => {
     // Current class session details
@@ -27,10 +28,10 @@ const TakeAttendancePage = () => {
     const handleSubmit = () => {
         const unchecked = students.filter(s => s.status === 'none');
         if (unchecked.length > 0) {
-            alert(`Còn ${unchecked.length} học sinh chưa được điểm danh!`);
+            toast.warning(`Còn ${unchecked.length} học sinh chưa được điểm danh!`);
             return;
         }
-        alert('Đã lưu dữ liệu điểm danh thành công!');
+        toast.success('Đã lưu dữ liệu điểm danh thành công!');
     };
 
     // Calculate stats
