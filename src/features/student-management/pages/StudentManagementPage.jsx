@@ -71,9 +71,9 @@ const StudentManagementPage = () => {
                 <Button
                     
                     onClick={() => setIsCreateModalOpen(true)}
-                    className="w-full md:w-auto whitespace-nowrap shadow-primary/30 shadow-lg !py-3 !px-6"
+                    className="!bg-primary w-full md:w-auto whitespace-nowrap shadow-primary/30 shadow-lg !py-3 !px-6"
                 >
-                    <Icon icon="solar:user-plus-bold-duotone" className="text-xl !mr-2 !text-primary" />
+                    <Icon icon="solar:user-plus-bold-duotone" className="text-xl !mr-2" />
                     Thêm học sinh mới
                 </Button>
             </div>

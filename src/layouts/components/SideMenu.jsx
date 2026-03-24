@@ -25,7 +25,7 @@ const SideMenu = ({ isOpen, onClose }) => {
             { name: 'Quản lý Lịch học', path: '/schedule-management', icon: 'solar:calendar-add-bold-duotone' },
             { name: 'Trang cá nhân', path: '/profile', icon: 'material-symbols:person-rounded' },
         ],
-        assistant: [
+        TA: [
             { name: 'Tổng quan', path: '/dashboard', icon: 'material-symbols:dashboard-rounded' },
             { name: 'Lớp hỗ trợ', path: '/assisted-classes', icon: 'material-symbols:handshake-rounded' },
             { name: 'Danh sách học sinh', path: '/students', icon: 'material-symbols:group-rounded' },
@@ -97,7 +97,7 @@ const SideMenu = ({ isOpen, onClose }) => {
                         <div className="flex-1 min-w-0">
                             <p className="text-sm font-bold text-white leading-none truncate">{user?.fullName || 'Người dùng'}</p>
                             <p className="text-xs text-white/70 mt-1 truncate">
-                                {role === 'student' ? 'Học sinh' : role === 'teacher' ? 'Giáo viên' : role === 'assistant' ? 'Trợ giảng' : 'Thành viên'}
+                                {role === 'student' ? 'Học sinh' : role === 'teacher' ? 'Giáo viên' : role === 'TA' ? 'Trợ giảng' : 'Thành viên'}
                             </p>
                         </div>
                     </div>

@@ -17,7 +17,7 @@ const useAuthStore = create(
                         
                         let role = "student";
                         if (rawRole === "Teacher") role = "teacher";
-                        else if (rawRole === "Assistant") role = "assistant";
+                        else if (rawRole === "TA" || rawRole === "Assistant") role = "TA";
                         
                         const userData = {
                             id: loginResponse.accountId,

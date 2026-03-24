@@ -9,6 +9,10 @@ const ClassDetailLayout = () => {
     const location = useLocation();
     const [dropdownOpen, setDropdownOpen] = useState(false);
 
+    const basePath = location.pathname.startsWith('/assisted-classes') 
+        ? '/assisted-classes' 
+        : '/teacher/classes';
+
     const classInfo = mockClasses.find(c => c.id === classId) || {
         name: 'Lớp học không tồn tại',
         code: 'N/A',
@@ -32,7 +36,7 @@ const ClassDetailLayout = () => {
             {/* Nav Back Breadcrumb */}
             <div className="!mb-4 flex items-center">
                 <button
-                    onClick={() => navigate('/teacher/classes')}
+                    onClick={() => navigate(basePath)}
                     className="flex items-center !border gap-2 text-sm font-semibold text-text-muted hover:text-primary transition-colors bg-surface !px-4 !py-2 rounded-xl border border-border shadow-sm shadow-primary/5"
                 >
                     <Icon icon="material-symbols:arrow-back-rounded" className="text-lg" />
@@ -68,7 +72,7 @@ const ClassDetailLayout = () => {
                     {tabs.map((tab) => (
                         <NavLink
                             key={tab.path}
-                            to={`/teacher/classes/${classId}/${tab.path}`}
+                            to={`${basePath}/${classId}/${tab.path}`}
                             className={({ isActive }) =>
                                 `flex items-center gap-2 !px-6 !py-4 text-sm font-bold border-b-2 transition-all hover:bg-surface-hover whitespace-nowrap ${
                                     isActive
@@ -110,7 +114,7 @@ const ClassDetailLayout = () => {
                                 <button
                                     key={tab.path}
                                     onClick={() => {
-                                        navigate(`/teacher/classes/${classId}/${tab.path}`);
+                                        navigate(`${basePath}/${classId}/${tab.path}`);
                                         setDropdownOpen(false);
                                     }}
                                     className={`w-full flex items-center gap-3 !px-4 !py-3 text-sm font-semibold transition-colors ${

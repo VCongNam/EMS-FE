@@ -4,7 +4,7 @@ const RoleSelector = ({ activeRole, onRoleChange }) => {
     const roles = [
         { id: 'student', label: 'Học sinh' },
         { id: 'teacher', label: 'Giáo viên' },
-        { id: 'assistant', label: 'Trợ giảng' }
+        { id: 'TA', label: 'Trợ giảng' }
     ];
 
     return (

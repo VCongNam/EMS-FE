@@ -16,6 +16,7 @@ import AdminLoginPage from '../features/auth/pages/AdminLoginPage';
 import DashboardPage from '../features/dashboard/pages/DashboardPage';
 import ProfilePage from '../features/dashboard/pages/ProfilePage';
 import TeacherClassListPage from '../features/dashboard/pages/TeacherClassListPage';
+import TAClassListPage from '../features/dashboard/pages/TAClassListPage';
 import ClassDetailLayout from '../features/dashboard/components/classes/detail/ClassDetailLayout';
 import ClassStreamPage from '../features/dashboard/components/classes/detail/ClassStreamPage';
 import ClassworkPage from '../features/dashboard/components/classes/detail/ClassworkPage';
@@ -76,6 +77,17 @@ export const AppRoutes = () => {
                               <Route path="profile" element={<ProfilePage />} />
                               <Route path="teacher/classes" element={<TeacherClassListPage />} />
                               <Route path="teacher/classes/:classId" element={<ClassDetailLayout />}>
+                                  <Route index element={<Navigate to="stream" replace />} />
+                                  <Route path="stream" element={<ClassStreamPage />} />
+                                  <Route path="classwork" element={<ClassworkPage />} />
+                                  <Route path="people" element={<ClassPeoplePage />} />
+                                  <Route path="grades" element={<ClassGradesPage />} />
+                                  <Route path="schedule" element={<ClassSchedulePage />} />
+                              </Route>
+
+                              {/* TA Classes */}
+                              <Route path="assisted-classes" element={<TAClassListPage />} />
+                              <Route path="assisted-classes/:classId" element={<ClassDetailLayout />}>
                                   <Route index element={<Navigate to="stream" replace />} />
                                   <Route path="stream" element={<ClassStreamPage />} />
                                   <Route path="classwork" element={<ClassworkPage />} />
