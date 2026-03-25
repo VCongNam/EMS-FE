@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Icon } from '@iconify/react';
+import useAuthStore from '../../../../../store/authStore';
 
 // ── Mock Data ────────────────────────────────────────────────────────────────
 const STUDENTS = [
@@ -66,10 +67,20 @@ const fmtDate = (dateStr) =>
 // "by-student"  → rows = students, columns show each session
 
 const ClassAttendancePage = () => {
-    const [viewMode, setViewMode]     = useState('by-session'); // 'by-session' | 'by-student'
+    const { user } = useAuthStore();
+    const isTeacherOrTA = ['TEACHER', 'TA'].includes(user?.role?.toUpperCase());
+
+    const [viewMode, setViewMode]     = useState(isTeacherOrTA ? 'by-session' : 'by-student'); // 'by-session' | 'by-student'
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'present' | 'late' | 'absent'
     const [expandedSession, setExpandedSession] = useState(null);
+
+    // Make sure student view is enforced for non-teachers
+    useEffect(() => {
+        if (!isTeacherOrTA) {
+            setViewMode('by-student');
+        }
+    }, [isTeacherOrTA]);
 
     const recordedSessions = SESSIONS.filter(s => MOCK_RECORDS[s.id]);
 
@@ -87,7 +98,13 @@ const ClassAttendancePage = () => {
 
     // ── By-student view data ─────────────────────────────────────
     const studentRows = useMemo(() => {
-        return STUDENTS.map(student => {
+        let activeStudents = STUDENTS;
+        // If not teacher/TA, mock the student view by ONLY showing their own record (STU001)
+        if (!isTeacherOrTA) {
+            activeStudents = STUDENTS.filter(s => s.id === 'STU001');
+        }
+
+        return activeStudents.map(student => {
             const entries = recordedSessions.map(session => {
                 const rec = MOCK_RECORDS[session.id] || [];
                 const entry = rec.find(r => r.id === student.id);
@@ -189,6 +206,7 @@ const ClassAttendancePage = () => {
                 </div>
 
                 {/* View mode toggle */}
+                {isTeacherOrTA && (
                 <div className="flex items-center !gap-1 bg-background border border-border rounded-xl !p-1 shrink-0">
                     <button
                         onClick={() => setViewMode('by-session')}
@@ -211,6 +229,7 @@ const ClassAttendancePage = () => {
                         <span className="hidden sm:inline">Theo học sinh</span>
                     </button>
                 </div>
+                )}
             </div>
 
             {/* ── Content ───────────────────────────────────────────── */}

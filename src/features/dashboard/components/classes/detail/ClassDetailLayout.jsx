@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { Outlet, NavLink, useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import { mockClasses } from '../../../data/mockClasses';
+import ClassStaffModal from './components/ClassStaffModal';
 
 const ClassDetailLayout = () => {
     const { classId } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
     const [dropdownOpen, setDropdownOpen] = useState(false);
+    const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
 
     const basePath = location.pathname.startsWith('/assisted-classes') 
         ? '/assisted-classes' 
@@ -21,6 +23,7 @@ const ClassDetailLayout = () => {
 
     const tabs = [
         { path: 'stream', label: 'Bảng tin', icon: 'material-symbols:stream-rounded' },
+        { path: 'materials', label: 'Tài liệu', icon: 'material-symbols:folder-open-rounded' },
         { path: 'classwork', label: 'Bài tập', icon: 'material-symbols:assignment-rounded' },
         { path: 'people', label: 'Thành viên', icon: 'material-symbols:group-rounded' },
         { path: 'grades', label: 'Điểm số', icon: 'material-symbols:grading-rounded' },
@@ -55,7 +58,7 @@ const ClassDetailLayout = () => {
                         backgroundSize: '24px 24px'
                     }}
                 ></div>
-                <div className="relative z-10 w-full flex justify-between items-end">
+                <div className="relative z-10 w-full flex flex-col md:flex-row md:justify-between md:items-end gap-4">
                     <div className="text-white">
                         <h1 className="text-3xl !text-white md:text-5xl font-bold font-['Outfit'] !mb-2 drop-shadow-md">
                             {classInfo.name}
@@ -64,6 +67,13 @@ const ClassDetailLayout = () => {
                             Mã lớp: {classInfo.code}
                         </p>
                     </div>
+                    <button 
+                        onClick={() => setIsStaffModalOpen(true)}
+                        className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white !px-4 !py-2 rounded-xl backdrop-blur-sm transition-colors border border-white/20 shadow-sm self-start md:self-auto"
+                    >
+                        <Icon icon="solar:users-group-two-rounded-bold-duotone" className="text-xl" />
+                        <span className="font-semibold text-sm">Ban giảng huấn</span>
+                    </button>
                 </div>
             </div>
 
@@ -140,6 +150,11 @@ const ClassDetailLayout = () => {
             <div className="mt-4">
                 <Outlet />
             </div>
+
+            <ClassStaffModal 
+                isOpen={isStaffModalOpen}
+                onClose={() => setIsStaffModalOpen(false)}
+            />
         </div>
     );
 };
