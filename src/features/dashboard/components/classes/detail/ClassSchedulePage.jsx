@@ -3,6 +3,7 @@ import { Icon } from '@iconify/react';
 import { toast } from 'react-toastify';
 import SetupRecurringScheduleModal from './components/SetupRecurringScheduleModal';
 import AttendanceModal from './components/AttendanceModal';
+import useAuthStore from '../../../../../store/authStore';
 
 // --- Mock Data ---
 const MOCK_GENERATED_LESSONS = [
@@ -36,6 +37,9 @@ const MOCK_SCHEDULE_CONFIG = {
 };
 
 const ClassSchedulePage = () => {
+    const { user } = useAuthStore();
+    const isTeacherOrTA = ['TEACHER', 'TA'].includes(user?.role?.toUpperCase());
+
     const [scheduleConfig, setScheduleConfig] = useState(MOCK_SCHEDULE_CONFIG); // null = chưa có lịch
     const [lessons, setLessons] = useState(MOCK_GENERATED_LESSONS);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -101,7 +105,9 @@ const ClassSchedulePage = () => {
                 <div>
                     <h2 className="text-2xl font-bold text-text-main font-['Outfit']">Chưa có lịch định kỳ</h2>
                     <p className="text-text-muted mt-2 max-w-md text-sm leading-relaxed">
-                        Lớp học này chưa được thiết lập lịch định kỳ. Nhấn nút bên dưới để cấu hình lịch học, hệ thống sẽ tự động tạo danh sách các buổi học.
+                        {isTeacherOrTA 
+                            ? 'Lớp học này chưa được thiết lập lịch định kỳ. Nhấn nút bên dưới để cấu hình lịch học, hệ thống sẽ tự động tạo danh sách các buổi học.' 
+                            : 'Lớp học này chưa được thiết lập lịch định kỳ. Vui lòng chờ Giáo viên thiết lập.'}
                     </p>
                 </div>
                 <div className="flex flex-wrap justify-center !gap-3">
@@ -118,6 +124,7 @@ const ClassSchedulePage = () => {
                         </div>
                     ))}
                 </div>
+                {isTeacherOrTA && (
                 <button
                     onClick={() => setIsModalOpen(true)}
                     className="flex items-center !gap-2 !px-8 !py-3.5 !bg-primary text-white font-bold rounded-2xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 hover:scale-[1.02] active:scale-[0.98]"
@@ -125,6 +132,7 @@ const ClassSchedulePage = () => {
                     <Icon icon="solar:calendar-add-bold-duotone" className="text-xl" />
                     Thiết lập lịch định kỳ ngay
                 </button>
+                )}
                 <SetupRecurringScheduleModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={handleSaveSche} />
             </div>
         );
@@ -148,6 +156,7 @@ const ClassSchedulePage = () => {
                             <p className="text-xs text-text-muted">Thông tin thiết lập hiện tại của lớp</p>
                         </div>
                     </div>
+                    {isTeacherOrTA && (
                     <div className="flex items-center !gap-2">
                         <button
                             onClick={() => setIsModalOpen(true)}
@@ -162,6 +171,7 @@ const ClassSchedulePage = () => {
                             <Icon icon="solar:trash-bin-2-bold-duotone" className="text-sm" /> Xóa lịch
                         </button>
                     </div>
+                    )}
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 !gap-3">
@@ -285,6 +295,7 @@ const ClassSchedulePage = () => {
                                         </span>
 
                                         {/* Actions */}
+                                        {isTeacherOrTA && (
                                         <div className="flex items-center !gap-2">
                                             {/* Attendance button */}
                                             {lesson.status === 'scheduled' && (
@@ -316,6 +327,7 @@ const ClassSchedulePage = () => {
                                                 </button>
                                             </div>
                                         </div>
+                                        )}
                                     </div>
                                 </div>
                             );

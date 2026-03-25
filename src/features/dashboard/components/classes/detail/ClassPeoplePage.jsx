@@ -3,11 +3,24 @@ import { Icon } from '@iconify/react';
 import { toast } from 'react-toastify';
 import Button from "../../../../../components/ui/Button";
 import AddStudentModal from './components/AddStudentModal';
+import useAuthStore from '../../../../../store/authStore';
+import TAPermissionsModal from './components/TAPermissionsModal';
 
 const ClassPeoplePage = () => {
+    const { user } = useAuthStore();
+    const isTeacherOrTA = ['TEACHER', 'TA'].includes(user?.role?.toUpperCase());
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [isPermissionsModalOpen, setIsPermissionsModalOpen] = useState(false);
+
+    const isCurrentUserTA = user?.role?.toUpperCase() === 'TA';
+
+    // Dummy data for Teachers and TAs
+    const staff = [
+        { id: 'TCH001', name: 'PGS.TS Trần Văn Giáo Viên', role: 'Giáo viên', email: 'teacher@fpt.edu.vn', type: 'TEACHER' },
+        { id: 'TA001', name: user?.fullName || 'Nguyễn Trợ Giảng', role: 'Trợ giảng', email: user?.email || 'ta@fpt.edu.vn', type: 'TA' },
+    ];
 
     // Dummy data for visual representation
     const [members, setMembers] = useState([
@@ -56,17 +69,21 @@ const ClassPeoplePage = () => {
                     </div>
                     <p className="text-sm text-text-muted !mb-4">Quản lý danh sách học viên trong lớp</p>
                     <div className="flex flex-col !gap-2.5">
-                        <Button 
-                            onClick={() => setIsAddModalOpen(true)}
-                            className="w-full shadow-primary/30 shadow-lg !py-2.5 !text-primary flex justify-center items-center"
-                        >
-                            <Icon icon="solar:user-plus-bold-duotone" className="text-lg !mr-2" />
-                            Thêm học sinh
-                        </Button>
-                        <Button variant="outline" className="w-full !py-2.5 bg-surface hover:bg-background flex justify-center items-center">
-                            <Icon icon="solar:download-square-bold-duotone" className="text-lg !mr-2 text-text-muted" />
-                            Xuất danh sách
-                        </Button>
+                        {isTeacherOrTA && (
+                            <>
+                                <Button 
+                                    onClick={() => setIsAddModalOpen(true)}
+                                    className="w-full shadow-primary/30 shadow-lg !py-2.5 !text-primary flex justify-center items-center"
+                                >
+                                    <Icon icon="solar:user-plus-bold-duotone" className="text-lg !mr-2" />
+                                    Thêm học sinh
+                                </Button>
+                                <Button variant="outline" className="w-full !py-2.5 bg-surface hover:bg-background flex justify-center items-center">
+                                    <Icon icon="solar:download-square-bold-duotone" className="text-lg !mr-2 text-text-muted" />
+                                    Xuất danh sách
+                                </Button>
+                            </>
+                        )}
                     </div>
                 </div>
 
@@ -108,7 +125,55 @@ const ClassPeoplePage = () => {
             </div>
 
             {/* Cột chính (75%) */}
-            <div className="md:col-span-3 space-y-6">
+            <div className="md:col-span-3 space-y-8">
+                {/* Giảng viên & Trợ giảng */}
+                <div className="bg-surface rounded-2xl border border-border shadow-sm overflow-hidden">
+                    <div className="!px-6 !py-4 border-b border-border bg-background/50 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <Icon icon="solar:user-id-bold-duotone" className="text-2xl text-primary" />
+                            <h2 className="text-lg font-bold text-text-main">Giáo viên & Trợ giảng</h2>
+                        </div>
+                    </div>
+                    <div className="!p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {staff.map((p) => (
+                            <div key={p.id} className="border border-border rounded-xl !p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-primary/30 transition-colors bg-background">
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg shrink-0 ${
+                                        p.type === 'TEACHER' ? 'bg-blue-500/10 text-blue-600' : 'bg-green-500/10 text-green-600'
+                                    }`}>
+                                        {p.name.charAt(0)}
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-text-main group-hover:text-primary transition-colors">{p.name}</h3>
+                                        <p className="text-sm text-text-muted">{p.email}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3 self-start sm:self-center">
+                                    <span className={`text-xs font-semibold !px-2.5 !py-1 rounded-md border shrink-0 ${
+                                        p.type === 'TEACHER' ? 'bg-blue-500/10 text-blue-600 border-blue-500/20' : 'bg-green-500/10 text-green-600 border-green-500/20'
+                                    }`}>
+                                        {p.role}
+                                    </span>
+                                    {p.type === 'TA' && user?.role?.toUpperCase() === 'TA' && (
+                                        <button 
+                                            onClick={() => setIsPermissionsModalOpen(true)}
+                                            className="text-xs font-bold text-primary bg-primary/10 hover:bg-primary/20 !px-3 !py-1.5 rounded-lg transition-colors border border-primary/20 shrink-0 flex items-center gap-1.5"
+                                        >
+                                            <Icon icon="solar:shield-check-bold" /> Quyền hạn
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Học sinh */}
+                <div className="flex items-center gap-3 !mt-2 !px-2">
+                    <Icon icon="solar:users-group-two-rounded-bold-duotone" className="text-2xl text-primary" />
+                    <h2 className="text-lg font-bold text-text-main">Học sinh ({filteredMembers.length})</h2>
+                </div>
+
                 {/* Desktop Table (Hidden on smaller screens, but left column might stack on top) */}
                 <div className="hidden lg:block bg-surface rounded-2xl border border-border shadow-sm overflow-hidden">
                     <div className="overflow-x-auto">
@@ -119,7 +184,7 @@ const ClassPeoplePage = () => {
                                     <th className="!p-4 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap">Thông tin</th>
                                     <th className="!p-4 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap text-center">Tỷ lệ đi học</th>
                                     <th className="!p-4 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap text-center">Tình trạng</th>
-                                    <th className="!p-4 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap text-right w-[100px]">Thao tác</th>
+                                    {isTeacherOrTA && <th className="!p-4 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap text-right w-[100px]">Thao tác</th>}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border/50">
@@ -162,6 +227,7 @@ const ClassPeoplePage = () => {
                                                 {member.status === 'danger' && <span className="inline-flex items-center !px-2.5 !py-0.5 rounded-md text-[11px] font-semibold bg-red-500/10 text-red-600 border border-red-500/20 whitespace-nowrap">Báo động</span>}
                                             </div>
                                         </td>
+                                        {isTeacherOrTA && (
                                         <td className="!p-4 text-right">
                                             <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                                                 <button className="!p-1.5 text-text-muted hover:text-blue-500 transition-colors rounded-lg hover:bg-blue-500/10" title="Chi tiết học tập">
@@ -175,6 +241,7 @@ const ClassPeoplePage = () => {
                                                 </button>
                                             </div>
                                         </td>
+                                        )}
                                     </tr>
                                 ))}
                                 {filteredMembers.length === 0 && (
@@ -270,6 +337,7 @@ const ClassPeoplePage = () => {
                                 </div>
 
                                 {/* Actions */}
+                                {isTeacherOrTA && (
                                 <div className="flex gap-2">
                                     <button className="flex-1 flex items-center justify-center gap-1.5 !py-2 text-xs font-semibold text-blue-600 bg-blue-500/10 hover:bg-blue-500/20 rounded-xl transition-colors">
                                         <Icon icon="solar:chart-2-bold-duotone" className="text-base" /> Tiến độ
@@ -281,6 +349,7 @@ const ClassPeoplePage = () => {
                                         <Icon icon="solar:trash-bin-trash-bold-duotone" className="text-base" /> Xóa
                                     </button>
                                 </div>
+                                )}
                             </div>
                         ))
                     )}
@@ -301,6 +370,11 @@ const ClassPeoplePage = () => {
                 isOpen={isAddModalOpen}
                 onClose={() => setIsAddModalOpen(false)}
                 onAdd={handleAddStudent}
+            />
+
+            <TAPermissionsModal 
+                isOpen={isPermissionsModalOpen} 
+                onClose={() => setIsPermissionsModalOpen(false)} 
             />
         </div>
     );

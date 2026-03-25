@@ -17,13 +17,18 @@ import DashboardPage from '../features/dashboard/pages/DashboardPage';
 import ProfilePage from '../features/dashboard/pages/ProfilePage';
 import TeacherClassListPage from '../features/dashboard/pages/TeacherClassListPage';
 import TAClassListPage from '../features/dashboard/pages/TAClassListPage';
+import StudentClassListPage from '../features/dashboard/pages/StudentClassListPage';
 import ClassDetailLayout from '../features/dashboard/components/classes/detail/ClassDetailLayout';
 import ClassStreamPage from '../features/dashboard/components/classes/detail/ClassStreamPage';
+import ClassMaterialsPage from '../features/dashboard/components/classes/detail/ClassMaterialsPage';
 import ClassworkPage from '../features/dashboard/components/classes/detail/ClassworkPage';
+import AssignmentDetailPage from '../features/dashboard/components/classes/detail/assignments/AssignmentDetailPage';
+import CreateAssignmentPage from '../features/dashboard/components/classes/detail/assignments/CreateAssignmentPage';
 import ClassPeoplePage from '../features/dashboard/components/classes/detail/ClassPeoplePage';
 import ClassGradesPage from '../features/dashboard/components/classes/detail/ClassGradesPage';
 import ClassSchedulePage from '../features/dashboard/components/classes/detail/ClassSchedulePage';
 import ClassAttendancePage from '../features/dashboard/components/classes/detail/ClassAttendancePage';
+import MyTasksPage from '../features/ta-management/pages/MyTasksPage';
 import NotFoundPage from '../features/error/pages/NotFoundPage';
 import ProtectedRoute from '../components/common/ProtectedRoute';
 import useAuthStore from '../store/authStore';
@@ -80,7 +85,11 @@ export const AppRoutes = () => {
                               <Route path="teacher/classes/:classId" element={<ClassDetailLayout />}>
                                   <Route index element={<Navigate to="stream" replace />} />
                                   <Route path="stream" element={<ClassStreamPage />} />
+                                  <Route path="materials" element={<ClassMaterialsPage />} />
                                   <Route path="classwork" element={<ClassworkPage />} />
+                                  <Route path="create-assignment" element={<CreateAssignmentPage />} />
+                                  <Route path="edit-assignment/:assignmentId" element={<CreateAssignmentPage />} />
+                                  <Route path="assignment/:assignmentId" element={<AssignmentDetailPage />} />
                                   <Route path="people" element={<ClassPeoplePage />} />
                                   <Route path="grades" element={<ClassGradesPage />} />
                                   <Route path="schedule" element={<ClassSchedulePage />} />
@@ -92,7 +101,28 @@ export const AppRoutes = () => {
                               <Route path="assisted-classes/:classId" element={<ClassDetailLayout />}>
                                   <Route index element={<Navigate to="stream" replace />} />
                                   <Route path="stream" element={<ClassStreamPage />} />
+                                  <Route path="materials" element={<ClassMaterialsPage />} />
                                   <Route path="classwork" element={<ClassworkPage />} />
+                                  <Route path="create-assignment" element={<CreateAssignmentPage />} />
+                                  <Route path="edit-assignment/:assignmentId" element={<CreateAssignmentPage />} />
+                                  <Route path="assignment/:assignmentId" element={<AssignmentDetailPage />} />
+                                  <Route path="people" element={<ClassPeoplePage />} />
+                                  <Route path="grades" element={<ClassGradesPage />} />
+                                  <Route path="schedule" element={<ClassSchedulePage />} />
+                                   <Route path="attendance" element={<ClassAttendancePage />} />
+                               </Route>
+
+                               {/* TA Tasks */}
+                               <Route path="ta/tasks" element={<MyTasksPage />} />
+
+                               {/* Student Classes */}
+                              <Route path="student/classes" element={<StudentClassListPage />} />
+                              <Route path="student/classes/:classId" element={<ClassDetailLayout />}>
+                                  <Route index element={<Navigate to="stream" replace />} />
+                                  <Route path="stream" element={<ClassStreamPage />} />
+                                  <Route path="materials" element={<ClassMaterialsPage />} />
+                                  <Route path="classwork" element={<ClassworkPage />} />
+                                  <Route path="assignment/:assignmentId" element={<AssignmentDetailPage />} />
                                   <Route path="people" element={<ClassPeoplePage />} />
                                   <Route path="grades" element={<ClassGradesPage />} />
                                   <Route path="schedule" element={<ClassSchedulePage />} />

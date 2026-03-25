@@ -24,6 +24,7 @@ const ClassCard = ({ classData, onEdit, onArchive, onUnarchive, onViewDetails, b
     
     const [showOptions, setShowOptions] = useState(false);
     const optionsRef = useRef(null);
+    const hasOptions = Boolean(onEdit || onArchive || onUnarchive || onViewDetails);
 
     // Xử lý click ra ngoài để đóng menu
     useEffect(() => {
@@ -57,69 +58,71 @@ const ClassCard = ({ classData, onEdit, onArchive, onUnarchive, onViewDetails, b
                         {statusConfig.label}
                     </span>
                 </div>
-                <div className="relative" ref={optionsRef}>
-                    <button 
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setShowOptions(!showOptions);
-                        }}
-                        className="text-text-muted hover:text-primary transition-colors !p-1 rounded-full hover:bg-surface/50"
-                    >
-                        <Icon icon="material-symbols:more-vert" className="text-xl" />
-                    </button>
-                    
-                    {/* Options Dropdown */}
-                    {showOptions && (
-                        <div className="absolute right-0 top-full !mt-1 w-36 bg-surface border border-border rounded-xl shadow-xl z-20 overflow-hidden !py-1 animate-fade-in-up">
-                            <button 
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setShowOptions(false);
-                                    if(onViewDetails) onViewDetails();
-                                }}
-                                className="w-full text-left !px-4 !py-2 text-sm text-text-main hover:bg-primary/5 hover:text-primary transition-colors flex items-center gap-2"
-                            >
-                                <Icon icon="material-symbols:visibility-rounded" /> Xem chi tiết
-                            </button>
-                            <button 
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setShowOptions(false);
-                                    if(onEdit) onEdit();
-                                }}
-                                className="w-full text-left !px-4 !py-2 text-sm text-text-main hover:bg-primary/5 hover:text-primary transition-colors flex items-center gap-2"
-                            >
-                                <Icon icon="material-symbols:edit-rounded" /> Chỉnh sửa
-                            </button>
-                            {classData.status !== 'archived' ? (
+                {hasOptions && (
+                    <div className="relative" ref={optionsRef}>
+                        <button 
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setShowOptions(!showOptions);
+                            }}
+                            className="text-text-muted hover:text-primary transition-colors !p-1 rounded-full hover:bg-surface/50"
+                        >
+                            <Icon icon="material-symbols:more-vert" className="text-xl" />
+                        </button>
+                        
+                        {/* Options Dropdown */}
+                        {showOptions && (
+                            <div className="absolute right-0 top-full !mt-1 w-36 bg-surface border border-border rounded-xl shadow-xl z-20 overflow-hidden !py-1 animate-fade-in-up">
                                 <button 
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         setShowOptions(false);
-                                        if (onArchive) onArchive();
+                                        if(onViewDetails) onViewDetails();
                                     }}
-                                    className="w-full text-left !px-4 !py-2 text-sm text-orange-600 hover:bg-orange-50 transition-colors flex items-center gap-2"
+                                    className="w-full text-left !px-4 !py-2 text-sm text-text-main hover:bg-primary/5 hover:text-primary transition-colors flex items-center gap-2"
                                 >
-                                    <Icon icon="material-symbols:archive-rounded" /> Lưu trữ
+                                    <Icon icon="material-symbols:visibility-rounded" /> Xem chi tiết
                                 </button>
-                            ) : (
                                 <button 
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         setShowOptions(false);
-                                        if (onUnarchive) onUnarchive();
+                                        if(onEdit) onEdit();
                                     }}
-                                    className="w-full text-left !px-4 !py-2 text-sm text-green-600 hover:bg-green-50 transition-colors flex items-center gap-2"
+                                    className="w-full text-left !px-4 !py-2 text-sm text-text-main hover:bg-primary/5 hover:text-primary transition-colors flex items-center gap-2"
                                 >
-                                    <Icon icon="material-symbols:unarchive-rounded" /> Bỏ lưu trữ
+                                    <Icon icon="material-symbols:edit-rounded" /> Chỉnh sửa
                                 </button>
-                            )}
-                            <button className="w-full text-left !px-4 !py-2 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2 border-t border-border !mt-1 !pt-2">
-                                <Icon icon="material-symbols:delete-rounded" /> Xóa
-                            </button>
-                        </div>
-                    )}
-                </div>
+                                {classData.status !== 'archived' ? (
+                                    <button 
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setShowOptions(false);
+                                            if (onArchive) onArchive();
+                                        }}
+                                        className="w-full text-left !px-4 !py-2 text-sm text-orange-600 hover:bg-orange-50 transition-colors flex items-center gap-2"
+                                    >
+                                        <Icon icon="material-symbols:archive-rounded" /> Lưu trữ
+                                    </button>
+                                ) : (
+                                    <button 
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setShowOptions(false);
+                                            if (onUnarchive) onUnarchive();
+                                        }}
+                                        className="w-full text-left !px-4 !py-2 text-sm text-green-600 hover:bg-green-50 transition-colors flex items-center gap-2"
+                                    >
+                                        <Icon icon="material-symbols:unarchive-rounded" /> Bỏ lưu trữ
+                                    </button>
+                                )}
+                                <button className="w-full text-left !px-4 !py-2 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2 border-t border-border !mt-1 !pt-2">
+                                    <Icon icon="material-symbols:delete-rounded" /> Xóa
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* Class Info */}
