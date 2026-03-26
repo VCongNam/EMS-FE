@@ -7,10 +7,13 @@ const CreateStudentModal = ({ isOpen, onClose, onCreate }) => {
     const [formData, setFormData] = useState({
         fullName: '',
         email: '',
-        phone: '',
+        phoneNumber: '',
         password: '',
         parentName: '',
-        parentPhone: ''
+        parentPhone: '',
+        parentEmail: '',
+        address: '',
+        dob: ''
     });
 
     if (!isOpen) return null;
@@ -23,14 +26,16 @@ const CreateStudentModal = ({ isOpen, onClose, onCreate }) => {
     const handleSubmit = (e) => {
         e.preventDefault();
         onCreate(formData);
-        console.log('Form submitted:', formData);
         setFormData({
             fullName: '',
             email: '',
-            phone: '',
+            phoneNumber: '',
             password: '',
             parentName: '',
-            parentPhone: ''
+            parentPhone: '',
+            parentEmail: '',
+            address: '',
+            dob: ''
         });
         onClose();
     };
@@ -101,16 +106,16 @@ const CreateStudentModal = ({ isOpen, onClose, onCreate }) => {
                                 </div>
                                 
                                 <div className="!space-y-1 group">
-                                    <label className={labelClasses}>tên đăng nhập <span className="text-red-500">*</span></label>
+                                    <label className={labelClasses}>Email Đăng Nhập <span className="text-red-500">*</span></label>
                                     <div className="relative">
                                         <Icon icon="solar:letter-linear" className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted/70 text-lg group-focus-within:text-primary transition-colors" />
                                         <input
-                                            type="text"
-                                            name="username"
+                                            type="email"
+                                            name="email"
                                             required
-                                            value={formData.username}
+                                            value={formData.email}
                                             onChange={handleChange}
-                                            placeholder="example"
+                                            placeholder="hocsinh@example.com"
                                             className={inputClasses}
                                         />
                                     </div>
@@ -139,12 +144,44 @@ const CreateStudentModal = ({ isOpen, onClose, onCreate }) => {
                                         <Icon icon="solar:phone-calling-linear" className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted/70 text-lg group-focus-within:text-primary transition-colors" />
                                         <input
                                             type="tel"
-                                            name="phone"
-                                            value={formData.phone}
+                                            name="phoneNumber"
+                                            value={formData.phoneNumber}
                                             onChange={handleChange}
-                                            placeholder="Số điện thoại của học sinh"
+                                            placeholder="SĐT học sinh"
                                             className={inputClasses}
                                         />
+                                    </div>
+                                </div>
+                                
+                                <div className="!space-y-1 group md:col-span-2">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className={labelClasses}>Ngày sinh</label>
+                                            <div className="relative">
+                                                <Icon icon="solar:calendar-date-bold-duotone" className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted/70 text-lg group-focus-within:text-primary transition-colors" />
+                                                <input
+                                                    type="date"
+                                                    name="dob"
+                                                    value={formData.dob}
+                                                    onChange={handleChange}
+                                                    className={inputClasses}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className={labelClasses}>Địa chỉ thường trú</label>
+                                            <div className="relative">
+                                                <Icon icon="solar:map-point-linear" className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted/70 text-lg group-focus-within:text-primary transition-colors" />
+                                                <input
+                                                    type="text"
+                                                    name="address"
+                                                    value={formData.address}
+                                                    onChange={handleChange}
+                                                    placeholder="Vd: 123 Đường XYZ..."
+                                                    className={inputClasses}
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -185,6 +222,20 @@ const CreateStudentModal = ({ isOpen, onClose, onCreate }) => {
                                             value={formData.parentPhone}
                                             onChange={handleChange}
                                             placeholder="Dùng để liên hệ khẩn cấp"
+                                            className={inputClasses}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="!space-y-1 group md:col-span-2">
+                                    <label className={labelClasses}>Email phụ huynh</label>
+                                    <div className="relative">
+                                        <Icon icon="solar:letter-linear" className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted/70 text-lg group-focus-within:text-primary transition-colors" />
+                                        <input
+                                            type="email"
+                                            name="parentEmail"
+                                            value={formData.parentEmail}
+                                            onChange={handleChange}
+                                            placeholder="Email của phụ huynh tải"
                                             className={inputClasses}
                                         />
                                     </div>

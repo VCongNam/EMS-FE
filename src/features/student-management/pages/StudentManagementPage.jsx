@@ -3,6 +3,8 @@ import { Icon } from '@iconify/react';
 import Button from "../../../components/ui/Button";
 import CreateStudentModal from '../components/CreateStudentModal';
 import AssignClassModal from '../components/AssignClassModal';
+import { getApiUrl } from '../../../config/api';
+import useAuthStore from '../../../store/authStore';
 
 const StudentManagementPage = () => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -20,18 +22,65 @@ const StudentManagementPage = () => {
         { id: 'STU006', name: 'Ngô Văn F', email: 'nvf@example.com', phone: '0956789012', parentName: 'Ngô Văn F Phụ Huynh', status: 'active', class: 'MATH101' },
     ]);
 
-    const handleCreateStudent = (newStudentData) => {
-        const newId = `STU00${students.length + 1}`;
-        const newStudent = {
-            id: newId,
-            name: newStudentData.fullName,
-            email: newStudentData.email,
-            phone: newStudentData.phone,
-            parentName: newStudentData.parentName,
-            status: 'active',
-            class: 'Chưa có lớp'
-        };
-        setStudents([newStudent, ...students]);
+    const handleCreateStudent = async (newStudentData) => {
+        try {
+            const token = useAuthStore.getState().user?.token;
+            if (!token) return alert('Vui lòng đăng nhập lại!');
+
+            // Format YYYY-MM-DD input to ISO 8601 string for C# backend
+            let isoDob = new Date().toISOString(); 
+            if (newStudentData.dob) {
+                isoDob = new Date(newStudentData.dob).toISOString();
+            }
+
+            const payload = {
+                email: newStudentData.email,
+                password: newStudentData.password,
+                fullName: newStudentData.fullName,
+                phoneNumber: newStudentData.phoneNumber || "",
+                parentName: newStudentData.parentName || "",
+                parentPhone: newStudentData.parentPhone || "",
+                parentEmail: newStudentData.parentEmail || "",
+                address: newStudentData.address || "",
+                dob: isoDob
+            };
+
+            const response = await fetch(getApiUrl('/api/Student/CreateStudentAccount'), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(errorText || 'Hệ thống Backend từ chối tạo học sinh!');
+            }
+
+            const responseData = await response.json();
+            const realStudentId = responseData.studentId;
+
+            alert('Khởi tạo tài khoản Học sinh thành công!');
+            setIsCreateModalOpen(false);
+
+            // Cập nhật mảng tĩnh Local bằng ID Thật để UI có thể tái sử dụng ngay (Vd: AssignClass)
+            const newStudent = {
+                id: realStudentId,
+                name: newStudentData.fullName,
+                email: newStudentData.email,
+                phone: newStudentData.phoneNumber,
+                parentName: newStudentData.parentName,
+                status: 'active',
+                class: 'Chưa có lớp'
+            };
+            setStudents([newStudent, ...students]);
+
+        } catch (error) {
+            console.error('Create Student API Error:', error);
+            alert(error.message);
+        }
     };
 
     const handleOpenAssignModal = (student) => {

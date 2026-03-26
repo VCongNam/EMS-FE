@@ -3,6 +3,8 @@ import { Outlet, NavLink, useParams, useNavigate, useLocation } from 'react-rout
 import { Icon } from '@iconify/react';
 import { mockClasses } from '../../../data/mockClasses';
 import ClassStaffModal from './components/ClassStaffModal';
+import { getApiUrl } from '../../../../../config/api';
+import useAuthStore from '../../../../../store/authStore';
 
 const ClassDetailLayout = () => {
     const { classId } = useParams();
@@ -11,15 +13,44 @@ const ClassDetailLayout = () => {
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
 
-    const basePath = location.pathname.startsWith('/assisted-classes') 
-        ? '/assisted-classes' 
+    const basePath = location.pathname.startsWith('/assisted-classes')
+        ? '/assisted-classes'
         : '/teacher/classes';
 
     const classInfo = mockClasses.find(c => c.id === classId) || {
         name: 'Lớp học không tồn tại',
         code: 'N/A',
         status: 'unknown'
-    };
+    });
+
+    useEffect(() => {
+        const fetchClassDetail = async () => {
+            const token = useAuthStore.getState().user?.token;
+            if (!token || !classId) return;
+
+            try {
+                const res = await fetch(getApiUrl(`/api/Class/${classId}`), {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    setClassInfo({
+                        name: data.className || 'Chưa đặt tên lớp',
+                        code: data.room || 'N/A',
+                        status: data.status?.toLowerCase() || 'ongoing'
+                    });
+                } else {
+                    setClassInfo({ name: 'Không tìm thấy lớp học', code: '404', status: 'error' });
+                }
+            } catch (err) {
+                console.error("Lỗi lấy thông tin lớp:", err);
+                setClassInfo({ name: 'Lỗi tải dữ liệu', code: 'Error', status: 'error' });
+            }
+        };
+
+        fetchClassDetail();
+    }, [classId]);
 
     const tabs = [
         { path: 'stream', label: 'Bảng tin', icon: 'material-symbols:stream-rounded' },
@@ -67,7 +98,7 @@ const ClassDetailLayout = () => {
                             Mã lớp: {classInfo.code}
                         </p>
                     </div>
-                    <button 
+                    <button
                         onClick={() => setIsStaffModalOpen(true)}
                         className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white !px-4 !py-2 rounded-xl backdrop-blur-sm transition-colors border border-white/20 shadow-sm self-start md:self-auto"
                     >
@@ -151,7 +182,7 @@ const ClassDetailLayout = () => {
                 <Outlet />
             </div>
 
-            <ClassStaffModal 
+            <ClassStaffModal
                 isOpen={isStaffModalOpen}
                 onClose={() => setIsStaffModalOpen(false)}
             />

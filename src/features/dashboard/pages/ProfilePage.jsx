@@ -1,16 +1,124 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import useAuthStore from '../../../store/authStore';
 import Button from '../../../components/ui/Button';
+import { getApiUrl } from '../../../config/api';
 
 const ProfilePage = () => {
     const { user, updateProfile } = useAuthStore();
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({ ...user });
 
-    const handleSave = () => {
-        updateProfile(formData);
-        setIsEditing(false);
+    // Change password states
+    const [oldPassword, setOldPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmNewPassword, setConfirmNewPassword] = useState('');
+    const [passwordLoading, setPasswordLoading] = useState(false);
+    const [passwordError, setPasswordError] = useState('');
+    const [passwordSuccess, setPasswordSuccess] = useState('');
+
+    useEffect(() => {
+        const fetchProfile = async () => {
+            if (!user?.token) return;
+            try {
+                const response = await fetch(getApiUrl('/api/Account/profile'), {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${user.token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    setFormData(prev => ({ ...prev, ...data }));
+                    updateProfile(data);
+                }
+            } catch (error) {
+                console.error("Fetch profile failed:", error);
+            }
+        };
+
+        fetchProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.token]);
+
+    const [saving, setSaving] = useState(false);
+
+    const handleSave = async () => {
+        if (!user?.token) return;
+        setSaving(true);
+
+        try {
+            const response = await fetch(getApiUrl('/api/Account/profile'), {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${user.token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ 
+                    fullName: formData.fullName, 
+                    phoneNumber: formData.phone || "" 
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Cập nhật hồ sơ thất bại!');
+            }
+
+            // Sync with local Zustand store only if successful
+            updateProfile(formData);
+            setIsEditing(false);
+            alert("Cập nhật hồ sơ thành công!");
+        } catch (error) {
+            console.error("Save profile error:", error);
+            alert(error.message);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleChangePassword = async (e) => {
+        e.preventDefault();
+        setPasswordError('');
+        setPasswordSuccess('');
+        
+        if (newPassword !== confirmNewPassword) {
+            setPasswordError('Mật khẩu xác nhận không khớp!');
+            return;
+        }
+
+        if (!user?.token) return;
+        setPasswordLoading(true);
+
+        try {
+            const response = await fetch(getApiUrl('/api/Account/change-password'), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${user.token}`
+                },
+                body: JSON.stringify({ 
+                    oldPassword, 
+                    newPassword 
+                })
+            });
+
+            if (!response.ok) {
+                 const errorData = await response.json().catch(() => ({}));
+                 throw new Error(errorData.message || "Đổi mật khẩu thất bại. Vui lòng kiểm tra lại mật khẩu cũ!");
+            }
+
+            setPasswordSuccess("Đổi mật khẩu thành công!");
+            setOldPassword('');
+            setNewPassword('');
+            setConfirmNewPassword('');
+        } catch (err) {
+            setPasswordError(err.message);
+        } finally {
+            setPasswordLoading(false);
+        }
     };
 
     const roleLabels = {
@@ -237,6 +345,71 @@ const ProfilePage = () => {
                             </div>
                         </div>
                     )}
+
+                    {/* Change Password Section */}
+                    <div className="bg-surface !mt-2 !p-8 rounded-[2rem] border border-border shadow-sm animate-fade-in-up">
+                        <h3 className="text-xl font-bold text-text-main mb-8 flex items-center gap-3">
+                            <Icon icon="material-symbols:lock-reset-rounded" className="text-2xl text-primary" /> Đổi mật khẩu
+                        </h3>
+                        
+                        <form onSubmit={handleChangePassword} className="space-y-6">
+                            {passwordError && (
+                                <div className="!p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-medium">
+                                    {passwordError}
+                                </div>
+                            )}
+                            {passwordSuccess && (
+                                <div className="!p-4 bg-green-50 border border-green-200 text-green-700 rounded-xl text-sm font-medium">
+                                    {passwordSuccess}
+                                </div>
+                            )}
+
+                            <div className="space-y-2">
+                                <label className="block text-xs font-bold text-text-muted uppercase tracking-widest px-1">Mật khẩu cũ</label>
+                                <input 
+                                    type="password" 
+                                    required 
+                                    value={oldPassword}
+                                    onChange={(e) => setOldPassword(e.target.value)}
+                                    placeholder="••••••••" 
+                                    className="w-full !mt-2 !px-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all text-text-main font-mono" 
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="block text-xs font-bold text-text-muted uppercase tracking-widest px-1">Mật khẩu mới</label>
+                                <input 
+                                    type="password" 
+                                    required 
+                                    value={newPassword}
+                                    onChange={(e) => setNewPassword(e.target.value)}
+                                    placeholder="••••••••" 
+                                    className="w-full !mt-2 !px-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all text-text-main font-mono" 
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="block text-xs font-bold text-text-muted uppercase tracking-widest px-1">Xác nhận mật khẩu mới</label>
+                                <input 
+                                    type="password" 
+                                    required 
+                                    value={confirmNewPassword}
+                                    onChange={(e) => setConfirmNewPassword(e.target.value)}
+                                    placeholder="••••••••" 
+                                    className="w-full !mt-2 !px-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all text-text-main font-mono" 
+                                />
+                            </div>
+                            <div className="!pt-4">
+                                <Button
+                                    type="submit"
+                                    disabled={passwordLoading}
+                                    variant="outline"
+                                    className="!px-8 !py-4 font-bold rounded-xl border-2 hover:bg-background transition-colors text-text-main disabled:opacity-70 disabled:cursor-not-allowed"
+                                >
+                                    {passwordLoading ? 'Đang cập nhật...' : 'Cập nhật mật khẩu'}
+                                </Button>
+                            </div>
+                        </form>
+                    </div>
+
                 </div>
             </div>
         </div>
