@@ -3,7 +3,7 @@ import { Icon } from '@iconify/react';
 import Button from "../../../components/ui/Button";
 import CreateStudentModal from '../components/CreateStudentModal';
 import AssignClassModal from '../components/AssignClassModal';
-import { getApiUrl } from '../../../config/api';
+import { studentService } from '../api/studentService';
 import useAuthStore from '../../../store/authStore';
 
 const StudentManagementPage = () => {
@@ -45,14 +45,7 @@ const StudentManagementPage = () => {
                 dob: isoDob
             };
 
-            const response = await fetch(getApiUrl('/api/Student/CreateStudentAccount'), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(payload)
-            });
+            const response = await studentService.createStudentAccount(payload, token);
 
             if (!response.ok) {
                 const errorText = await response.text();

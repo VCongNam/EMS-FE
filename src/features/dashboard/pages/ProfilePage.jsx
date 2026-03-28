@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import useAuthStore from '../../../store/authStore';
 import Button from '../../../components/ui/Button';
-import { getApiUrl } from '../../../config/api';
-
+import { profileService } from '../api/profileService';
 const ProfilePage = () => {
     const { user, updateProfile } = useAuthStore();
     const [isEditing, setIsEditing] = useState(false);
@@ -17,17 +16,15 @@ const ProfilePage = () => {
     const [passwordError, setPasswordError] = useState('');
     const [passwordSuccess, setPasswordSuccess] = useState('');
 
+    // Toggle states for masking personal info
+    const [showEmail, setShowEmail] = useState(false);
+    const [showPhone, setShowPhone] = useState(false);
+
     useEffect(() => {
         const fetchProfile = async () => {
             if (!user?.token) return;
             try {
-                const response = await fetch(getApiUrl('/api/Account/profile'), {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${user.token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
+                const response = await profileService.getProfile(user.token);
                 
                 if (response.ok) {
                     const data = await response.json();
@@ -50,21 +47,35 @@ const ProfilePage = () => {
         setSaving(true);
 
         try {
-            const response = await fetch(getApiUrl('/api/Account/profile'), {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${user.token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ 
-                    fullName: formData.fullName, 
-                    phoneNumber: formData.phone || "" 
-                })
-            });
+            // Determine endpoint based on role dynamically
+            const rolePath = user.role?.toLowerCase() || 'ta';
+            const endpoint = `/api/Account/${rolePath}/profile`;
+
+            // Build base payload
+            let payload = {
+                fullName: formData.fullName,
+                phoneNumber: formData.phoneNumber || ""
+            };
+
+            // Add role-specific data for TA and Teacher
+            if (user.role === 'TA' || user.role === 'teacher') {
+                payload = {
+                    ...payload,
+                    bio: formData.roleSpecificData?.bio || "",
+                    bankName: formData.roleSpecificData?.bankName || "",
+                    bankAccount: formData.roleSpecificData?.bankAccount || "",
+                    bankAccountName: formData.roleSpecificData?.bankAccountName || ""
+                };
+                if (user.role === 'teacher') {
+                    payload.specialization = formData.roleSpecificData?.specialization || "";
+                }
+            }
+
+            const response = await profileService.updateProfile(rolePath, payload, user.token);
 
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || 'Cập nhật hồ sơ thất bại!');
+                const errorText = await response.text();
+                throw new Error(`Lỗi ${response.status}: ${errorText || 'Không rõ nguyên nhân'}`);
             }
 
             // Sync with local Zustand store only if successful
@@ -93,17 +104,7 @@ const ProfilePage = () => {
         setPasswordLoading(true);
 
         try {
-            const response = await fetch(getApiUrl('/api/Account/change-password'), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${user.token}`
-                },
-                body: JSON.stringify({ 
-                    oldPassword, 
-                    newPassword 
-                })
-            });
+            const response = await profileService.changePassword({ oldPassword, newPassword }, user.token);
 
             if (!response.ok) {
                  const errorData = await response.json().catch(() => ({}));
@@ -188,10 +189,6 @@ const ProfilePage = () => {
                         </h3>
                         <div className="space-y-4">
                             <div className="!p-4 !mt-2 bg-background rounded-2xl border border-border/50 flex flex-col gap-1">
-                                <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Mã người dùng</span>
-                                <span className="font-mono text-sm text-text-main font-medium">{user?.id || 'EMS-DEV-2026'}</span>
-                            </div>
-                            <div className="!p-4 !mt-2 bg-background rounded-2xl border border-border/50 flex flex-col gap-1">
                                 <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Ngày tham gia</span>
                                 <span className="text-sm text-text-main font-medium flex items-center gap-2">
                                     <Icon icon="material-symbols:calendar-today-rounded" className="text-primary text-base" />
@@ -234,10 +231,26 @@ const ProfilePage = () => {
                                 <textarea
                                     disabled={!isEditing}
                                     rows="4"
+                                    value={formData.roleSpecificData?.bio || ''}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, roleSpecificData: { ...prev.roleSpecificData, bio: e.target.value } }))}
                                     placeholder="Chia sẻ về kinh nghiệm giảng dạy, chuyên môn của bạn..."
                                     className="w-full !mt-2 !p-5 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 resize-none font-medium text-text-main placeholder:text-text-muted/50 shadow-inner"
                                 ></textarea>
                             </div>
+                            
+                            {user?.role === 'teacher' && (
+                                <div className="!mt-6 space-y-2">
+                                    <label className="block text-xs font-bold text-text-muted uppercase tracking-widest px-1">Chuyên môn / Môn giảng dạy</label>
+                                    <input
+                                        type="text"
+                                        disabled={!isEditing}
+                                        value={formData.roleSpecificData?.specialization || ''}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, roleSpecificData: { ...prev.roleSpecificData, specialization: e.target.value } }))}
+                                        placeholder="Ví dụ: Toán, Văn, Anh..."
+                                        className="w-full !mt-2 !px-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main"
+                                    />
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -264,25 +277,43 @@ const ProfilePage = () => {
                                 <label className="block text-xs !mt-2 font-bold text-text-muted uppercase tracking-widest px-1">Địa chỉ Email</label>
                                 <div className="relative group">
                                     <input
-                                        type="email"
+                                        type={showEmail ? "email" : "password"}
                                         disabled={!isEditing}
                                         value={formData.email || ''}
                                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                        className="w-full !mt-2 !pl-2 !pr-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main"
+                                        className="w-full !mt-2 !pl-2 !pr-12 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main"
                                     />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowEmail(!showEmail)}
+                                        className="absolute right-4 top-[55%] -translate-y-1/2 text-text-muted hover:text-primary transition-colors focus:outline-none"
+                                        title={showEmail ? "Ẩn" : "Hiện"}
+                                        disabled={!isEditing && !formData.email}
+                                    >
+                                        <Icon icon={showEmail ? "mdi:eye-off-outline" : "mdi:eye-outline"} className="text-2xl" />
+                                    </button>
                                 </div>
                             </div>
                             <div className="space-y-2">
                                 <label className="block text-xs font-bold text-text-muted uppercase tracking-widest px-1">Số điện thoại</label>
                                 <div className="relative group">
                                     <input
-                                        type="text"
+                                        type={showPhone ? "text" : "password"}
                                         disabled={!isEditing}
                                         placeholder="Chưa cập nhật"
-                                        value={formData.phone || ''}
-                                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                        className="w-full !mt-2 !pl-2 !pr-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main"
+                                        value={formData.phoneNumber || ''}
+                                        onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                                        className="w-full !mt-2 !pl-2 !pr-12 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main"
                                     />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPhone(!showPhone)}
+                                        className="absolute right-4 top-[55%] -translate-y-1/2 text-text-muted hover:text-primary transition-colors focus:outline-none"
+                                        title={showPhone ? "Ẩn" : "Hiện"}
+                                        disabled={!isEditing && !formData.phoneNumber}
+                                    >
+                                        <Icon icon={showPhone ? "mdi:eye-off-outline" : "mdi:eye-outline"} className="text-2xl" />
+                                    </button>
                                 </div>
                             </div>
                             {user?.role === 'student' && (
@@ -332,15 +363,15 @@ const ProfilePage = () => {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-8">
                                 <div className="space-y-2">
                                     <label className="block text-xs font-bold !mt-2 text-text-muted uppercase tracking-widest px-1">Ngân hàng thụ hưởng</label>
-                                    <input type="text" disabled={!isEditing} placeholder="Techcombank" className="w-full !mt-2 !px-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main" />
+                                    <input type="text" disabled={!isEditing} value={formData.roleSpecificData?.bankName || ''} onChange={(e) => setFormData(prev => ({ ...prev, roleSpecificData: { ...prev.roleSpecificData, bankName: e.target.value } }))} placeholder="Techcombank" className="w-full !mt-2 !px-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main" />
                                 </div>
                                 <div className="space-y-2">
                                     <label className="block text-xs font-bold !mt-2 text-text-muted uppercase tracking-widest px-1">Số tài khoản</label>
-                                    <input type="text" disabled={!isEditing} placeholder="1903xxxxxx8888" className="w-full !mt-2 !px-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main font-mono" />
+                                    <input type="text" disabled={!isEditing} value={formData.roleSpecificData?.bankAccount || ''} onChange={(e) => setFormData(prev => ({ ...prev, roleSpecificData: { ...prev.roleSpecificData, bankAccount: e.target.value } }))} placeholder="1903xxxxxx8888" className="w-full !mt-2 !px-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main font-mono" />
                                 </div>
                                 <div className="space-y-2 sm:col-span-2">
                                     <label className="block text-xs font-bold  text-text-muted uppercase tracking-widest px-1">Chủ tài khoản (Không dấu)</label>
-                                    <input type="text" disabled={!isEditing} placeholder="NGUYEN VAN B" className="w-full !mt-2 !px-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main uppercase" />
+                                    <input type="text" disabled={!isEditing} value={formData.roleSpecificData?.bankAccountName || ''} onChange={(e) => setFormData(prev => ({ ...prev, roleSpecificData: { ...prev.roleSpecificData, bankAccountName: e.target.value } }))} placeholder="NGUYEN VAN B" className="w-full !mt-2 !px-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main uppercase" />
                                 </div>
                             </div>
                         </div>

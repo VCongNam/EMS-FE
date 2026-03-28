@@ -3,7 +3,7 @@ const DEV_URL = 'https://localhost:7049';
 const PROD_URL = 'https://ems-be-2-s2nk.onrender.com';
 
 // Bật cờ này thành true nếu bạn muốn test API bằng localhost
-const USE_LOCAL_API = true;
+const USE_LOCAL_API = false;
 
 export const API_BASE_URL = USE_LOCAL_API ? DEV_URL : PROD_URL;
 

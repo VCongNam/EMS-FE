@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Button from '../../../components/ui/Button';
 import AuthLayout from '../components/AuthLayout';
-import { getApiUrl } from '../../../config/api';
-
+import { authService } from '../api/authService';
 const VerifyEmailPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
@@ -27,13 +26,7 @@ const VerifyEmailPage = () => {
         setLoading(true);
 
         try {
-            const response = await fetch(getApiUrl('/api/Auth/verify-email'), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ email, otpCode })
-            });
+            const response = await authService.verifyEmail({ email, otpCode });
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));

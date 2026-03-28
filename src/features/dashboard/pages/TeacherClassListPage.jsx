@@ -9,6 +9,7 @@ import ConfirmModal from '../../../components/ui/ConfirmModal';
 import { mockClasses } from '../data/mockClasses';
 import { getApiUrl } from '../../../config/api';
 import useAuthStore from '../../../store/authStore';
+import { classService } from '../api/classService';
 
 // Helper functions for formatting Data to API shapes
 const parseDate = (dateStr) => {
@@ -45,8 +46,8 @@ const TeacherClassListPage = () => {
             if (!token) return;
 
             const [activeRes, archivedRes] = await Promise.all([
-                fetch(getApiUrl('/api/Class/teacher/dashboard'), { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch(getApiUrl('/api/Class/teacher/archived-classes'), { headers: { 'Authorization': `Bearer ${token}` } })
+                classService.getTeacherDashboard(token),
+                classService.getArchivedClasses(token)
             ]);
 
             if (!activeRes.ok || !archivedRes.ok) throw new Error('Không thể tải danh sách lớp học');
@@ -121,13 +122,13 @@ const TeacherClassListPage = () => {
             maxStudents: formData.maxCapacity ? parseInt(formData.maxCapacity) : 0,
             subjectName: formData.subject,
             gradeLevel: parseInt(formData.gradeLevel.replace(/\D/g, '')) || parseInt(formData.gradeLevel) || 0,
-            schedules: [
-                {
-                    dayOfWeek: mapDaysToIso(formData.days),
+            schedules: formData.days && formData.days.length > 0 
+                ? mapDaysToIso(formData.days).map(day => ({
+                    dayOfWeek: day,
                     startTime: parseTime(formData.startTime),
                     endTime: parseTime(formData.endTime)
-                }
-            ]
+                }))
+                : []
         };
 
         if (formData.endDate) {
@@ -140,14 +141,7 @@ const TeacherClassListPage = () => {
 
             if (selectedClass) {
                 // Đang Edit lớp -> Gọi PUT API với biến URL {id}
-                const response = await fetch(getApiUrl(`/api/Class/${selectedClass.id}`), {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify(payload)
-                });
+                const response = await classService.updateClass(selectedClass.id, payload, token);
 
                 if (!response.ok) {
                     const errorText = await response.text();
@@ -158,14 +152,7 @@ const TeacherClassListPage = () => {
                 alert('Cập nhật thông tin lớp học thành công!');
             } else {
                 // Cờ đang rỗng -> Gọi POST API tạo lớp mới tinh
-                const response = await fetch(getApiUrl('/api/Class'), {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify(payload)
-                });
+                const response = await classService.createClass(payload, token);
 
                 if (!response.ok) {
                     const errorText = await response.text();
@@ -201,18 +188,12 @@ const TeacherClassListPage = () => {
             if (!token) return alert('Vui lòng đăng nhập lại!');
 
             if (type === 'archive') {
-                const res = await fetch(getApiUrl(`/api/Class/${classId}/archive`), {
-                    method: 'PATCH',
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                const res = await classService.archiveClass(classId, token);
                 if (!res.ok) throw new Error('Không thể chuyển lớp học này sang trạng thái Lưu trữ!');
                 alert('Đã đưa lớp học vào mục Lưu trữ thành công.');
             } else if (type === 'unarchive') {
                 // Sửa thành API đường dẫn thực thế là /restore theo Swagger
-                const res = await fetch(getApiUrl(`/api/Class/${classId}/restore`), {
-                    method: 'PATCH',
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                const res = await classService.restoreClass(classId, token);
                 if (!res.ok) throw new Error('Cầu nối API khôi phục lớp học hiện Backend báo lỗi hoặc chưa hỗ trợ!');
                 alert('Đã khôi phục lớp học thành công.');
             }

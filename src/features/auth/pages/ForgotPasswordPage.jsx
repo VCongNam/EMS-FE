@@ -3,8 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import Button from '../../../components/ui/Button';
 import AuthLayout from '../components/AuthLayout';
-import { getApiUrl } from '../../../config/api';
-
+import { authService } from '../api/authService';
 const ForgotPasswordPage = () => {
     const navigate = useNavigate();
     const [step, setStep] = useState(1);
@@ -25,13 +24,7 @@ const ForgotPasswordPage = () => {
         setLoading(true);
 
         try {
-            const response = await fetch(getApiUrl('/api/Auth/forgot-password'), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ email })
-            });
+            const response = await authService.forgotPassword(email);
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
@@ -59,16 +52,10 @@ const ForgotPasswordPage = () => {
         setLoading(true);
 
         try {
-            const response = await fetch(getApiUrl('/api/Auth/reset-password'), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    email: email,
-                    otpCode: formData.code,
-                    newPassword: formData.password
-                })
+            const response = await authService.resetPassword({
+                email: email,
+                otpCode: formData.code,
+                newPassword: formData.password
             });
 
             if (!response.ok) {

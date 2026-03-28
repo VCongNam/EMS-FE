@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink, useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import { mockClasses } from '../../../data/mockClasses';
 import ClassStaffModal from './components/ClassStaffModal';
-import { getApiUrl } from '../../../../../config/api';
+import { classService } from '../../../api/classService';
 import useAuthStore from '../../../../../store/authStore';
 
 const ClassDetailLayout = () => {
@@ -17,7 +17,7 @@ const ClassDetailLayout = () => {
         ? '/assisted-classes'
         : '/teacher/classes';
 
-    const classInfo = mockClasses.find(c => c.id === classId) || {
+    const [classInfo, setClassInfo] = useState(mockClasses.find(c => c.id === classId) || {
         name: 'Lớp học không tồn tại',
         code: 'N/A',
         status: 'unknown'
@@ -29,9 +29,7 @@ const ClassDetailLayout = () => {
             if (!token || !classId) return;
 
             try {
-                const res = await fetch(getApiUrl(`/api/Class/${classId}`), {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                const res = await classService.getClassById(classId, token);
 
                 if (res.ok) {
                     const data = await res.json();

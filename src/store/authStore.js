@@ -12,17 +12,27 @@ const useAuthStore = create(
                 try {
                     const token = loginResponse.token;
                     if (token) {
-                        const decoded = jwtDecode(token);
-                        const rawRole = decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
+                        let rawRole;
+                        // Ưu tiên dùng roleName trả về từ API mới nhất
+                        if (loginResponse.roleName) {
+                            rawRole = loginResponse.roleName;
+                        } else {
+                            // Cố gắng decode token nếu backend không trả roleName (tương thích ngược)
+                            const decoded = jwtDecode(token);
+                            rawRole = decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
+                        }
 
                         let role = "student";
                         if (rawRole === "Teacher") role = "teacher";
-                        else if (rawRole === "TA" || rawRole === "Assistant") role = "TA";
+                        else if (rawRole === "TA" || rawRole === "Assistant" || rawRole === "TeachingAssistant") role = "TA";
+                        else if (rawRole === "Admin") role = "admin";
+                        else if (rawRole === "Student") role = "student";
                         
                         const userData = {
                             id: loginResponse.accountId,
                             email: loginResponse.email,
                             fullName: loginResponse.fullName,
+                            avatarUrl: loginResponse.avatarUrl || null,
                             role: role,
                             token: token
                         };

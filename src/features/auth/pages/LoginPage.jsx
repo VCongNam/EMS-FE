@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import Button from '../../../components/ui/Button';
 import AuthLayout from '../components/AuthLayout';
 import useAuthStore from '../../../store/authStore';
-import { getApiUrl } from '../../../config/api';
+import { authService } from '../api/authService';
 
 const LoginPage = () => {
     const navigate = useNavigate();
@@ -21,13 +21,7 @@ const LoginPage = () => {
         setError(null);
 
         try {
-            const response = await fetch(getApiUrl('/api/Auth/login'), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ email, password })
-            });
+            const response = await authService.login({ email, password });
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
@@ -46,7 +40,7 @@ const LoginPage = () => {
             // Redirect based on user role
             if (role === 'teacher') {
                 navigate('/teacher/classes');
-            } else if (role === 'assistant') {
+            } else if (role === 'TA') {
                 navigate('/dashboard'); 
             } else if (role === 'student') {
                 navigate('/dashboard'); 

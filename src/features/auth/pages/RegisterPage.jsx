@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Button from '../../../components/ui/Button';
 import AuthLayout from '../components/AuthLayout';
-import { getApiUrl } from '../../../config/api';
-
+import { authService } from '../api/authService';
 const RegisterPage = () => {
     const navigate = useNavigate();
 
@@ -34,12 +33,11 @@ const RegisterPage = () => {
         setLoading(true);
 
         try {
-            const response = await fetch(getApiUrl('/api/Auth/register'), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ email: email.trim(), password, fullName: fullName.trim(), roleName: role === 'teacher' ? 'Teacher' : 'TA' })
+            const response = await authService.register({ 
+                email: email.trim(), 
+                password, 
+                fullName: fullName.trim(), 
+                roleName: role === 'teacher' ? 'Teacher' : 'TA' 
             });
 
             if (!response.ok) {

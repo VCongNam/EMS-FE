@@ -2,14 +2,8 @@ import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { Icon } from '@iconify/react';
 import { toast } from 'react-toastify';
-
-const MOCK_CLASS_STUDENTS = [
-    { id: 'STU001', name: 'Nguyễn Văn A' },
-    { id: 'STU002', name: 'Trần Thị B' },
-    { id: 'STU003', name: 'Lê Văn C' },
-    { id: 'STU004', name: 'Phạm Văn D' },
-    { id: 'STU005', name: 'Hoàng Thị E' },
-];
+import useAuthStore from '../../../../../../store/authStore';
+import { sessionService } from '../../../../api/sessionService';
 
 const STATUS_OPTIONS = [
     {
@@ -41,18 +35,43 @@ const STATUS_OPTIONS = [
 const AttendanceModal = ({ isOpen, lesson, existingRecord, onClose, onSave }) => {
     const [students, setStudents] = useState([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
-    const isEditMode = !!existingRecord;
+    // If there is ANY existing attendance we treat it as Edit mode
+    const isEditMode = students.some(s => s.status !== 'none' && s.attendanceId);
 
     useEffect(() => {
         if (isOpen && lesson) {
-            if (existingRecord && existingRecord.length > 0) {
-                setStudents(existingRecord);
-            } else {
-                setStudents(MOCK_CLASS_STUDENTS.map(s => ({ ...s, status: 'none' })));
-            }
+            const fetchAttendance = async () => {
+                setIsLoading(true);
+                const token = useAuthStore.getState().user?.token;
+                try {
+                    const res = await sessionService.getAttendance(lesson.id, token);
+                    if (res.ok) {
+                        const data = await res.json();
+                        const mapped = data.map(item => ({
+                            id: item.studentId,
+                            name: item.fullName,
+                            attendanceId: item.attendanceId,
+                            status: item.status ? item.status.toLowerCase() : 'none',
+                            isExcused: item.isExcused || false,
+                            note: item.note || ''
+                        }));
+                        setStudents(mapped);
+                    } else {
+                        toast.error('Lỗi khi tải danh sách điểm danh');
+                    }
+                } catch (err) {
+                    toast.error('Lỗi kết nối máy chủ');
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+            fetchAttendance();
+        } else {
+            setStudents([]);
         }
-    }, [isOpen, lesson, existingRecord]);
+    }, [isOpen, lesson]);
 
     if (!isOpen || !lesson) return null;
 
@@ -60,22 +79,48 @@ const AttendanceModal = ({ isOpen, lesson, existingRecord, onClose, onSave }) =>
         setStudents(prev => prev.map(s => s.id === studentId ? { ...s, status } : s));
     };
 
+    const handleNoteChange = (studentId, note) => {
+        setStudents(prev => prev.map(s => s.id === studentId ? { ...s, note } : s));
+    };
+
+    const handleExcusedChange = (studentId, isExcused) => {
+        setStudents(prev => prev.map(s => s.id === studentId ? { ...s, isExcused } : s));
+    };
+
     const handleMarkAll = (status) => {
         setStudents(prev => prev.map(s => ({ ...s, status })));
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         const unchecked = students.filter(s => s.status === 'none');
         if (unchecked.length > 0) {
             toast.warning(`Còn ${unchecked.length} học sinh chưa được điểm danh!`);
             return;
         }
+
         setIsSubmitting(true);
-        setTimeout(() => {
+        const token = useAuthStore.getState().user?.token;
+        const payload = students.map(s => ({
+            studentId: s.id,
+            status: s.status.charAt(0).toUpperCase() + s.status.slice(1), // "present" -> "Present", "absent" -> "Absent"
+            isExcused: s.isExcused,
+            note: s.note
+        }));
+
+        try {
+            const res = await sessionService.saveAttendance(lesson.id, payload, token);
+            
+            if (res.ok) {
+                toast.success(`Đã lưu điểm danh Buổi ${lesson.session} thành công!`);
+                onSave(lesson.id, students);
+            } else {
+                toast.error('Có lỗi xảy ra khi lưu điểm danh');
+            }
+        } catch (err) {
+            toast.error('Lỗi kết nối máy chủ');
+        } finally {
             setIsSubmitting(false);
-            onSave(lesson.id, students);
-            toast.success(`Đã lưu điểm danh Buổi ${lesson.session} thành công!`);
-        }, 500);
+        }
     };
 
     const presentCount = students.filter(s => s.status === 'present').length;
@@ -83,10 +128,17 @@ const AttendanceModal = ({ isOpen, lesson, existingRecord, onClose, onSave }) =>
     const absentCount  = students.filter(s => s.status === 'absent').length;
     const noneCount    = students.filter(s => s.status === 'none').length;
 
-    const formatDate = (dateStr) =>
-        new Date(dateStr + 'T00:00:00').toLocaleDateString('vi-VN', {
+    const formatDate = (dateStr) => {
+        if (!dateStr) return '';
+        // handle YYYY-MM-DD
+        const datePart = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+        return new Date(datePart + 'T00:00:00').toLocaleDateString('vi-VN', {
             weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric'
         });
+    };
+    
+    const formattedDateSplitted = formatDate(lesson.date).split(', ');
+    const displayDate = formattedDateSplitted.length > 1 ? formattedDateSplitted[1] : lesson.date;
 
     const modalContent = (
         <>
@@ -97,7 +149,13 @@ const AttendanceModal = ({ isOpen, lesson, existingRecord, onClose, onSave }) =>
             />
 
             <div style={{ zIndex: 9999 }} className="fixed inset-x-0 bottom-0 sm:inset-0 sm:flex sm:items-center sm:justify-center sm:!p-4 pointer-events-none">
-                <div className="!bg-surface border border-border border-b-0 sm:border-b rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl w-full sm:max-w-2xl max-h-[92dvh] sm:max-h-[90vh] flex flex-col pointer-events-auto animate-fade-in-up">
+                <div className="!bg-surface border border-border border-b-0 sm:border-b rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl w-full sm:max-w-2xl max-h-[92dvh] sm:max-h-[90vh] flex flex-col pointer-events-auto animate-fade-in-up relative">
+
+                    {isLoading && (
+                        <div className="absolute inset-0 z-10 !bg-surface/80 backdrop-blur-[2px] rounded-t-[2rem] sm:rounded-[2rem] flex items-center justify-center">
+                            <Icon icon="line-md:loading-loop" className="text-4xl text-primary" />
+                        </div>
+                    )}
 
                     {/* Header */}
                     <div className="flex items-start justify-between !p-5 border-b border-border shrink-0">
@@ -112,7 +170,7 @@ const AttendanceModal = ({ isOpen, lesson, existingRecord, onClose, onSave }) =>
                                 <p className="text-xs font-medium text-text-muted mt-0.5 flex items-center flex-wrap !gap-x-2 !gap-y-0.5">
                                     <span className="flex items-center !gap-1">
                                         <Icon icon="solar:calendar-date-linear" />
-                                        {lesson.day}, {formatDate(lesson.date).split(', ')[1]}
+                                        {lesson.day}, {displayDate}
                                     </span>
                                     <span className="opacity-40">·</span>
                                     <span className="flex items-center !gap-1">
@@ -154,17 +212,17 @@ const AttendanceModal = ({ isOpen, lesson, existingRecord, onClose, onSave }) =>
                         </div>
 
                         {/* Quick mark all */}
-                        <div className="flex items-center !gap-2 !mt-3">
+                        <div className="flex items-center !gap-2 !mt-3 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
                             <span className="text-xs font-semibold text-text-muted shrink-0">Đánh dấu tất cả:</span>
                             <button
                                 onClick={() => handleMarkAll('present')}
-                                className="text-xs font-semibold !px-3 !py-1.5 rounded-xl !bg-green-500/10 text-green-600 border border-green-500/20 hover:!bg-green-500/20 transition-colors"
+                                className="text-xs font-semibold !px-3 !py-1.5 rounded-xl !bg-green-500/10 text-green-600 border border-green-500/20 hover:!bg-green-500/20 transition-colors whitespace-nowrap"
                             >
                                 Hiện diện
                             </button>
                             <button
                                 onClick={() => handleMarkAll('absent')}
-                                className="text-xs font-semibold !px-3 !py-1.5 rounded-xl !bg-red-500/10 text-red-600 border border-red-500/20 hover:!bg-red-500/20 transition-colors"
+                                className="text-xs font-semibold !px-3 !py-1.5 rounded-xl !bg-red-500/10 text-red-600 border border-red-500/20 hover:!bg-red-500/20 transition-colors whitespace-nowrap"
                             >
                                 Vắng mặt
                             </button>
@@ -174,28 +232,27 @@ const AttendanceModal = ({ isOpen, lesson, existingRecord, onClose, onSave }) =>
                     {/* Student List */}
                     <div className="overflow-y-auto flex-1 !px-5 !pb-2">
                         <div className="!bg-background rounded-2xl border border-border overflow-hidden !mt-3">
-
-                            {/* Desktop table header — hidden on mobile */}
                             <div className="hidden sm:grid grid-cols-[auto_1fr_auto] items-center !gap-4 !px-4 !py-2.5 border-b border-border !bg-surface/50">
                                 <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider w-16">Mã HS</span>
                                 <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Họ và Tên</span>
-                                <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider text-center pr-2">Trạng thái</span>
+                                <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider text-center flex-1">Trạng thái</span>
                             </div>
 
-                            <div className="divide-y divide-border/50">
+                            <div className="flex flex-col">
                                 {students.map((student) => (
-                                    <div key={student.id}>
-
+                                    <div key={student.id} className="flex flex-col border-b border-border hover:!bg-primary/5 transition-colors pb-1 sm:pb-0">
                                         {/* Desktop row */}
-                                        <div className="hidden sm:grid grid-cols-[auto_1fr_auto] items-center !gap-4 !px-4 !py-3 hover:!bg-primary/5 transition-colors">
-                                            <span className="font-mono text-xs text-text-muted w-16 shrink-0">{student.id}</span>
+                                        <div className="hidden sm:grid grid-cols-[auto_1fr_auto] items-center !gap-4 !px-4 !py-3">
+                                            <span className="font-mono text-xs text-text-muted w-16 shrink-0" title={student.id}>
+                                                {student.id.substring(0, 8).toUpperCase()}
+                                            </span>
                                             <div className="flex items-center !gap-2.5 min-w-0">
                                                 <div className="w-8 h-8 rounded-full !bg-primary/10 text-primary flex items-center justify-center font-bold text-xs uppercase shrink-0">
                                                     {student.name.charAt(0)}
                                                 </div>
                                                 <span className="font-semibold text-sm text-text-main truncate">{student.name}</span>
                                             </div>
-                                            <div className="flex items-center !gap-1.5 shrink-0">
+                                            <div className="flex items-center justify-end !gap-1.5 shrink-0">
                                                 {STATUS_OPTIONS.map(opt => (
                                                     <button
                                                         key={opt.key}
@@ -214,15 +271,15 @@ const AttendanceModal = ({ isOpen, lesson, existingRecord, onClose, onSave }) =>
                                             </div>
                                         </div>
 
-                                        {/* Mobile row — tên + mã trên, 3 nút dưới */}
-                                        <div className="sm:hidden !px-4 !py-3 hover:!bg-primary/5 transition-colors">
+                                        {/* Mobile row */}
+                                        <div className="sm:hidden !px-4 !pt-3 !pb-2">
                                             <div className="flex items-center !gap-2.5 !mb-2.5">
                                                 <div className="w-9 h-9 rounded-full !bg-primary/10 text-primary flex items-center justify-center font-bold text-sm uppercase shrink-0">
                                                     {student.name.charAt(0)}
                                                 </div>
                                                 <div className="min-w-0">
                                                     <p className="font-bold text-sm text-text-main">{student.name}</p>
-                                                    <p className="font-mono text-xs text-text-muted">{student.id}</p>
+                                                    <p className="font-mono text-xs text-text-muted">{student.id.substring(0, 8).toUpperCase()}</p>
                                                 </div>
                                             </div>
                                             <div className="flex items-center !gap-2">
@@ -243,6 +300,30 @@ const AttendanceModal = ({ isOpen, lesson, existingRecord, onClose, onSave }) =>
                                             </div>
                                         </div>
 
+                                        {/* Add Note & isExcused section for absent or late */}
+                                        {(student.status === 'absent' || student.status === 'late') && (
+                                            <div className="!px-4 !pb-3 sm:!pl-[5.5rem] !pt-0 flex flex-col sm:flex-row items-start sm:items-center !gap-3 animate-fade-in mt-1 sm:mt-0">
+                                                <label className="flex items-center !gap-2 cursor-pointer group shrink-0">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={student.isExcused}
+                                                        onChange={(e) => handleExcusedChange(student.id, e.target.checked)}
+                                                        className="w-4 h-4 rounded border-border text-primary focus:ring-primary/20 accent-primary cursor-pointer"
+                                                    />
+                                                    <span className="text-xs font-semibold text-text-main group-hover:text-primary transition-colors">Có phép</span>
+                                                </label>
+                                                <div className="relative w-full sm:flex-1">
+                                                    <Icon icon="solar:pen-new-square-linear" className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted/70" />
+                                                    <input
+                                                        type="text"
+                                                        value={student.note}
+                                                        onChange={(e) => handleNoteChange(student.id, e.target.value)}
+                                                        placeholder="Ghi chú (Lý do nghỉ / muộn...)"
+                                                        className="w-full text-xs !pl-9 !pr-3 !py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all font-medium placeholder:text-text-muted/50"
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                             </div>
@@ -259,7 +340,7 @@ const AttendanceModal = ({ isOpen, lesson, existingRecord, onClose, onSave }) =>
                         </button>
                         <button
                             onClick={handleSubmit}
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || isLoading}
                             className="flex items-center !gap-2 !px-5 !py-2.5 !bg-primary text-white text-sm font-bold rounded-xl shadow-lg shadow-primary/30 hover:!bg-primary/90 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                         >
                             {isSubmitting ? (
