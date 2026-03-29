@@ -147,6 +147,7 @@ const ClassSchedulePage = () => {
                 note: formData.note
             };
 
+            const isEdit = sessionModalState.initialData?.sessionId;
             const res = isEdit 
                 ? await sessionService.updateSession(sessionModalState.initialData.sessionId, payload, token)
                 : await sessionService.createSession(payload, token);

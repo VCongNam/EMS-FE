@@ -1,8 +1,12 @@
 import { getApiUrl } from '../../../config/api';
 
 export const sessionService = {
-  getTeacherSchedule: async (token) => {
-    return fetch(getApiUrl('/api/session/teacher-schedule'), {
+  getTeacherSchedule: async (token, startDate, endDate) => {
+    let url = '/api/session/teacher-schedule';
+    if (startDate && endDate) {
+      url += `?startDate=${startDate}&endDate=${endDate}`;
+    }
+    return fetch(getApiUrl(url), {
       headers: { 'Authorization': `Bearer ${token}` }
     });
   },
