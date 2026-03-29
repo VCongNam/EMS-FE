@@ -419,11 +419,11 @@ const ScheduleManagementPage = () => {
                     {/* View toggle */}
                     <div className="flex items-center bg-background border border-border rounded-xl !p-1 shadow-inner">
                         <button onClick={() => setViewMode('week')}
-                            className={`flex-1 sm:flex-none flex justify-center items-center !gap-2 !px-4 !py-2.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'week' ? 'bg-primary text-white shadow-md' : 'text-text-muted hover:text-text-main hover:bg-surface'}`}>
+                            className={`flex-1 sm:flex-none flex justify-center items-center !gap-2 !px-4 !py-2.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'week' ? '!bg-primary text-white shadow-md' : 'text-text-muted hover:text-text-main hover:bg-surface'}`}>
                             <Icon icon="solar:calendar-date-bold-duotone" className="text-lg" /> Tuần
                         </button>
                         <button onClick={() => setViewMode('month')}
-                            className={`flex-1 sm:flex-none flex justify-center items-center !gap-2 !px-4 !py-2.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'month' ? 'bg-primary text-white shadow-md' : 'text-text-muted hover:text-text-main hover:bg-surface'}`}>
+                            className={`flex-1 sm:flex-none flex justify-center items-center !gap-2 !px-4 !py-2.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'month' ? '!bg-primary text-white shadow-md' : 'text-text-muted hover:text-text-main hover:bg-surface'}`}>
                             <Icon icon="solar:calendar-bold-duotone" className="text-lg" /> Tháng
                         </button>
                     </div>
