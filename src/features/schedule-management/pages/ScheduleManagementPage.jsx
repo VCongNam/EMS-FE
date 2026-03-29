@@ -251,9 +251,22 @@ const ScheduleManagementPage = () => {
     // Fetch API
     const fetchTeacherSchedule = useCallback(async () => {
         if (!token) return;
+        
+        const currentMonth = refDate.getMonth();
+        const currentYear = refDate.getFullYear();
+        
+        // Mở rộng thêm 7 ngày đầu và cuối để lấy luôn lịch các ô gối của tháng trước/sau
+        const firstDay = new Date(currentYear, currentMonth, 1);
+        const lastDay = new Date(currentYear, currentMonth + 1, 0);
+        firstDay.setDate(firstDay.getDate() - 7);
+        lastDay.setDate(lastDay.getDate() + 7);
+
+        const startStr = toDateStr(firstDay);
+        const endStr = toDateStr(lastDay);
+
         try {
             setLoading(true);
-            const res = await sessionService.getTeacherSchedule(token);
+            const res = await sessionService.getTeacherSchedule(token, startStr, endStr);
             if (res.ok) {
                 const data = await res.json();
                 
@@ -288,7 +301,7 @@ const ScheduleManagementPage = () => {
         } finally {
             setLoading(false);
         }
-    }, [token]);
+    }, [token, refDate]);
 
     useEffect(() => {
         fetchTeacherSchedule();
