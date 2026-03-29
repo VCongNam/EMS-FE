@@ -50,13 +50,25 @@ const TeacherClassListPage = () => {
                 classService.getArchivedClasses(token)
             ]);
 
-            if (!activeRes.ok || !archivedRes.ok) throw new Error('Không thể tải danh sách lớp học');
+            if (!activeRes.ok) console.warn('Active classes failed: ', activeRes.status);
+            if (!archivedRes.ok) console.warn('Archived classes failed: ', archivedRes.status);
 
-            const activeData = await activeRes.json();
-            const archivedData = await archivedRes.json();
+            let activeData = [];
+            let archivedData = [];
+
+            try {
+                if (activeRes.ok) activeData = await activeRes.json();
+            } catch (e) {
+                console.warn('Failed parsing active classes JSON', e);
+            }
+            try {
+                if (archivedRes.ok) archivedData = await archivedRes.json();
+            } catch (e) {
+                console.warn('Failed parsing archived classes JSON', e);
+            }
 
             // Trộn 2 mảng lại với nhau để filter xào nấu mượt mà
-            const data = [...(activeData || []), ...(archivedData || [])];
+            const data = [...(Array.isArray(activeData) ? activeData : []), ...(Array.isArray(archivedData) ? archivedData : [])];
 
             // 3. Mapping cấu trúc Data thực tế về cấu trúc thẻ ClassCard hiển thị
             const mappedData = data.map(apiClass => {
@@ -122,7 +134,7 @@ const TeacherClassListPage = () => {
             maxStudents: formData.maxCapacity ? parseInt(formData.maxCapacity) : 0,
             subjectName: formData.subject,
             gradeLevel: parseInt(formData.gradeLevel.replace(/\D/g, '')) || parseInt(formData.gradeLevel) || 0,
-            schedules: formData.days && formData.days.length > 0 
+            schedules: formData.days && formData.days.length > 0
                 ? mapDaysToIso(formData.days).map(day => ({
                     dayOfWeek: day,
                     startTime: parseTime(formData.startTime),
@@ -157,12 +169,12 @@ const TeacherClassListPage = () => {
                 if (!response.ok) {
                     const errorText = await response.text();
                     console.error('Create Class Error:', errorText);
-                    throw new Error('Lỗi khi cắm Lớp Mới. Xem log để biết chi tiết!');
+                    throw new Error(`Lỗi khi cắm Lớp Mới: ${errorText || response.statusText}`);
                 }
 
                 alert('Tạo lớp học thành công!');
             }
-            
+
             setIsModalOpen(false);
             fetchClasses(); // Cập nhật lại danh sách màn hình ngay lập tức 
         } catch (error) {
@@ -197,7 +209,7 @@ const TeacherClassListPage = () => {
                 if (!res.ok) throw new Error('Cầu nối API khôi phục lớp học hiện Backend báo lỗi hoặc chưa hỗ trợ!');
                 alert('Đã khôi phục lớp học thành công.');
             }
-            
+
             // Xử lý UI sau khi thành công
             setConfirmModal({ isOpen: false, type: '', classId: null });
             fetchClasses(); // Gọi cục DB load lại List lớp mới ròi đổ ra màng hình
