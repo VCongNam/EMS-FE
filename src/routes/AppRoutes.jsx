@@ -41,6 +41,7 @@ import TakeAttendancePage from '../features/schedule-attendance/pages/TakeAttend
 import UpdateAttendanceRecordPage from '../features/schedule-attendance/pages/UpdateAttendanceRecordPage';
 import ScheduleManagementPage from '../features/schedule-management/pages/ScheduleManagementPage';
 import ForgotPasswordPage from '../features/auth/pages/ForgotPasswordPage';
+import VerifyEmailPage from '../features/auth/pages/VerifyEmailPage';
 import UserAuthorizationPage from '../features/dashboard/pages/UserAuthorizationPage';
 
 export const AppRoutes = () => {

@@ -1,18 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import { toast } from 'react-toastify';
 import Button from "../../../../../components/ui/Button";
 import AddStudentModal from './components/AddStudentModal';
 import useAuthStore from '../../../../../store/authStore';
 import TAPermissionsModal from './components/TAPermissionsModal';
+import { classService } from '../../../api/classService';
 
 const ClassPeoplePage = () => {
+    const { classId } = useParams();
     const { user } = useAuthStore();
     const isTeacherOrTA = ['TEACHER', 'TA'].includes(user?.role?.toUpperCase());
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isPermissionsModalOpen, setIsPermissionsModalOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
     const isCurrentUserTA = user?.role?.toUpperCase() === 'TA';
 
@@ -22,14 +26,42 @@ const ClassPeoplePage = () => {
         { id: 'TA001', name: user?.fullName || 'Nguyễn Trợ Giảng', role: 'Trợ giảng', email: user?.email || 'ta@fpt.edu.vn', type: 'TA' },
     ];
 
-    // Dummy data for visual representation
-    const [members, setMembers] = useState([
-        { id: 'STU001', name: 'Nguyễn Văn A', email: 'nva@example.com', phone: '0901234567', parentName: 'Nguyễn Văn A Phụ Huynh', attendance: 95, status: 'active' },
-        { id: 'STU002', name: 'Trần Thị B', email: 'ttb@example.com', phone: '0912345678', parentName: 'Trần Thị B Phụ Huynh', attendance: 88, status: 'warning' },
-        { id: 'STU003', name: 'Lê Văn C', email: 'lvc@example.com', phone: '0923456789', parentName: 'Lê Văn C Phụ Huynh', attendance: 100, status: 'active' },
-        { id: 'STU004', name: 'Phạm Văn D', email: 'pvd@example.com', phone: '0934567890', parentName: 'Phạm Văn D Phụ Huynh', attendance: 65, status: 'danger' },
-        { id: 'STU005', name: 'Hoàng Thị E', email: 'hte@example.com', phone: '0945678901', parentName: 'Hoàng Thị E Phụ Huynh', attendance: 92, status: 'active' },
-    ]);
+    const [members, setMembers] = useState([]);
+
+    useEffect(() => {
+        const fetchMembers = async () => {
+            if (!classId) return;
+            const token = useAuthStore.getState().user?.token;
+            try {
+                setIsLoading(true);
+                const res = await classService.getClassMembers(classId, token);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.data) {
+                        const formattedMembers = data.data.map((m) => ({
+                            id: m.studentID,
+                            name: m.fullName || 'Chưa cập nhật',
+                            email: m.email || 'Chưa cập nhật',
+                            parentName: m.parentName || 'Chưa cập nhật',
+                            phone: m.parentPhone || 'Chưa cập nhật',
+                            enrolledDate: m.enrolledDate,
+                            status: m.status?.toLowerCase() || 'active',
+                            attendance: 100 // Mock vì API hiện tại chưa nhả attendance
+                        }));
+                        setMembers(formattedMembers);
+                    }
+                } else {
+                    console.error("Failed to fetch class members");
+                }
+            } catch (err) {
+                console.error("Lỗi fetch API lớp:", err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchMembers();
+    }, [classId]);
 
     const filteredMembers = members.filter(member => {
         const matchesSearch =
