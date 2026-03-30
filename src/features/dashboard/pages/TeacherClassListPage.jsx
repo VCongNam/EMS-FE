@@ -23,8 +23,9 @@ const parseTime = (timeStr) => {
 };
 
 const mapDaysToIso = (daysArr) => {
-    const map = { 'CN': 0, 'T2': 1, 'T3': 2, 'T4': 3, 'T5': 4, 'T6': 5, 'T7': 6 };
-    return daysArr.map(d => map[d] !== undefined ? map[d] : 0);
+    // Mapping: Sunday=1, Monday=2, ..., Saturday=7 (Vietnamese convention)
+    const map = { 'CN': 1, 'T2': 2, 'T3': 3, 'T4': 4, 'T5': 5, 'T6': 6, 'T7': 7 };
+    return daysArr.map(d => map[d] !== undefined ? map[d] : 2); // Default to Monday if not found
 };
 
 const TeacherClassListPage = () => {
