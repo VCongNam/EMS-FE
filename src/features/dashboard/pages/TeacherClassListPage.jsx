@@ -134,11 +134,11 @@ const TeacherClassListPage = () => {
             maxStudents: formData.maxCapacity ? parseInt(formData.maxCapacity) : 0,
             subjectName: formData.subject,
             gradeLevel: parseInt(formData.gradeLevel.replace(/\D/g, '')) || parseInt(formData.gradeLevel) || 0,
-            schedules: formData.days && formData.days.length > 0
-                ? mapDaysToIso(formData.days).map(day => ({
-                    dayOfWeek: day,
-                    startTime: parseTime(formData.startTime),
-                    endTime: parseTime(formData.endTime)
+            schedules: formData.schedules && formData.schedules.length > 0
+                ? formData.schedules.map(schedule => ({
+                    dayOfWeek: mapDaysToIso([schedule.day])[0],
+                    startTime: parseTime(schedule.startTime),
+                    endTime: parseTime(schedule.endTime)
                 }))
                 : []
         };

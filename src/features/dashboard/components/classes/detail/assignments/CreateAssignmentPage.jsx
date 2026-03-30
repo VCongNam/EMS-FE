@@ -1,41 +1,77 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { mockAssignmentDetail } from './AssignmentDetailPage';
+import { assignmentService } from '../../../../api/assignmentService';
+import useAuthStore from '../../../../../../store/authStore';
+import { toast } from 'react-toastify';
 
 const CreateAssignmentPage = () => {
     const navigate = useNavigate();
     const { classId, assignmentId } = useParams();
     const isEditMode = !!assignmentId;
+    const { user } = useAuthStore();
 
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
-    const [topic, setTopic] = useState('Chương 1: Tổng quan');
-    const [maxScore, setMaxScore] = useState('100');
+    const [gradeCategoryId, setGradeCategoryId] = useState('1234aaaa-1234-1234-1234-1234567890ab'); // Mặc định là Bài tập về nhà
     const [dueDate, setDueDate] = useState('');
     const [dueTime, setDueTime] = useState('');
+    const [allowLateSubmission, setAllowLateSubmission] = useState(true);
     const [attachments, setAttachments] = useState([]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const fileInputRef = useRef(null);
 
     useEffect(() => {
-        if (isEditMode) {
-            // Mock data population
-            setTitle(mockAssignmentDetail.title || '');
-            setDescription(mockAssignmentDetail.description || '');
-            setTopic(mockAssignmentDetail.topic || '');
-            setMaxScore(mockAssignmentDetail.maxScore?.toString() || '100');
-            setDueDate('2026-03-25');
-            setDueTime('23:59');
-            setAttachments(mockAssignmentDetail.attachments || []);
-        }
-    }, [isEditMode, assignmentId]);
+        const fetchAssignmentInfo = async () => {
+            if (isEditMode) {
+                try {
+                    const res = await assignmentService.getAssignmentById(assignmentId, user?.token);
+                    if (res.ok) {
+                        const data = await res.json();
+                        setTitle(data.title || '');
+                        setDescription(data.description || '');
+                        if (data.gradeCategoryId) setGradeCategoryId(data.gradeCategoryId);
+                        
+                        if (data.dueDate) {
+                            // C# trả về ISO date string e.g. "2026-05-10T00:00:00"
+                            const d = new Date(data.dueDate);
+                            if (!isNaN(d)) {
+                                setDueDate(d.toISOString().split('T')[0]); // YYYY-MM-DD
+                                setDueTime(d.toTimeString().slice(0, 5)); // HH:MM
+                            }
+                        }
+                        
+                        // Parse true/false properly
+                        setAllowLateSubmission(data.allowLateSubmission === true || data.allowLateSubmission === 'True');
+                        
+                        // Nếu backend có trả về attachments cũ
+                        if (Array.isArray(data.attachments)) {
+                            // Cần ánh xạ attachments cũ này thành danh sách chỉ để hiển thị. 
+                            const oldAtts = data.attachments.map(att => ({
+                                id: att.id || Math.random().toString(36),
+                                name: att.fileName || att.name || 'Tệp đính kèm',
+                                size: '...',
+                                type: 'other',
+                                isOldDbFile: true // Cờ xác định tệp cũ (không có File object)
+                            }));
+                            setAttachments(oldAtts);
+                        }
+                    }
+                } catch (error) {
+                    console.error("Lỗi lấy thông tin bài tập:", error);
+                }
+            }
+        };
+        fetchAssignmentInfo();
+    }, [isEditMode, assignmentId, user?.token]);
 
     const handleFileChange = (e) => {
         const files = Array.from(e.target.files);
         if (files.length > 0) {
             const newAttachments = files.map(file => ({
                 id: Math.random().toString(36).substr(2, 9),
+                file: file, // Giữ lại bản cứng File Object để append
                 name: file.name,
                 size: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
                 type: file.type.includes('image') ? 'image'
@@ -52,8 +88,62 @@ const CreateAssignmentPage = () => {
         setAttachments(attachments.filter(a => a.id !== id));
     };
 
-    const handleCreate = () => {
-        navigate(`../classwork`, { relative: 'path' });
+    const handleCreate = async () => {
+        if (!title.trim() || !dueDate) {
+            toast.warning('Vui lòng nhập đầy đủ Tiêu đề và Hạn nộp');
+            return;
+        }
+
+        setIsSubmitting(true);
+        const token = user?.token;
+
+        try {
+            const formData = new FormData();
+            formData.append('GradeCategoryId', gradeCategoryId);
+            formData.append('Title', title);
+            formData.append('Description', description || '');
+            
+            // Tạm thời fix cứng định dạng ngày giống hệt Hoppscotch (YYYY-MM-DD)
+            formData.append('DueDate', dueDate);
+            
+            // Ép kiểu chữ True in hoa đầu giống Hoppscotch
+            const allowLateStr = allowLateSubmission ? "True" : "False";
+            formData.append('AllowLateSubmission', allowLateStr);
+
+            // Append each file object individually
+            // Lúc Edit thì backend yêu cầu key là 'NewAttachments'
+            attachments.forEach(att => {
+                if (att.file) {
+                    if (isEditMode) {
+                        formData.append('NewAttachments', att.file);
+                    } else {
+                        formData.append('Attachments', att.file);
+                    }
+                }
+            });
+
+            let res;
+            if (isEditMode) {
+                res = await assignmentService.updateAssignment(assignmentId, formData, token);
+            } else {
+                formData.append('ClassId', classId);
+                res = await assignmentService.createAssignment(formData, token);
+            }
+
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.message || 'Không thể lưu bài tập, kiểm tra lại dữ liệu');
+            }
+
+            toast.success(isEditMode ? 'Cập nhật bài tập thành công!' : 'Giao bài tập thành công!');
+            navigate(`../classwork`, { relative: 'path' });
+
+        } catch (error) {
+            console.error('Lỗi tạo bài tập:', error);
+            toast.error(error.message);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -84,6 +174,7 @@ const CreateAssignmentPage = () => {
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                             placeholder="Tiêu đề"
+                            required
                             className="w-full bg-background border border-border rounded-xl !p-4 font-semibold text-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-text-main"
                         />
                         <textarea
@@ -150,26 +241,16 @@ const CreateAssignmentPage = () => {
                 <div className="md:col-span-1">
                     <div className="bg-surface rounded-2xl border border-border !p-5 sm:!p-6 shadow-sm space-y-5">
 
+                        {/* Thay "Thang Điểm" đi, thay bằng GradeCategoryId loại điểm */}
                         <div>
-                            <label className="block text-sm font-semibold text-text-main !mb-2">Dành cho</label>
+                            <label className="block text-sm font-semibold text-text-main !mb-2">Loại điểm (Grade Category)</label>
                             <select
-                                className="w-full bg-background border border-border rounded-xl !p-3 focus:outline-none focus:border-primary text-text-main cursor-not-allowed opacity-70"
-                                disabled
-                            >
-                                <option>Tất cả học viên (Mặc định)</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-semibold text-text-main !mb-2">Thang điểm</label>
-                            <select
-                                value={maxScore}
-                                onChange={(e) => setMaxScore(e.target.value)}
+                                value={gradeCategoryId}
+                                onChange={(e) => setGradeCategoryId(e.target.value)}
                                 className="w-full bg-background border border-border rounded-xl !p-3 focus:outline-none focus:border-primary text-text-main"
                             >
-                                <option value="10">10 điểm</option>
-                                <option value="100">100 điểm</option>
-                                <option value="unscored">Không chấm điểm</option>
+                                <option value="1234aaaa-1234-1234-1234-1234567890ab">Bài tập về nhà</option>
+                                <option value="5678bbbb-5678-5678-5678-1234567890cd">Thi Giữa kỳ</option>
                             </select>
                         </div>
 
@@ -180,46 +261,58 @@ const CreateAssignmentPage = () => {
                                     type="date"
                                     value={dueDate}
                                     onChange={(e) => setDueDate(e.target.value)}
+                                    required
                                     className="flex-1 min-w-0 bg-background border border-border rounded-xl !p-3 focus:outline-none focus:border-primary text-text-main"
                                 />
                                 <input
                                     type="time"
                                     value={dueTime}
                                     onChange={(e) => setDueTime(e.target.value)}
-                                    className="w-24 shrink-0 bg-background border border-border rounded-xl !p-3 focus:outline-none focus:border-primary text-text-main"
+                                    className="w-[110px] shrink-0 bg-background border border-border rounded-xl !p-3 focus:outline-none focus:border-primary text-text-main"
                                 />
                             </div>
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-semibold text-text-main !mb-2">Chủ đề (Topic)</label>
-                            <input
-                                type="text"
-                                value={topic}
-                                onChange={(e) => setTopic(e.target.value)}
-                                placeholder="Thêm chủ đề"
-                                className="w-full bg-background border border-border rounded-xl !p-3 focus:outline-none focus:border-primary text-text-main"
-                            />
+                        {/* Thay "Chủ đề" bằng "Cho phép nộp muộn" cờ boolean */}
+                        <div className="flex items-center justify-between !mt-4 border-t border-border !pt-4">
+                            <div>
+                                <label className="block text-sm font-semibold text-text-main">Cho phép nộp muộn</label>
+                                <span className="text-xs text-text-muted">Học viên vẫn có thể nộp sau hạn</span>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input 
+                                    type="checkbox" 
+                                    checked={allowLateSubmission}
+                                    onChange={(e) => setAllowLateSubmission(e.target.checked)}
+                                    className="sr-only peer"
+                                />
+                                <div className="w-11 h-6 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                            </label>
                         </div>
 
                     </div>
                 </div>
             </div>
 
-            {/* Footer Actions — full width, pinned at bottom */}
-            <div className="!mt-6 rounded-2xl  !p-4 sm:!p-5 flex flex-col-reverse sm:flex-row items-center justify-end gap-3">
+            {/* Footer Actions */}
+            <div className="!mt-6 rounded-2xl !p-4 sm:!p-5 flex flex-col-reverse sm:flex-row items-center justify-end gap-3 sticky bottom-4 z-10 bg-surface/80 backdrop-blur border border-border shadow-md">
                 <button
                     onClick={() => navigate(-1)}
-                    className="w-full sm:w-auto !px-6 !py-2.5 text-sm font-semibold text-text-muted border border-border rounded-xl hover:bg-background hover:text-text-main transition-all"
+                    disabled={isSubmitting}
+                    className="w-full sm:w-auto !px-6 !py-2.5 text-sm font-semibold text-text-muted border border-border rounded-xl hover:bg-background hover:text-text-main transition-all disabled:opacity-50"
                 >
                     Hủy
                 </button>
                 <button
                     onClick={handleCreate}
-                    disabled={!title.trim()}
-                    className="w-full sm:w-auto flex items-center justify-center gap-2 !bg-primary text-white font-bold !px-8 !py-2.5 rounded-xl hover:bg-primary/90 transition-colors shadow-sm shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={!title.trim() || !dueDate || isSubmitting}
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 !bg-primary text-white font-bold !px-8 !py-2.5 rounded-xl hover:bg-primary/90 transition-colors shadow-sm shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed min-w-[150px]"
                 >
-                    <Icon icon={isEditMode ? "material-symbols:save-rounded" : "material-symbols:assignment-turned-in-rounded"} className="text-lg" />
+                    {isSubmitting ? (
+                        <Icon icon="solar:spinner-linear" className="animate-spin text-xl text-white mr-2" />
+                    ) : (
+                        <Icon icon={isEditMode ? "material-symbols:save-rounded" : "material-symbols:assignment-turned-in-rounded"} className="text-lg" />
+                    )}
                     {isEditMode ? 'Lưu thay đổi' : 'Giao bài'}
                 </button>
             </div>

@@ -21,12 +21,19 @@ const AssignmentGradingTeacher = ({ assignment }) => {
     const countTurnedIn = submissions.filter(s => s.status !== 'Chưa nộp').length;
     const countMissing = submissions.length - countTurnedIn;
 
+    // Helper to get Icon for file
+    const getFileIcon = (type) => {
+        if (type?.includes('image')) return 'material-symbols:image-outline-rounded';
+        if (type?.includes('pdf')) return 'vscode-icons:file-type-pdf2';
+        if (type?.includes('word') || type?.includes('doc')) return 'vscode-icons:file-type-word';
+        return 'material-symbols:insert-drive-file-outline-rounded';
+    };
+
     return (
         <div className="animate-fade-in-up h-[calc(100vh-140px)]">
             <div className="bg-surface rounded-2xl border border-border shadow-sm overflow-hidden h-full flex flex-col md:flex-row">
 
                 {/* ── Left Column: Student List ── */}
-                {/* Mobile: ẩn khi đã chọn học sinh | Desktop: luôn hiện */}
                 <div className={`
                     ${selectedStudent ? 'hidden md:flex' : 'flex'}
                     md:w-1/3 w-full flex-col border-r border-border bg-background
@@ -37,16 +44,6 @@ const AssignmentGradingTeacher = ({ assignment }) => {
                             <h2 className="text-lg font-bold text-primary truncate !mb-2 flex-1" title={assignment.title}>
                                 {assignment.title}
                             </h2>
-                            {!assignment.isOverdue && (
-                                <div className="flex items-center gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity shrink-0 ml-2">
-                                    <button className="!p-1.5 text-text-muted hover:text-primary hover:bg-primary/10 rounded-lg transition-colors" title="Chỉnh sửa">
-                                        <Icon icon="material-symbols:edit-outline-rounded" className="text-lg" />
-                                    </button>
-                                    <button className="!p-1.5 text-text-muted hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors" title="Xóa">
-                                        <Icon icon="material-symbols:delete-outline-rounded" className="text-lg" />
-                                    </button>
-                                </div>
-                            )}
                         </div>
                         <div className="flex items-center gap-8">
                             <div className="flex flex-col">
@@ -100,17 +97,24 @@ const AssignmentGradingTeacher = ({ assignment }) => {
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <span className="text-sm font-bold text-text-main">
-                                        {sub.score !== null ? `${sub.score}/${assignment.maxScore}` : '--/100'}
+                                        {sub.score !== null ? `${sub.score}/${assignment.maxScore}` : `--/100`}
                                     </span>
                                     <Icon icon="material-symbols:chevron-right-rounded" className="text-text-muted md:hidden" />
                                 </div>
                             </div>
                         ))}
                     </div>
+
+                    {/* Nút xem lại đề bài (Quick View) khi đang ở Mobile/Desktop */}
+                    <button 
+                        onClick={() => setSelectedStudent(null)}
+                        className={`md:hidden absolute bottom-4 right-4 w-12 h-12 rounded-full !bg-primary text-white shadow-lg flex items-center justify-center transition-transform ${selectedStudent ? 'scale-100' : 'scale-0'}`}
+                    >
+                        <Icon icon="material-symbols:assignment-outline-rounded" className="text-2xl" />
+                    </button>
                 </div>
 
-                {/* ── Right Column: Grading Panel ── */}
-                {/* Mobile: hiện khi đã chọn học sinh | Desktop: luôn hiện */}
+                {/* ── Right Column: Grading / Instructions ── */}
                 <div className={`
                     ${selectedStudent ? 'flex' : 'hidden md:flex'}
                     md:w-2/3 w-full flex-col bg-surface
@@ -119,7 +123,6 @@ const AssignmentGradingTeacher = ({ assignment }) => {
                         <>
                             {/* Grading Header */}
                             <div className="!px-4 sm:!px-6 !py-4 border-b border-border bg-surface shrink-0">
-                                {/* Mobile back button */}
                                 <button
                                     onClick={handleBack}
                                     className="md:hidden flex items-center gap-1 text-sm font-semibold text-text-muted hover:text-primary transition-colors !mb-3"
@@ -160,9 +163,8 @@ const AssignmentGradingTeacher = ({ assignment }) => {
                                 </div>
                             </div>
 
-                            {/* Main Content Area */}
+                            {/* Main Grading Content */}
                             <div className="flex-1 overflow-y-auto flex flex-col lg:flex-row min-h-0">
-                                {/* Files Preview */}
                                 <div className="flex-1 !p-4 sm:!p-6 border-b lg:border-b-0 lg:border-r border-border bg-background/50">
                                     {selectedStudent.files && selectedStudent.files.length > 0 ? (
                                         <div className="space-y-4">
@@ -171,7 +173,7 @@ const AssignmentGradingTeacher = ({ assignment }) => {
                                                 {selectedStudent.files.map(file => (
                                                     <div key={file.id} className="border border-border bg-surface rounded-xl !p-3 flex items-center gap-3 hover:border-primary cursor-pointer transition-colors group">
                                                         <div className="w-10 h-10 bg-primary/10 rounded flex items-center justify-center text-primary group-hover:scale-110 transition-transform shrink-0">
-                                                            <Icon icon={file.type === 'pdf' ? 'vscode-icons:file-type-pdf2' : 'vscode-icons:file-type-word'} className="text-2xl" />
+                                                            <Icon icon={getFileIcon(file.type)} className="text-2xl" />
                                                         </div>
                                                         <div className="overflow-hidden">
                                                             <p className="font-medium text-sm text-text-main truncate group-hover:text-primary transition-colors">{file.name}</p>
@@ -193,10 +195,11 @@ const AssignmentGradingTeacher = ({ assignment }) => {
                                     )}
                                 </div>
 
-                                {/* Private Comments */}
+                                {/* Private Comments area */}
                                 <div className="w-full lg:w-72 bg-surface flex flex-col shrink-0">
+                                    {/* ... */}
                                     <div className="!p-4 border-b border-border bg-background/50">
-                                        <h4 className="font-semibold text-text-main flex items-center gap-2">
+                                         <h4 className="font-semibold text-text-main flex items-center gap-2">
                                             <Icon icon="material-symbols:comment-rounded" className="text-primary" />
                                             Nhận xét riêng tư
                                         </h4>
@@ -222,12 +225,112 @@ const AssignmentGradingTeacher = ({ assignment }) => {
                             </div>
                         </>
                     ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center text-text-muted bg-background/50 !p-8">
-                            <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center !mb-6">
-                                <Icon icon="material-symbols:assignment-ind-outline-rounded" className="text-5xl text-primary" />
+                        /* ── Assignment Overview (Instructions) ── */
+                        <div className="w-full h-full flex flex-col bg-[#F8FAFC] overflow-y-auto">
+                            {/* Sticky Header for Assignment Title in Overview */}
+                            <div className="bg-white/80 backdrop-blur-md sticky top-0 z-10 !px-6 sm:!px-8 !py-6 border-b border-border flex justify-between items-center">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-inner">
+                                        <Icon icon="material-symbols:assignment-rounded" className="text-2xl" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <h2 className="text-xl sm:text-2xl font-black text-text-main truncate leading-tight">{assignment.title}</h2>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <span className="!px-2 !py-0.5 rounded-md bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider">
+                                                {assignment.gradeCategoryName || 'Bài tập'}
+                                            </span>
+                                            <span className="w-1 h-1 rounded-full bg-border" />
+                                            <span className="text-xs text-text-muted font-medium">Id: {assignment.assignmentId?.slice(0, 8)}...</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <h3 className="text-xl font-bold text-text-main !mb-2">Chấm điểm bài tập</h3>
-                            <p className="text-center">Chọn một học sinh từ danh sách bên trái để xem bài làm và nhập điểm.</p>
+
+                            <div className="!p-6 sm:!p-8 max-w-5xl mx-auto w-full space-y-8 pb-12">
+                                {/* Metadata Cards Row */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="bg-white rounded-2xl border border-border !p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow">
+                                        <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+                                            <Icon icon="material-symbols:person-rounded" className="text-2xl" />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-[10px] text-text-muted font-bold uppercase tracking-wider">Người giao</p>
+                                            <p className="text-sm font-bold text-text-main truncate">{assignment.authorName || 'Giáo viên'}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white rounded-2xl border border-border !p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow">
+                                        <div className="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center text-orange-600">
+                                            <Icon icon="material-symbols:alarm-on-rounded" className="text-2xl" />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-[10px] text-text-muted font-bold uppercase tracking-wider">Hạn nộp</p>
+                                            <p className="text-sm font-bold text-text-main">
+                                                {new Date(assignment.dueDate).toLocaleString('vi-VN', {
+                                                    hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric'
+                                                })}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Description Card */}
+                                <div className="bg-white rounded-3xl border border-border shadow-sm overflow-hidden">
+                                     <div className="!px-6 !py-4 border-b border-border bg-background/50 flex items-center gap-2">
+                                        <Icon icon="material-symbols:subject-rounded" className="text-primary text-xl" />
+                                        <h4 className="font-bold text-text-main">Hướng dẫn chi tiết</h4>
+                                    </div>
+                                    <div className="!p-6 sm:!p-8">
+                                        <div className="prose max-w-none text-text-main leading-relaxed whitespace-pre-wrap font-medium text-[15px]">
+                                            {assignment.description || (
+                                                <div className="flex flex-col items-center justify-center !py-6 text-text-muted opacity-60">
+                                                    <Icon icon="material-symbols:edit-note-outline-rounded" className="text-4xl !mb-2" />
+                                                    <p className="italic">Chưa có mô tả đính kèm cho bài tập này.</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Attachments Grid */}
+                                {assignment.attachments && assignment.attachments.length > 0 && (
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <h4 className="font-bold text-text-main flex items-center gap-2">
+                                                <Icon icon="material-symbols:attach-file-rounded" className="text-primary rotate-45 text-xl" />
+                                                Tài liệu đính kèm ({assignment.attachments.length})
+                                            </h4>
+                                        </div>
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                            {assignment.attachments.map((att, idx) => (
+                                                <a 
+                                                    key={idx} 
+                                                    href={att.fileUrl} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center gap-4 bg-white border border-border rounded-2xl !p-4 hover:border-primary hover:shadow-lg hover:-translate-y-0.5 transition-all group relative overflow-hidden"
+                                                >
+                                                    <div className="absolute top-0 left-0 w-1 h-full bg-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                    <div className="w-12 h-12 bg-primary/5 rounded-xl flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all shrink-0 shadow-sm border border-primary/5">
+                                                        <Icon icon={getFileIcon(att.fileType || att.name)} className="text-2xl" />
+                                                    </div>
+                                                    <div className="overflow-hidden flex-1">
+                                                        <p className="font-bold text-sm text-text-main truncate group-hover:text-primary transition-colors">{att.fileName || att.name}</p>
+                                                        <div className="flex items-center gap-2 mt-0.5">
+                                                            <span className="text-[10px] text-text-muted font-bold uppercase tracking-widest">{(att.fileSize / 1024 / 1024).toFixed(2)} MB</span>
+                                                            <span className="w-1 h-1 rounded-full bg-border" />
+                                                            <span className="text-[10px] text-primary font-bold uppercase tracking-widest">{att.fileType?.split('/')[1] || 'FILE'}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="w-9 h-9 rounded-full bg-background flex items-center justify-center text-text-muted group-hover:bg-primary/10 group-hover:text-primary transition-all shadow-sm border border-border group-hover:border-primary/20">
+                                                        <Icon icon="material-symbols:download-rounded" className="text-xl" />
+                                                    </div>
+                                                </a>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     )}
                 </div>

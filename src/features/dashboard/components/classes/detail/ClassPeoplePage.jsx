@@ -28,38 +28,38 @@ const ClassPeoplePage = () => {
 
     const [members, setMembers] = useState([]);
 
-    useEffect(() => {
-        const fetchMembers = async () => {
-            if (!classId) return;
-            const token = useAuthStore.getState().user?.token;
-            try {
-                setIsLoading(true);
-                const res = await classService.getClassMembers(classId, token);
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.data) {
-                        const formattedMembers = data.data.map((m) => ({
-                            id: m.studentID,
-                            name: m.fullName || 'Chưa cập nhật',
-                            email: m.email || 'Chưa cập nhật',
-                            parentName: m.parentName || 'Chưa cập nhật',
-                            phone: m.parentPhone || 'Chưa cập nhật',
-                            enrolledDate: m.enrolledDate,
-                            status: m.status?.toLowerCase() || 'active',
-                            attendance: 100 // Mock vì API hiện tại chưa nhả attendance
-                        }));
-                        setMembers(formattedMembers);
-                    }
-                } else {
-                    console.error("Failed to fetch class members");
+    const fetchMembers = async () => {
+        if (!classId) return;
+        const token = useAuthStore.getState().user?.token;
+        try {
+            setIsLoading(true);
+            const res = await classService.getClassMembers(classId, token);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.data) {
+                    const formattedMembers = data.data.map((m) => ({
+                        id: m.studentID,
+                        name: m.fullName || 'Chưa cập nhật',
+                        email: m.email || 'Chưa cập nhật',
+                        parentName: m.parentName || 'Chưa cập nhật',
+                        phone: m.parentPhone || 'Chưa cập nhật',
+                        enrolledDate: m.enrolledDate,
+                        status: m.status?.toLowerCase() || 'active',
+                        attendance: 100 // Mock vì API hiện tại chưa nhả attendance
+                    }));
+                    setMembers(formattedMembers);
                 }
-            } catch (err) {
-                console.error("Lỗi fetch API lớp:", err);
-            } finally {
-                setIsLoading(false);
+            } else {
+                console.error("Failed to fetch class members");
             }
-        };
+        } catch (err) {
+            console.error("Lỗi fetch API lớp:", err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
+    useEffect(() => {
         fetchMembers();
     }, [classId]);
 
@@ -72,16 +72,8 @@ const ClassPeoplePage = () => {
         return matchesSearch && matchesStatus;
     });
 
-    const handleAddStudent = (newStudent) => {
-        const exists = members.find(m => m.id === newStudent.id);
-        if (!exists) {
-            setMembers([
-                { ...newStudent, attendance: 100, parentName: 'Chưa cập nhật', status: newStudent.status || 'active' },
-                ...members
-            ]);
-        } else {
-            toast.warning('Học viên này đã ở trong lớp!');
-        }
+    const handleAddStudent = () => {
+        fetchMembers();
     };
 
     return (
@@ -402,6 +394,7 @@ const ClassPeoplePage = () => {
                 isOpen={isAddModalOpen}
                 onClose={() => setIsAddModalOpen(false)}
                 onAdd={handleAddStudent}
+                classId={classId}
             />
 
             <TAPermissionsModal 

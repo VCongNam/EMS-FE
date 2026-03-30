@@ -59,5 +59,16 @@ export const classService = {
     return fetch(getApiUrl(`/api/Class/${id}/members`), {
       headers: { 'Authorization': `Bearer ${token}` }
     });
+  },
+
+  assignStudent: async (classId, studentId, token) => {
+    return fetch(getApiUrl(`/api/Class/${classId}/assignStudent`), {
+      method: 'POST',
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json' 
+      },
+      body: JSON.stringify({ studentID: studentId })
+    });
   }
 };

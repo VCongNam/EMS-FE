@@ -18,12 +18,10 @@ const initialForm = {
     gradeLevel: '',
     startDate: '',
     endDate: '',
-    startTime: '',
-    endTime: '',
     room: '',
     tuitionFee: '',
     maxCapacity: '',
-    days: [],
+    schedules: [], // [{ day: 'T2', startTime: '', endTime: '' }]
 };
 
 const InputField = ({ label, required, children, error }) => (
@@ -49,12 +47,10 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
                     gradeLevel: initialData.gradeLevel || '', 
                     startDate: '', // Cần parse từ mock nếu có
                     endDate: '',
-                    startTime: initialData.startTime || '',
-                    endTime: initialData.endTime || '',
                     room: initialData.room || '',
                     tuitionFee: initialData.tuitionFee || '',
                     maxCapacity: initialData.students?.max || '',
-                    days: initialData.days || [],
+                    schedules: initialData.schedules || [],
                 });
             } else {
                 setForm(initialForm);
@@ -73,12 +69,27 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
     };
 
     const toggleDay = (day) => {
+        setForm(prev => {
+            const exists = prev.schedules.some(s => s.day === day);
+            if (exists) {
+                return { ...prev, schedules: prev.schedules.filter(s => s.day !== day) };
+            } else {
+                return { ...prev, schedules: [...prev.schedules, { day, startTime: '', endTime: '' }] };
+            }
+        });
+        if (errors.days) {
+            setErrors(prev => ({ ...prev, days: undefined }));
+        }
+    };
+
+    const handleScheduleTimeChange = (day, field, value) => {
         setForm(prev => ({
             ...prev,
-            days: prev.days.includes(day)
-                ? prev.days.filter(d => d !== day)
-                : [...prev.days, day],
+            schedules: prev.schedules.map(s => s.day === day ? { ...s, [field]: value } : s)
         }));
+        if (errors[`${field}_${day}`]) {
+            setErrors(prev => ({ ...prev, [`${field}_${day}`]: undefined }));
+        }
     };
 
     const validate = () => {
@@ -87,15 +98,22 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
         if (!form.subject.trim()) newErrors.subject = 'Môn học không được để trống.';
         if (!form.gradeLevel.trim()) newErrors.gradeLevel = 'Khối lớp không được để trống.';
         if (!form.startDate) newErrors.startDate = 'Vui lòng chọn ngày bắt đầu.';
+        if (!form.endDate) newErrors.endDate = 'Vui lòng chọn ngày kết thúc.';
         
         if (form.startDate && form.endDate && form.endDate <= form.startDate) {
             newErrors.endDate = 'Ngày kết thúc phải sau ngày bắt đầu.';
         }
         
-        if (!form.startTime) newErrors.startTime = 'Vui lòng chọn giờ bắt đầu.';
-        if (!form.endTime) newErrors.endTime = 'Vui lòng chọn giờ kết thúc.';
-        if (form.startTime && form.endTime && form.endTime <= form.startTime) {
-            newErrors.endTime = 'Giờ kết thúc phải sau giờ bắt đầu.';
+        if (form.schedules.length === 0) {
+            newErrors.days = 'Vui lòng chọn ít nhất một ngày học.';
+        } else {
+            form.schedules.forEach(s => {
+                if (!s.startTime) newErrors[`startTime_${s.day}`] = 'Giờ BĐ';
+                if (!s.endTime) newErrors[`endTime_${s.day}`] = 'Giờ KT';
+                if (s.startTime && s.endTime && s.endTime <= s.startTime) {
+                    newErrors[`endTime_${s.day}`] = 'Không hợp lệ';
+                }
+            });
         }
 
         if (form.maxCapacity && parseInt(form.maxCapacity) < 1) {
@@ -208,32 +226,12 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
                                     className={`w-full !my-1 !px-4 !py-3 bg-background border rounded-xl outline-none transition-all text-text-main font-medium focus:border-primary focus:ring-4 focus:ring-primary/5 ${errors.startDate ? 'border-red-400 ring-2 ring-red-100' : 'border-border'}`}
                                 />
                             </InputField>
-                            <InputField label="Ngày kết thúc (Không bắt buộc)" error={errors.endDate}>
+                            <InputField label="Ngày kết thúc" required error={errors.endDate}>
                                 <input
                                     type="date"
                                     value={form.endDate}
                                     onChange={e => handleChange('endDate', e.target.value)}
                                     className={`w-full !my-1 !px-4 !py-3 bg-background border rounded-xl outline-none transition-all text-text-main font-medium focus:border-primary focus:ring-4 focus:ring-primary/5 ${errors.endDate ? 'border-red-400 ring-2 ring-red-100' : 'border-border'}`}
-                                />
-                            </InputField>
-                        </div>
-
-                        {/* Start Time & End Time */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <InputField label="Giờ bắt đầu" required error={errors.startTime}>
-                                <input
-                                    type="time"
-                                    value={form.startTime}
-                                    onChange={e => handleChange('startTime', e.target.value)}
-                                    className={`w-full !my-1 !px-4 !py-3 bg-background border rounded-xl outline-none transition-all text-text-main font-medium focus:border-primary focus:ring-4 focus:ring-primary/5 ${errors.startTime ? 'border-red-400 ring-2 ring-red-100' : 'border-border'}`}
-                                />
-                            </InputField>
-                            <InputField label="Giờ kết thúc" required error={errors.endTime}>
-                                <input
-                                    type="time"
-                                    value={form.endTime}
-                                    onChange={e => handleChange('endTime', e.target.value)}
-                                    className={`w-full !my-1 !px-4 !py-3 bg-background border rounded-xl outline-none transition-all text-text-main font-medium focus:border-primary focus:ring-4 focus:ring-primary/5 ${errors.endTime ? 'border-red-400 ring-2 ring-red-100' : 'border-border'}`}
                                 />
                             </InputField>
                         </div>
@@ -274,29 +272,66 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
                         </InputField>
 
                         {/* Days of the Week */}
-                        <div className="space-y-1.5">
-                            <label className="block text-xs font-bold text-text-muted uppercase tracking-widest">
-                                Các ngày học trong tuần
-                            </label>
-                            <div className="flex flex-wrap gap-2 !pt-1">
-                                {DAYS.map(day => {
-                                    const isSelected = form.days.includes(day.key);
-                                    return (
-                                        <button
-                                            key={day.key}
-                                            type="button"
-                                            onClick={() => toggleDay(day.key)}
-                                            className={`w-10 h-10 !my-1 rounded-xl text-sm font-bold transition-all border ${
-                                                isSelected
-                                                    ? ' text-primary border-primary shadow-md shadow-primary/20'
-                                                    : '!bg-background border-border text-text-muted hover:border-primary hover:text-primary'
-                                            }`}
-                                        >
-                                            {day.label}
-                                        </button>
-                                    );
-                                })}
+                        <div className="space-y-3">
+                            <div>
+                                <label className="block text-xs font-bold text-text-muted uppercase tracking-widest">
+                                    Các ngày học trong tuần <span className="text-red-500">*</span>
+                                </label>
+                                <div className="flex flex-wrap gap-2 !pt-1">
+                                    {DAYS.map(day => {
+                                        const isSelected = form.schedules.some(s => s.day === day.key);
+                                        return (
+                                            <button
+                                                key={day.key}
+                                                type="button"
+                                                onClick={() => toggleDay(day.key)}
+                                                className={`w-10 h-10 !my-1 rounded-xl text-sm font-bold transition-all border ${
+                                                    isSelected
+                                                        ? ' text-primary border-primary shadow-md shadow-primary/20'
+                                                        : '!bg-background border-border text-text-muted hover:border-primary hover:text-primary'
+                                                }`}
+                                            >
+                                                {day.label}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                {errors.days && <p className="text-xs text-red-500 !mt-1">{errors.days}</p>}
                             </div>
+
+                            {/* Dynamic Time Inputs for Selected Days */}
+                            {form.schedules.length > 0 && (
+                                <div className="bg-background rounded-2xl border border-border !p-4 space-y-3">
+                                    <h3 className="text-sm font-bold text-text-main">Thiết lập khung giờ học</h3>
+                                    <div className="space-y-3">
+                                        {form.schedules.map(schedule => (
+                                            <div key={schedule.day} className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary font-bold flex items-center justify-center text-sm shrink-0">
+                                                    {schedule.day}
+                                                </div>
+                                                <div className="flex-1 grid grid-cols-2 gap-3">
+                                                    <InputField error={errors[`startTime_${schedule.day}`]}>
+                                                        <input
+                                                            type="time"
+                                                            value={schedule.startTime}
+                                                            onChange={e => handleScheduleTimeChange(schedule.day, 'startTime', e.target.value)}
+                                                            className={`w-full !px-3 !py-2 bg-white border rounded-xl outline-none text-sm transition-all text-text-main font-medium focus:border-primary focus:ring-4 focus:ring-primary/5 ${errors[`startTime_${schedule.day}`] ? 'border-red-400 ring-2 ring-red-100' : 'border-border'}`}
+                                                        />
+                                                    </InputField>
+                                                    <InputField error={errors[`endTime_${schedule.day}`]}>
+                                                        <input
+                                                            type="time"
+                                                            value={schedule.endTime}
+                                                            onChange={e => handleScheduleTimeChange(schedule.day, 'endTime', e.target.value)}
+                                                            className={`w-full !px-3 !py-2 bg-white border rounded-xl outline-none text-sm transition-all text-text-main font-medium focus:border-primary focus:ring-4 focus:ring-primary/5 ${errors[`endTime_${schedule.day}`] ? 'border-red-400 ring-2 ring-red-100' : 'border-border'}`}
+                                                        />
+                                                    </InputField>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
 
