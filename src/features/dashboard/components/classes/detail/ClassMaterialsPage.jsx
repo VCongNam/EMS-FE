@@ -1,106 +1,234 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Icon } from '@iconify/react';
+import { useParams } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import useAuthStore from '../../../../../store/authStore';
+import learningMaterialService from '../../../api/learningMaterialService';
+import AddMaterialModal from './components/AddMaterialModal';
+import MaterialDetailModal from './components/MaterialDetailModal';
 
-const mockMaterials = [
-    { id: 'm1', name: 'Bài giảng tuần 1: Tổng quan', type: 'pdf', size: '2.5 MB', date: '2026-03-20', uploader: 'Nguyễn Văn A' },
-    { id: 'm2', name: 'Slide bài giảng - Chương 1', type: 'ppt', size: '5.1 MB', date: '2026-03-21', uploader: 'Trần Thị B' },
-    { id: 'm3', name: 'Video hướng dẫn cài đặt môi trường', type: 'video', size: '150 MB', date: '2026-03-22', uploader: 'Nguyễn Văn A' },
-    { id: 'm4', name: 'Tài liệu tham khảo bổ sung', type: 'doc', size: '1.2 MB', date: '2026-03-23', uploader: 'Lê Văn C' }
-];
-
-const getFileIcon = (type) => {
-    switch(type) {
-        case 'pdf': return <Icon icon="vscode-icons:file-type-pdf2" className="text-4xl" />;
-        case 'ppt': return <Icon icon="vscode-icons:file-type-powerpoint" className="text-4xl" />;
-        case 'doc': return <Icon icon="vscode-icons:file-type-word" className="text-4xl" />;
-        case 'video': return <Icon icon="vscode-icons:file-type-video" className="text-4xl" />;
-        default: return <Icon icon="material-symbols:insert-drive-file" className="text-4xl text-gray-400" />;
+const getFileIcon = (type, attachments) => {
+    // If multiple attachments, use folder icon
+    if (attachments && attachments.length > 1) {
+        return <Icon icon="solar:folder-with-files-bold-duotone" className="text-4xl text-amber-500" />;
     }
+    
+    const t = type?.toLowerCase() || attachments?.[0]?.fileType?.toLowerCase() || '';
+    if (t.includes('pdf')) return <Icon icon="solar:file-text-bold-duotone" className="text-4xl text-red-500" />;
+    if (t.includes('ppt') || t.includes('powerpoint')) return <Icon icon="solar:presentation-graph-bold-duotone" className="text-4xl text-orange-500" />;
+    if (t.includes('doc') || t.includes('word')) return <Icon icon="solar:document-bold-duotone" className="text-4xl text-blue-500" />;
+    if (t.includes('video') || t.includes('mp4')) return <Icon icon="solar:videocamera-record-bold-duotone" className="text-4xl text-purple-500" />;
+    if (t.includes('image') || t.includes('png') || t.includes('jpg')) return <Icon icon="solar:gallery-bold-duotone" className="text-4xl text-emerald-500" />;
+    return <Icon icon="solar:file-bold-duotone" className="text-4xl text-primary/40" />;
 };
 
 const ClassMaterialsPage = () => {
+    const { classId } = useParams();
     const { user } = useAuthStore();
+    const [materials, setMaterials] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+    const [selectedMaterialId, setSelectedMaterialId] = useState(null);
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     
     // RBAC check
     const userRole = user?.role?.toUpperCase();
     const isTeacherOrTA = userRole === 'TEACHER' || userRole === 'TA';
 
-    const filteredMaterials = mockMaterials.filter(m => m.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    const fetchMaterials = useCallback(async () => {
+        setLoading(true);
+        try {
+            const res = await learningMaterialService.getMaterialsByClass(classId, user?.token);
+            if (res.ok) {
+                const data = await res.json();
+                setMaterials(data || []);
+            } else {
+                throw new Error('Không thể tải danh sách tài liệu');
+            }
+        } catch (error) {
+            console.error('Error fetching materials:', error);
+            toast.error(error.message);
+        } finally {
+            setLoading(false);
+        }
+    }, [classId, user?.token]);
+
+    useEffect(() => {
+        fetchMaterials();
+    }, [fetchMaterials]);
+
+    const handleDelete = async (id) => {
+        if (!window.confirm('Bạn có chắc chắn muốn xóa tài liệu này?')) return;
+
+        try {
+            const res = await learningMaterialService.deleteMaterial(id, user?.token);
+            if (res.ok) {
+                toast.success('Đã xóa tài liệu');
+                fetchMaterials();
+            } else {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.message || 'Không thể xóa tài liệu');
+            }
+        } catch (error) {
+            console.error('Error deleting material:', error);
+            toast.error(error.message);
+        }
+    };
+
+    const handleViewDetail = (id) => {
+        setSelectedMaterialId(id);
+        setIsDetailModalOpen(true);
+    };
+
+    const filteredMaterials = (materials || []).filter(m => 
+        m.title?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     return (
-        <div className="space-y-6  animate-fade-in-up">
-            <div className="bg-surface rounded-2xl border !mb-2 border-border !p-6 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                    <h2 className="text-2xl font-bold text-text-main !mb-1">Tài liệu học tập</h2>
-                    <p className="text-text-muted text-sm">Tổng hợp các tài liệu, bài giảng và tệp tin của lớp học</p>
+        <div className="space-y-6 animate-fade-in-up">
+            {/* Header Section */}
+            <div className="bg-white rounded-3xl border border-border !p-6 sm:!p-8 shadow-sm flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+                <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-inner">
+                        <Icon icon="material-symbols:book-rounded" className="text-3xl" />
+                    </div>
+                    <div>
+                        <h2 className="text-2xl font-black text-text-main !mb-1 tracking-tight">Tài liệu học tập</h2>
+                        <p className="text-text-muted text-sm font-medium">Quản lý và chia sẻ học liệu cho lớp học của bạn</p>
+                    </div>
                 </div>
                 
-                <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-                    <div className="relative w-full sm:w-64">
-                        <Icon icon="material-symbols:search-rounded" className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-xl" />
+                <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
+                    <div className="relative w-full sm:w-80">
+                        <Icon icon="material-symbols:search-rounded" className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted text-xl" />
                         <input 
                             type="text" 
-                            placeholder="Tìm kiếm tài liệu..." 
+                            placeholder="Tìm nhanh tài liệu..." 
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full bg-background border border-border rounded-xl !py-2 !pl-10 !pr-4 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                            className="w-full bg-[#F8FAFC] border border-border rounded-2xl !py-3 !pl-12 !pr-4 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all font-medium"
                         />
                     </div>
                     {isTeacherOrTA && (
-                        <button className="w-full sm:w-auto flex items-center justify-center gap-2 !bg-primary text-white font-semibold !px-4 !py-2 rounded-xl hover:bg-primary-hover transition-colors shadow-sm shadow-primary/20 whitespace-nowrap">
-                            <Icon icon="material-symbols:upload-rounded" className="text-xl" />
+                        <button 
+                            onClick={() => setIsUploadModalOpen(true)}
+                            className="w-full sm:w-auto flex items-center justify-center gap-2 !bg-primary text-white font-black !px-6 !py-3 rounded-2xl hover:bg-primary-hover hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-primary/20 whitespace-nowrap"
+                        >
+                            <Icon icon="material-symbols:cloud-upload-rounded" className="text-2xl" />
                             Tải lên
                         </button>
                     )}
                 </div>
             </div>
 
-            <div className="bg-surface rounded-2xl border border-border overflow-hidden shadow-sm">
-                <div className="overflow-x-auto">
+            {/* List Section */}
+            <div className="bg-white rounded-[2rem] border border-border overflow-hidden shadow-sm">
+                <div className="overflow-x-auto custom-scrollbar">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="bg-background/50 border-b border-border">
-                                <th className="!p-4 font-semibold text-text-muted text-sm">Tên tài liệu</th>
-                                <th className="!p-4 font-semibold text-text-muted text-sm hidden sm:table-cell">Kích thước</th>
-                                <th className="!p-4 font-semibold text-text-muted text-sm hidden md:table-cell">Người đăng</th>
-                                <th className="!p-4 font-semibold text-text-muted text-sm">Ngày tải lên</th>
-                                <th className="!p-4 font-semibold text-text-muted text-sm text-right">Thao tác</th>
+                            <tr className="bg-[#F8FAFC] border-b border-border">
+                                <th className="!p-5 font-black text-text-muted text-[11px] uppercase tracking-widest">Tên tài liệu</th>
+                                <th className="!p-5 font-black text-text-muted text-[11px] uppercase tracking-widest hidden sm:table-cell">Kích thước</th>
+                                <th className="!p-5 font-black text-text-muted text-[11px] uppercase tracking-widest hidden md:table-cell">Người đăng</th>
+                                <th className="!p-5 font-black text-text-muted text-[11px] uppercase tracking-widest">Ngày tải lên</th>
+                                <th className="!p-5 font-black text-text-muted text-[11px] uppercase tracking-widest text-right">Thao tác</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            {filteredMaterials.map((material) => (
-                                <tr key={material.id} className="border-b border-border hover:bg-surface-hover transition-colors group">
-                                    <td className="!p-4">
-                                        <div className="flex items-center gap-3">
-                                            {getFileIcon(material.type)}
-                                            <span className="font-medium text-text-main group-hover:text-primary transition-colors cursor-pointer line-clamp-2">
-                                                {material.name}
-                                            </span>
-                                        </div>
-                                    </td>
-                                    <td className="!p-4 text-text-muted text-sm hidden sm:table-cell">{material.size}</td>
-                                    <td className="!p-4 text-text-muted text-sm hidden md:table-cell">{material.uploader}</td>
-                                    <td className="!p-4 text-text-muted text-sm">{material.date}</td>
-                                    <td className="!p-4 text-right">
-                                        <div className="flex items-center justify-end gap-1">
-                                            <button className="text-text-muted hover:text-primary transition-colors !p-2 rounded-lg hover:bg-primary/10 tooltip-trigger" title="Tải xuống">
-                                                <Icon icon="material-symbols:download-rounded" className="text-xl" />
-                                            </button>
-                                            {isTeacherOrTA && (
-                                                <button className="text-text-muted hover:text-red-500 transition-colors !p-2 rounded-lg hover:bg-red-500/10 tooltip-trigger" title="Xóa">
-                                                    <Icon icon="material-symbols:delete-outline-rounded" className="text-xl" />
-                                                </button>
+                        <tbody className="divide-y divide-border">
+                            {loading ? (
+                                Array.from({ length: 3 }).map((_, i) => (
+                                    <tr key={i} className="animate-pulse">
+                                        <td colSpan="5" className="!p-8">
+                                            <div className="h-8 bg-background rounded-xl w-3/4"></div>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : filteredMaterials.length > 0 ? (
+                                filteredMaterials.map((material) => (
+                                    <tr key={material.materialId} className="group hover:bg-[#F8FAFC] transition-all">
+                                        <td className="!p-5">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-12 h-12 rounded-xl bg-background flex items-center justify-center group-hover:bg-white transition-colors border border-transparent group-hover:border-border shadow-sm">
+                                                    {getFileIcon(material.type, material.attachments)}
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <span 
+                                                        onClick={() => handleViewDetail(material.materialId)}
+                                                        className="block font-bold text-text-main group-hover:text-primary transition-colors cursor-pointer truncate max-w-sm" 
+                                                        title={material.title}
+                                                    >
+                                                        {material.title}
+                                                    </span>
+                                                    <span className="text-[11px] text-text-muted font-medium line-clamp-1 opacity-70">
+                                                        {material.description || 'Không có mô tả'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="!p-5 text-text-muted text-sm font-bold hidden sm:table-cell">
+                                            {material.attachments && material.attachments.length > 0 ? (
+                                                <span className="text-text-main">
+                                                    {(material.attachments.reduce((acc, curr) => acc + (curr.fileSize || 0), 0) / 1024 / 1024).toFixed(2)} MB
+                                                </span>
+                                            ) : material.contentSize ? (
+                                                <span className="text-text-main">
+                                                    {(material.contentSize / 1024 / 1024).toFixed(2)} MB
+                                                </span>
+                                            ) : (
+                                                <span className="opacity-30 italic font-medium text-xs">Phụ thuộc tệp đính kèm</span>
                                             )}
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                            {filteredMaterials.length === 0 && (
+                                        </td>
+                                        <td className="!p-5 hidden md:table-cell">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-6 h-6 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600">
+                                                    <Icon icon="material-symbols:person-rounded" className="text-xs" />
+                                                </div>
+                                                <span className="text-sm font-bold text-text-main opacity-80">{material.authorName}</span>
+                                            </div>
+                                        </td>
+                                        <td className="!p-5">
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-bold text-text-main">
+                                                    {new Date(material.createdAt).toLocaleDateString('vi-VN')}
+                                                </span>
+                                                <span className="text-[10px] text-text-muted font-medium">
+                                                    {new Date(material.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className="!p-5 text-right">
+                                            <div className="flex items-center justify-end gap-2">
+                                                <button 
+                                                    onClick={() => handleViewDetail(material.materialId)}
+                                                    className="w-10 h-10 flex items-center justify-center rounded-xl bg-background text-text-muted hover:text-primary hover:bg-primary/10 transition-all border border-border hover:border-primary/30" 
+                                                    title="Xem chi tiết & Tải xuống"
+                                                >
+                                                    <Icon icon="material-symbols:download-rounded" className="text-xl" />
+                                                </button>
+                                                {isTeacherOrTA && (
+                                                    <button 
+                                                        onClick={() => handleDelete(material.materialId)}
+                                                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-background text-text-muted hover:text-red-500 hover:bg-red-50 transition-all border border-border hover:border-red-500/30" 
+                                                        title="Xóa"
+                                                    >
+                                                        <Icon icon="material-symbols:delete-outline-rounded" className="text-xl" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
                                 <tr>
-                                    <td colSpan="5" className="!p-8 text-center text-text-muted">
-                                        Không tìm thấy tài liệu phù hợp
+                                    <td colSpan="5" className="!p-20 text-center">
+                                        <div className="flex flex-col items-center justify-center gap-4 opacity-40">
+                                            <Icon icon="material-symbols:folder-open-outline-rounded" className="text-8xl" />
+                                            <div>
+                                                <p className="text-xl font-black tracking-tight">Thư mục trống</p>
+                                                <p className="text-sm font-medium">Không tìm thấy tài liệu học tập nào ở đây.</p>
+                                            </div>
+                                        </div>
                                     </td>
                                 </tr>
                             )}
@@ -108,6 +236,21 @@ const ClassMaterialsPage = () => {
                     </table>
                 </div>
             </div>
+
+            {/* Upload Modal */}
+            <AddMaterialModal 
+                isOpen={isUploadModalOpen}
+                onClose={() => setIsUploadModalOpen(false)}
+                classId={classId}
+                onSuccess={fetchMaterials}
+            />
+
+            {/* Detail Modal */}
+            <MaterialDetailModal 
+                isOpen={isDetailModalOpen}
+                onClose={() => setIsDetailModalOpen(false)}
+                materialId={selectedMaterialId}
+            />
         </div>
     );
 };
