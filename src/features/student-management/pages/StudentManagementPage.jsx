@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
+import { toast } from 'react-toastify';
 import Button from "../../../components/ui/Button";
 import CreateStudentModal from '../components/CreateStudentModal';
 import AssignClassModal from '../components/AssignClassModal';
@@ -25,7 +26,7 @@ const StudentManagementPage = () => {
     const handleCreateStudent = async (newStudentData) => {
         try {
             const token = useAuthStore.getState().user?.token;
-            if (!token) return alert('Vui lòng đăng nhập lại!');
+            if (!token) return toast.error('Vui lòng đăng nhập lại!');
 
             // Format YYYY-MM-DD input to ISO 8601 string for C# backend
             let isoDob = new Date().toISOString(); 
@@ -55,7 +56,7 @@ const StudentManagementPage = () => {
             const responseData = await response.json();
             const realStudentId = responseData.studentId;
 
-            alert('Khởi tạo tài khoản Học sinh thành công!');
+            toast.success('Khởi tạo tài khoản Học sinh thành công!');
             setIsCreateModalOpen(false);
 
             // Cập nhật mảng tĩnh Local bằng ID Thật để UI có thể tái sử dụng ngay (Vd: AssignClass)
@@ -72,7 +73,7 @@ const StudentManagementPage = () => {
 
         } catch (error) {
             console.error('Create Student API Error:', error);
-            alert(error.message);
+            toast.error(error.message);
         }
     };
 

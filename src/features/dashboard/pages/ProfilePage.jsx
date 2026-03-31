@@ -81,10 +81,10 @@ const ProfilePage = () => {
             // Sync with local Zustand store only if successful
             updateProfile(formData);
             setIsEditing(false);
-            alert("Cập nhật hồ sơ thành công!");
+            toast.success("Cập nhật hồ sơ thành công!");
         } catch (error) {
             console.error("Save profile error:", error);
-            alert(error.message);
+            toast.error(error.message);
         } finally {
             setSaving(false);
         }

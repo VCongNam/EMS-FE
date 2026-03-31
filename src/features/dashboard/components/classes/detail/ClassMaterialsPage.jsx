@@ -6,6 +6,7 @@ import useAuthStore from '../../../../../store/authStore';
 import learningMaterialService from '../../../api/learningMaterialService';
 import AddMaterialModal from './components/AddMaterialModal';
 import MaterialDetailModal from './components/MaterialDetailModal';
+import ConfirmModal from '../../../../../components/ui/ConfirmModal';
 
 const getFileIcon = (type, attachments) => {
     // If multiple attachments, use folder icon
@@ -31,6 +32,7 @@ const ClassMaterialsPage = () => {
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
     const [selectedMaterialId, setSelectedMaterialId] = useState(null);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+    const [confirmModal, setConfirmModal] = useState({ isOpen: false, materialId: null });
     
     // RBAC check
     const userRole = user?.role?.toUpperCase();
@@ -58,8 +60,13 @@ const ClassMaterialsPage = () => {
         fetchMaterials();
     }, [fetchMaterials]);
 
-    const handleDelete = async (id) => {
-        if (!window.confirm('Bạn có chắc chắn muốn xóa tài liệu này?')) return;
+    const handleDeleteClick = (id) => {
+        setConfirmModal({ isOpen: true, materialId: id });
+    };
+
+    const handleConfirmDelete = async () => {
+        const id = confirmModal.materialId;
+        if (!id) return;
 
         try {
             const res = await learningMaterialService.deleteMaterial(id, user?.token);
@@ -73,6 +80,8 @@ const ClassMaterialsPage = () => {
         } catch (error) {
             console.error('Error deleting material:', error);
             toast.error(error.message);
+        } finally {
+            setConfirmModal({ isOpen: false, materialId: null });
         }
     };
 
@@ -208,7 +217,7 @@ const ClassMaterialsPage = () => {
                                                 </button>
                                                 {isTeacherOrTA && (
                                                     <button 
-                                                        onClick={() => handleDelete(material.materialId)}
+                                                        onClick={() => handleDeleteClick(material.materialId)}
                                                         className="w-10 h-10 flex items-center justify-center rounded-xl bg-background text-text-muted hover:text-red-500 hover:bg-red-50 transition-all border border-border hover:border-red-500/30" 
                                                         title="Xóa"
                                                     >
@@ -250,6 +259,17 @@ const ClassMaterialsPage = () => {
                 isOpen={isDetailModalOpen}
                 onClose={() => setIsDetailModalOpen(false)}
                 materialId={selectedMaterialId}
+            />
+
+            <ConfirmModal 
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal({ isOpen: false, materialId: null })}
+                onConfirm={handleConfirmDelete}
+                title="Xác nhận xóa tài liệu"
+                message="Bạn có chắc chắn muốn xóa tài liệu học tập này không? Hành động này không thể hoàn tác."
+                confirmText="Xóa tài liệu"
+                cancelText="Hủy bỏ"
+                type="danger"
             />
         </div>
     );

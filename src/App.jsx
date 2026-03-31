@@ -1,10 +1,14 @@
-import { AppRoutes } from './routes/AppRoutes'
-// import './App.css' // Tạm thời comment CSS mặc định của create-react-app để không bị vỡ layout
+import { AppRoutes } from './routes/AppRoutes';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
   return (
-    <AppRoutes />
-  )
+    <>
+      <AppRoutes />
+      <ToastContainer position="top-right" autoClose={3000} />
+    </>
+  );
 }
 
 export default App

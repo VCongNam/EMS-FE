@@ -7,6 +7,7 @@ import AttendanceModal from './components/AttendanceModal';
 import SessionModal from './components/SessionModal';
 import useAuthStore from '../../../../../store/authStore';
 import { sessionService } from '../../../api/sessionService';
+import ConfirmModal from '../../../../../components/ui/ConfirmModal';
 
 const DAYS_OF_WEEK = [
     { id: 'MON', label: 'T2' }, { id: 'TUE', label: 'T3' }, { id: 'WED', label: 'T4' },
@@ -43,6 +44,7 @@ const ClassSchedulePage = () => {
     const [sessionModalState, setSessionModalState] = useState({ isOpen: false, initialData: null });
     const [filterStatus, setFilterStatus] = useState('all');
     const [deletingId, setDeletingId] = useState(null);
+    const [confirmModal, setConfirmModal] = useState({ isOpen: false, sessionId: null });
 
     const [attendanceTarget, setAttendanceTarget] = useState(null);
 
@@ -108,8 +110,13 @@ const ClassSchedulePage = () => {
         toast.success('Đã xóa cấu hình lịch định kỳ.');
     };
 
-    const handleDeleteLessonAPI = async (id) => {
-        if (!window.confirm("Bạn có chắc chắn muốn xóa buổi học này? Thao tác này không thể hoàn tác.")) return;
+    const handleDeleteLessonAPI = (id) => {
+        setConfirmModal({ isOpen: true, sessionId: id });
+    };
+
+    const handleConfirmDelete = async () => {
+        const id = confirmModal.sessionId;
+        if (!id) return;
         
         const token = useAuthStore.getState().user?.token;
         if (!token) return;
@@ -128,6 +135,7 @@ const ClassSchedulePage = () => {
             toast.error('Lỗi kết nối máy chủ');
         } finally {
             setDeletingId(null);
+            setConfirmModal({ isOpen: false, sessionId: null });
         }
     };
 
@@ -393,6 +401,17 @@ const ClassSchedulePage = () => {
                 lesson={attendanceTarget?.lesson}
                 onClose={() => setAttendanceTarget(null)}
                 onSave={handleSaveAttendance}
+            />
+
+            <ConfirmModal 
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal({ isOpen: false, sessionId: null })}
+                onConfirm={handleConfirmDelete}
+                title="Xác nhận xóa buổi học"
+                message="Bạn có chắc chắn muốn xóa buổi học này không? Hành động này không thể hoàn tác và dữ liệu điểm danh liên quan sẽ bị mất."
+                confirmText="Xóa buổi học"
+                cancelText="Hủy bỏ"
+                type="danger"
             />
         </div>
     );

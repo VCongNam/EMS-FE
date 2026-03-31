@@ -44,6 +44,10 @@ import ForgotPasswordPage from '../features/auth/pages/ForgotPasswordPage';
 import VerifyEmailPage from '../features/auth/pages/VerifyEmailPage';
 import UserAuthorizationPage from '../features/dashboard/pages/UserAuthorizationPage';
 
+import AcademicAnalyticsPage from '../features/academic-analytics/pages/AcademicAnalyticsPage';
+import ClassReportsPage from '../features/academic-analytics/pages/ClassReportsPage';
+import TuitionManagementPage from '../features/tuition-management/pages/TuitionManagementPage';
+
 export const AppRoutes = () => {
      const { isAuthenticated } = useAuthStore();
 
@@ -143,6 +147,13 @@ export const AppRoutes = () => {
 
                               {/* Schedule Management */}
                               <Route path="schedule-management" element={<ScheduleManagementPage />} />
+
+                              {/* Academic Analytics */}
+                              <Route path="reports" element={<AcademicAnalyticsPage />} />
+                              <Route path="reports/:classId" element={<ClassReportsPage />} />
+
+                              {/* Tuition Management */}
+                              <Route path="tuition" element={<TuitionManagementPage />} />
 
                               {/* User Authorization (Admin) */}
                               <Route path="admin/authorization" element={<UserAuthorizationPage />} />

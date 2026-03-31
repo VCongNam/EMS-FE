@@ -158,7 +158,7 @@ const PostComposer = ({ onPost, editMode = false, initialContent = '', initialAt
                     <button 
                         className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-surface-hover text-text-muted hover:text-primary transition-colors"
                         title="Thêm liên kết Youtube"
-                        onClick={() => alert("Chức năng thêm link Youtube đang phát triển")}
+                        onClick={() => toast.info("Chức năng thêm link Youtube đang phát triển")}
                     >
                         <Icon icon="mdi:youtube" className="text-2xl" />
                     </button>

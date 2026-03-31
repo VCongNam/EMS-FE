@@ -161,8 +161,10 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
 
         if (form.maxCapacity && parseInt(form.maxCapacity) < 1) {
             newErrors.maxCapacity = 'Sĩ số phải là số nguyên dương.';
-        if (form.tuitionFee && parseInt(form.tuitionFee) < 0)
+        }
+        if (form.tuitionFee && parseInt(form.tuitionFee) < 0) {
             newErrors.tuitionFee = 'Học phí không hợp lệ.';
+        }
         return newErrors;
     };
 
@@ -345,8 +347,9 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
                             )}
                         </div>
                     </div>
+                </div>
 
-                    {/* ── Footer ── */}
+                {/* ── Footer ── */}
                     <div className="shrink-0 flex items-center !gap-3 !px-6 !py-5 sm:!px-8 border-t border-border bg-surface/95 backdrop-blur-md">
                         <button
                             onClick={onClose}
