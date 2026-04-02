@@ -10,10 +10,9 @@ const SideMenu = ({ isOpen, onClose }) => {
 
     const menuConfigs = {
         student: [
-            { name: 'Tổng quan', path: '/dashboard', icon: 'material-symbols:dashboard-rounded' },
-            { name: 'Lớp học của tôi', path: '/student/classes', icon: 'material-symbols:school-rounded' },
+            { name: 'Bảng điều khiển', path: '/dashboard', icon: 'material-symbols:dashboard-rounded' },
+            { name: 'Lớp học của tôi', path: '/student/classes', icon: 'material-symbols:class-rounded' },
             { name: 'Thời khóa biểu', path: '/schedule', icon: 'material-symbols:calendar-month-rounded' },
-            { name: 'Kết quả học tập', path: '/results', icon: 'material-symbols:trending-up-rounded' },
             { name: 'Thông báo', path: '/notifications', icon: 'material-symbols:circle-notifications-sharp', badge: 3 },
             { name: 'Học phí', path: '/tuition-payment', icon: 'solar:wallet-money-bold-duotone' },
             { name: 'Trang cá nhân', path: '/profile', icon: 'material-symbols:person-rounded' },
