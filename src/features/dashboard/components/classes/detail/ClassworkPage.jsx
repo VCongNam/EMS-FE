@@ -175,10 +175,7 @@ const ClassworkPage = () => {
                     </div>
                 </div>
             ) : (
-                <div className="!bg-surface rounded-2xl border !border-border !p-12 shadow-sm text-center">
-                    <div className="w-20 h-20 rounded-full !bg-primary/10 flex items-center justify-center mx-auto !mb-4">
-                         <Icon icon="material-symbols:assignment-add-outline-rounded" className="text-4xl text-primary" />
-                    </div>
+                <div className="!bg-surface rounded-2xl border !border-border !p-12 shadow-sm  !text-center">
                     <h3 className="text-xl font-bold text-text-main !mb-2">Chưa có bài tập nào</h3>
                     <p className="text-text-muted">
                         {isTeacherOrTA ? 'Nhấp vào nút "Tạo bài tập" để giao bài cho lớp.' : 'Giáo viên chưa giao bài tập nào cho lớp.'}

@@ -1,108 +1,138 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Icon } from '@iconify/react';
-import { toast } from 'react-toastify';
+import useAuthStore from '../../../store/authStore';
+import NextClassCard from '../components/NextClassCard';
+import DaySelector from '../components/DaySelector';
+import ScheduleTimelineView from '../components/ScheduleTimelineView';
+import ScheduleGridView from '../components/ScheduleGridView';
+
+const MOCK_WEEKLY_SCHEDULE = {
+    'Thứ 2': [
+        { id: 1, startTime: '08:00', endTime: '10:00', subject: 'Toán Cao Cấp', code: 'MATH101', room: 'P.301', teacher: 'Thầy Hùng', type: 'Math', status: 'Present' },
+        { id: 2, startTime: '10:15', endTime: '12:15', subject: 'Vật Lý Đại Cương', code: 'PHYS101', room: 'P.405', teacher: 'Cô Lan', type: 'Physics', status: 'Present', homework: 'Làm bài tập chương 2' },
+    ],
+    'Thứ 3': [
+        { id: 3, startTime: '13:30', endTime: '15:30', subject: 'Hóa Học Cơ Bản', code: 'CHEM101', room: 'LAB-2', teacher: 'Thầy Minh', type: 'Chemistry', status: 'Scheduled' },
+    ],
+    'Thứ 4': [
+        { id: 4, startTime: '08:00', endTime: '10:00', subject: 'Tiếng Anh Giao Tiếp', code: 'ENG201', room: 'P.202', teacher: 'Cô Rose', type: 'English', status: 'Scheduled', homework: 'Prepare for presentation' },
+        { id: 5, startTime: '13:30', endTime: '15:30', subject: 'Vật Lý Đại Cương', code: 'PHYS101', room: 'P.405', teacher: 'Cô Lan', type: 'Physics', status: 'Scheduled' },
+    ],
+    'Thứ 5': [
+        { id: 6, startTime: '10:15', endTime: '12:15', subject: 'Toán Cao Cấp', code: 'MATH101', room: 'P.301', teacher: 'Thầy Hùng', type: 'Math', status: 'Scheduled' },
+    ],
+    'Thứ 6': [
+        { id: 7, startTime: '08:00', endTime: '10:00', subject: 'Hóa Học Cơ Bản', code: 'CHEM101', room: 'LAB-2', teacher: 'Thầy Minh', type: 'Chemistry', status: 'Scheduled' },
+        { id: 8, startTime: '15:45', endTime: '17:45', subject: 'Tiếng Anh Giao Tiếp', code: 'ENG201', room: 'P.202', teacher: 'Cô Rose', type: 'English', status: 'Scheduled' },
+    ],
+    'Thứ 7': [],
+    'CN': [],
+};
+
+const DAY_NAME_MAP = {
+    '02': 'Thứ 2', '03': 'Thứ 3', '04': 'Thứ 4', '05': 'Thứ 5', '06': 'Thứ 6', '07': 'Thứ 7', '08': 'CN'
+};
 
 const ViewSchedulePage = () => {
-    const [currentWeek, setCurrentWeek] = useState('02/10 - 08/10/2026');
+    const { user } = useAuthStore();
+    const isStudent = user?.role === 'student';
 
-    // Dummy schedule data
-    const scheduleData = [
-        { id: 1, day: 'Thứ 2', date: '02/10', class: 'Toán Cao Cấp (MATH101)', time: '08:00 - 10:00', room: 'P.301', type: 'lecture' },
-        { id: 2, day: 'Thứ 4', date: '04/10', class: 'Vật Lý Đại Cương (PHYS101)', time: '13:30 - 15:30', room: 'P.405', type: 'practice' },
-        { id: 3, day: 'Thứ 6', date: '06/10', class: 'Toán Cao Cấp (MATH101)', time: '08:00 - 10:00', room: 'P.301', type: 'lecture' },
-    ];
+    const [viewMode, setViewMode] = useState('timeline'); // 'timeline' or 'grid'
+    const [selectedDate, setSelectedDate] = useState('02'); // Linked to 'Thứ 2' in DAYS
 
-    const handleDelete = (id) => {
-        toast.success('Đã xóa buổi học!');
-    };
+    // Derived Data
+    const dayName = DAY_NAME_MAP[selectedDate];
+    const dayLessons = MOCK_WEEKLY_SCHEDULE[dayName] || [];
+    const nextClass = MOCK_WEEKLY_SCHEDULE['Thứ 2'][0]; // Hardcoded for demo
 
-    const handleEdit = (id) => {
-        toast.info('Tính năng chỉnh sửa đang được phát triển.');
-    };
+    // ─── Render Student Layout (Premium) ───────────────────────────────────
+    if (isStudent) {
+        return (
+            <div className="!max-w-7xl !mx-auto !space-y-8 !animate-fade-in custom-scrollbar">
+                {/* Header & View Switcher */}
+                <div className="!flex !flex-col md:!flex-row !justify-between !items-start md:!items-center !gap-6 !bg-white !p-8 !rounded-[2.5rem] !border !border-border !shadow-sm">
+                    <div>
+                        <h1 className="!text-3xl sm:!text-4xl !font-black !text-text-main !tracking-tight !flex !items-center !gap-3 font-['Outfit']">
+                            Lịch học của tôi
+                            <div className="!w-2.5 !h-2.5 !rounded-full !bg-primary !animate-pulse"></div>
+                        </h1>
+                        <p className="!text-sm !font-medium !text-text-muted !mt-2 !ml-1">
+                            Chào buổi sáng! Bạn có {MOCK_WEEKLY_SCHEDULE['Thứ 2'].length} tiết học trong hôm nay.
+                        </p>
+                    </div>
 
+                    <div className="!flex !items-center !gap-1 !p-1.5 !bg-background !rounded-2xl !border !border-border">
+                        <button 
+                            onClick={() => setViewMode('timeline')}
+                            className={`!px-5 !py-2.5 !rounded-xl !text-sm !font-black !flex !items-center !gap-2 !transition-all ${
+                                viewMode === 'timeline' ? '!bg-white !text-primary !shadow-sm' : '!text-text-muted hover:!text-text-main'
+                            }`}
+                        >
+                            <Icon icon="solar:list-bold-duotone" className="!text-lg" />
+                            Ngày
+                        </button>
+                        <button 
+                            onClick={() => setViewMode('grid')}
+                            className={`!px-5 !py-2.5 !rounded-xl !text-sm !font-black !flex !items-center !gap-2 !transition-all ${
+                                viewMode === 'grid' ? '!bg-white !text-primary !shadow-sm' : '!text-text-muted hover:!text-text-main'
+                            }`}
+                        >
+                            <Icon icon="solar:grid-bold-duotone" className="!text-lg" />
+                            Tuần
+                        </button>
+                    </div>
+                </div>
+
+                {/* Highlights (Only in Timeline) */}
+                {viewMode === 'timeline' && (
+                    <NextClassCard nextClass={nextClass} />
+                )}
+
+                {/* Main Content Area */}
+                <div className="!space-y-8">
+                    {viewMode === 'timeline' ? (
+                        <>
+                            <div className="!space-y-4">
+                                <h3 className="!text-xl !font-black !text-text-main !tracking-tight !px-1">Chọn ngày học</h3>
+                                <DaySelector selectedDate={selectedDate} onSelect={setSelectedDate} />
+                            </div>
+
+                            <div className="!space-y-6">
+                                <div className="!flex !items-center !justify-between !px-1">
+                                    <h3 className="!text-xl !font-black !text-text-main !tracking-tight">Chi tiết lịch học - {dayName}</h3>
+                                    <button className="!text-primary !text-sm !font-black hover:!underline">Xem tất cả</button>
+                                </div>
+                                <ScheduleTimelineView scheduleData={dayLessons} />
+                            </div>
+                        </>
+                    ) : (
+                        <div className="!space-y-6">
+                            <h3 className="!text-xl !font-black !text-text-main !tracking-tight !px-1">Tổng quan tuần này</h3>
+                            <ScheduleGridView weeklyData={MOCK_WEEKLY_SCHEDULE} />
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    // ─── Render Fallback Layout (Standard) ───────────────────────────────
     return (
         <div className="w-full mx-auto space-y-6 animate-fade-in">
-            {/* Header Section */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-surface p-6 rounded-[2rem] border border-border shadow-sm">
                 <div>
                     <h1 className="text-2xl font-bold text-text-main flex items-center gap-3">
                         <Icon icon="material-symbols:calendar-month-rounded" className="text-primary text-3xl" />
                         Lịch học tuần
                     </h1>
-                    <p className="text-text-muted mt-1">Tuần {currentWeek}</p>
-                </div>
-                <div className="flex items-center gap-3">
-                    <button className="p-2 border border-border rounded-xl text-text-muted hover:bg-background transition-colors">
-                        <Icon icon="material-symbols:chevron-left-rounded" className="text-xl" />
-                    </button>
-                    <button className="px-4 py-2 border border-border rounded-xl font-semibold text-text-main hover:bg-background transition-colors">
-                        Hôm nay
-                    </button>
-                    <button className="p-2 border border-border rounded-xl text-text-muted hover:bg-background transition-colors">
-                        <Icon icon="material-symbols:chevron-right-rounded" className="text-xl" />
-                    </button>
-                    
-                    <button className="ml-4 px-4 py-2 bg-primary text-white rounded-xl font-semibold hover:bg-primary/90 shadow-md hover:shadow-primary/30 transition-all flex items-center gap-2">
-                        <Icon icon="material-symbols:add-rounded" className="text-xl" /> Đăng ký sự kiện
-                    </button>
+                    <p className="text-text-muted mt-1">Hệ thống quản lý lịch học</p>
                 </div>
             </div>
-
-            {/* List / Calendar View */}
-            <div className="bg-surface p-6 rounded-[2rem] border border-border shadow-sm">
-                <div className="space-y-4">
-                    {scheduleData.length === 0 ? (
-                        <div className="text-center py-12 text-text-muted">
-                            <Icon icon="material-symbols:event-busy-outline-rounded" className="mx-auto text-5xl mb-4 opacity-50" />
-                            <p>Không có lịch học nào trong tuần này.</p>
-                        </div>
-                    ) : (
-                        scheduleData.map(item => (
-                            <div key={item.id} className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl border border-border hover:border-primary/30 hover:shadow-md bg-background transition-all group">
-                                <div className="flex items-center gap-6 w-full sm:w-auto">
-                                    <div className="flex flex-col items-center justify-center min-w-[80px] px-4 py-3 bg-primary/10 rounded-xl text-primary border border-primary/20">
-                                        <span className="text-sm font-bold uppercase">{item.day}</span>
-                                        <span className="text-xl font-extrabold">{item.date}</span>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <div className="flex items-center gap-2">
-                                            <h3 className="font-bold text-lg text-text-main">{item.class}</h3>
-                                            <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded uppercase tracking-wider ${
-                                                item.type === 'lecture' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'
-                                            }`}>
-                                                {item.type === 'lecture' ? 'Lý thuyết' : 'Thực hành'}
-                                            </span>
-                                        </div>
-                                        <div className="flex flex-wrap items-center gap-4 text-sm text-text-muted">
-                                            <span className="flex items-center gap-1 font-medium">
-                                                <Icon icon="material-symbols:schedule-rounded" className="text-lg text-primary/70" />
-                                                {item.time}
-                                            </span>
-                                            <span className="flex items-center gap-1">
-                                                <Icon icon="material-symbols:door-open-outline-rounded" className="text-lg text-orange-500/70" />
-                                                {item.room}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="flex items-center justify-end gap-2 w-full sm:w-auto mt-2 sm:mt-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                                    <button 
-                                        onClick={() => handleEdit(item.id)}
-                                        className="p-2.5 text-text-muted hover:text-primary hover:bg-primary/10 rounded-xl transition-colors border border-transparent hover:border-primary/20"
-                                    >
-                                        <Icon icon="material-symbols:edit-calendar-rounded" className="text-xl" />
-                                    </button>
-                                    <button 
-                                        onClick={() => handleDelete(item.id)}
-                                        className="p-2.5 text-text-muted hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors border border-transparent hover:border-red-200"
-                                    >
-                                        <Icon icon="material-symbols:delete-outline-rounded" className="text-xl" />
-                                    </button>
-                                </div>
-                            </div>
-                        ))
-                    )}
-                </div>
+            
+            <div className="bg-surface p-6 rounded-[2rem] border border-border shadow-sm text-center py-20">
+                 <Icon icon="solar:ghost-bold-duotone" className="text-5xl mx-auto mb-4 opacity-40 text-primary" />
+                 <h3 className="text-xl font-black text-text-main">Vùng dành riêng</h3>
+                 <p className="text-text-muted mt-2">Vui lòng truy cập trang quản lý tương ứng với vai trò của bạn.</p>
             </div>
         </div>
     );

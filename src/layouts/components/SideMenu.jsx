@@ -14,6 +14,8 @@ const SideMenu = ({ isOpen, onClose }) => {
             { name: 'Lớp học của tôi', path: '/student/classes', icon: 'material-symbols:school-rounded' },
             { name: 'Thời khóa biểu', path: '/schedule', icon: 'material-symbols:calendar-month-rounded' },
             { name: 'Kết quả học tập', path: '/results', icon: 'material-symbols:trending-up-rounded' },
+            { name: 'Thông báo', path: '/notifications', icon: 'material-symbols:circle-notifications-sharp', badge: 3 },
+            { name: 'Học phí', path: '/tuition-payment', icon: 'solar:wallet-money-bold-duotone' },
             { name: 'Trang cá nhân', path: '/profile', icon: 'material-symbols:person-rounded' },
         ],
         teacher: [
@@ -22,7 +24,6 @@ const SideMenu = ({ isOpen, onClose }) => {
             { name: 'Quản lý Học sinh', path: '/students', icon: 'material-symbols:group-rounded' },
             { name: 'Quản lý Trợ giảng', path: '/assistants', icon: 'material-symbols:handshake-rounded' },
             { name: 'Quản lý Lịch học', path: '/schedule-management', icon: 'solar:calendar-add-bold-duotone' },
-            { name: 'Báo cáo & Thống kê', path: '/reports', icon: 'material-symbols:analytics-rounded' },
             { name: 'Quản lý Học phí', path: '/tuition', icon: 'solar:wallet-money-bold-duotone' },
             { name: 'Trang cá nhân', path: '/profile', icon: 'material-symbols:person-rounded' },
         ],
@@ -84,7 +85,14 @@ const SideMenu = ({ isOpen, onClose }) => {
                                     : 'hover:bg-white/10 text-white/70 hover:text-white'
                                     }`}
                             >
-                                <Icon icon={item.icon} className="text-2xl" />
+                                <div className="!relative">
+                                    <Icon icon={item.icon} className="text-2xl" />
+                                    {item.badge > 0 && (
+                                        <span className="!absolute !-top-1 !-right-1 !w-4 !h-4 !bg-red-500 !text-white !text-[9px] !font-black !flex !items-center !justify-center !rounded-full !border-2 !border-[#355872] group-hover:!border-white/10 !transition-all">
+                                            {item.badge}
+                                        </span>
+                                    )}
+                                </div>
                                 {item.name}
                             </Link>
                         );

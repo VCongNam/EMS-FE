@@ -47,6 +47,11 @@ import UserAuthorizationPage from '../features/dashboard/pages/UserAuthorization
 import AcademicAnalyticsPage from '../features/academic-analytics/pages/AcademicAnalyticsPage';
 import ClassReportsPage from '../features/academic-analytics/pages/ClassReportsPage';
 import TuitionManagementPage from '../features/tuition-management/pages/TuitionManagementPage';
+import TotalRevenuePage from '../features/tuition-management/pages/TotalRevenuePage';
+import ClassFinancialReportsPage from '../features/tuition-management/pages/ClassFinancialReportsPage';
+import ClassFinancialDetailPage from '../features/tuition-management/pages/ClassFinancialDetailPage';
+import StudentNotificationPage from '../features/notifications/pages/StudentNotificationPage';
+import StudentTuitionPage from '../features/tuition-management/pages/StudentTuitionPage';
 
 export const AppRoutes = () => {
      const { isAuthenticated } = useAuthStore();
@@ -134,7 +139,11 @@ export const AppRoutes = () => {
                                   <Route path="attendance" element={<ClassAttendancePage />} />
                               </Route>
 
-                              {/* Student Management */}
+                               {/* Student Notifications */}
+                               <Route path="notifications" element={<StudentNotificationPage />} />
+                               <Route path="tuition-payment" element={<StudentTuitionPage />} />
+
+                               {/* Student Management */}
                               <Route path="students" element={<StudentManagementPage />} />
 
                               {/* TA Management */}
@@ -154,6 +163,9 @@ export const AppRoutes = () => {
 
                               {/* Tuition Management */}
                               <Route path="tuition" element={<TuitionManagementPage />} />
+                              <Route path="tuition/revenue" element={<TotalRevenuePage />} />
+                              <Route path="tuition/reports" element={<ClassFinancialReportsPage />} />
+                              <Route path="tuition/reports/:classId" element={<ClassFinancialDetailPage />} />
 
                               {/* User Authorization (Admin) */}
                               <Route path="admin/authorization" element={<UserAuthorizationPage />} />

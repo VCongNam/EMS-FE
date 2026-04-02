@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import { toast } from 'react-toastify';
 import TuitionFeeModal from '../components/TuitionFeeModal';
@@ -44,6 +45,7 @@ const isDeadlineOverdue = (dateStr) => new Date(dateStr) < new Date();
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 const TuitionManagementPage = () => {
+    const navigate = useNavigate();
     const [fees, setFees] = useState(MOCK_FEES);
     const [deadlines, setDeadlines] = useState(MOCK_DEADLINES);
 
@@ -95,8 +97,8 @@ const TuitionManagementPage = () => {
     return (
         <div className="space-y-6 animate-fade-in-up">
 
-            {/* ── Header ─────────────────────────────────────────────────────── */}
-            <div className="!bg-white rounded-3xl border border-border !p-6 sm:!p-8 shadow-sm flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+            {/* ── Settings Header ─────────────────────────────────────────────── */}
+            <div className="!bg-white rounded-[2.5rem] border border-dashed border-border !p-6 sm:!p-8 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
                 <div className="flex items-center gap-4">
                     <div className="w-14 h-14 rounded-2xl !bg-primary/10 flex items-center justify-center text-primary shadow-inner">
                         <Icon icon="solar:wallet-money-bold-duotone" className="text-3xl" />
@@ -123,6 +125,43 @@ const TuitionManagementPage = () => {
                     </button>
                 </div>
             </div>
+
+            {/* ── Dashboard Quick Actions ── */}
+            <div className="!grid !grid-cols-1 !mt-2 md:!grid-cols-2 !gap-6">
+                <div
+                    onClick={() => navigate('/tuition/revenue')}
+                    className="!bg-white !p-8 !rounded-[2.5rem] !border !border-border !shadow-sm hover:!shadow-xl hover:!-translate-y-1 !transition-all !cursor-pointer !group !relative !overflow-hidden"
+                >
+                    <div className="!absolute !right-[-20px] !top-[-20px] !w-40 !h-40 !bg-primary/5 !rounded-full !blur-3xl !group-hover:!bg-primary/10 !transition-all" />
+                    <div className="!flex !items-center !gap-6 !relative !z-10">
+                        <div className="!w-16 !h-16 !bg-primary/10 !rounded-3xl !flex !items-center !justify-center !text-primary !group-hover:!bg-primary !group-hover:!text-white !transition-all">
+                            <Icon icon="solar:chart-broken" className="!text-3xl" />
+                        </div>
+                        <div>
+                            <h2 className="!text-xl !font-black !text-text-main !tracking-tight">Tổng kết Doanh thu</h2>
+                            <p className="!text-sm !font-medium !text-text-muted !mt-1">Xem biểu đồ xu hướng và phân tích tài chính hệ thống</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div
+                    onClick={() => navigate('/tuition/reports')}
+                    className="!bg-white !p-8 !rounded-[2.5rem] !border !border-border !shadow-sm hover:!shadow-xl hover:!-translate-y-1 !transition-all !cursor-pointer !group !relative !overflow-hidden"
+                >
+                    <div className="!absolute !right-[-20px] !top-[-20px] !w-40 !h-40 !bg-amber-500/5 !rounded-full !blur-3xl !group-hover:!bg-amber-500/10 !transition-all" />
+                    <div className="!flex !items-center !gap-6 !relative !z-10">
+                        <div className="!w-16 !h-16 !bg-amber-500/10 !rounded-3xl !flex !items-center !justify-center !text-amber-500 !group-hover:!bg-amber-500 !group-hover:!text-white !transition-all">
+                            <Icon icon="solar:bill-list-bold-duotone" className="!text-3xl" />
+                        </div>
+                        <div>
+                            <h2 className="!text-xl !font-black !text-text-main !tracking-tight">Báo cáo Tài chính Lớp</h2>
+                            <p className="!text-sm !font-medium !text-text-muted !mt-1">Chi tiết đóng học phí và công nợ của từng lớp học</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
 
             {/* ── Section 1: Current Fees Table ──────────────────────────────── */}
             <div className="!bg-white !mt-2 rounded-3xl border border-border shadow-sm overflow-hidden">
