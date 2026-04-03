@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import useAuthStore from '../../../../../store/authStore';
 import { assignmentService } from '../../../api/assignmentService';
 import { toast } from 'react-toastify';
+import ConfirmModal from '../../../../../components/ui/ConfirmModal';
 
 const ClassworkPage = () => {
     const { user } = useAuthStore();
@@ -16,6 +17,7 @@ const ClassworkPage = () => {
 
     const [assignments, setAssignments] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [confirmModal, setConfirmModal] = useState({ isOpen: false, assignmentId: null });
 
     useEffect(() => {
         const fetchAssignments = async () => {
@@ -43,21 +45,28 @@ const ClassworkPage = () => {
         fetchAssignments();
     }, [classId, user?.token]);
 
-    const handleDeleteAssignment = async (e, id) => {
+    const handleDeleteClick = (e, id) => {
         e.stopPropagation();
-        if (window.confirm('Bạn có chắc chắn muốn xóa bài tập này? Hành động này không thể hoàn tác!')) {
-            try {
-                const res = await assignmentService.deleteAssignment(id, user?.token);
-                if (res.ok) {
-                    toast.success('Xóa bài tập thành công!');
-                    setAssignments(assignments.filter(a => (a.assignmentId || a.id) !== id));
-                } else {
-                    toast.error('Có lỗi xảy ra khi xóa bài tập.');
-                }
-            } catch (err) {
-                console.error(err);
-                toast.error('Lỗi khi xóa bài tập.');
+        setConfirmModal({ isOpen: true, assignmentId: id });
+    };
+
+    const handleConfirmDelete = async () => {
+        const id = confirmModal.assignmentId;
+        if (!id) return;
+
+        try {
+            const res = await assignmentService.deleteAssignment(id, user?.token);
+            if (res.ok) {
+                toast.success('Xóa bài tập thành công!');
+                setAssignments(prev => prev.filter(a => (a.assignmentId || a.id) !== id));
+            } else {
+                toast.error('Có lỗi xảy ra khi xóa bài tập.');
             }
+        } catch (err) {
+            console.error(err);
+            toast.error('Lỗi khi xóa bài tập.');
+        } finally {
+            setConfirmModal({ isOpen: false, assignmentId: null });
         }
     };
 
@@ -151,7 +160,7 @@ const ClassworkPage = () => {
                                                     <Icon icon="material-symbols:edit-outline-rounded" className="text-xl" />
                                                 </button>
                                                 <button 
-                                                    onClick={(e) => handleDeleteAssignment(e, assignment.id)}
+                                                    onClick={(e) => handleDeleteClick(e, assignment.id)}
                                                     className="p-1.5 text-text-muted hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
                                                     title="Xóa"
                                                 >
@@ -166,16 +175,24 @@ const ClassworkPage = () => {
                     </div>
                 </div>
             ) : (
-                <div className="!bg-surface rounded-2xl border !border-border !p-12 shadow-sm text-center">
-                    <div className="w-20 h-20 rounded-full !bg-primary/10 flex items-center justify-center mx-auto !mb-4">
-                         <Icon icon="material-symbols:assignment-add-outline-rounded" className="text-4xl text-primary" />
-                    </div>
+                <div className="!bg-surface rounded-2xl border !border-border !p-12 shadow-sm  !text-center">
                     <h3 className="text-xl font-bold text-text-main !mb-2">Chưa có bài tập nào</h3>
                     <p className="text-text-muted">
                         {isTeacherOrTA ? 'Nhấp vào nút "Tạo bài tập" để giao bài cho lớp.' : 'Giáo viên chưa giao bài tập nào cho lớp.'}
                     </p>
                  </div>
             )}
+
+            <ConfirmModal 
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal({ isOpen: false, assignmentId: null })}
+                onConfirm={handleConfirmDelete}
+                title="Xác nhận xóa bài tập"
+                message="Bạn có chắc chắn muốn xóa bài tập này không? Hành động này không thể hoàn tác."
+                confirmText="Xóa bài tập"
+                cancelText="Hủy bỏ"
+                type="danger"
+            />
         </div>
     );
 };

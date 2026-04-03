@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Icon } from '@iconify/react';
+import { toast } from 'react-toastify';
 
 const getFileIcon = (type) => {
     if (type?.includes('pdf')) return <Icon icon="vscode-icons:file-type-pdf2" className="text-3xl" />;
@@ -32,7 +33,7 @@ const AssignmentDetailStudent = ({ assignment }) => {
 
     const handleTurnIn = () => {
         if (myFiles.length === 0) {
-            alert("Bạn chưa tải lên tệp nào!");
+            toast.error("Bạn chưa tải lên tệp nào!");
             return;
         }
         setStatus('Đã nộp');

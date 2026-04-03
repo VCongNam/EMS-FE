@@ -10,10 +10,11 @@ const SideMenu = ({ isOpen, onClose }) => {
 
     const menuConfigs = {
         student: [
-            { name: 'Tổng quan', path: '/dashboard', icon: 'material-symbols:dashboard-rounded' },
-            { name: 'Lớp học của tôi', path: '/student/classes', icon: 'material-symbols:school-rounded' },
+            { name: 'Bảng điều khiển', path: '/dashboard', icon: 'material-symbols:dashboard-rounded' },
+            { name: 'Lớp học của tôi', path: '/student/classes', icon: 'material-symbols:class-rounded' },
             { name: 'Thời khóa biểu', path: '/schedule', icon: 'material-symbols:calendar-month-rounded' },
-            { name: 'Kết quả học tập', path: '/results', icon: 'material-symbols:trending-up-rounded' },
+            { name: 'Thông báo', path: '/notifications', icon: 'material-symbols:circle-notifications-sharp', badge: 3 },
+            { name: 'Học phí', path: '/tuition-payment', icon: 'solar:wallet-money-bold-duotone' },
             { name: 'Trang cá nhân', path: '/profile', icon: 'material-symbols:person-rounded' },
         ],
         teacher: [
@@ -22,6 +23,7 @@ const SideMenu = ({ isOpen, onClose }) => {
             { name: 'Quản lý Học sinh', path: '/students', icon: 'material-symbols:group-rounded' },
             { name: 'Quản lý Trợ giảng', path: '/assistants', icon: 'material-symbols:handshake-rounded' },
             { name: 'Quản lý Lịch học', path: '/schedule-management', icon: 'solar:calendar-add-bold-duotone' },
+            { name: 'Quản lý Học phí', path: '/tuition', icon: 'solar:wallet-money-bold-duotone' },
             { name: 'Trang cá nhân', path: '/profile', icon: 'material-symbols:person-rounded' },
         ],
         TA: [
@@ -29,6 +31,7 @@ const SideMenu = ({ isOpen, onClose }) => {
             { name: 'Nhiệm vụ của tôi', path: '/ta/tasks', icon: 'material-symbols:task-rounded' },
             { name: 'Lớp hỗ trợ', path: '/assisted-classes', icon: 'material-symbols:handshake-rounded' },
             { name: 'Danh sách học sinh', path: '/students', icon: 'material-symbols:group-rounded' },
+            { name: 'Báo cáo & Thống kê', path: '/reports', icon: 'material-symbols:analytics-rounded' },
             { name: 'Trang cá nhân', path: '/profile', icon: 'material-symbols:person-rounded' },
         ],
     };
@@ -81,7 +84,14 @@ const SideMenu = ({ isOpen, onClose }) => {
                                     : 'hover:bg-white/10 text-white/70 hover:text-white'
                                     }`}
                             >
-                                <Icon icon={item.icon} className="text-2xl" />
+                                <div className="!relative">
+                                    <Icon icon={item.icon} className="text-2xl" />
+                                    {item.badge > 0 && (
+                                        <span className="!absolute !-top-1 !-right-1 !w-4 !h-4 !bg-red-500 !text-white !text-[9px] !font-black !flex !items-center !justify-center !rounded-full !border-2 !border-[#355872] group-hover:!border-white/10 !transition-all">
+                                            {item.badge}
+                                        </span>
+                                    )}
+                                </div>
                                 {item.name}
                             </Link>
                         );

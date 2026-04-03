@@ -1,6 +1,15 @@
 import React from 'react';
+import useAuthStore from '../../../store/authStore';
+import StudentDashboard from '../components/StudentDashboard';
 
 const DashboardPage = () => {
+    const { user } = useAuthStore();
+    const role = user?.role || 'student';
+
+    if (role === 'student') {
+        return <StudentDashboard />;
+    }
+
     return (
         <div className="container">
             <h1 className="text-3xl font-bold mb-2">Bảng điều khiển (Dashboard)</h1>

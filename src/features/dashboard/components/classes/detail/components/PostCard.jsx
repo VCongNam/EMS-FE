@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
 import useAuthStore from '../../../../../../store/authStore';
 import PostComposer from './PostComposer';
+import ConfirmModal from '../../../../../../components/ui/ConfirmModal';
 
 const PostCard = ({ post, onUpdate, onDelete }) => {
     const { user } = useAuthStore();
     const isTeacherOrTA = ['TEACHER', 'TA'].includes(user?.role?.toUpperCase());
     const [isEditing, setIsEditing] = useState(false);
+    const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
     if (isEditing) {
         return (
@@ -53,7 +55,7 @@ const PostCard = ({ post, onUpdate, onDelete }) => {
                                 <Icon icon="material-symbols:edit-outline-rounded" className="text-lg" />
                             </button>
                             <button 
-                                onClick={() => { if (window.confirm('Bạn có chắc muốn xóa bài đăng này?')) onDelete(post.id); }} 
+                                onClick={() => setIsConfirmOpen(true)} 
                                 className="!p-1.5 text-text-muted hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors border border-transparent hover:border-red-200" 
                                 title="Xóa"
                             >
@@ -120,6 +122,20 @@ const PostCard = ({ post, onUpdate, onDelete }) => {
                     </button>
                 </div>
             </div>
+
+            <ConfirmModal 
+                isOpen={isConfirmOpen}
+                onClose={() => setIsConfirmOpen(false)}
+                onConfirm={() => {
+                    onDelete(post.id);
+                    setIsConfirmOpen(false);
+                }}
+                title="Xác nhận xóa bài đăng"
+                message="Bạn có chắc chắn muốn xóa bài đăng này không? Hành động này không thể hoàn tác."
+                confirmText="Xóa bài đăng"
+                cancelText="Hủy bỏ"
+                type="danger"
+            />
         </div>
     );
 };

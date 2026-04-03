@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import useAuthStore from '../../../store/authStore';
 import { sessionService } from '../../dashboard/api/sessionService';
 import SessionModal from '../../dashboard/components/classes/detail/components/SessionModal';
+import ConfirmModal from '../../../components/ui/ConfirmModal';
 
 const COLOR_OPTIONS = ['blue', 'purple', 'green', 'orange'];
 const COLOR_MAP = {
@@ -247,6 +248,7 @@ const ScheduleManagementPage = () => {
     // Modal state
     const [sessionModalState, setSessionModalState] = useState({ isOpen: false, initialData: null });
     const [deletingId, setDeletingId] = useState(null);
+    const [confirmModal, setConfirmModal] = useState({ isOpen: false, sessionId: null });
 
     // Fetch API
     const fetchTeacherSchedule = useCallback(async () => {
@@ -316,8 +318,13 @@ const ScheduleManagementPage = () => {
         });
     };
 
-    const handleDeleteLesson = async (id) => {
-        if (!window.confirm("Bạn có chắc chắn muốn xóa bài học này khỏi lịch?")) return;
+    const handleDeleteLesson = (id) => {
+        setConfirmModal({ isOpen: true, sessionId: id });
+    };
+
+    const handleConfirmDelete = async () => {
+        const id = confirmModal.sessionId;
+        if (!id) return;
         
         try {
             setDeletingId(id);
@@ -332,6 +339,7 @@ const ScheduleManagementPage = () => {
             toast.error('Lỗi mạng!');
         } finally {
             setDeletingId(null);
+            setConfirmModal({ isOpen: false, sessionId: null });
         }
     };
 
@@ -523,6 +531,17 @@ const ScheduleManagementPage = () => {
                 onClose={() => setSessionModalState({ isOpen: false, initialData: null })}
                 onSave={handleSaveSessionAPI}
                 initialData={sessionModalState.initialData}
+            />
+
+            <ConfirmModal 
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal({ isOpen: false, sessionId: null })}
+                onConfirm={handleConfirmDelete}
+                title="Xác nhận xóa buổi học"
+                message="Bạn có chắc chắn muốn xóa buổi học này không? Hành động này không thể hoàn tác và dữ liệu liên quan sẽ bị mất."
+                confirmText="Xóa buổi học"
+                cancelText="Hủy bỏ"
+                type="danger"
             />
         </div>
     );
