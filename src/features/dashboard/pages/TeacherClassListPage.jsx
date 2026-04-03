@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Icon } from '@iconify/react';
+import { toast } from 'react-toastify';
 import Button from '../../../components/ui/Button';
 import ClassCard from '../components/classes/ClassCard';
 import ClassListFilter from '../components/classes/ClassListFilter';
@@ -135,11 +136,11 @@ const TeacherClassListPage = () => {
             maxStudents: formData.maxCapacity ? parseInt(formData.maxCapacity) : 0,
             subjectName: formData.subject,
             gradeLevel: parseInt(formData.gradeLevel.replace(/\D/g, '')) || parseInt(formData.gradeLevel) || 0,
-            schedules: formData.schedules && formData.schedules.length > 0 
-                ? formData.schedules.map(s => ({
-                    dayOfWeek: mapDaysToIso([s.day])[0],
-                    startTime: parseTime(s.startTime),
-                    endTime: parseTime(s.endTime)
+            schedules: formData.schedules && formData.schedules.length > 0
+                ? formData.schedules.map(schedule => ({
+                    dayOfWeek: mapDaysToIso([schedule.day])[0],
+                    startTime: parseTime(schedule.startTime),
+                    endTime: parseTime(schedule.endTime)
                 }))
                 : []
         };
@@ -150,7 +151,7 @@ const TeacherClassListPage = () => {
 
         try {
             const token = useAuthStore.getState().user?.token;
-            if (!token) return alert('Vui lòng đăng nhập lại!');
+            if (!token) return toast.error('Vui lòng đăng nhập lại!');
 
             if (selectedClass) {
                 // Đang Edit lớp -> Gọi PUT API với biến URL {id}
@@ -162,7 +163,7 @@ const TeacherClassListPage = () => {
                     throw new Error('Lỗi khi cập nhật lớp học. Backend có thể trả về lỗi 400 Bad Request!');
                 }
 
-                alert('Cập nhật thông tin lớp học thành công!');
+                toast.success('Cập nhật thông tin lớp học thành công!');
             } else {
                 // Cờ đang rỗng -> Gọi POST API tạo lớp mới tinh
                 const response = await classService.createClass(payload, token);
@@ -173,13 +174,13 @@ const TeacherClassListPage = () => {
                     throw new Error(`Lỗi khi cắm Lớp Mới: ${errorText || response.statusText}`);
                 }
 
-                alert('Tạo lớp học thành công!');
+                toast.success('Tạo lớp học thành công!');
             }
 
             setIsModalOpen(false);
             fetchClasses(); // Cập nhật lại danh sách màn hình ngay lập tức 
         } catch (error) {
-            alert(error.message);
+            toast.error(error.message);
             console.error('Save Class Error:', error);
         }
     };
@@ -198,17 +199,17 @@ const TeacherClassListPage = () => {
 
         try {
             const token = useAuthStore.getState().user?.token;
-            if (!token) return alert('Vui lòng đăng nhập lại!');
+            if (!token) return toast.error('Vui lòng đăng nhập lại!');
 
             if (type === 'archive') {
                 const res = await classService.archiveClass(classId, token);
                 if (!res.ok) throw new Error('Không thể chuyển lớp học này sang trạng thái Lưu trữ!');
-                alert('Đã đưa lớp học vào mục Lưu trữ thành công.');
+                toast.success('Đã đưa lớp học vào mục Lưu trữ thành công.');
             } else if (type === 'unarchive') {
                 // Sửa thành API đường dẫn thực thế là /restore theo Swagger
                 const res = await classService.restoreClass(classId, token);
                 if (!res.ok) throw new Error('Cầu nối API khôi phục lớp học hiện Backend báo lỗi hoặc chưa hỗ trợ!');
-                alert('Đã khôi phục lớp học thành công.');
+                toast.success('Đã khôi phục lớp học thành công.');
             }
 
             // Xử lý UI sau khi thành công
@@ -217,7 +218,7 @@ const TeacherClassListPage = () => {
 
         } catch (error) {
             console.error('Lỗi khi thao tác lớp học:', error);
-            alert(error.message);
+            toast.error(error.message);
             setConfirmModal({ isOpen: false, type: '', classId: null });
         }
     };
