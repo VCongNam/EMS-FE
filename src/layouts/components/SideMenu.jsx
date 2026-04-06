@@ -34,6 +34,11 @@ const SideMenu = ({ isOpen, onClose }) => {
             { name: 'Báo cáo & Thống kê', path: '/reports', icon: 'material-symbols:analytics-rounded' },
             { name: 'Trang cá nhân', path: '/profile', icon: 'material-symbols:person-rounded' },
         ],
+        admin: [
+            { name: 'Tổng quan Hệ thống', path: '/admin/dashboard', icon: 'material-symbols:dashboard-rounded' },
+            { name: 'Quản lý Tài khoản', path: '/admin/accounts', icon: 'material-symbols:manage-accounts-rounded' },
+            { name: 'Phân quyền Cán bộ', path: '/admin/authorization', icon: 'material-symbols:admin-panel-settings-rounded' }
+        ],
     };
 
     const menuItems = menuConfigs[role] || menuConfigs.student;
@@ -58,7 +63,7 @@ const SideMenu = ({ isOpen, onClose }) => {
                             <Icon icon="material-symbols:school" className="text-3xl text-white" />
                         </div>
                         <span className="text-2xl font-bold font-['Outfit'] tracking-tight">
-                            {role === 'student' ? 'EMS' : role === 'teacher' ? 'EMS' : 'EMS'}
+                            {role === 'student' ? 'EMS' : role === 'admin' ? 'EMS Admin' : 'EMS'}
                         </span>
                     </div>
                     <button
@@ -106,7 +111,7 @@ const SideMenu = ({ isOpen, onClose }) => {
                         <div className="flex-1 min-w-0">
                             <p className="text-sm font-bold text-white leading-none truncate">{user?.fullName || 'Người dùng'}</p>
                             <p className="text-xs text-white/70 mt-1 truncate">
-                                {role === 'student' ? 'Học sinh' : role === 'teacher' ? 'Giáo viên' : role === 'TA' ? 'Trợ giảng' : 'Thành viên'}
+                                {role === 'student' ? 'Học sinh' : role === 'teacher' ? 'Giáo viên' : role === 'TA' ? 'Trợ giảng' : role === 'admin' ? 'Quản trị viên' : 'Thành viên'}
                             </p>
                         </div>
                     </div>

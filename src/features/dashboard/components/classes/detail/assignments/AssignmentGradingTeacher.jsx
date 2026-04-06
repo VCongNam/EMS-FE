@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
+import FileViewer from 'react-file-viewer';
 
 const AssignmentGradingTeacher = ({ assignment }) => {
     const [selectedStudent, setSelectedStudent] = useState(null);
     const [scoreInput, setScoreInput] = useState('');
     const [commentInput, setCommentInput] = useState('');
+    const [previewFile, setPreviewFile] = useState(null);
 
     const submissions = assignment.submissions || [];
 
@@ -12,6 +14,7 @@ const AssignmentGradingTeacher = ({ assignment }) => {
         setSelectedStudent(sub);
         setScoreInput(sub.score || '');
         setCommentInput('');
+        setPreviewFile(null);
     };
 
     const handleBack = () => {
@@ -171,21 +174,105 @@ const AssignmentGradingTeacher = ({ assignment }) => {
                                             <h4 className="font-semibold text-text-main">Tệp đã nộp ({selectedStudent.files.length})</h4>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                 {selectedStudent.files.map(file => (
-                                                    <div key={file.id} className="border border-border bg-surface rounded-xl !p-3 flex items-center gap-3 hover:border-primary cursor-pointer transition-colors group">
+                                                    <div 
+                                                        key={file.id} 
+                                                        onClick={() => setPreviewFile(file)}
+                                                        className={`border rounded-xl !p-3 flex items-center gap-3 cursor-pointer transition-colors group relative pr-14 ${
+                                                            previewFile?.id === file.id ? 'border-primary bg-primary/5' : 'border-border bg-surface hover:border-primary'
+                                                        }`}
+                                                    >
                                                         <div className="w-10 h-10 bg-primary/10 rounded flex items-center justify-center text-primary group-hover:scale-110 transition-transform shrink-0">
                                                             <Icon icon={getFileIcon(file.type)} className="text-2xl" />
                                                         </div>
-                                                        <div className="overflow-hidden">
-                                                            <p className="font-medium text-sm text-text-main truncate group-hover:text-primary transition-colors">{file.name}</p>
+                                                        <div className="overflow-hidden flex-1">
+                                                            <p className="font-medium text-sm text-text-main truncate group-hover:text-primary transition-colors">{file.name || file.fileName}</p>
                                                             <p className="text-xs text-text-muted">{selectedStudent.submittedAt}</p>
                                                         </div>
+                                                        <button 
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                const fileUrl = file.url || file.fileUrl || '#';
+                                                                const link = document.createElement('a');
+                                                                link.href = fileUrl;
+                                                                link.setAttribute('download', file.name || file.fileName || 'download');
+                                                                link.target = '_blank';
+                                                                document.body.appendChild(link);
+                                                                link.click();
+                                                                document.body.removeChild(link);
+                                                            }}
+                                                            className="absolute right-3 w-8 h-8 rounded-full hover:bg-primary/10 text-text-muted hover:text-primary flex items-center justify-center transition-colors shadow-sm bg-background border border-transparent hover:border-primary/20 bg-white"
+                                                            title="Tải về"
+                                                        >
+                                                            <Icon icon="material-symbols:download-rounded" className="text-xl" />
+                                                        </button>
                                                     </div>
                                                 ))}
                                             </div>
-                                            <div className="w-full h-48 sm:h-64 border-2 border-dashed border-border rounded-xl mt-4 flex flex-col items-center justify-center text-text-muted">
-                                                <Icon icon="material-symbols:preview-off-outline-rounded" className="text-5xl !mb-2 opacity-50" />
-                                                <p className="text-sm text-center">Chọn tệp để xem trước (nếu được hỗ trợ)</p>
-                                            </div>
+                                            {(() => {
+                                                if (!previewFile) {
+                                                    return (
+                                                        <div className="w-full h-48 sm:h-64 border-2 border-dashed border-border rounded-xl mt-4 flex flex-col items-center justify-center text-text-muted">
+                                                            <Icon icon="material-symbols:preview-off-outline-rounded" className="text-5xl !mb-2 opacity-50" />
+                                                            <p className="text-sm text-center">Chọn tệp để xem trước (nếu được hỗ trợ)</p>
+                                                        </div>
+                                                    );
+                                                }
+                                                const url = previewFile.url || previewFile.fileUrl || '';
+                                                const name = previewFile.name || previewFile.fileName || '';
+                                                let type = previewFile.type || '';
+                                                
+                                                // Cố gắng parse đuôi file từ tên
+                                                let extension = '';
+                                                if (name) {
+                                                    const parts = name.split('.');
+                                                    if (parts.length > 1) {
+                                                        extension = parts.pop().toLowerCase();
+                                                    }
+                                                }
+                                                
+                                                // Map một số đuôi file thông thường về định dạng chuẩn của react-file-viewer
+                                                if (extension === 'jpg') extension = 'jpeg';
+                                                if (extension === 'doc') extension = 'docx';
+                                                if (extension === 'xls') extension = 'xlsx';
+
+                                                // Danh sách các định dạng mà react-file-viewer thường hỗ trợ tốt
+                                                const supportedTypes = ['png', 'jpeg', 'gif', 'bmp', 'pdf', 'csv', 'xlsx', 'docx', 'mp4', 'webm', 'mp3'];
+
+                                                if (supportedTypes.includes(extension)) {
+                                                    return (
+                                                        <div className="w-full h-[500px] border border-border rounded-xl mt-4 overflow-hidden flex flex-col bg-surface relative">
+                                                            <div className="bg-background !px-4 !py-2 border-b border-border flex items-center justify-between z-10 shrink-0">
+                                                                <span className="text-sm font-semibold text-text-main flex items-center gap-2">
+                                                                    <Icon icon="material-symbols:preview-rounded" className="text-primary" />
+                                                                    Trình xem trước ({extension.toUpperCase()})
+                                                                </span>
+                                                                <a href={url} target="_blank" rel="noopener noreferrer" className="text-primary hover:bg-primary/10 !p-1.5 rounded transition-colors" title="Mở tab mới nếu lỗi">
+                                                                    <Icon icon="material-symbols:open-in-new-rounded" className="text-lg" />
+                                                                </a>
+                                                            </div>
+                                                            <div className="flex-1 overflow-auto bg-white file-viewer-wrap relative p-2 flex items-center justify-center">
+                                                                <FileViewer
+                                                                    fileType={extension}
+                                                                    filePath={url}
+                                                                    onError={(e) => {
+                                                                        console.error('FileViewer Error:', e);
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                }
+
+                                                return (
+                                                    <div className="w-full h-48 sm:h-64 border-2 border-dashed border-border rounded-xl mt-4 flex flex-col items-center justify-center text-text-muted bg-surface">
+                                                        <Icon icon="material-symbols:broken-image-outline-rounded" className="text-5xl !mb-2 opacity-50" />
+                                                        <p className="text-sm text-center">Không hỗ trợ xem trước trực tiếp định dạng <strong>{extension || 'không xác định'}</strong>.</p>
+                                                        <a href={url} target="_blank" rel="noopener noreferrer" className="mt-2 flex items-center gap-1 text-white bg-primary !px-4 !py-2 rounded-lg hover:bg-primary/90 transition-colors font-medium text-sm">
+                                                            <Icon icon="material-symbols:download-rounded" /> Tải tệp hoặc mở ngoài
+                                                        </a>
+                                                    </div>
+                                                );
+                                            })()}
                                         </div>
                                     ) : (
                                         <div className="w-full h-full flex flex-col items-center justify-center text-text-muted !py-16">
