@@ -132,7 +132,7 @@ const ClassMaterialsPage = () => {
             </div>
 
             {/* List Section */}
-            <div className="bg-white rounded-[2rem] border border-border overflow-hidden shadow-sm">
+            <div className="bg-white !mt-2 rounded-[2rem] border border-border overflow-hidden shadow-sm">
                 <div className="overflow-x-auto custom-scrollbar">
                     <table className="w-full text-left border-collapse">
                         <thead>

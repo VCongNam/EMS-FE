@@ -9,8 +9,8 @@ import { Icon } from '@iconify/react';
 
 // Giữ lại Mock Submissions vì chưa có API Submissions
 const mockSubmissions = [
-    { id: 's1', studentId: 'stu1', studentName: 'Vũ Đức Nam', status: 'Đã nộp', submittedAt: '10:30 - 25/03/2026', score: null, files: [{ id: 'f1', name: 'Figma_Link.txt', type: 'doc'}] },
-    { id: 's2', studentId: 'stu2', studentName: 'Lê Hữu Nghĩa', status: 'Nộp muộn', submittedAt: '08:15 - 26/03/2026', score: 85, files: [{ id: 'f2', name: 'Bai_lam_Nghia.pdf', type: 'pdf'}] },
+    { id: 's1', studentId: 'stu1', studentName: 'Vũ Đức Nam', status: 'Đã nộp', submittedAt: '10:30 - 25/03/2026', score: null, files: [{ id: 'f1', name: 'Sample Word.docx', type: 'doc', url: 'https://calibre-ebook.com/downloads/demos/demo.docx' }] },
+    { id: 's2', studentId: 'stu2', studentName: 'Lê Hữu Nghĩa', status: 'Nộp muộn', submittedAt: '08:15 - 26/03/2026', score: 85, files: [{ id: 'f2', name: 'Sample PDF.pdf', type: 'pdf', url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf' }] },
     { id: 's3', studentId: 'stu3', studentName: 'Nguyễn Thị C', status: 'Chưa nộp', submittedAt: null, score: null, files: [] }
 ];
 
