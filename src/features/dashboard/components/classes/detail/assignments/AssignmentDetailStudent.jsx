@@ -1,46 +1,95 @@
 import React, { useState, useRef } from 'react';
 import { Icon } from '@iconify/react';
 import { toast } from 'react-toastify';
+import useAuthStore from '../../../../../../store/authStore';
+import { studentAssignmentService } from '../../../../api/studentAssignmentService';
 
 const getFileIcon = (type) => {
     if (type?.includes('pdf')) return <Icon icon="vscode-icons:file-type-pdf2" className="text-3xl" />;
     if (type?.includes('word') || type?.includes('doc')) return <Icon icon="vscode-icons:file-type-word" className="text-3xl" />;
+    if (type?.includes('excel') || type?.includes('xls')) return <Icon icon="vscode-icons:file-type-excel" className="text-3xl" />;
     if (type?.includes('image')) return <Icon icon="material-symbols:image-outline-rounded" className="text-3xl text-orange-400" />;
     return <Icon icon="material-symbols:insert-drive-file" className="text-3xl text-gray-400" />;
 };
 
-const AssignmentDetailStudent = ({ assignment }) => {
-    const [myFiles, setMyFiles] = useState([]);
-    const [status, setStatus] = useState('Chưa nộp'); // 'Chưa nộp', 'Đã nộp', 'Nộp muộn'
+const AssignmentDetailStudent = ({ assignment, onRefresh }) => {
+    const { user } = useAuthStore();
+    const [localFiles, setLocalFiles] = useState([]); // Files selected but not yet uploaded
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const fileInputRef = useRef(null);
+
+    const mySubmission = assignment.mySubmission || null;
+    const isSubmitted = mySubmission?.status === 'Submitted';
+    const statusText = isSubmitted ? 'Đã nộp' : 'Chưa nộp';
 
     const handleFileChange = (e) => {
         const files = Array.from(e.target.files);
         if (files.length > 0) {
-            const newFiles = files.map(file => ({
-                id: Math.random().toString(36).substr(2, 9),
-                name: file.name,
-                type: file.name.endsWith('.pdf') ? 'pdf' : file.name.endsWith('.doc') || file.name.endsWith('.docx') ? 'doc' : 'other',
-            }));
-            setMyFiles([...myFiles, ...newFiles]);
+            setLocalFiles(prev => [...prev, ...files]);
         }
         e.target.value = null;
     };
 
-    const removeFile = (id) => {
-        setMyFiles(myFiles.filter(f => f.id !== id));
+    const removeLocalFile = (index) => {
+        setLocalFiles(prev => prev.filter((_, i) => i !== index));
     };
 
-    const handleTurnIn = () => {
-        if (myFiles.length === 0) {
+    const handleTurnIn = async () => {
+        if (localFiles.length === 0 && !isSubmitted) {
             toast.error("Bạn chưa tải lên tệp nào!");
             return;
         }
-        setStatus('Đã nộp');
+
+        try {
+            setIsSubmitting(true);
+            const formData = new FormData();
+            localFiles.forEach(file => {
+                formData.append('Files', file);
+            });
+
+            const res = await studentAssignmentService.submitAssignment(assignment.assignmentID, formData, user?.token);
+            if (res.ok) {
+                toast.success(isSubmitted ? 'Cập nhật bài làm thành công!' : 'Nộp bài thành công!');
+                setLocalFiles([]);
+                if (onRefresh) onRefresh();
+            } else {
+                const errData = await res.json().catch(() => ({}));
+                toast.error(errData.message || 'Có lỗi xảy ra khi nộp bài.');
+            }
+        } catch (err) {
+            console.error(err);
+            toast.error('Lỗi kết nối khi nộp bài.');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
-    const handleCancelSubmit = () => {
-        setStatus('Chưa nộp');
+    const handleCancelSubmit = async () => {
+        if (!isSubmitted) {
+            setLocalFiles([]);
+            return;
+        }
+
+        if (!window.confirm('Bạn có chắc chắn muốn hủy nộp bài không? Hành động này sẽ xóa bài làm hiện tại của bạn.')) {
+            return;
+        }
+
+        try {
+            setIsSubmitting(true);
+            const res = await studentAssignmentService.unsubmitAssignment(assignment.assignmentID, user?.token);
+            if (res.ok) {
+                toast.success('Đã hủy nộp bài thành công!');
+                if (onRefresh) onRefresh();
+            } else {
+                const errData = await res.json().catch(() => ({}));
+                toast.error(errData.message || 'Không thể hủy nộp bài. Có thể bài đã quá hạn hoặc đã được chấm.');
+            }
+        } catch (err) {
+            console.error(err);
+            toast.error('Lỗi kết nối khi hủy nộp bài.');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -125,23 +174,23 @@ const AssignmentDetailStudent = ({ assignment }) => {
                             </h4>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {assignment.attachments.map((att, idx) => (
-                                    <a 
-                                        key={idx} 
-                                        href={att.fileUrl} 
-                                        target="_blank" 
+                                    <a
+                                        key={idx}
+                                        href={att.fileURL || att.fileUrl || att.url}
+                                        target="_blank"
                                         rel="noopener noreferrer"
                                         className="flex items-center gap-4 bg-white border border-border rounded-2xl !p-4 hover:border-primary hover:shadow-lg hover:-translate-y-0.5 transition-all group relative overflow-hidden"
                                     >
                                         <div className="absolute top-0 left-0 w-1 h-full bg-primary opacity-0 group-hover:opacity-100 transition-opacity" />
                                         <div className="w-12 h-12 bg-primary/5 rounded-xl flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all shrink-0 shadow-sm border border-primary/5">
-                                            {getFileIcon(att.fileType || att.name)}
+                                            {getFileIcon(att.fileType || att.fileName || att.name)}
                                         </div>
                                         <div className="overflow-hidden flex-1">
-                                            <p className="font-bold text-sm text-text-main truncate group-hover:text-primary transition-colors">{att.fileName}</p>
+                                            <p className="font-bold text-sm text-text-main truncate group-hover:text-primary transition-colors">{att.fileName || att.name}</p>
                                             <div className="flex items-center gap-2 mt-0.5">
                                                 <span className="text-[10px] text-text-muted font-bold tracking-widest">{(att.fileSize / 1024 / 1024).toFixed(2)} MB</span>
                                                 <span className="w-1 h-1 rounded-full bg-border" />
-                                                <span className="text-[10px] text-primary font-bold uppercase tracking-widest">{att.fileType?.split('/')[1] || 'FILE'}</span>
+                                                <span className="text-[10px] text-primary font-bold uppercase tracking-widest">{att.fileType?.split('/')[1] || att.fileType || 'FILE'}</span>
                                             </div>
                                         </div>
                                         <div className="w-9 h-9 rounded-full bg-background flex items-center justify-center text-text-muted group-hover:bg-primary/10 group-hover:text-primary transition-all shadow-sm border border-border">
@@ -160,41 +209,59 @@ const AssignmentDetailStudent = ({ assignment }) => {
                 <div className="bg-white rounded-[2rem] border-2 border-primary/10 !p-8 shadow-2xl shadow-primary/5 space-y-8 relative overflow-hidden">
                     {/* Decorative Background Element */}
                     <div className="absolute -top-12 -right-12 w-32 h-32 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
-                    
+
                     <div className="flex items-center justify-between relative">
                         <h3 className="text-xl font-black text-text-main tracking-tight">Bài làm</h3>
-                        <div className={`!px-3 !py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm border ${
-                            status === 'Đã nộp' 
-                            ? 'bg-green-50 text-green-600 border-green-200' 
+                        <div className={`!px-3 !py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm border ${isSubmitted
+                            ? 'bg-green-50 text-green-600 border-green-200'
                             : 'bg-orange-50 text-orange-600 border-orange-200 animate-pulse'
-                        }`}>
-                            {status}
+                            }`}>
+                            {statusText}
                         </div>
                     </div>
 
                     {/* Files Area */}
                     <div className="space-y-3 min-h-[100px] flex flex-col justify-center">
-                        {myFiles.length > 0 ? (
-                            myFiles.map(file => (
-                                <div key={file.id} className="flex items-center justify-between border border-border rounded-2xl !p-3 bg-[#F8FAFC] group hover:border-primary/30 transition-all hover:bg-white hover:shadow-md">
-                                    <div className="flex items-center gap-3 overflow-hidden">
-                                        <div className="shrink-0">
-                                            {getFileIcon(file.type)}
-                                        </div>
-                                        <span className="font-bold text-sm text-text-main truncate">{file.name}</span>
+                        {/* Submitted Files */}
+                        {isSubmitted && mySubmission?.attachments?.map((file, idx) => (
+                            <a
+                                key={idx}
+                                href={file.fileURL || file.fileUrl || file.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center justify-between border border-green-200 rounded-2xl !p-3 bg-green-50/30 group hover:border-green-400 transition-all hover:bg-white hover:shadow-md"
+                            >
+                                <div className="flex items-center gap-3 overflow-hidden">
+                                    <div className="shrink-0">
+                                        {getFileIcon(file.fileType || file.fileName || file.name)}
                                     </div>
-                                    {status === 'Chưa nộp' && (
-                                        <button 
-                                            onClick={() => removeFile(file.id)}
-                                            className="text-text-muted hover:text-red-500 transition-colors p-2 rounded-xl hover:bg-red-50"
-                                            title="Gỡ bỏ"
-                                        >
-                                            <Icon icon="material-symbols:close-rounded" className="text-xl" />
-                                        </button>
-                                    )}
+                                    <span className="font-bold text-sm text-text-main truncate">{file.fileName || file.name}</span>
                                 </div>
-                            ))
-                        ) : (
+                                <Icon icon="material-symbols:check-circle-rounded" className="text-green-500 text-xl" />
+                            </a>
+                        ))}
+
+                        {/* Local Files (Pending upload) */}
+                        {localFiles.map((file, idx) => (
+                            <div key={idx} className="flex items-center justify-between border border-border rounded-2xl !p-3 bg-[#F8FAFC] group hover:border-primary/30 transition-all hover:bg-white hover:shadow-md">
+                                <div className="flex items-center gap-3 overflow-hidden">
+                                    <div className="shrink-0">
+                                        {getFileIcon(file.name)}
+                                    </div>
+                                    <span className="font-bold text-sm text-text-main truncate">{file.name}</span>
+                                </div>
+                                <button
+                                    onClick={() => removeLocalFile(idx)}
+                                    className="text-text-muted hover:text-red-500 transition-colors p-2 rounded-xl hover:bg-red-50"
+                                    title="Gỡ bỏ"
+                                >
+                                    <Icon icon="material-symbols:close-rounded" className="text-xl" />
+                                </button>
+                            </div>
+                        ))}
+
+                        {/* Empty State */}
+                        {!isSubmitted && localFiles.length === 0 && (
                             <div className="text-center !py-8 border-2 border-dashed border-border rounded-[1.5rem] flex flex-col items-center gap-3 bg-background/50 group hover:border-primary/30 transition-colors">
                                 <Icon icon="material-symbols:cloud-upload-outline-rounded" className="text-4xl text-text-muted opacity-30 group-hover:text-primary/50 group-hover:scale-110 transition-transform" />
                                 <p className="text-xs text-text-muted font-bold tracking-tight px-6 italic">Chưa có tệp đính kèm nào được tải lên</p>
@@ -202,38 +269,43 @@ const AssignmentDetailStudent = ({ assignment }) => {
                         )}
                     </div>
 
-                    <input 
-                        type="file" 
-                        multiple 
-                        className="hidden" 
-                        ref={fileInputRef} 
+                    <input
+                        type="file"
+                        multiple
+                        className="hidden"
+                        ref={fileInputRef}
                         onChange={handleFileChange}
                     />
 
                     <div className="space-y-3 pt-4">
-                        {status === 'Chưa nộp' ? (
-                            <>
-                                <button 
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className="w-full flex items-center justify-center gap-2 border-2 border-primary/20 bg-white text-primary font-black rounded-2xl !p-4 hover:bg-primary hover:text-white hover:border-primary transition-all group shadow-sm"
-                                >
-                                    <Icon icon="material-symbols:add-rounded" className="text-2xl group-hover:rotate-90 transition-transform" />
-                                    <span>Thêm hoặc tạo</span>
-                                </button>
-                                <button 
-                                    onClick={handleTurnIn}
-                                    className={`w-full font-black rounded-2xl !p-4 shadow-xl transition-all transform active:scale-[0.98] ${
-                                        myFiles.length > 0 
-                                        ? 'bg-primary text-white hover:bg-primary-hover shadow-primary/20' 
-                                        : 'bg-border text-text-muted cursor-not-allowed'
-                                    }`}
-                                    disabled={myFiles.length === 0}
-                                >
-                                    Nộp bài
-                                </button>
-                            </>
-                        ) : (
-                            <button 
+                        <button
+                            onClick={() => fileInputRef.current?.click()}
+                            className="w-full flex items-center justify-center gap-2 border-2 border-primary/20 bg-white text-primary font-black rounded-2xl !p-4 hover:bg-primary hover:text-white hover:border-primary transition-all group shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={isSubmitting}
+                        >
+                            <Icon icon="material-symbols:add-rounded" className="text-2xl group-hover:rotate-90 transition-transform" />
+                            <span>Thêm hoặc tạo</span>
+                        </button>
+
+                        <button
+                            onClick={handleTurnIn}
+                            className={`w-full font-black rounded-2xl !p-4 shadow-xl transition-all transform active:scale-[0.98] flex items-center justify-center gap-2 ${(localFiles.length > 0 || isSubmitted) && !isSubmitting
+                                ? 'bg-primary text-white hover:bg-primary-hover shadow-primary/20'
+                                : 'bg-border text-text-muted cursor-not-allowed'
+                                }`}
+                            disabled={(localFiles.length === 0 && !isSubmitted) || isSubmitting}
+                        >
+                            {isSubmitting ? (
+                                <Icon icon="solar:spinner-linear" className="animate-spin text-xl" />
+                            ) : isSubmitted ? (
+                                'Cập nhật bài làm'
+                            ) : (
+                                'Nộp bài'
+                            )}
+                        </button>
+
+                        {isSubmitted && (
+                            <button
                                 onClick={handleCancelSubmit}
                                 className="w-full bg-white border-2 border-border text-text-main font-black rounded-2xl !p-4 hover:border-red-500 hover:text-red-500 transition-all shadow-sm"
                             >
@@ -242,17 +314,6 @@ const AssignmentDetailStudent = ({ assignment }) => {
                         )}
                     </div>
 
-                    <div className="h-px bg-border w-full !my-8" />
-
-                    <button className="w-full flex items-center gap-4 !p-4 rounded-2xl border border-border hover:border-primary hover:bg-primary/5 transition-all group">
-                        <div className="w-10 h-10 rounded-full bg-background flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors">
-                            <Icon icon="material-symbols:chat-bubble-outline-rounded" className="text-xl" />
-                        </div>
-                        <div className="text-left">
-                            <p className="text-xs font-black text-text-main">Tin nhắn riêng tư</p>
-                            <p className="text-[10px] text-text-muted">Trao đổi với giáo viên</p>
-                        </div>
-                    </button>
                 </div>
             </div>
         </div>

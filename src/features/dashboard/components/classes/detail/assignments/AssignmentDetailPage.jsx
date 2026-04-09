@@ -4,6 +4,7 @@ import useAuthStore from '../../../../../../store/authStore';
 import AssignmentDetailStudent from './AssignmentDetailStudent';
 import AssignmentGradingTeacher from './AssignmentGradingTeacher';
 import { assignmentService } from '../../../../api/assignmentService';
+import { studentAssignmentService } from '../../../../api/studentAssignmentService';
 import { Icon } from '@iconify/react';
 
 // Giữ lại Mock Submissions vì chưa có API Submissions
@@ -22,29 +23,37 @@ const AssignmentDetailPage = () => {
     const userRole = user?.role?.toUpperCase();
     const isTeacherOrTA = userRole === 'TEACHER' || userRole === 'TA';
 
-    useEffect(() => {
-        const fetchDetail = async () => {
-            try {
-                setIsLoading(true);
-                const res = await assignmentService.getAssignmentById(assignmentId, user?.token);
-                if (res.ok) {
-                    const data = await res.json();
-                    setAssignment({
-                        ...data,
-                        submissions: mockSubmissions, // Tạm ghép data giả vào để teacher có cái để chấm
-                        maxScore: 100 // Mock maxScore nếu API chưa trả về
-                    });
-                } else {
-                    console.error("Lỗi lấy chi tiết bài tập");
-                }
-            } catch (error) {
-                console.error("Lỗi mạng:", error);
-            } finally {
-                setIsLoading(false);
+    const fetchDetail = async () => {
+        try {
+            setIsLoading(true);
+            let res;
+            if (isTeacherOrTA) {
+                res = await assignmentService.getAssignmentById(assignmentId, user?.token);
+            } else {
+                res = await studentAssignmentService.getAssignmentDetail(assignmentId, user?.token);
             }
-        };
+
+            if (res.ok) {
+                const result = await res.json();
+                const data = result.data || result;
+                setAssignment({
+                    ...data,
+                    submissions: isTeacherOrTA ? mockSubmissions : [], // Teacher still uses mock for now
+                    maxScore: data.maxScore || 100
+                });
+            } else {
+                console.error("Lỗi lấy chi tiết bài tập:", res.status);
+            }
+        } catch (error) {
+            console.error("Lỗi mạng:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
         fetchDetail();
-    }, [assignmentId, user?.token]);
+    }, [assignmentId, user?.token, isTeacherOrTA]);
 
     if (isLoading) {
         return (
@@ -60,10 +69,10 @@ const AssignmentDetailPage = () => {
     }
 
     if (isTeacherOrTA) {
-        return <AssignmentGradingTeacher assignment={assignment} />;
+        return <AssignmentGradingTeacher assignment={assignment} onRefresh={fetchDetail} />;
     }
 
-    return <AssignmentDetailStudent assignment={assignment} />;
+    return <AssignmentDetailStudent assignment={assignment} onRefresh={fetchDetail} />;
 };
 
 export default AssignmentDetailPage;

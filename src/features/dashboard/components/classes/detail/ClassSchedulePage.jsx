@@ -7,6 +7,7 @@ import AttendanceModal from './components/AttendanceModal';
 import SessionModal from './components/SessionModal';
 import useAuthStore from '../../../../../store/authStore';
 import { sessionService } from '../../../api/sessionService';
+import studentScheduleService from '../../../api/studentScheduleService';
 import ConfirmModal from '../../../../../components/ui/ConfirmModal';
 
 const DAYS_OF_WEEK = [
@@ -51,25 +52,44 @@ const ClassSchedulePage = () => {
     const fetchSessions = useCallback(async () => {
         if (!classId) return;
         const token = useAuthStore.getState().user?.token;
+        const role = user?.role?.toUpperCase();
+        
         try {
             setIsLoading(true);
-            const res = await sessionService.getClassSessions(classId, token);
+            let res;
+            
+            if (role === 'STUDENT') {
+                // Students use the StudentSchedule API
+                const params = {
+                    FromDate: '01/01/2025',
+                    ToDate: '01/01/2027',
+                    ClassId: classId
+                };
+                res = await studentScheduleService.getSchedule(params, token);
+            } else {
+                // Teachers and TAs use the sessionService
+                res = await sessionService.getClassSessions(classId, token);
+            }
+
             if (res.ok) {
-                const data = await res.json();
-                const mappedLessons = data.map((item, index) => {
+                const response = await res.json();
+                // Both APIs return an array of sessions in response.data or raw array
+                const sessionData = Array.isArray(response) ? response : response.data || [];
+                
+                const mappedLessons = sessionData.map((item, index) => {
                     const dateObj = new Date(item.date);
                     const dayIdx = dateObj.getDay();
                     const dayLabels = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
                     
                     return {
-                        id: item.sessionId,
+                        id: item.sessionId || item.sessionID,
                         session: index + 1,
                         day: dayLabels[dayIdx],
                         date: item.date ? item.date.split('T')[0] : '',
                         startTime: item.startTime?.substring(0, 5) || '--:--',
                         endTime: item.endTime?.substring(0, 5) || '--:--',
                         status: item.status ? item.status.toLowerCase() : 'scheduled',
-                        title: item.title,
+                        title: item.title || item.className,
                         raw: item
                     };
                 });
@@ -92,7 +112,7 @@ const ClassSchedulePage = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [classId]);
+    }, [classId, user]);
 
     useEffect(() => {
         fetchSessions();

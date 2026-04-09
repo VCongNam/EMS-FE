@@ -237,7 +237,8 @@ const UpcomingList = ({ lessons }) => {
 
 // --- Main Page ---
 const ScheduleManagementPage = () => {
-    const { token } = useAuthStore(state => state.user || {});
+    const { user } = useAuthStore();
+    const token = user?.token;
     const [viewMode, setViewMode] = useState('week'); // 'week' | 'month'
     const [refDate, setRefDate] = useState(new Date());
     

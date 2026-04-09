@@ -1,45 +1,133 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import PostComposer from './components/PostComposer';
 import PostCard from './components/PostCard';
-
-const mockPosts = [
-    {
-        id: '1',
-        author: 'Nguyễn Văn A',
-        role: 'TEACHER',
-        time: ' Hôm qua',
-        content: 'Chào các em, thầy gửi tài liệu tuần này nhé. Các em nhớ đọc trước slide và xem video hướng dẫn cài đặt môi trường. Nếu có gì không hiểu thì comment ở dưới nhé.',
-        attachments: [
-            { id: '1a', name: 'Bài giảng tuần 1: Tổng quan.pdf', type: 'pdf', size: '2.5 MB' },
-            { id: '1b', name: 'Slide bài giảng - Chương 1.ppt', type: 'ppt', size: '5.1 MB' },
-            { id: '1c', name: 'Video hướng dẫn cài đặt môi trường.mp4', type: 'video', size: '150 MB' }
-        ]
-    },
-    {
-        id: '2',
-        author: 'Lê Văn C',
-        role: 'TA',
-        time: ' 2 ngày trước',
-        content: 'Đây là tài liệu tham khảo bổ sung cho bài tập lớn. Các nhóm trưởng down về gửi cho các bạn trong nhóm nhé!',
-        attachments: [
-            { id: '2a', name: 'Tài liệu tham khảo bổ sung.doc', type: 'doc', size: '1.2 MB' }
-        ]
-    }
-];
+import postService from '../../../api/postService';
+import useAuthStore from '../../../../../store/authStore';
 
 const ClassStreamPage = () => {
-    const [posts, setPosts] = useState(mockPosts);
+    const { classId } = useParams();
+    const { user } = useAuthStore();
+    const token = user?.token;
+    const [posts, setPosts] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const handleNewPost = (newPost) => {
-        setPosts([newPost, ...posts]);
+    const fetchPosts = async () => {
+        setIsLoading(true);
+        try {
+            const res = await postService.getPostsByClassId(classId, token);
+            if (res.ok) {
+                const data = await res.json();
+                setPosts(data);
+            } else {
+                toast.error('Không thể tải bản tin');
+            }
+        } catch (error) {
+            console.error('Fetch posts error:', error);
+            toast.error('Lỗi kết nối máy chủ');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    const handleUpdatePost = (postId, data) => {
-        setPosts(posts.map(p => p.id === postId ? { ...p, content: data.content, attachments: data.attachments } : p));
+    useEffect(() => {
+        if (classId && token) {
+            fetchPosts();
+        }
+    }, [classId, token]);
+
+    const handleNewPost = async (formData) => {
+        try {
+            formData.append('ClassId', classId);
+            const res = await postService.createPost(formData, token);
+            
+            if (res.ok) {
+                toast.success('Đã đăng bài mới');
+                fetchPosts();
+            } else {
+                const errorData = await res.json().catch(() => ({}));
+                toast.error(`Lỗi khi đăng bài: ${errorData.message || res.statusText}`);
+            }
+        } catch (error) {
+            console.error('Create post error:', error);
+            toast.error('Lỗi kết nối khi đăng bài');
+        }
     };
 
-    const handleDeletePost = (postId) => {
-        setPosts(posts.filter(p => p.id !== postId));
+    const handleUpdatePost = async (postId, data) => {
+        const formData = new FormData();
+        formData.append('Title', data.title);
+        formData.append('Content', data.content);
+        
+        if (data.newFiles && data.newFiles.length > 0) {
+            data.newFiles.forEach(file => {
+                formData.append('NewAttachments', file);
+            });
+        }
+
+        if (data.removedIds && data.removedIds.length > 0) {
+            data.removedIds.forEach(id => {
+                formData.append('RemoveAttachmentIds', id);
+            });
+        }
+
+        try {
+            const res = await postService.updatePost(postId, formData, token);
+            if (res.ok) {
+                toast.success('Đã cập nhật bài đăng');
+                fetchPosts();
+            } else {
+                toast.error('Lỗi khi cập nhật bài đăng');
+            }
+        } catch (error) {
+            console.error('Update post error:', error);
+            toast.error('Lỗi kết nối khi cập nhật');
+        }
+    };
+
+    const handleDeletePost = async (postId) => {
+        try {
+            const res = await postService.deletePost(postId, token);
+            if (res.ok) {
+                toast.success('Đã xóa bài đăng');
+                setPosts(posts.filter(p => p.postId !== postId));
+            } else {
+                toast.error('Lỗi khi xóa bài đăng');
+            }
+        } catch (error) {
+            console.error('Delete post error:', error);
+            toast.error('Lỗi kết nối khi xóa');
+        }
+    };
+
+    const handleComment = async (postId, content) => {
+        try {
+            const res = await postService.commentOnPost(postId, content, token);
+            if (res.ok) {
+                fetchPosts();
+            } else {
+                toast.error('Lỗi khi gửi nhận xét');
+            }
+        } catch (error) {
+            console.error('Comment error:', error);
+            toast.error('Lỗi kết nối khi gửi nhận xét');
+        }
+    };
+
+    const handleDeleteComment = async (commentId) => {
+        try {
+            const res = await postService.deleteComment(commentId, token);
+            if (res.ok) {
+                toast.success('Đã xóa nhận xét');
+                fetchPosts();
+            } else {
+                toast.error('Lỗi khi xóa nhận xét');
+            }
+        } catch (error) {
+            console.error('Delete comment error:', error);
+            toast.error('Lỗi kết nối khi xóa nhận xét');
+        }
     };
 
     return (
@@ -62,14 +150,22 @@ const ClassStreamPage = () => {
                 <PostComposer onPost={handleNewPost} />
 
                 {/* Danh sách Posts */}
-                {posts.length > 0 ? (
+                {isLoading ? (
+                    <div className="space-y-6">
+                        {[1, 2].map(i => (
+                            <div key={i} className="bg-surface rounded-2xl border border-border h-48 animate-pulse"></div>
+                        ))}
+                    </div>
+                ) : posts.length > 0 ? (
                     <div className="space-y-6">
                         {posts.map(post => (
                             <PostCard 
-                                key={post.id} 
+                                key={post.postId} 
                                 post={post} 
                                 onUpdate={handleUpdatePost} 
                                 onDelete={handleDeletePost} 
+                                onComment={handleComment}
+                                onDeleteComment={handleDeleteComment}
                             />
                         ))}
                     </div>

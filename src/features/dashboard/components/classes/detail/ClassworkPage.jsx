@@ -3,6 +3,7 @@ import { Icon } from '@iconify/react';
 import { useNavigate, useParams } from 'react-router-dom';
 import useAuthStore from '../../../../../store/authStore';
 import { assignmentService } from '../../../api/assignmentService';
+import { studentAssignmentService } from '../../../api/studentAssignmentService';
 import { toast } from 'react-toastify';
 import ConfirmModal from '../../../../../components/ui/ConfirmModal';
 
@@ -24,17 +25,25 @@ const ClassworkPage = () => {
             if (!classId) return;
             try {
                 setIsLoading(true);
-                const res = await assignmentService.getAssignmentsByClass(classId, user?.token);
+                let res;
+                if (isTeacherOrTA) {
+                    res = await assignmentService.getAssignmentsByClass(classId, user?.token);
+                } else {
+                    res = await studentAssignmentService.getAssignments(classId, user?.token);
+                }
+
                 if (res.ok) {
-                    const data = await res.json();
-                    // data từ API trả về mảng trực tiếp: [{assignmentId, title, dueDate, status}]
-                    if (Array.isArray(data)) {
-                        setAssignments(data);
-                    } else if (data.data) {
-                        setAssignments(data.data);
+                    const result = await res.json();
+                    // Handle different response structures
+                    if (Array.isArray(result)) {
+                        setAssignments(result);
+                    } else if (result.data?.items) {
+                        setAssignments(result.data.items);
+                    } else if (result.data) {
+                        setAssignments(Array.isArray(result.data) ? result.data : [result.data]);
                     }
                 } else {
-                    console.error("Lỗi API khi tải bài tập");
+                    console.error("Lỗi API khi tải bài tập:", res.status);
                 }
             } catch (err) {
                 console.error("Lỗi mạng khi tải bài tập:", err);
@@ -43,7 +52,7 @@ const ClassworkPage = () => {
             }
         };
         fetchAssignments();
-    }, [classId, user?.token]);
+    }, [classId, user?.token, isTeacherOrTA]);
 
     const handleDeleteClick = (e, id) => {
         e.stopPropagation();
@@ -72,14 +81,16 @@ const ClassworkPage = () => {
 
     const formattedAssignments = assignments.map(a => {
         const dDate = new Date(a.dueDate);
-        const isOverdue = !isNaN(dDate) && dDate < new Date();
+        const isOverdue = !isNaN(dDate) && dDate < new Date() && !a.isSubmitted;
         return {
-            id: a.assignmentId,
+            id: a.assignmentID || a.assignmentId,
             title: a.title || 'Chưa có tiêu đề',
             dueDateDisplay: isNaN(dDate) ? 'Không xác định' : dDate.toLocaleString('vi-VN', {
                hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric'
             }),
-            status: a.status || 'Published',
+            status: a.studentStatus || a.status || 'Published',
+            isSubmitted: a.isSubmitted || false,
+            grade: a.grade,
             isOverdue: isOverdue
         };
     });
@@ -140,7 +151,8 @@ const ClassworkPage = () => {
                                 <div className="flex items-center justify-between sm:justify-end gap-6 sm:w-1/3">
                                     {!isTeacherOrTA && (
                                         <span className={`text-sm font-semibold !px-3 !py-1 rounded-full ${
-                                            assignment.status === 'Đã nộp' ? '!bg-green-500/10 text-green-600' : '!bg-orange-500/10 text-orange-600'
+                                            assignment.isSubmitted ? '!bg-green-500/10 text-green-600' : 
+                                            assignment.isOverdue ? '!bg-red-500/10 text-red-600' : '!bg-orange-500/10 text-orange-600'
                                         }`}>
                                             {assignment.status}
                                         </span>

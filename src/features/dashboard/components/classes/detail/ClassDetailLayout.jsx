@@ -1,42 +1,56 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink, useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Icon } from '@iconify/react';
-import { mockClasses } from '../../../data/mockClasses';
 import ClassStaffModal from './components/ClassStaffModal';
 import { classService } from '../../../api/classService';
+import studentClassService from '../../../api/studentClassService';
 import useAuthStore from '../../../../../store/authStore';
 
 const ClassDetailLayout = () => {
     const { classId } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
+    const { user } = useAuthStore();
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
 
-    const basePath = location.pathname.startsWith('/assisted-classes')
-        ? '/assisted-classes'
-        : '/teacher/classes';
+    const isStudentPortal = location.pathname.startsWith('/student/classes');
+    const isAssistantPortal = location.pathname.startsWith('/assisted-classes');
 
-    const [classInfo, setClassInfo] = useState(mockClasses.find(c => c.id === classId) || {
-        name: 'Lớp học không tồn tại',
-        code: 'N/A',
-        status: 'unknown'
+    const basePath = isStudentPortal 
+        ? '/student/classes' 
+        : isAssistantPortal 
+            ? '/assisted-classes' 
+            : '/teacher/classes';
+
+    const [classInfo, setClassInfo] = useState({
+        name: 'Đang tải...',
+        code: '',
+        teacherName: '',
+        status: 'ongoing'
     });
 
     useEffect(() => {
         const fetchClassDetail = async () => {
-            const token = useAuthStore.getState().user?.token;
+            const token = user?.token;
             if (!token || !classId) return;
 
             try {
-                const res = await classService.getClassById(classId, token);
+                let res;
+                if (isStudentPortal) {
+                    res = await studentClassService.getClassDetail(classId, token);
+                } else {
+                    res = await classService.getClassById(classId, token);
+                }
 
                 if (res.ok) {
-                    const data = await res.json();
+                    const result = await res.json();
+                    const data = result.data || result; // Handle both direct and enveloped data
                     setClassInfo({
-                        name: data.className || 'Chưa đặt tên lớp',
-                        code: data.room || 'N/A',
-                        status: data.status?.toLowerCase() || 'ongoing'
+                        name: data.className || data.name || 'Chưa đặt tên lớp',
+                        code: data.room || data.code || 'N/A',
+                        teacherName: data.teacherName || '',
+                        status: (data.status || data.enrollmentStatus || 'ongoing').toLowerCase()
                     });
                 } else {
                     setClassInfo({ name: 'Không tìm thấy lớp học', code: '404', status: 'error' });
@@ -48,7 +62,7 @@ const ClassDetailLayout = () => {
         };
 
         fetchClassDetail();
-    }, [classId]);
+    }, [classId, isStudentPortal, user?.token]);
 
     const tabs = [
         { path: 'stream', label: 'Bảng tin', icon: 'material-symbols:stream-rounded' },
@@ -92,17 +106,18 @@ const ClassDetailLayout = () => {
                         <h1 className="text-3xl !text-white md:text-5xl font-bold font-['Outfit'] !mb-2 drop-shadow-md">
                             {classInfo.name}
                         </h1>
-                        <p className="text-blue-100 font-mono text-lg drop-shadow">
-                            Mã lớp: {classInfo.code}
+                        <p className="text-blue-100 font-medium text-lg drop-shadow flex items-center gap-2">
+                            {isStudentPortal ? (
+                                <>
+                                    <Icon icon="solar:user-bold" className="text-blue-200" />
+                                    Giảng viên: {classInfo.teacherName || 'Đang cập nhật...'}
+                                </>
+                            ) : (
+                                <>Mã lớp: {classInfo.code}</>
+                            )}
                         </p>
                     </div>
-                    <button
-                        onClick={() => setIsStaffModalOpen(true)}
-                        className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white !px-4 !py-2 rounded-xl backdrop-blur-sm transition-colors border border-white/20 shadow-sm self-start md:self-auto"
-                    >
-                        <Icon icon="solar:users-group-two-rounded-bold-duotone" className="text-xl" />
-                        <span className="font-semibold text-sm">Ban giảng huấn</span>
-                    </button>
+                    {/* Ban giảng huấn button removed as requested */}
                 </div>
             </div>
 

@@ -3,6 +3,7 @@ import { Icon } from '@iconify/react';
 import useAuthStore from '../../../store/authStore';
 import Button from '../../../components/ui/Button';
 import { profileService } from '../api/profileService';
+import { toast } from 'react-toastify';
 const ProfilePage = () => {
     const { user, updateProfile } = useAuthStore();
     const [isEditing, setIsEditing] = useState(false);
@@ -25,7 +26,7 @@ const ProfilePage = () => {
             if (!user?.token) return;
             try {
                 const response = await profileService.getProfile(user.token);
-                
+
                 if (response.ok) {
                     const data = await response.json();
                     setFormData(prev => ({ ...prev, ...data }));
@@ -37,10 +38,39 @@ const ProfilePage = () => {
         };
 
         fetchProfile();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user?.token]);
 
     const [saving, setSaving] = useState(false);
+    const [banks, setBanks] = useState([]);
+    const [showBankDropdown, setShowBankDropdown] = useState(false);
+
+    useEffect(() => {
+        const fetchBanks = async () => {
+            try {
+                const response = await fetch('https://api.vietqr.io/v2/banks');
+                if (response.ok) {
+                    const result = await response.json();
+                    setBanks(result.data || []);
+                }
+            } catch (error) {
+                console.error("Fetch banks failed:", error);
+            }
+        };
+        fetchBanks();
+    }, []);
+
+    const getBankDisplay = (val) => {
+        if (!val) return '';
+        const bank = banks.find(b => b.bin === val);
+        return bank ? bank.shortName : val;
+    };
+
+    const filteredBanks = banks.filter(bank =>
+        (bank.shortName || '').toLowerCase().includes((formData.roleSpecificData?.bankName || '').toLowerCase()) ||
+        (bank.name || '').toLowerCase().includes((formData.roleSpecificData?.bankName || '').toLowerCase()) ||
+        (bank.bin || '').includes(formData.roleSpecificData?.bankName || '')
+    );
 
     const handleSave = async () => {
         if (!user?.token) return;
@@ -94,7 +124,7 @@ const ProfilePage = () => {
         e.preventDefault();
         setPasswordError('');
         setPasswordSuccess('');
-        
+
         if (newPassword !== confirmNewPassword) {
             setPasswordError('Mật khẩu xác nhận không khớp!');
             return;
@@ -107,8 +137,8 @@ const ProfilePage = () => {
             const response = await profileService.changePassword({ oldPassword, newPassword }, user.token);
 
             if (!response.ok) {
-                 const errorData = await response.json().catch(() => ({}));
-                 throw new Error(errorData.message || "Đổi mật khẩu thất bại. Vui lòng kiểm tra lại mật khẩu cũ!");
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || "Đổi mật khẩu thất bại. Vui lòng kiểm tra lại mật khẩu cũ!");
             }
 
             setPasswordSuccess("Đổi mật khẩu thành công!");
@@ -132,7 +162,7 @@ const ProfilePage = () => {
         <div className="w-full mx-auto">
             {/* Header / Banner Section */}
             <div className="relative">
-            
+
 
                 <div className="flex flex-col sm:flex-row items-center sm:items-end justify-between gap-6 relative z-10">
                     <div className="flex flex-col sm:flex-row items-center sm:items-end gap-6 w-full sm:w-auto">
@@ -237,7 +267,7 @@ const ProfilePage = () => {
                                     className="w-full !mt-2 !p-5 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 resize-none font-medium text-text-main placeholder:text-text-muted/50 shadow-inner"
                                 ></textarea>
                             </div>
-                            
+
                             {user?.role === 'teacher' && (
                                 <div className="!mt-6 space-y-2">
                                     <label className="block text-xs font-bold text-text-muted uppercase tracking-widest px-1">Chuyên môn / Môn giảng dạy</label>
@@ -361,9 +391,52 @@ const ProfilePage = () => {
                                 <Icon icon="material-symbols:account-balance-wallet" className="text-2xl text-primary" /> Thông tin thanh toán
                             </h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-8">
-                                <div className="space-y-2">
+                                <div className="space-y-2 relative">
                                     <label className="block text-xs font-bold !mt-2 text-text-muted uppercase tracking-widest px-1">Ngân hàng thụ hưởng</label>
-                                    <input type="text" disabled={!isEditing} value={formData.roleSpecificData?.bankName || ''} onChange={(e) => setFormData(prev => ({ ...prev, roleSpecificData: { ...prev.roleSpecificData, bankName: e.target.value } }))} placeholder="Techcombank" className="w-full !mt-2 !px-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main" />
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            disabled={!isEditing}
+                                            value={getBankDisplay(formData.roleSpecificData?.bankName || '')}
+                                            onChange={(e) => {
+                                                setFormData(prev => ({ ...prev, roleSpecificData: { ...prev.roleSpecificData, bankName: e.target.value } }));
+                                                setShowBankDropdown(true);
+                                            }}
+                                            onFocus={() => isEditing && setShowBankDropdown(true)}
+                                            placeholder="Chọn hoặc nhập tên ngân hàng"
+                                            className="w-full !mt-2 !px-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main"
+                                        />
+
+                                        {isEditing && showBankDropdown && filteredBanks.length > 0 && (
+                                            <div className="absolute left-0 right-0 top-full !mt-2 max-h-64 overflow-y-auto bg-surface border border-border rounded-2xl shadow-xl z-50 animate-fade-in-up">
+                                                {filteredBanks.map((bank) => (
+                                                    <button
+                                                        key={bank.id}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setFormData(prev => ({ ...prev, roleSpecificData: { ...prev.roleSpecificData, bankName: bank.bin } }));
+                                                            setShowBankDropdown(false);
+                                                        }}
+                                                        className="w-full !px-4 !py-3 flex items-center gap-3 hover:bg-primary/5 transition-colors border-b border-border/50 last:border-0"
+                                                    >
+                                                        <div className="w-10 h-10 rounded-lg bg-white border border-border flex items-center justify-center p-1 overflow-hidden flex-shrink-0">
+                                                            <img src={bank.logo} alt={bank.shortName} className="max-w-full max-h-full object-contain" />
+                                                        </div>
+                                                        <div className="text-left">
+                                                            <div className="text-sm font-bold text-text-main">{bank.shortName}</div>
+                                                            <div className="text-[10px] text-text-muted line-clamp-1">{bank.name}</div>
+                                                        </div>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                    {isEditing && showBankDropdown && (
+                                        <div
+                                            className="fixed inset-0 z-40"
+                                            onClick={() => setShowBankDropdown(false)}
+                                        ></div>
+                                    )}
                                 </div>
                                 <div className="space-y-2">
                                     <label className="block text-xs font-bold !mt-2 text-text-muted uppercase tracking-widest px-1">Số tài khoản</label>
@@ -382,7 +455,7 @@ const ProfilePage = () => {
                         <h3 className="text-xl font-bold text-text-main mb-8 flex items-center gap-3">
                             <Icon icon="material-symbols:lock-reset-rounded" className="text-2xl text-primary" /> Đổi mật khẩu
                         </h3>
-                        
+
                         <form onSubmit={handleChangePassword} className="space-y-6">
                             {passwordError && (
                                 <div className="!p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-medium">
@@ -397,35 +470,35 @@ const ProfilePage = () => {
 
                             <div className="space-y-2">
                                 <label className="block text-xs font-bold text-text-muted uppercase tracking-widest px-1">Mật khẩu cũ</label>
-                                <input 
-                                    type="password" 
-                                    required 
+                                <input
+                                    type="password"
+                                    required
                                     value={oldPassword}
                                     onChange={(e) => setOldPassword(e.target.value)}
-                                    placeholder="••••••••" 
-                                    className="w-full !mt-2 !px-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all text-text-main font-mono" 
+                                    placeholder="••••••••"
+                                    className="w-full !mt-2 !px-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all text-text-main font-mono"
                                 />
                             </div>
                             <div className="space-y-2">
                                 <label className="block text-xs font-bold text-text-muted uppercase tracking-widest px-1">Mật khẩu mới</label>
-                                <input 
-                                    type="password" 
-                                    required 
+                                <input
+                                    type="password"
+                                    required
                                     value={newPassword}
                                     onChange={(e) => setNewPassword(e.target.value)}
-                                    placeholder="••••••••" 
-                                    className="w-full !mt-2 !px-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all text-text-main font-mono" 
+                                    placeholder="••••••••"
+                                    className="w-full !mt-2 !px-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all text-text-main font-mono"
                                 />
                             </div>
                             <div className="space-y-2">
                                 <label className="block text-xs font-bold text-text-muted uppercase tracking-widest px-1">Xác nhận mật khẩu mới</label>
-                                <input 
-                                    type="password" 
-                                    required 
+                                <input
+                                    type="password"
+                                    required
                                     value={confirmNewPassword}
                                     onChange={(e) => setConfirmNewPassword(e.target.value)}
-                                    placeholder="••••••••" 
-                                    className="w-full !mt-2 !px-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all text-text-main font-mono" 
+                                    placeholder="••••••••"
+                                    className="w-full !mt-2 !px-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all text-text-main font-mono"
                                 />
                             </div>
                             <div className="!pt-4">
