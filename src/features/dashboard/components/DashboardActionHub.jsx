@@ -2,27 +2,30 @@ import React from 'react';
 import { Icon } from '@iconify/react';
 import { Link } from 'react-router-dom';
 
-const DashboardActionHub = () => {
-    const ACTIONS = [
+const DashboardActionHub = ({ actions }) => {
+    // Default actions (fallback back to student actions if none provided)
+    const DEFAULT_ACTIONS = [
         { 
             id: 'pay', 
             label: 'Thanh toán Học phí', 
             icon: 'solar:wallet-money-bold-duotone', 
             path: '/tuition-payment', 
-            color: 'text-blue-600', 
-            bg: 'bg-blue-50', 
-            shadow: 'shadow-blue-500/10' 
+            color: '!text-blue-600', 
+            bg: '!bg-blue-50', 
+            shadow: '!shadow-blue-500/10' 
         },
         { 
             id: 'submit', 
             label: 'Nộp bài tập về nhà', 
             icon: 'solar:document-add-bold-duotone', 
             path: '/student/classes', 
-            color: 'text-emerald-600', 
-            bg: 'bg-emerald-50', 
-            shadow: 'shadow-emerald-500/10' 
+            color: '!text-emerald-600', 
+            bg: '!bg-emerald-50', 
+            shadow: '!shadow-emerald-500/10' 
         },
     ];
+
+    const displayActions = actions || DEFAULT_ACTIONS;
 
     return (
         <div className="!space-y-4">
@@ -32,10 +35,11 @@ const DashboardActionHub = () => {
             </div>
 
             <div className="!grid !grid-cols-1 sm:!grid-cols-2 !gap-6">
-                {ACTIONS.map((action) => (
+                {displayActions.map((action) => (
                     <Link
                         key={action.id}
                         to={action.path}
+                        onClick={action.onClick}
                         className={`!group !relative !p-8 !rounded-[2.5rem] !border !border-border !bg-white !shadow-sm hover:!shadow-xl hover:!border-primary/20 ${action.shadow} !transition-all !duration-300 !flex !flex-col !items-center !text-center !gap-4`}
                     >
                         <div className={`!w-16 !h-16 !rounded-2xl !flex !items-center !justify-center ${action.bg} ${action.color} !group-hover:!scale-110 !transition-transform`}>

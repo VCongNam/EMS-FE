@@ -36,9 +36,36 @@ const StudentDashboard = () => {
 
             {/* Horizontal Stats */}
             <DashboardStatCards 
-                nextClass={MOCK_NEXT_CLASS} 
-                attendance={MOCK_ATTENDANCE} 
-                balance={MOCK_BALANCE} 
+                card1={{
+                    title: 'Tiết học tiếp theo',
+                    subject: MOCK_NEXT_CLASS?.subject,
+                    time: MOCK_NEXT_CLASS?.time,
+                    room: MOCK_NEXT_CLASS?.room,
+                    icon: 'solar:calendar-date-bold-duotone'
+                }}
+                card2={{
+                    title: 'Chuyên cần',
+                    value: MOCK_ATTENDANCE,
+                    trendText: 'Tốt hơn tháng trước',
+                    trendColor: '!text-emerald-500',
+                    trendIcon: 'solar:arrow-up-bold-duotone',
+                    icon: 'solar:user-rounded-bold-duotone'
+                }}
+                card3={{
+                    title: 'Dư nợ Học phí',
+                    value: MOCK_BALANCE,
+                    unit: '₫',
+                    bgClass: '!bg-orange-50 !border-orange-100',
+                    iconBgClass: '!bg-orange-500 !shadow-orange-500/20',
+                    titleClass: '!text-orange-900',
+                    valueClass: '!text-orange-600',
+                    icon: 'solar:wallet-money-bold-duotone',
+                    button: {
+                        label: 'Thanh toán nợ',
+                        path: '/tuition-payment',
+                        className: '!text-orange-600 !border-orange-200 hover:!bg-orange-100'
+                    }
+                }}
             />
 
             {/* Action Hub - Priority Actions */}
