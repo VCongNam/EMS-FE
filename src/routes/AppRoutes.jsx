@@ -53,6 +53,11 @@ import ClassFinancialDetailPage from '../features/tuition-management/pages/Class
 import StudentNotificationPage from '../features/notifications/pages/StudentNotificationPage';
 import StudentTuitionPage from '../features/tuition-management/pages/StudentTuitionPage';
 
+// Admin Features
+import SystemDashboardPage from '../features/admin/pages/SystemDashboardPage';
+import AccountListPage from '../features/admin/pages/AccountListPage';
+import AccountDetailPage from '../features/admin/pages/AccountDetailPage';
+
 export const AppRoutes = () => {
      const { isAuthenticated } = useAuthStore();
 
@@ -169,6 +174,11 @@ export const AppRoutes = () => {
 
                               {/* User Authorization (Admin) */}
                               <Route path="admin/authorization" element={<UserAuthorizationPage />} />
+
+                              {/* Admin Features */}
+                              <Route path="admin/dashboard" element={<SystemDashboardPage />} />
+                              <Route path="admin/accounts" element={<AccountListPage />} />
+                              <Route path="admin/accounts/:id" element={<AccountDetailPage />} />
                          </Route>
                     </Route>
 
