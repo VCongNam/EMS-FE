@@ -14,6 +14,9 @@ export default defineConfig({
     VitePWA({ 
       registerType: 'autoUpdate', // Tự động cập nhật app ngầm khi có bản build mới
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png'], 
+      workbox: {
+        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10MB
+      },
       manifest: {
         name: 'EMS - Extra-Class Management System',
         short_name: 'EMS',
@@ -43,5 +46,8 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
+  },
+  build: {
+    chunkSizeWarningLimit: 10000,
   },
 })
