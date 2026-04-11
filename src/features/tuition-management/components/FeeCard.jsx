@@ -5,6 +5,7 @@ const STATUS_CONFIG = {
     Paid: { label: 'Đã thanh toán', color: 'text-emerald-600', bg: 'bg-emerald-50', icon: 'solar:check-read-bold' },
     Pending: { label: 'Chưa thanh toán', color: 'text-amber-600', bg: 'bg-amber-50', icon: 'solar:clock-circle-bold' },
     Overdue: { label: 'Quá hạn', color: 'text-red-500', bg: 'bg-red-50', icon: 'solar:danger-bold' },
+    Checking: { label: 'Đang chờ xác nhận', color: 'text-blue-600', bg: 'bg-blue-50', icon: 'solar:refresh-square-bold-duotone' },
 };
 
 const FeeCard = ({ fee, onPay, onViewInvoice }) => {
@@ -43,7 +44,7 @@ const FeeCard = ({ fee, onPay, onViewInvoice }) => {
             </div>
 
             <div className="!mt-6 !flex !items-center !gap-3">
-                {fee.status !== 'Paid' ? (
+                {fee.canPay ? (
                     <button 
                         onClick={() => onPay(fee)}
                         className="!flex-1 !px-6 !py-3.5 !bg-primary !text-white !rounded-xl !text-sm !font-black !shadow-lg !shadow-primary/20 hover:!bg-primary/90 !transition-all !flex !items-center !justify-center !gap-2"
@@ -51,7 +52,7 @@ const FeeCard = ({ fee, onPay, onViewInvoice }) => {
                         <Icon icon="solar:card-2-bold" className="!text-lg" />
                         Thanh toán ngay
                     </button>
-                ) : (
+                ) : fee.status === 'Paid' ? (
                     <button 
                         onClick={() => onViewInvoice && onViewInvoice(fee)}
                         className="!flex-1 !px-6 !py-3.5 !bg-emerald-50 !text-emerald-600 !border !border-emerald-100 !rounded-xl !text-sm !font-black hover:!bg-emerald-100 !transition-all !flex !items-center !justify-center !gap-2"
@@ -59,7 +60,12 @@ const FeeCard = ({ fee, onPay, onViewInvoice }) => {
                         <Icon icon="solar:document-text-bold-duotone" className="!text-lg" />
                         Xem hóa đơn
                     </button>
-                )}
+                ) : fee.status === 'Checking' ? (
+                    <div className="!flex-1 !px-6 !py-3.5 !bg-blue-50 !text-blue-600 !border !border-blue-100 !rounded-xl !text-[13px] !font-black !flex !items-center !justify-center !gap-2">
+                        <Icon icon="solar:refresh-square-bold-duotone" className="!text-lg !animate-pulse" />
+                        Đang chờ xác nhận...
+                    </div>
+                ) : null}
                 
                 <button 
                     onClick={() => onViewInvoice && onViewInvoice(fee)}

@@ -5,7 +5,8 @@ const ClassListFilter = ({
     searchQuery,
     onSearchChange,
     filterStatus,
-    onFilterChange
+    onFilterChange,
+    showUpcoming = false
 }) => {
     return (
         <div className="bg-surface !p-4 rounded-2xl border border-border shadow-sm flex flex-col gap-4 z-20 relative w-full">
@@ -31,6 +32,17 @@ const ClassListFilter = ({
                 >
                     Tất cả
                 </button>
+                
+                {showUpcoming && (
+                    <button
+                        onClick={() => onFilterChange('upcoming')}
+                        className={`!px-4 !py-2 rounded-xl font-medium text-sm transition-all border flex items-center gap-2 ${filterStatus === 'upcoming' ? 'bg-primary text-outline border-primary shadow-md shadow-primary/20' : 'bg-background hover:bg-surface border-border text-text-muted hover:text-text-main'}`}
+                    >
+                        <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${filterStatus === 'upcoming' ? 'bg-white' : 'bg-blue-500'}`}></div>
+                        Sắp khai giảng
+                    </button>
+                )}
+
                 <button
                     onClick={() => onFilterChange('ongoing')}
                     className={`!px-4 !py-2 rounded-xl font-medium text-sm transition-all border flex items-center gap-2 ${filterStatus === 'ongoing' ? 'bg-green-600 text-outline border-green-600 shadow-md shadow-green-600/20' : 'bg-background hover:bg-surface border-border text-text-muted hover:text-text-main'}`}
@@ -39,23 +51,10 @@ const ClassListFilter = ({
                     Đang diễn ra
                 </button>
                 <button
-                    onClick={() => onFilterChange('upcoming')}
-                    className={`!px-4 !py-2 rounded-xl font-medium text-sm transition-all border flex items-center gap-2 ${filterStatus === 'upcoming' ? 'bg-blue-600 text-outline border-blue-600 shadow-md shadow-blue-600/20' : 'bg-background hover:bg-surface border-border text-text-muted hover:text-text-main'}`}
-                >
-                    <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${filterStatus === 'upcoming' ? 'bg-white' : 'bg-blue-500'}`}></div>
-                    Sắp khai giảng
-                </button>
-                <button
                     onClick={() => onFilterChange('completed')}
                     className={`!px-4 !py-2 rounded-xl font-medium text-sm transition-all border flex items-center gap-2 ${filterStatus === 'completed' ? 'bg-gray-600 text-outline border-gray-600 shadow-md shadow-gray-600/20' : 'bg-background hover:bg-surface border-border text-text-muted hover:text-text-main'}`}
                 >
                     Đã kết thúc
-                </button>
-                <button
-                    onClick={() => onFilterChange('archived')}
-                    className={`!px-4 !py-2 rounded-xl font-medium text-sm transition-all border flex items-center gap-2 ${filterStatus === 'archived' ? 'bg-orange-600 text-outline border-orange-600 shadow-md shadow-orange-600/20' : 'bg-background hover:bg-surface border-border text-text-muted hover:text-text-main'}`}
-                >
-                    Lưu trữ
                 </button>
             </div>
         </div>

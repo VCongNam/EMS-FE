@@ -1,58 +1,94 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
+import { toast } from 'react-toastify';
 import Button from '../../../components/ui/Button';
 import CreateTaskModal from '../components/CreateTaskModal';
+import useAuthStore from '../../../store/authStore';
+import { taService } from '../api/taService';
 
-const TATaskManagementTab = () => {
+const TATaskManagementTab = ({ classId }) => {
+    const { user } = useAuthStore();
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    
-    // Mock Data
-    const tas = [
-        { id: 'TA001', name: 'Lê Thảo Nhi' },
-        { id: 'TA002', name: 'Nguyễn Quang Vinh' },
-        { id: 'TA003', name: 'Phạm Đức Anh' },
-    ];
-    const classes = [
-        { id: 'C1', name: 'Toán Cao Cấp (MATH101)' },
-        { id: 'C2', name: 'Lập Trình Cơ Bản (CS101)' },
-    ];
+    const [tas, setTas] = useState([]);
+    const [tasks, setTasks] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const [tasks, setTasks] = useState([
-        {
-            id: 'TASK-1',
-            title: 'Chấm 40 bài tập lớn',
-            description: 'Chấm điểm và ghi chú lỗi sai cho sinh viên',
-            assignedTo: 'TA001',
-            classId: 'C1',
-            deadline: '2026-03-25',
-            priority: 'high',
-            status: 'todo'
-        },
-        {
-            id: 'TASK-2',
-            title: 'Soạn slide ôn tập chương 3',
-            description: 'Tổng hợp lại lý thuyết chương 3 theo giáo trình mới',
-            assignedTo: 'TA002',
-            classId: 'C2',
-            deadline: '2026-03-24',
-            priority: 'medium',
-            status: 'in_progress'
-        },
-        {
-            id: 'TASK-3',
-            title: 'Điểm danh buổi thực hành',
-            description: '',
-            assignedTo: 'TA003',
-            classId: 'C2',
-            deadline: '2026-03-20',
-            priority: 'low',
-            status: 'done'
+    const loadData = async () => {
+        if (!classId || !user?.token) return;
+        try {
+            setIsLoading(true);
+            // 1. Fetch TAs
+            const taRes = await taService.getTAListByClass(classId, user.token);
+            let taList = [];
+            if (taRes.ok) {
+                const dataRaw = await taRes.json();
+                taList = Array.isArray(dataRaw) ? dataRaw : (dataRaw?.data && Array.isArray(dataRaw.data) ? dataRaw.data : []);
+                setTas(taList);
+            }
+
+            // 2. Fetch Tasks for each TA
+            let allTasks = [];
+            for (const ta of taList) {
+                const identifier = ta.classTAId || ta.classTaId || ta.taid;
+                if (!identifier) continue;
+                
+                try {
+                    const taskRes = await taService.getAssignedTasks(identifier, user.token);
+                    if (taskRes.ok) {
+                        const taTasks = await taskRes.json();
+                        // Append and attach TA info so we can display it
+                        const formattedTasks = Array.isArray(taTasks) ? taTasks.map(t => ({
+                            ...t,
+                            assignedTo: ta.taid,
+                            assignedToName: ta.fullName || ta.name,
+                            id: t.taTaskID || t.id,
+                            status: t.status ? t.status.toLowerCase() : 'todo',
+                            deadline: t.dueDate || t.deadline
+                        })) : [];
+                        allTasks = [...allTasks, ...formattedTasks];
+                    }
+                } catch (e) {
+                    console.error("Lỗi lấy task của TA", identifier, e);
+                }
+            }
+            setTasks(allTasks);
+
+        } catch (error) {
+            console.error('Lỗi khi tải dữ liệu công việc:', error);
+            toast.error('Lỗi kết nối máy chủ');
+        } finally {
+            setIsLoading(false);
         }
-    ]);
+    };
 
-    const handleAssignTask = (newTask) => {
-        setTasks([newTask, ...tasks]);
+    useEffect(() => {
+        loadData();
+    }, [classId, user?.token]);
+
+    const handleAssignTask = async (taskData) => {
+        try {
+            // map frontend data to API payload
+            const payload = {
+                classTAId: taskData.classTAId || taskData.assignedTo,
+                title: taskData.title,
+                dueDate: taskData.deadline,
+                type: taskData.type || 'Chấm điểm'
+            };
+            
+            const res = await taService.createTask(payload, user.token);
+            if (res.ok) {
+                toast.success('Giao việc thành công!');
+                setIsCreateModalOpen(false);
+                loadData(); // Re-fetch all tasks
+            } else {
+                const error = await res.json();
+                toast.error(error.message || 'Lỗi khi giao việc');
+            }
+        } catch (e) {
+            console.error(e);
+            toast.error('Lỗi kết nối máy chủ');
+        }
     };
 
     const getPriorityBadge = (priority) => {
@@ -65,33 +101,25 @@ const TATaskManagementTab = () => {
     };
 
     const TaskCard = ({ task }) => {
-        const ta = tas.find(t => t.id === task.assignedTo);
-        const taskClass = classes.find(c => c.id === task.classId);
+        const taName = task.assignedToName || 'Không rõ';
 
         return (
-            <div className="bg-surface rounded-2xl border border-border shadow-sm hover:shadow-md hover:border-primary/30 transition-all cursor-pointer group !p-4 flex flex-col !gap-3">
+            <div className="bg-surface rounded-2xl border border-border flex-shrink-0 shadow-sm hover:shadow-md hover:border-primary/30 transition-all cursor-pointer group !p-4 flex flex-col !gap-3">
                 <div className="flex justify-between items-start !gap-2">
                     <h4 className="font-bold text-text-main text-sm leading-snug group-hover:text-primary transition-colors">{task.title}</h4>
-                    {getPriorityBadge(task.priority)}
+                    {task.priority && getPriorityBadge(task.priority)}
                 </div>
                 
-                {task.classId && (
-                    <div className="inline-flex max-w-max items-center !gap-1.5 !px-2 !py-1 rounded-lg bg-primary/5 border border-primary/10 text-primary text-xs font-semibold">
-                        <Icon icon="material-symbols:school-outline-rounded" />
-                        <span className="truncate">{taskClass?.name}</span>
-                    </div>
-                )}
-
                 <div className="!pt-3 border-t border-border/50 flex items-center justify-between !gap-2 mt-auto">
                     <div className="flex items-center !gap-2">
                         <div className="w-6 h-6 rounded-full bg-purple-500/15 text-purple-600 flex items-center justify-center text-[10px] font-bold uppercase ring-2 ring-background">
-                            {ta?.name.charAt(0)}
+                            {taName.charAt(0)}
                         </div>
-                        <span className="text-xs font-medium text-text-muted truncate max-w-[80px]">{ta?.name}</span>
+                        <span className="text-xs font-medium text-text-muted truncate max-w-[80px]">{taName}</span>
                     </div>
                     <div className="flex items-center !gap-1.5 text-xs font-medium text-text-muted bg-background !px-2 !py-1 rounded border border-border/50">
                         <Icon icon="material-symbols:calendar-today-outline" className="text-primary/70" />
-                        {new Date(task.deadline).toLocaleDateString('vi-VN', {day: '2-digit', month:'2-digit'})}
+                        {task.deadline ? new Date(task.deadline).toLocaleDateString('vi-VN', {day: '2-digit', month:'2-digit'}) : 'No date'}
                     </div>
                 </div>
             </div>
@@ -99,10 +127,10 @@ const TATaskManagementTab = () => {
     };
 
     const Column = ({ title, status, icon, colorClass, borderClass }) => {
-        const filteredTasks = tasks.filter(t => t.status === status && t.title.toLowerCase().includes(searchQuery.toLowerCase()));
+        const filteredTasks = tasks.filter(t => t.status === status && (t.title || '').toLowerCase().includes(searchQuery.toLowerCase()));
         
         return (
-            <div className={`bg-background/50 rounded-[2rem] border ${borderClass} flex flex-col min-w-[300px] sm:min-w-0`}>
+            <div className={`bg-background/50 rounded-[2rem] border ${borderClass} flex flex-col min-w-[300px] sm:min-w-0 max-h-full`}>
                 <div className="!p-4 sm:!p-5 border-b border-border/50 flex items-center justify-between">
                     <div className="flex items-center !gap-3">
                         <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${colorClass}`}>
@@ -114,8 +142,12 @@ const TATaskManagementTab = () => {
                         {filteredTasks.length}
                     </span>
                 </div>
-                <div className="!p-3 sm:!p-4 flex flex-col !gap-3 flex-1 overflow-y-auto max-h-[600px] min-h-[150px]">
-                    {filteredTasks.length > 0 ? (
+                <div className="!p-3 sm:!p-4 flex flex-col !gap-3 flex-1 overflow-y-auto max-h-[600px] min-h-[150px] custom-scrollbar">
+                    {isLoading ? (
+                        <div className="flex-1 flex items-center justify-center text-primary">
+                            <Icon icon="solar:spinner-linear" className="animate-spin text-2xl" />
+                        </div>
+                    ) : filteredTasks.length > 0 ? (
                         filteredTasks.map(task => <TaskCard key={task.id} task={task} />)
                     ) : (
                         <div className="flex-1 flex flex-col items-center justify-center text-center !p-6 opacity-60">
@@ -156,7 +188,7 @@ const TATaskManagementTab = () => {
             </div>
 
             {/* Kanban Board */}
-            <div className="grid grid-cols-1 md:grid-cols-3 !gap-6 overflow-x-auto !pb-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 !gap-6 overflow-x-auto !pb-4 min-h-[400px]">
                 <Column 
                     title="Cần làm" 
                     status="todo" 
@@ -180,13 +212,15 @@ const TATaskManagementTab = () => {
                 />
             </div>
 
-            <CreateTaskModal 
-                isOpen={isCreateModalOpen} 
-                onClose={() => setIsCreateModalOpen(false)} 
-                onAssign={handleAssignTask}
-                tas={tas}
-                classes={classes}
-            />
+            {isCreateModalOpen && (
+                <CreateTaskModal 
+                    isOpen={isCreateModalOpen} 
+                    onClose={() => setIsCreateModalOpen(false)} 
+                    onAssign={handleAssignTask}
+                    tas={tas}
+                    classes={null} // Removed mock classes
+                />
+            )}
         </div>
     );
 };

@@ -1,13 +1,25 @@
 import { getApiUrl } from '../../../config/api';
 
 export const authService = {
-  login: async (credentials) => {
+  login: async ({ identifier, password, selectedRole }) => {
     const response = await fetch(getApiUrl('/api/Auth/login'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(credentials),
+      body: JSON.stringify({ identifier, password, selectedRole }),
+    });
+    return response;
+  },
+
+  selectProfile: async (studentId, tempToken) => {
+    const response = await fetch(getApiUrl('/api/Auth/select-profile'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${tempToken}`
+      },
+      body: JSON.stringify({ studentId }),
     });
     return response;
   },

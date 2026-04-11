@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
+import { adminService } from '../api/adminService';
 import {
   LineChart,
   Line,
@@ -8,13 +9,40 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
 } from 'recharts';
 
 const SystemDashboardPage = () => {
-    // Mock Data
+    const [stats, setStats] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchDashboard = async () => {
+            try {
+                const data = await adminService.getDashboardStats();
+                setStats(data);
+            } catch (error) {
+                console.error(error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchDashboard();
+    }, []);
+
+    const formatCurrency = (value) => {
+        return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
+    };
+
+    if (loading) return (
+        <div className="flex items-center justify-center h-screen bg-background/50 backdrop-blur-sm">
+            <div className="flex flex-col items-center gap-4">
+                <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-sm font-bold text-primary animate-pulse">Đang tải dữ liệu...</p>
+            </div>
+        </div>
+    );
+
+    // Dữ liệu giả cho biểu đồ & doanh thu theo yêu cầu
     const revenueData = [
         { name: 'Tháng 1', revenue: 40000000 },
         { name: 'Tháng 2', revenue: 30000000 },
@@ -24,133 +52,121 @@ const SystemDashboardPage = () => {
         { name: 'Tháng 6', revenue: 55000000 },
     ];
 
-    const roleData = [
-        { name: 'Học sinh', value: 850, color: '#3b82f6' }, // blue-500
-        { name: 'Giáo viên', value: 45, color: '#10b981' }, // emerald-500
-        { name: 'Trợ giảng', value: 30, color: '#f59e0b' }, // amber-500
-    ];
-
-    const formatCurrency = (value) => {
-        return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
-    };
+    const mockRevenue = 1250000000;
+    const mockGrowth = 15.5;
 
     return (
-        <div className="!space-y-6">
+        <div className="!space-y-6 animate-fade-in">
             {/* Page Header */}
             <div>
-                <h1 className="text-2xl font-bold text-text-main font-['Outfit']">Tổng quan Hệ thống</h1>
+                <h1 className="text-2xl font-black text-text-main font-['Outfit'] tracking-tight">Tổng quan Hệ thống</h1>
                 <p className="text-sm text-text-secondary !mt-1">Giám sát tổng thể hoạt động của hệ thống EMS.</p>
             </div>
 
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="!bg-white !p-6 rounded-2xl border border-border shadow-sm flex items-center justify-between">
-                    <div>
-                        <p className="text-sm text-text-secondary font-medium">Tổng Doanh thu</p>
-                        <h3 className="text-2xl font-bold text-text-main !mt-2">1,250,000,000 ₫</h3>
-                        <p className="text-xs text-green-500 !mt-2 font-medium flex items-center gap-1">
-                            <Icon icon="material-symbols:trending-up-rounded" /> +15.5% so với tháng trước
-                        </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {/* Thẻ 1: Tổng doanh thu (Mock) */}
+                <div className="!bg-white !p-6 rounded-3xl border border-border shadow-soft hover:shadow-lg transition-all border-l-4 border-l-blue-500 group">
+                    <div className="flex items-center justify-between !mb-4">
+                        <div className="w-12 h-12 !bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <Icon icon="solar:round-transfer-horizontal-bold-duotone" className="text-2xl" />
+                        </div>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-blue-500 bg-blue-50 px-2 py-1 rounded-full">Revenue</span>
                     </div>
-                    <div className="w-14 h-14 !bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
-                        <Icon icon="solar:wallet-money-bold-duotone" className="text-3xl" />
+                    <div>
+                        <p className="text-xs text-text-secondary font-bold uppercase tracking-wider">Tổng Doanh thu</p>
+                        <h3 className="text-2xl font-black text-text-main !mt-1">{formatCurrency(mockRevenue)}</h3>
+                        <p className="text-xs text-green-500 !mt-2 font-bold flex items-center gap-1 bg-green-50 w-fit px-2 py-1 rounded-lg">
+                            <Icon icon="solar:graph-up-bold-duotone" /> +{mockGrowth}% <span className="text-[10px] opacity-70">vs tháng trước</span>
+                        </p>
                     </div>
                 </div>
 
-                <div className="!bg-white !p-6 rounded-2xl border border-border shadow-sm flex items-center justify-between">
-                    <div>
-                        <p className="text-sm text-text-secondary font-medium">Giáo viên Hoạt động</p>
-                        <h3 className="text-2xl font-bold text-text-main !mt-2">45</h3>
-                        <p className="text-xs text-text-secondary !mt-2 font-medium">
-                            Giáo viên đang phụ trách lớp
-                        </p>
+                {/* Thẻ 2: Học sinh */}
+                <div className="!bg-white !p-6 rounded-3xl border border-border shadow-soft hover:shadow-lg transition-all border-l-4 border-l-emerald-500 group">
+                    <div className="flex items-center justify-between !mb-4">
+                        <div className="w-12 h-12 !bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <Icon icon="solar:users-group-rounded-bold-duotone" className="text-2xl" />
+                        </div>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500 bg-emerald-50 px-2 py-1 rounded-full">Students</span>
                     </div>
-                    <div className="w-14 h-14 !bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center">
-                        <Icon icon="material-symbols:school-rounded" className="text-3xl" />
+                    <div>
+                        <p className="text-xs text-text-secondary font-bold uppercase tracking-wider">Học sinh đang học</p>
+                        <h3 className="text-2xl font-black text-text-main !mt-1">{stats?.totalStudents || 0}</h3>
+                        <p className="text-xs text-text-muted !mt-2 font-medium">Học sinh đang hoạt động</p>
                     </div>
                 </div>
 
-                <div className="!bg-white !p-6 rounded-2xl border border-border shadow-sm flex items-center justify-between">
-                    <div>
-                        <p className="text-sm text-text-secondary font-medium">Học sinh / Trợ giảng</p>
-                        <h3 className="text-2xl font-bold text-text-main !mt-2">880</h3>
-                        <p className="text-xs text-text-secondary !mt-2 font-medium">
-                            Đang hoạt động trong tháng
-                        </p>
+                {/* Thẻ 3: Giáo viên */}
+                <div className="!bg-white !p-6 rounded-3xl border border-border shadow-soft hover:shadow-lg transition-all border-l-4 border-l-purple-500 group">
+                    <div className="flex items-center justify-between !mb-4">
+                        <div className="w-12 h-12 !bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <Icon icon="solar:square-academic-cap-2-bold-duotone" className="text-2xl" />
+                        </div>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-purple-500 bg-purple-50 px-2 py-1 rounded-full">Teachers</span>
                     </div>
-                    <div className="w-14 h-14 !bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center">
-                        <Icon icon="material-symbols:group-rounded" className="text-3xl" />
+                    <div>
+                        <p className="text-xs text-text-secondary font-bold uppercase tracking-wider">Giáo viên đang dạy</p>
+                        <h3 className="text-2xl font-black text-text-main !mt-1">{stats?.totalTeachers || 0}</h3>
+                        <p className="text-xs text-text-muted !mt-2 font-medium">Giáo viên trong hệ thống</p>
+                    </div>
+                </div>
+
+                {/* Thẻ 4: Tổng tài khoản */}
+                <div className="!bg-white !p-6 rounded-3xl border border-border shadow-soft hover:shadow-lg transition-all border-l-4 border-l-amber-500 group">
+                    <div className="flex items-center justify-between !mb-4">
+                        <div className="w-12 h-12 !bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <Icon icon="solar:user-id-bold-duotone" className="text-2xl" />
+                        </div>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-amber-500 bg-amber-50 px-2 py-1 rounded-full">Accounts</span>
+                    </div>
+                    <div>
+                        <p className="text-xs text-text-secondary font-bold uppercase tracking-wider">Tổng tài khoản</p>
+                        <h3 className="text-2xl font-black text-text-main !mt-1">{stats?.totalUsers || 0}</h3>
+                        <p className="text-xs text-amber-600 !mt-2 font-bold flex items-center gap-1 bg-amber-50 w-fit px-2 py-1 rounded-lg">
+                            <Icon icon="solar:user-plus-bold-duotone" /> +{stats?.newRegistrationsThisMonth || 0} <span className="text-[10px] opacity-70">tháng này</span>
+                        </p>
                     </div>
                 </div>
             </div>
 
             {/* Charts Area */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 gap-6">
                 {/* Revenue Chart */}
-                <div className="!bg-white !p-6 rounded-2xl border border-border shadow-sm lg:col-span-2">
-                    <div className="flex items-center justify-between !mb-6">
-                        <h3 className="text-lg font-bold text-text-main font-['Outfit']">Doanh thu 6 tháng gần nhất</h3>
-                        <button className="text-sm text-primary font-medium hover:underline">Xem báo cáo chi tiết</button>
+                <div className="!bg-white !p-8 rounded-3xl border border-border shadow-soft">
+                    <div className="flex items-center justify-between !mb-8">
+                        <div>
+                            <h3 className="text-lg font-black text-text-main font-['Outfit'] tracking-tight">Biểu đồ Doanh thu</h3>
+                            <p className="text-xs text-text-secondary">Thống kê doanh thu theo 6 tháng gần nhất</p>
+                        </div>
+                        <button className="px-4 py-2 !bg-primary/10 text-primary text-xs font-bold rounded-xl hover:!bg-primary/20 transition-all">Xuất báo cáo PDF</button>
                     </div>
-                    <div className="h-80 w-full">
+                    <div className="h-96 w-full">
                         <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={revenueData} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} dy={10} />
+                            <LineChart data={revenueData} margin={{ top: 5, right: 30, bottom: 5, left: 20 }}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 600 }} dy={15} />
                                 <YAxis 
                                     tickFormatter={(value) => `${value / 1000000}Tr`} 
                                     axisLine={false} 
                                     tickLine={false} 
-                                    tick={{ fill: '#64748b', fontSize: 12 }} 
-                                    dx={-10} 
+                                    tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 600 }} 
+                                    dx={-15} 
                                 />
                                 <Tooltip 
                                     formatter={(value) => [formatCurrency(value), 'Doanh thu']}
-                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)' }}
+                                    contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)' }}
                                 />
-                                <Line type="monotone" dataKey="revenue" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
+                                <Line 
+                                    type="monotone" 
+                                    dataKey="revenue" 
+                                    stroke="#3b82f6" 
+                                    strokeWidth={4} 
+                                    dot={{ r: 6, fill: '#3b82f6', strokeWidth: 3, stroke: '#fff' }} 
+                                    activeDot={{ r: 8, strokeWidth: 0 }} 
+                                />
                             </LineChart>
                         </ResponsiveContainer>
-                    </div>
-                </div>
-
-                {/* Role Distribution Pie Chart */}
-                <div className="!bg-white !p-6 rounded-2xl border border-border shadow-sm">
-                    <h3 className="text-lg font-bold text-text-main font-['Outfit'] !mb-6">Phân bổ Vai trò</h3>
-                    <div className="h-64 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie
-                                    data={roleData}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={60}
-                                    outerRadius={80}
-                                    paddingAngle={5}
-                                    dataKey="value"
-                                >
-                                    {roleData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry.color} />
-                                    ))}
-                                </Pie>
-                                <Tooltip 
-                                    formatter={(value) => [value, 'Người dùng']}
-                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </div>
-                    {/* Legend */}
-                    <div className="!mt-4 !space-y-3">
-                        {roleData.map((item, idx) => (
-                            <div key={idx} className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
-                                    <span className="text-sm text-text-secondary">{item.name}</span>
-                                </div>
-                                <span className="text-sm font-bold text-text-main">{item.value}</span>
-                            </div>
-                        ))}
                     </div>
                 </div>
             </div>

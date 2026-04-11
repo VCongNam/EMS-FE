@@ -98,57 +98,59 @@ export const AppRoutes = () => {
                               <Route path="profile" element={<ProfilePage />} />
                               <Route path="teacher/classes" element={<TeacherClassListPage />} />
                               <Route path="teacher/classes/:classId" element={<ClassDetailLayout />}>
-                                  <Route index element={<Navigate to="stream" replace />} />
-                                  <Route path="stream" element={<ClassStreamPage />} />
-                                  <Route path="materials" element={<ClassMaterialsPage />} />
-                                  <Route path="classwork" element={<ClassworkPage />} />
-                                  <Route path="create-assignment" element={<CreateAssignmentPage />} />
-                                  <Route path="edit-assignment/:assignmentId" element={<CreateAssignmentPage />} />
-                                  <Route path="assignment/:assignmentId" element={<AssignmentDetailPage />} />
-                                  <Route path="people" element={<ClassPeoplePage />} />
-                                  <Route path="grades" element={<ClassGradesPage />} />
-                                  <Route path="schedule" element={<ClassSchedulePage />} />
-                                  <Route path="attendance" element={<ClassAttendancePage />} />
+                                   <Route index element={<Navigate to="stream" replace />} />
+                                   <Route path="stream" element={<ClassStreamPage />} />
+                                   <Route path="materials" element={<ClassMaterialsPage />} />
+                                   <Route path="classwork" element={<ClassworkPage />} />
+                                   <Route path="create-assignment" element={<CreateAssignmentPage />} />
+                                   <Route path="edit-assignment/:assignmentId" element={<CreateAssignmentPage />} />
+                                   <Route path="assignment/:assignmentId" element={<AssignmentDetailPage />} />
+                                   <Route path="people" element={<ClassPeoplePage />} />
+                                   <Route path="grades" element={<ClassGradesPage />} />
+                                   <Route path="schedule" element={<ClassSchedulePage />} />
+                                   <Route path="attendance" element={<ClassAttendancePage />} />
+                                   <Route path="assistants" element={<TAManagementPage />} />
                               </Route>
 
                               {/* TA Classes */}
                               <Route path="assisted-classes" element={<TAClassListPage />} />
                               <Route path="assisted-classes/:classId" element={<ClassDetailLayout />}>
-                                  <Route index element={<Navigate to="stream" replace />} />
-                                  <Route path="stream" element={<ClassStreamPage />} />
-                                  <Route path="materials" element={<ClassMaterialsPage />} />
-                                  <Route path="classwork" element={<ClassworkPage />} />
-                                  <Route path="create-assignment" element={<CreateAssignmentPage />} />
-                                  <Route path="edit-assignment/:assignmentId" element={<CreateAssignmentPage />} />
-                                  <Route path="assignment/:assignmentId" element={<AssignmentDetailPage />} />
-                                  <Route path="people" element={<ClassPeoplePage />} />
-                                  <Route path="grades" element={<ClassGradesPage />} />
-                                  <Route path="schedule" element={<ClassSchedulePage />} />
+                                   <Route index element={<Navigate to="stream" replace />} />
+                                   <Route path="stream" element={<ClassStreamPage />} />
+                                   <Route path="materials" element={<ClassMaterialsPage />} />
+                                   <Route path="classwork" element={<ClassworkPage />} />
+                                   <Route path="create-assignment" element={<CreateAssignmentPage />} />
+                                   <Route path="edit-assignment/:assignmentId" element={<CreateAssignmentPage />} />
+                                   <Route path="assignment/:assignmentId" element={<AssignmentDetailPage />} />
+                                   <Route path="people" element={<ClassPeoplePage />} />
+                                   <Route path="grades" element={<ClassGradesPage />} />
+                                   <Route path="schedule" element={<ClassSchedulePage />} />
                                    <Route path="attendance" element={<ClassAttendancePage />} />
-                               </Route>
-
-                               {/* TA Tasks */}
-                               <Route path="ta/tasks" element={<MyTasksPage />} />
-
-                               {/* Student Classes */}
-                              <Route path="student/classes" element={<StudentClassListPage />} />
-                              <Route path="student/classes/:classId" element={<ClassDetailLayout />}>
-                                  <Route index element={<Navigate to="stream" replace />} />
-                                  <Route path="stream" element={<ClassStreamPage />} />
-                                  <Route path="materials" element={<ClassMaterialsPage />} />
-                                  <Route path="classwork" element={<ClassworkPage />} />
-                                  <Route path="assignment/:assignmentId" element={<AssignmentDetailPage />} />
-                                  <Route path="people" element={<ClassPeoplePage />} />
-                                  <Route path="grades" element={<ClassGradesPage />} />
-                                  <Route path="schedule" element={<ClassSchedulePage />} />
-                                  <Route path="attendance" element={<ClassAttendancePage />} />
                               </Route>
 
-                               {/* Student Notifications */}
-                               <Route path="notifications" element={<StudentNotificationPage />} />
-                               <Route path="tuition-payment" element={<StudentTuitionPage />} />
+                              {/* TA Tasks */}
+                              <Route path="ta/tasks" element={<MyTasksPage />} />
 
-                               {/* Student Management */}
+                              {/* Student Classes */}
+                              <Route path="student/classes" element={<StudentClassListPage />} />
+                              <Route path="student/classes/:classId" element={<ClassDetailLayout />}>
+                                   <Route index element={<Navigate to="stream" replace />} />
+                                   <Route path="stream" element={<ClassStreamPage />} />
+                                   <Route path="materials" element={<ClassMaterialsPage />} />
+                                   <Route path="classwork" element={<ClassworkPage />} />
+                                   <Route path="assignment/:assignmentId" element={<AssignmentDetailPage />} />
+                                   <Route path="people" element={<ClassPeoplePage />} />
+                                   <Route path="grades" element={<ClassGradesPage />} />
+                                   <Route path="schedule" element={<ClassSchedulePage />} />
+                                   <Route path="attendance" element={<ClassAttendancePage />} />
+                                   <Route path="tuition" element={<StudentTuitionPage />} />
+                              </Route>
+
+                              {/* Student Notifications */}
+                              <Route path="notifications" element={<StudentNotificationPage />} />
+                              <Route path="tuition-payment" element={<StudentTuitionPage />} />
+
+                              {/* Student Management */}
                               <Route path="students" element={<StudentManagementPage />} />
 
                               {/* TA Management */}
