@@ -131,21 +131,9 @@ const ClassStreamPage = () => {
     };
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 animate-fade-in-up">
-            {/* Cột trái (25%) */}
-            <div className="md:col-span-1 space-y-6">
-                {/* Upcoming deadlines */}
-                <div className="bg-surface rounded-2xl border border-border !p-5 shadow-sm">
-                    <h3 className="font-bold text-text-main !mb-2">Sắp tới</h3>
-                    <p className="text-sm text-text-muted">Không có bài tập nào đến hạn sớm.</p>
-                    <button className="mt-4 text-sm font-semibold text-primary hover:text-primary-hover transition-colors">
-                        Xem tất cả
-                    </button>
-                </div>
-            </div>
-
-            {/* Cột chính (75%) */}
-            <div className="md:col-span-3">
+        <div className="max-w-4xl mx-auto animate-fade-in-up">
+            {/* Cột chính (100%) */}
+            <div className="w-full">
                 {/* Post Composer */}
                 <PostComposer onPost={handleNewPost} />
 

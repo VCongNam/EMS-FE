@@ -275,6 +275,7 @@ const TeacherClassListPage = () => {
                         onSearchChange={setSearchQuery}
                         filterStatus={filterStatus}
                         onFilterChange={setFilterStatus}
+                        showUpcoming={true}
                     />
                 </div>
 

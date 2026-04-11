@@ -7,19 +7,26 @@ import { authService } from '../api/authService';
 import { Icon } from '@iconify/react';
 
 const ROLES = [
-    { id: 'student', label: 'Học viên', icon: 'ph:student-bold', color: 'blue' },
-    { id: 'teacher', label: 'Giáo viên', icon: 'ph:chalkboard-teacher-bold', color: 'purple' },
-    { id: 'TA', label: 'Trợ giảng', icon: 'ph:user-gear-bold', color: 'orange' },
+    { id: 'student', label: 'Học viên', icon: 'ph:student-bold', color: 'blue', apiRole: 'Student' },
+    { id: 'teacher', label: 'Giáo viên', icon: 'ph:chalkboard-teacher-bold', color: 'purple', apiRole: 'Teacher' },
+    { id: 'TA', label: 'Trợ giảng', icon: 'ph:user-gear-bold', color: 'orange', apiRole: 'TA' },
 ];
 
 const LoginPage = () => {
     const navigate = useNavigate();
     const { login } = useAuthStore();
 
-    const [email, setEmail] = useState('');
+    // Login Form State
+    const [identifier, setIdentifier] = useState('');
     const [password, setPassword] = useState('');
     const [selectedRole, setSelectedRole] = useState('student');
     const [showPassword, setShowPassword] = useState(false);
+    
+    // Auth Flow State
+    const [step, setStep] = useState(0); // 0: Login, 1: Profile Selection
+    const [tempToken, setTempToken] = useState(null);
+    const [availableProfiles, setAvailableProfiles] = useState([]);
+    
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
@@ -29,7 +36,12 @@ const LoginPage = () => {
         setError(null);
 
         try {
-            const response = await authService.login({ email, password });
+            const roleConfig = ROLES.find(r => r.id === selectedRole);
+            const response = await authService.login({ 
+                identifier, 
+                password, 
+                selectedRole: roleConfig?.apiRole || 'Student' 
+            });
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
@@ -38,37 +50,17 @@ const LoginPage = () => {
 
             const data = await response.json();
 
-            // Hàm login trong store đã được viết để xử lý token và decode -> lấy ra role tự động
+            // Nếu Backend yêu cầu chọn profile (Học sinh)
+            if (data.requiresProfileSelection) {
+                setAvailableProfiles(data.availableProfiles || []);
+                setTempToken(data.tempToken);
+                setStep(1); // Chuyển sang bước chọn profile
+                return;
+            }
+
+            // Nếu không cần chọn profile -> Đăng nhập hoàn tất
             login(data);
-
-            // Decode role từ store vừa cập nhật
-            const stateStore = useAuthStore.getState();
-            const role = stateStore.user?.role;
-
-            // KIỂM TRA ROLE ĐỐI CHIẾU VỚI LỰA CHỌN CỦA NGƯỜI DÙNG
-            if (role !== selectedRole) {
-                // Nếu không khớp -> Logout ngay lập tức để xóa session vừa tạo
-                stateStore.logout();
-                
-                const roleLabels = {
-                    student: 'Học viên',
-                    teacher: 'Giáo viên',
-                    TA: 'Trợ giảng',
-                };
-                
-                throw new Error(`Tài khoản của bạn thuộc vai trò ${roleLabels[role] || role}. Vui lòng chọn đúng vai trò để đăng nhập!`);
-            }
-            
-            // Redirect based on user role
-            if (role === 'teacher') {
-                navigate('/teacher/classes');
-            } else if (role === 'TA') {
-                navigate('/dashboard'); 
-            } else if (role === 'student') {
-                navigate('/dashboard'); 
-            } else {
-                navigate('/dashboard');
-            }
+            handleRedirect(data.roleName || '');
 
         } catch (err) {
             setError(err.message);
@@ -77,6 +69,90 @@ const LoginPage = () => {
         }
     };
 
+    const handleSelectProfile = async (studentId) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const res = await authService.selectProfile(studentId, tempToken);
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Không thể chọn hồ sơ này.');
+            }
+            const data = await res.json();
+            
+            // Lưu session hoàn tất
+            login(data);
+            handleRedirect(data.roleName || 'Student');
+
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleRedirect = (roleName) => {
+        const role = roleName.toLowerCase();
+        if (role === 'teacher') {
+            navigate('/teacher/classes');
+        } else if (role === 'ta') {
+            navigate('/dashboard'); 
+        } else if (role === 'student') {
+            navigate('/dashboard'); 
+        } else if (role === 'admin') {
+            navigate('/admin/dashboard');
+        } else {
+            navigate('/dashboard');
+        }
+    };
+
+    // Render Profile Selection Step
+    if (step === 1) {
+        return (
+            <AuthLayout
+                title="Chọn hồ sơ học sinh"
+                subtitle="Tài khoản của bạn liên kết với nhiều hồ sơ. Vui lòng chọn một hồ sơ để tiếp tục."
+            >
+                <div className="!space-y-6 animate-fade-in">
+                    {error && (
+                        <div className="!p-4 rounded-xl bg-red-50 border border-red-400/20 text-red-600 text-sm font-medium flex items-center !gap-3">
+                            <Icon icon="solar:danger-bold-duotone" className="text-xl" />
+                            {error}
+                        </div>
+                    )}
+
+                    <div className="!grid !grid-cols-1 !gap-4">
+                        {availableProfiles.map((p) => (
+                            <button
+                                key={p.studentId}
+                                onClick={() => handleSelectProfile(p.studentId)}
+                                disabled={loading}
+                                className="!flex !items-center !gap-4 !p-4 !rounded-2xl !border-2 !border-border hover:!border-primary hover:!bg-primary/5 !transition-all !group !text-left"
+                            >
+                                <div className="!w-12 !h-12 !rounded-xl !bg-primary/10 !text-primary !flex !items-center !justify-center !group-hover:bg-primary !group-hover:text-white !transition-colors">
+                                    <Icon icon="solar:user-circle-bold-duotone" className="!text-2xl" />
+                                </div>
+                                <div className="!flex-1">
+                                    <h4 className="!font-black !text-text-main !group-hover:text-primary !transition-colors">{p.fullName}</h4>
+                                    <p className="!text-xs !text-text-muted">Mã HS: {p.studentId.substring(0, 8).toUpperCase()}</p>
+                                </div>
+                                <Icon icon="solar:alt-arrow-right-bold-duotone" className="!text-text-muted !group-hover:text-primary !group-hover:translate-x-1 !transition-all" />
+                            </button>
+                        ))}
+                    </div>
+
+                    <button 
+                        onClick={() => setStep(0)}
+                        className="!w-full !py-3 !text-sm !font-bold !text-text-muted hover:!text-primary !transition-colors"
+                    >
+                        ← Quay lại đăng nhập
+                    </button>
+                </div>
+            </AuthLayout>
+        );
+    }
+
+    // Render Login Step
     return (
         <AuthLayout
             title="Chào mừng trở lại!"
@@ -130,20 +206,20 @@ const LoginPage = () => {
                 </div>
 
                 <div className="!space-y-5">
-                    {/* Email Input */}
+                    {/* Identifier Input */}
                     <div>
                         <label className="block text-sm font-semibold text-text-main !mb-2">
-                            Tên đăng nhập / Email
+                            {selectedRole === 'student' ? 'Số điện thoại đăng nhập' : 'Email đăng nhập'}
                         </label>
                         <div className="relative group">
                             <div className="absolute inset-y-0 left-0 !pl-4 flex items-center pointer-events-none text-text-muted group-focus-within:text-primary transition-colors">
-                                <Icon icon="solar:user-bold-duotone" className="text-xl" />
+                                <Icon icon={selectedRole === 'student' ? "solar:phone-calling-bold-duotone" : "solar:user-bold-duotone"} className="text-xl" />
                             </div>
                             <input
                                 type="text"
-                                placeholder="name@school.edu.vn"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder={selectedRole === 'student' ? "0xxxxxxxxx" : "name@school.edu.vn"}
+                                value={identifier}
+                                onChange={(e) => setIdentifier(e.target.value)}
                                 required
                                 className="w-full !pl-12 !pr-4 !py-3.5 rounded-xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all text-text-main font-medium placeholder:text-text-muted/50"
                             />

@@ -13,57 +13,10 @@ const TAClassListPage = () => {
     const [mockClassesData, setMockClassesData] = useState(mockClasses);
     const [searchQuery, setSearchQuery] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedClass, setSelectedClass] = useState(null);
     const [viewClass, setViewClass] = useState(null);
-    const [confirmModal, setConfirmModal] = useState({ isOpen: false, type: '', classId: null });
-
-    const handleOpenCreateModal = () => {
-        setSelectedClass(null);
-        setIsModalOpen(true);
-    };
-
-    const handleOpenEditModal = (classData) => {
-        setSelectedClass(classData);
-        setIsModalOpen(true);
-    };
 
     const handleOpenViewModal = (classData) => {
         setViewClass(classData);
-    };
-
-    const handleSaveClass = (formData) => {
-        if (selectedClass) {
-            console.log('Update class', selectedClass.id, formData);
-        } else {
-            console.log('Create new class', formData);
-        }
-        setIsModalOpen(false);
-    };
-
-    const openConfirmArchive = (classId) => {
-        setConfirmModal({ isOpen: true, type: 'archive', classId });
-    };
-
-    const openConfirmUnarchive = (classId) => {
-        setConfirmModal({ isOpen: true, type: 'unarchive', classId });
-    };
-
-    const handleConfirmAction = () => {
-        if (confirmModal.type === 'archive') {
-            setMockClassesData(prev => prev.map(cls => 
-                cls.id === confirmModal.classId ? { ...cls, status: 'archived' } : cls
-            ));
-        } else if (confirmModal.type === 'unarchive') {
-            setMockClassesData(prev => prev.map(cls => 
-                cls.id === confirmModal.classId ? { ...cls, status: 'ongoing' } : cls // Mặc định mở lại về ongoing
-            ));
-        }
-        setConfirmModal({ isOpen: false, type: '', classId: null });
-    };
-
-    const closeConfirmModal = () => {
-        setConfirmModal({ isOpen: false, type: '', classId: null });
     };
 
     // Filter logic
@@ -92,8 +45,6 @@ const TAClassListPage = () => {
                         Quản lý các lớp học bạn đang làm trợ giảng.
                     </p>
                 </div>
-
-                
             </div>
 
             {/* Filter Section */}
@@ -103,6 +54,7 @@ const TAClassListPage = () => {
                     onSearchChange={setSearchQuery}
                     filterStatus={filterStatus}
                     onFilterChange={setFilterStatus}
+                    showUpcoming={false}
                 />
             </div>
 
@@ -113,10 +65,7 @@ const TAClassListPage = () => {
                         <ClassCard 
                             key={cls.id} 
                             classData={cls} 
-                            onEdit={() => handleOpenEditModal(cls)} 
                             onViewDetails={() => handleOpenViewModal(cls)}
-                            onArchive={() => openConfirmArchive(cls.id)}
-                            onUnarchive={() => openConfirmUnarchive(cls.id)}
                             basePath="/assisted-classes"
                         />
                     ))}
@@ -144,29 +93,10 @@ const TAClassListPage = () => {
             )}
         </div>
 
-        <CreateClassModal 
-            isOpen={isModalOpen} 
-            onClose={() => setIsModalOpen(false)} 
-            initialData={selectedClass}
-            onSubmit={handleSaveClass}
-        />
-
         <ClassDetailsModal
             isOpen={!!viewClass}
             onClose={() => setViewClass(null)}
             classData={viewClass}
-            onEdit={(cls) => handleOpenEditModal(cls)}
-        />
-
-        <ConfirmModal
-            isOpen={confirmModal.isOpen}
-            onClose={closeConfirmModal}
-            onConfirm={handleConfirmAction}
-            title={confirmModal.type === 'archive' ? 'Xác nhận lưu trữ lớp học' : 'Xác nhận mở lại lớp học'}
-            message={confirmModal.type === 'archive' ? 'Bạn có chắc chắn muốn lưu trữ lớp học này không?' : 'Bạn có chắc chắn muốn mở lại lớp học này không?'}
-            confirmText="Đồng ý"
-            cancelText="Hủy"
-            type={confirmModal.type === 'archive' ? 'warning' : 'info'}
         />
     </>
     );

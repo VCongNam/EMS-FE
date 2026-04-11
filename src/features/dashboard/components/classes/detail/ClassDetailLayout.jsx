@@ -74,6 +74,14 @@ const ClassDetailLayout = () => {
         { path: 'attendance', label: 'Điểm danh', icon: 'material-symbols:fact-check-rounded' },
     ];
 
+    if (!isStudentPortal && !isAssistantPortal) {
+        tabs.push({ path: 'assistants', label: 'Trợ giảng', icon: 'material-symbols:support-agent-rounded' });
+    }
+
+    if (isStudentPortal) {
+        tabs.push({ path: 'tuition', label: 'Học phí', icon: 'material-symbols:payments-outline-rounded' });
+    }
+
     const activeTab = tabs.find(tab =>
         location.pathname.includes(`/${tab.path}`)
     ) || tabs[0];

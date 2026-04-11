@@ -109,6 +109,7 @@ export const AppRoutes = () => {
                                    <Route path="grades" element={<ClassGradesPage />} />
                                    <Route path="schedule" element={<ClassSchedulePage />} />
                                    <Route path="attendance" element={<ClassAttendancePage />} />
+                                   <Route path="assistants" element={<TAManagementPage />} />
                               </Route>
 
                               {/* TA Classes */}
@@ -142,6 +143,7 @@ export const AppRoutes = () => {
                                    <Route path="grades" element={<ClassGradesPage />} />
                                    <Route path="schedule" element={<ClassSchedulePage />} />
                                    <Route path="attendance" element={<ClassAttendancePage />} />
+                                   <Route path="tuition" element={<StudentTuitionPage />} />
                               </Route>
 
                               {/* Student Notifications */}
