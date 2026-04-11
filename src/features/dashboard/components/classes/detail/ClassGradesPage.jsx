@@ -3,6 +3,8 @@ import useAuthStore from '../../../../../store/authStore';
 import GradeMasterView from './grades/GradeMasterView';
 import GradeSettingsView from './grades/GradeSettingsView';
 import { Icon } from '@iconify/react';
+import { useParams } from 'react-router-dom';
+import { gradebookService } from '../../../api/gradebookService';
 
 // --- MOCK DATA ---
 const MOCK_STUDENTS = [
@@ -13,11 +15,8 @@ const MOCK_STUDENTS = [
     { id: '5', name: 'Hoàng Thị E', avatar: 'https://i.pravatar.cc/150?u=5', studentId: 'SV005', average: 8.8 },
 ];
 
-const MOCK_CATEGORIES = [
-    { id: 'c1', name: 'Bài tập về nhà', weight: 20 },
-    { id: 'c2', name: 'Giữa kỳ', weight: 30 },
-    { id: 'c3', name: 'Cuối kỳ', weight: 50 }
-];
+// Categories will be fetched via API
+// const MOCK_CATEGORIES = [];
 
 const MOCK_GRADES = {
     '1': [
@@ -37,11 +36,41 @@ const MOCK_GRADES = {
 const ClassGradesPage = () => {
     const { user } = useAuthStore();
     const role = user?.role || 'student';
+    const { classId } = useParams();
     
     const [activeTab, setActiveTab] = useState(role === 'student' ? 'individual' : 'overview');
     const [selectedStudentId, setSelectedStudentId] = useState(MOCK_STUDENTS[0].id);
     const [searchQuery, setSearchQuery] = useState('');
-    const [categories, setCategories] = useState(MOCK_CATEGORIES);
+    const [categories, setCategories] = useState([]);
+    const [isLoadingCategories, setIsLoadingCategories] = useState(true);
+
+    const fetchCategories = async () => {
+        try {
+            setIsLoadingCategories(true);
+            const res = await gradebookService.getGradeCategories(classId, user?.token);
+            if (res.ok) {
+                const data = await res.json();
+                // Map gradeCategoryId to id to match mock expectations in other views
+                const mappedData = data.map(c => ({
+                    ...c,
+                    id: c.gradeCategoryId
+                }));
+                setCategories(mappedData);
+            } else {
+                console.error("Lỗi lấy danh sách hạng mục:", res.status);
+            }
+        } catch (error) {
+            console.error("Lỗi mạng:", error);
+        } finally {
+            setIsLoadingCategories(false);
+        }
+    };
+
+    useEffect(() => {
+        if (classId) {
+            fetchCategories();
+        }
+    }, [classId, user?.token]);
 
     // If student, lock to their own data (mocking student ID match)
     useEffect(() => {
@@ -260,8 +289,10 @@ const ClassGradesPage = () => {
                 
                 {activeTab === 'settings' && role === 'teacher' && (
                     <GradeSettingsView 
+                        classId={classId}
                         categories={categories} 
-                        onUpdateCategories={setCategories}
+                        onRefresh={fetchCategories}
+                        isLoading={isLoadingCategories}
                     />
                 )}
             </div>

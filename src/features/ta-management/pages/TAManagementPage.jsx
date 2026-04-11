@@ -1,56 +1,45 @@
 import React, { useState } from 'react';
-import { Icon } from '@iconify/react';
+import { useParams } from 'react-router-dom';
 import ViewTAListPage from './ViewTAListPage';
 import SetTAPermissionsPage from './SetTAPermissionsPage';
 import TATaskManagementTab from './TATaskManagementTab';
 
 const TAManagementPage = () => {
-    const [activeTab, setActiveTab] = useState('list'); // 'list' | 'permissions'
+    const { classId } = useParams();
+    const [activeTab, setActiveTab] = useState('list'); // 'list' | 'permissions' | 'tasks'
 
     return (
-        <div className="w-full !mx-auto !space-y-6 animate-fade-in !pb-8">
-            {/* Header Section */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center !gap-6 bg-surface !p-6 rounded-[2rem] border border-border shadow-sm">
-                <div className="flex items-center !gap-4">
-                    <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-inner shrink-0">
-                        <Icon icon="material-symbols:badge-rounded" className="text-3xl" />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl sm:text-3xl font-bold text-text-main">Quản lý Trợ giảng</h1>
-                        <p className="text-text-muted !mt-1 text-sm sm:text-base">Quản lý danh sách, phân công và cấp quyền cho trợ giảng</p>
-                    </div>
-                </div>
-            </div>
-
+        <div className="w-full !space-y-6 animate-fade-in !pb-8 !p-6 bg-surface rounded-2xl shadow-sm border border-border mt-2">
+            
             {/* Tabs Section */}
-            <div className="flex !gap-2 border-b border-border/50">
+            <div className="flex flex-wrap !gap-2 border-b border-border/50">
                 <button
                     onClick={() => setActiveTab('list')}
-                    className={`!px-6 !py-3 font-semibold text-base rounded-t-xl transition-colors relative ${activeTab === 'list'
+                    className={`!px-6 !py-3 font-semibold text-sm sm:text-base rounded-t-xl transition-colors relative ${activeTab === 'list'
                             ? 'text-primary'
                             : 'text-text-muted hover:text-text-main hover:bg-surface/50'
                         }`}
                 >
-                    Danh sách & Xếp lớp
+                    Danh sách & Phân công
                     {activeTab === 'list' && (
                         <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-t-full"></span>
                     )}
                 </button>
                 <button
                     onClick={() => setActiveTab('permissions')}
-                    className={`!px-6 !py-3 font-semibold text-base rounded-t-xl transition-colors relative ${activeTab === 'permissions'
+                    className={`!px-6 !py-3 font-semibold text-sm sm:text-base rounded-t-xl transition-colors relative ${activeTab === 'permissions'
                             ? 'text-primary'
                             : 'text-text-muted hover:text-text-main hover:bg-surface/50'
                         }`}
                 >
-                    Phân quyền hệ thống
+                    Phân quyền cấu hình
                     {activeTab === 'permissions' && (
                         <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-t-full"></span>
                     )}
                 </button>
                 <button
                     onClick={() => setActiveTab('tasks')}
-                    className={`!px-6 !py-3 font-semibold text-base rounded-t-xl transition-colors relative ${activeTab === 'tasks'
+                    className={`!px-6 !py-3 font-semibold text-sm sm:text-base rounded-t-xl transition-colors relative ${activeTab === 'tasks'
                             ? 'text-primary'
                             : 'text-text-muted hover:text-text-main hover:bg-surface/50'
                         }`}
@@ -64,9 +53,9 @@ const TAManagementPage = () => {
 
             {/* Tab Content */}
             <div className="!mt-4">
-                {activeTab === 'list' && <ViewTAListPage />}
-                {activeTab === 'permissions' && <SetTAPermissionsPage />}
-                {activeTab === 'tasks' && <TATaskManagementTab />}
+                {activeTab === 'list' && <ViewTAListPage classId={classId} />}
+                {activeTab === 'permissions' && <SetTAPermissionsPage classId={classId} />}
+                {activeTab === 'tasks' && <TATaskManagementTab classId={classId} />}
             </div>
         </div>
     );
