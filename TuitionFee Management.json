@@ -1,0 +1,304 @@
+{
+  "v": 11,
+  "id": "cmnopb5a7013eel1mi3p02g72",
+  "name": "TuitionFee Management",
+  "folders": [],
+  "requests": [
+    {
+      "v": "17",
+      "name": "GetTuitionFeeConfigs",
+      "method": "GET",
+      "endpoint": "<<baseUrl>>/api/TuitionFee/configs",
+      "params": [],
+      "headers": [],
+      "preRequestScript": "",
+      "testScript": "",
+      "auth": {
+        "authType": "bearer",
+        "token": "<<token>>",
+        "authActive": true
+      },
+      "body": {
+        "contentType": null,
+        "body": null
+      },
+      "requestVariables": [],
+      "responses": {},
+      "description": null
+    },
+    {
+      "v": "17",
+      "name": "UpdateTutionFee",
+      "method": "PUT",
+      "endpoint": "<<baseUrl>>/api/TuitionFee/class/74749f88-8f32-46f8-a29e-58f29a070a07/fee",
+      "params": [],
+      "headers": [],
+      "preRequestScript": "",
+      "testScript": "",
+      "auth": {
+        "authType": "bearer",
+        "token": "<<token>>",
+        "authActive": true
+      },
+      "body": {
+        "contentType": "application/json",
+        "body": "{\n  \"tuitionFee\": 150000,\n  \"billingMethod\": \"Postpaid\",\n  \"paymentDeadlineDays\": 5\n}"
+      },
+      "requestVariables": [],
+      "responses": {},
+      "description": null
+    },
+    {
+      "v": "17",
+      "name": "GetPendingTransactions",
+      "method": "GET",
+      "endpoint": "<<baseUrl>>/api/TuitionFee/transactions/pending",
+      "params": [],
+      "headers": [],
+      "preRequestScript": "",
+      "testScript": "",
+      "auth": {
+        "authType": "bearer",
+        "token": "<<token>>",
+        "authActive": true
+      },
+      "body": {
+        "contentType": null,
+        "body": null
+      },
+      "requestVariables": [],
+      "responses": {},
+      "description": null
+    },
+    {
+      "v": "17",
+      "name": "GenerateClassInvoices",
+      "method": "POST",
+      "endpoint": "<<baseUrl>>/api/TuitionFee/class/74749f88-8f32-46f8-a29e-58f29a070a07/generate-invoices",
+      "params": [],
+      "headers": [],
+      "preRequestScript": "",
+      "testScript": "",
+      "auth": {
+        "authType": "bearer",
+        "token": "<<token>>",
+        "authActive": true
+      },
+      "body": {
+        "contentType": "application/json",
+        "body": "{\n  \"periodMonth\": 4,\n  \"periodYear\": 2026,\n  \"dueDate\": \"2026-04-08T14:26:10.255Z\"\n}"
+      },
+      "requestVariables": [],
+      "responses": {},
+      "description": null
+    },
+    {
+      "v": "17",
+      "name": "ReconcilePrepaidClass",
+      "method": "POST",
+      "endpoint": "<<baseUrl>>/api/TuitionFee/class/74749f88-8f32-46f8-a29e-58f29a070a07/reconcile",
+      "params": [],
+      "headers": [],
+      "preRequestScript": "",
+      "testScript": "",
+      "auth": {
+        "authType": "bearer",
+        "token": "<<token>>",
+        "authActive": true
+      },
+      "body": {
+        "contentType": "multipart/form-data",
+        "body": [
+          {
+            "key": "month",
+            "active": true,
+            "isFile": false,
+            "value": "4"
+          },
+          {
+            "key": "year",
+            "active": true,
+            "isFile": false,
+            "value": "2026"
+          }
+        ]
+      },
+      "requestVariables": [],
+      "responses": {},
+      "description": null
+    },
+    {
+      "v": "17",
+      "name": "GetOverallReportSummary",
+      "method": "GET",
+      "endpoint": "<<baseUrl>>/api/TuitionFee/report/summary",
+      "params": [],
+      "headers": [],
+      "preRequestScript": "",
+      "testScript": "",
+      "auth": {
+        "authType": "bearer",
+        "token": "<<token>>",
+        "authActive": true
+      },
+      "body": {
+        "contentType": null,
+        "body": null
+      },
+      "requestVariables": [],
+      "responses": {},
+      "description": null
+    },
+    {
+      "v": "17",
+      "name": "GetClassFinancialDetail",
+      "method": "GET",
+      "endpoint": "<<baseUrl>>/api/TuitionFee/class/74749f88-8f32-46f8-a29e-58f29a070a07/detail",
+      "params": [],
+      "headers": [],
+      "preRequestScript": "",
+      "testScript": "",
+      "auth": {
+        "authType": "bearer",
+        "token": "<<token>>",
+        "authActive": true
+      },
+      "body": {
+        "contentType": "multipart/form-data",
+        "body": [
+          {
+            "key": "month",
+            "active": true,
+            "isFile": false,
+            "value": "2"
+          },
+          {
+            "key": "year",
+            "active": true,
+            "isFile": false,
+            "value": "2026"
+          }
+        ]
+      },
+      "requestVariables": [],
+      "responses": {},
+      "description": null
+    },
+    {
+      "v": "17",
+      "name": "ReviewTransaction",
+      "method": "POST",
+      "endpoint": "<<baseUrl>>/api/TuitionFee/33333333-3333-0000-0000-000000000000/review",
+      "params": [],
+      "headers": [],
+      "preRequestScript": "",
+      "testScript": "",
+      "auth": {
+        "authType": "bearer",
+        "token": "<<token>>",
+        "authActive": true
+      },
+      "body": {
+        "contentType": "application/json",
+        "body": "{\n  \"isApproved\": true,\n  \"note\": \"Kế toán đã check tài khoản, nhận đủ tiền.\"\n}"
+      },
+      "requestVariables": [],
+      "responses": {},
+      "description": null
+    },
+    {
+      "v": "17",
+      "name": "GetDashboardAnalytics",
+      "method": "GET",
+      "endpoint": "<<baseUrl>>/api/TuitionFee/report/dashboard-analytics",
+      "params": [],
+      "headers": [],
+      "preRequestScript": "",
+      "testScript": "",
+      "auth": {
+        "authType": "bearer",
+        "token": "<<token>>",
+        "authActive": true
+      },
+      "body": {
+        "contentType": null,
+        "body": null
+      },
+      "requestVariables": [],
+      "responses": {},
+      "description": null
+    },
+    {
+      "v": "17",
+      "name": "GetClassFinancialSummaries",
+      "method": "GET",
+      "endpoint": "<<baseUrl>>/api/TuitionFee/report/class-summaries",
+      "params": [],
+      "headers": [],
+      "preRequestScript": "",
+      "testScript": "",
+      "auth": {
+        "authType": "bearer",
+        "token": "<<token>>",
+        "authActive": true
+      },
+      "body": {
+        "contentType": null,
+        "body": null
+      },
+      "requestVariables": [],
+      "responses": {},
+      "description": null
+    },
+    {
+      "v": "17",
+      "name": "ExtendInvoiceDueDate",
+      "method": "PUT",
+      "endpoint": "<<baseUrl>>/api/TuitionFee/invoice/33333333-1111-0000-0000-53fe8c866c85/extend-due-date",
+      "params": [],
+      "headers": [],
+      "preRequestScript": "",
+      "testScript": "",
+      "auth": {
+        "authType": "bearer",
+        "token": "<<token>>",
+        "authActive": true
+      },
+      "body": {
+        "contentType": "application/json",
+        "body": "{\n  \"additionalDays\": 3\n}"
+      },
+      "requestVariables": [],
+      "responses": {},
+      "description": null
+    },
+    {
+      "v": "17",
+      "name": "ExtendClassInvoicesDueDate",
+      "method": "GET",
+      "endpoint": "https://echo.hoppscotch.io",
+      "params": [],
+      "headers": [],
+      "preRequestScript": "",
+      "testScript": "",
+      "auth": {
+        "authType": "inherit",
+        "authActive": true
+      },
+      "body": {
+        "contentType": null,
+        "body": null
+      },
+      "requestVariables": [],
+      "responses": {},
+      "description": null
+    }
+  ],
+  "auth": {
+    "authType": "inherit",
+    "authActive": true
+  },
+  "headers": [],
+  "variables": [],
+  "description": null
+}

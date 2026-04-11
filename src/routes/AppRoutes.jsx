@@ -92,7 +92,7 @@ export const AppRoutes = () => {
                     </Route>
 
                     {/* Protected Dashboard Layout (SideMenu) */}
-                    <Route element={<ProtectedRoute isAuthenticated={isAuthenticated || true} />}>
+                    <Route element={<ProtectedRoute />}>
                          <Route element={<DashboardLayout />}>
                               <Route path="dashboard" element={<DashboardPage />} />
                               <Route path="profile" element={<ProfilePage />} />
