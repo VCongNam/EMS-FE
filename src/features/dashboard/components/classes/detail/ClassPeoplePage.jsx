@@ -91,11 +91,11 @@ const ClassPeoplePage = () => {
                             <span className="text-xs font-semibold !px-2 !py-0.5 bg-primary/10 text-primary rounded-md border border-primary/20">Sĩ số: {filteredMembers.length}</span>
                         </div>
                     </div>
-                    <p className="text-sm text-text-muted !mb-4">Quản lý danh sách học viên trong lớp</p>
+                    {isTeacherOrTA && <p className="text-sm text-text-muted !mb-4">Quản lý danh sách học viên trong lớp</p>}
                     <div className="flex flex-col !gap-2.5">
                         {isTeacherOrTA && (
                             <>
-                                <Button 
+                                <Button
                                     onClick={() => setIsAddModalOpen(true)}
                                     className="w-full shadow-primary/30 shadow-lg !py-2.5 !text-primary flex justify-center items-center"
                                 >
@@ -162,9 +162,8 @@ const ClassPeoplePage = () => {
                         {staff.map((p) => (
                             <div key={p.id} className="border border-border rounded-xl !p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-primary/30 transition-colors bg-background">
                                 <div className="flex items-center gap-3">
-                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg shrink-0 ${
-                                        p.type === 'TEACHER' ? 'bg-blue-500/10 text-blue-600' : 'bg-green-500/10 text-green-600'
-                                    }`}>
+                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg shrink-0 ${p.type === 'TEACHER' ? 'bg-blue-500/10 text-blue-600' : 'bg-green-500/10 text-green-600'
+                                        }`}>
                                         {p.name.charAt(0)}
                                     </div>
                                     <div>
@@ -173,13 +172,12 @@ const ClassPeoplePage = () => {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3 self-start sm:self-center">
-                                    <span className={`text-xs font-semibold !px-2.5 !py-1 rounded-md border shrink-0 ${
-                                        p.type === 'TEACHER' ? 'bg-blue-500/10 text-blue-600 border-blue-500/20' : 'bg-green-500/10 text-green-600 border-green-500/20'
-                                    }`}>
+                                    <span className={`text-xs font-semibold !px-2.5 !py-1 rounded-md border shrink-0 ${p.type === 'TEACHER' ? 'bg-blue-500/10 text-blue-600 border-blue-500/20' : 'bg-green-500/10 text-green-600 border-green-500/20'
+                                        }`}>
                                         {p.role}
                                     </span>
                                     {p.type === 'TA' && user?.role?.toUpperCase() === 'TA' && (
-                                        <button 
+                                        <button
                                             onClick={() => setIsPermissionsModalOpen(true)}
                                             className="text-xs font-bold text-primary bg-primary/10 hover:bg-primary/20 !px-3 !py-1.5 rounded-lg transition-colors border border-primary/20 shrink-0 flex items-center gap-1.5"
                                         >
@@ -205,9 +203,13 @@ const ClassPeoplePage = () => {
                             <thead>
                                 <tr className="bg-background/80 border-b border-border">
                                     <th className="!p-4 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap">Học sinh</th>
-                                    <th className="!p-4 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap">Thông tin</th>
-                                    <th className="!p-4 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap text-center">Tỷ lệ đi học</th>
-                                    <th className="!p-4 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap text-center">Tình trạng</th>
+                                    {isTeacherOrTA && <th className="!p-4 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap">Thông tin</th>}
+                                    {isTeacherOrTA && (
+                                        <>
+                                            <th className="!p-4 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap text-center">Tỷ lệ đi học</th>
+                                            <th className="!p-4 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap text-center">Tình trạng</th>
+                                        </>
+                                    )}
                                     {isTeacherOrTA && <th className="!p-4 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap text-right w-[100px]">Thao tác</th>}
                                 </tr>
                             </thead>
@@ -225,46 +227,52 @@ const ClassPeoplePage = () => {
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="!p-4">
-                                            <div className="flex flex-col !gap-1">
-                                                <span className="flex items-center !gap-1.5 text-xs text-text-main"><Icon icon="solar:letter-linear" className="text-primary" /> <span className="truncate max-w-[120px]">{member.email}</span></span>
-                                                <span className="flex items-center !gap-1.5 text-[11px] text-text-muted"><Icon icon="solar:phone-linear" className="text-primary" /> {member.phone}</span>
-                                            </div>
-                                        </td>
-                                        <td className="!p-4 text-center">
-                                            <div className="flex flex-col items-center justify-center !gap-1">
-                                                <span className={`text-xs font-bold ${member.attendance >= 90 ? 'text-green-600' : member.attendance >= 80 ? 'text-orange-500' : 'text-red-600'}`}>
-                                                    {member.attendance}%
-                                                </span>
-                                                <div className="w-16 h-1 bg-background rounded-full overflow-hidden">
-                                                    <div 
-                                                        className={`h-full rounded-full ${member.attendance >= 90 ? 'bg-green-500' : member.attendance >= 80 ? 'bg-orange-500' : 'bg-red-500'}`}
-                                                        style={{ width: `${member.attendance}%` }}
-                                                    ></div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="!p-4 text-center">
-                                            <div className="flex justify-center">
-                                                {member.status === 'active' && <span className="inline-flex items-center !px-2.5 !py-0.5 rounded-md text-[11px] font-semibold bg-green-500/10 text-green-600 border border-green-500/20 whitespace-nowrap">Tốt</span>}
-                                                {member.status === 'warning' && <span className="inline-flex items-center !px-2.5 !py-0.5 rounded-md text-[11px] font-semibold bg-orange-500/10 text-orange-600 border border-orange-500/20 whitespace-nowrap">Cần chú ý</span>}
-                                                {member.status === 'danger' && <span className="inline-flex items-center !px-2.5 !py-0.5 rounded-md text-[11px] font-semibold bg-red-500/10 text-red-600 border border-red-500/20 whitespace-nowrap">Báo động</span>}
-                                            </div>
-                                        </td>
                                         {isTeacherOrTA && (
-                                        <td className="!p-4 text-right">
-                                            <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-                                                <button className="!p-1.5 text-text-muted hover:text-blue-500 transition-colors rounded-lg hover:bg-blue-500/10" title="Chi tiết học tập">
-                                                    <Icon icon="solar:chart-2-bold-duotone" className="text-lg" />
-                                                </button>
-                                                <button className="!p-1.5 text-text-muted hover:text-primary transition-colors rounded-lg hover:bg-primary/10" title="Gửi thông báo">
-                                                    <Icon icon="solar:bell-bold-duotone" className="text-lg" />
-                                                </button>
-                                                <button className="!p-1.5 text-text-muted hover:text-red-500 transition-colors rounded-lg hover:bg-red-500/10" title="Xóa khỏi lớp">
-                                                    <Icon icon="solar:trash-bin-trash-bold-duotone" className="text-lg" />
-                                                </button>
-                                            </div>
-                                        </td>
+                                            <td className="!p-4">
+                                                <div className="flex flex-col !gap-1">
+                                                    <span className="flex items-center !gap-1.5 text-xs text-text-main"><Icon icon="solar:letter-linear" className="text-primary" /> <span className="truncate max-w-[120px]">{member.email}</span></span>
+                                                    <span className="flex items-center !gap-1.5 text-[11px] text-text-muted"><Icon icon="solar:phone-linear" className="text-primary" /> {member.phone}</span>
+                                                </div>
+                                            </td>
+                                        )}
+                                        {isTeacherOrTA && (
+                                            <>
+                                                <td className="!p-4 text-center">
+                                                    <div className="flex flex-col items-center justify-center !gap-1">
+                                                        <span className={`text-xs font-bold ${member.attendance >= 90 ? 'text-green-600' : member.attendance >= 80 ? 'text-orange-500' : 'text-red-600'}`}>
+                                                            {member.attendance}%
+                                                        </span>
+                                                        <div className="w-16 h-1 bg-background rounded-full overflow-hidden">
+                                                            <div
+                                                                className={`h-full rounded-full ${member.attendance >= 90 ? 'bg-green-500' : member.attendance >= 80 ? 'bg-orange-500' : 'bg-red-500'}`}
+                                                                style={{ width: `${member.attendance}%` }}
+                                                            ></div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="!p-4 text-center">
+                                                    <div className="flex justify-center">
+                                                        {member.status === 'active' && <span className="inline-flex items-center !px-2.5 !py-0.5 rounded-md text-[11px] font-semibold bg-green-500/10 text-green-600 border border-green-500/20 whitespace-nowrap">Tốt</span>}
+                                                        {member.status === 'warning' && <span className="inline-flex items-center !px-2.5 !py-0.5 rounded-md text-[11px] font-semibold bg-orange-500/10 text-orange-600 border border-orange-500/20 whitespace-nowrap">Cần chú ý</span>}
+                                                        {member.status === 'danger' && <span className="inline-flex items-center !px-2.5 !py-0.5 rounded-md text-[11px] font-semibold bg-red-500/10 text-red-600 border border-red-500/20 whitespace-nowrap">Báo động</span>}
+                                                    </div>
+                                                </td>
+                                            </>
+                                        )}
+                                        {isTeacherOrTA && (
+                                            <td className="!p-4 text-right">
+                                                <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                                                    <button className="!p-1.5 text-text-muted hover:text-blue-500 transition-colors rounded-lg hover:bg-blue-500/10" title="Chi tiết học tập">
+                                                        <Icon icon="solar:chart-2-bold-duotone" className="text-lg" />
+                                                    </button>
+                                                    <button className="!p-1.5 text-text-muted hover:text-primary transition-colors rounded-lg hover:bg-primary/10" title="Gửi thông báo">
+                                                        <Icon icon="solar:bell-bold-duotone" className="text-lg" />
+                                                    </button>
+                                                    <button className="!p-1.5 text-text-muted hover:text-red-500 transition-colors rounded-lg hover:bg-red-500/10" title="Xóa khỏi lớp">
+                                                        <Icon icon="solar:trash-bin-trash-bold-duotone" className="text-lg" />
+                                                    </button>
+                                                </div>
+                                            </td>
                                         )}
                                     </tr>
                                 ))}
@@ -321,58 +329,67 @@ const ClassPeoplePage = () => {
                                             <p className="text-xs font-mono text-text-muted">{member.id}</p>
                                         </div>
                                     </div>
-                                    {member.status === 'active' && <span className="shrink-0 inline-flex items-center !px-2 !py-0.5 rounded-md text-[11px] font-semibold bg-green-500/10 text-green-600 border border-green-500/20">Tốt</span>}
-                                    {member.status === 'warning' && <span className="shrink-0 inline-flex items-center !px-2 !py-0.5 rounded-md text-[11px] font-semibold bg-orange-500/10 text-orange-600 border border-orange-500/20">Cần chú ý</span>}
-                                    {member.status === 'danger' && <span className="shrink-0 inline-flex items-center !px-2 !py-0.5 rounded-md text-[11px] font-semibold bg-red-500/10 text-red-600 border border-red-500/20">Báo động</span>}
+                                    {isTeacherOrTA && (
+                                        <>
+                                            {member.status === 'active' && <span className="shrink-0 inline-flex items-center !px-2 !py-0.5 rounded-md text-[11px] font-semibold bg-green-500/10 text-green-600 border border-green-500/20">Tốt</span>}
+                                            {member.status === 'warning' && <span className="shrink-0 inline-flex items-center !px-2 !py-0.5 rounded-md text-[11px] font-semibold bg-orange-500/10 text-orange-600 border border-orange-500/20">Cần chú ý</span>}
+                                            {member.status === 'danger' && <span className="shrink-0 inline-flex items-center !px-2 !py-0.5 rounded-md text-[11px] font-semibold bg-red-500/10 text-red-600 border border-red-500/20">Báo động</span>}
+                                        </>
+                                    )}
                                 </div>
 
-                                {/* Info rows */}
-                                <div className="bg-background rounded-xl !p-3 space-y-2 border border-border/50">
-                                    <div className="flex flex-col gap-1.5">
-                                        <div className="flex items-center gap-2 text-[13px] text-text-muted">
-                                            <Icon icon="solar:letter-linear" className="shrink-0 text-primary text-base" />
-                                            <span className="truncate">{member.email}</span>
+                                {isTeacherOrTA && (
+                                    <div className="bg-background rounded-xl !p-3 space-y-2 border border-border/50">
+                                        <div className="flex flex-col gap-1.5">
+                                            <div className="flex items-center gap-2 text-[13px] text-text-muted">
+                                                <Icon icon="solar:letter-linear" className="shrink-0 text-primary text-base" />
+                                                <span className="truncate">{member.email}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2 text-[13px] text-text-muted">
+                                                <Icon icon="solar:phone-linear" className="shrink-0 text-primary text-base" />
+                                                <span>{member.phone || 'Chưa cập nhật'}</span>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-2 text-[13px] text-text-muted">
-                                            <Icon icon="solar:phone-linear" className="shrink-0 text-primary text-base" />
-                                            <span>{member.phone || 'Chưa cập nhật'}</span>
-                                        </div>
+
+                                        {isTeacherOrTA && (
+                                            <>
+                                                <div className="h-px w-full bg-border/50 my-1 justify-center align-middle"></div>
+
+                                                <div className="flex flex-col gap-1.5 mt-2">
+                                                    <div className="flex items-center justify-between text-[13px]">
+                                                        <span className="text-text-muted flex items-center gap-1.5">
+                                                            <Icon icon="solar:chart-square-linear" className="text-primary text-base" />
+                                                            Tỷ lệ đi học
+                                                        </span>
+                                                        <span className={`font-bold ${member.attendance >= 90 ? 'text-green-600' : member.attendance >= 80 ? 'text-orange-500' : 'text-red-600'}`}>
+                                                            {member.attendance}%
+                                                        </span>
+                                                    </div>
+                                                    <div className="w-full h-1 bg-surface rounded-full overflow-hidden border border-border/50">
+                                                        <div
+                                                            className={`h-full rounded-full ${member.attendance >= 90 ? 'bg-green-500' : member.attendance >= 80 ? 'bg-orange-500' : 'bg-red-500'}`}
+                                                            style={{ width: `${member.attendance}%` }}
+                                                        ></div>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
-                                    
-                                    <div className="h-px w-full bg-border/50 my-1 justify-center align-middle"></div>
-                                    
-                                    <div className="flex flex-col gap-1.5 mt-2">
-                                        <div className="flex items-center justify-between text-[13px]">
-                                            <span className="text-text-muted flex items-center gap-1.5">
-                                                <Icon icon="solar:chart-square-linear" className="text-primary text-base" />
-                                                Tỷ lệ đi học
-                                            </span>
-                                            <span className={`font-bold ${member.attendance >= 90 ? 'text-green-600' : member.attendance >= 80 ? 'text-orange-500' : 'text-red-600'}`}>
-                                                {member.attendance}%
-                                            </span>
-                                        </div>
-                                        <div className="w-full h-1 bg-surface rounded-full overflow-hidden border border-border/50">
-                                            <div 
-                                                className={`h-full rounded-full ${member.attendance >= 90 ? 'bg-green-500' : member.attendance >= 80 ? 'bg-orange-500' : 'bg-red-500'}`}
-                                                style={{ width: `${member.attendance}%` }}
-                                            ></div>
-                                        </div>
-                                    </div>
-                                </div>
+                                )}
 
                                 {/* Actions */}
                                 {isTeacherOrTA && (
-                                <div className="flex gap-2">
-                                    <button className="flex-1 flex items-center justify-center gap-1.5 !py-2 text-xs font-semibold text-blue-600 bg-blue-500/10 hover:bg-blue-500/20 rounded-xl transition-colors">
-                                        <Icon icon="solar:chart-2-bold-duotone" className="text-base" /> Tiến độ
-                                    </button>
-                                    <button className="flex-1 flex items-center justify-center gap-1.5 !py-2 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded-xl transition-colors">
-                                        <Icon icon="solar:bell-bold-duotone" className="text-base" /> TB
-                                    </button>
-                                    <button className="flex-1 flex items-center justify-center gap-1.5 !py-2 text-xs font-semibold text-red-500 bg-red-500/10 hover:bg-red-500/20 rounded-xl transition-colors">
-                                        <Icon icon="solar:trash-bin-trash-bold-duotone" className="text-base" /> Xóa
-                                    </button>
-                                </div>
+                                    <div className="flex gap-2">
+                                        <button className="flex-1 flex items-center justify-center gap-1.5 !py-2 text-xs font-semibold text-blue-600 bg-blue-500/10 hover:bg-blue-500/20 rounded-xl transition-colors">
+                                            <Icon icon="solar:chart-2-bold-duotone" className="text-base" /> Tiến độ
+                                        </button>
+                                        <button className="flex-1 flex items-center justify-center gap-1.5 !py-2 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded-xl transition-colors">
+                                            <Icon icon="solar:bell-bold-duotone" className="text-base" /> TB
+                                        </button>
+                                        <button className="flex-1 flex items-center justify-center gap-1.5 !py-2 text-xs font-semibold text-red-500 bg-red-500/10 hover:bg-red-500/20 rounded-xl transition-colors">
+                                            <Icon icon="solar:trash-bin-trash-bold-duotone" className="text-base" /> Xóa
+                                        </button>
+                                    </div>
                                 )}
                             </div>
                         ))
@@ -397,9 +414,9 @@ const ClassPeoplePage = () => {
                 classId={classId}
             />
 
-            <TAPermissionsModal 
-                isOpen={isPermissionsModalOpen} 
-                onClose={() => setIsPermissionsModalOpen(false)} 
+            <TAPermissionsModal
+                isOpen={isPermissionsModalOpen}
+                onClose={() => setIsPermissionsModalOpen(false)}
             />
         </div>
     );

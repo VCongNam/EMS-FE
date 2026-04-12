@@ -18,45 +18,68 @@ const TATaskManagementTab = ({ classId }) => {
         if (!classId || !user?.token) return;
         try {
             setIsLoading(true);
-            // 1. Fetch TAs
+            // 1. Fetch TAs in class
             const taRes = await taService.getTAListByClass(classId, user.token);
             let taList = [];
             if (taRes.ok) {
-                const dataRaw = await taRes.json();
-                taList = Array.isArray(dataRaw) ? dataRaw : (dataRaw?.data && Array.isArray(dataRaw.data) ? dataRaw.data : []);
+                const json = await taRes.json();
+                taList = json.data || (Array.isArray(json) ? json : []);
                 setTas(taList);
             }
 
-            // 2. Fetch Tasks for each TA
+            // 2. Fetch Tasks for each TA using the relationship ID
             let allTasks = [];
             for (const ta of taList) {
-                const identifier = ta.classTAId || ta.classTaId || ta.taid;
+                // Find classTAID case-insensitively to be robust
+                const taKeys = Object.keys(ta);
+                const classTAIDKey = taKeys.find(k => k.toLowerCase() === 'classtaid');
+                const identifier = classTAIDKey ? ta[classTAIDKey] : ta.taid;
+                
                 if (!identifier) continue;
                 
                 try {
                     const taskRes = await taService.getAssignedTasks(identifier, user.token);
                     if (taskRes.ok) {
-                        const taTasks = await taskRes.json();
-                        // Append and attach TA info so we can display it
-                        const formattedTasks = Array.isArray(taTasks) ? taTasks.map(t => ({
-                            ...t,
-                            assignedTo: ta.taid,
-                            assignedToName: ta.fullName || ta.name,
-                            id: t.taTaskID || t.id,
-                            status: t.status ? t.status.toLowerCase() : 'todo',
-                            deadline: t.dueDate || t.deadline
-                        })) : [];
+                        const json = await taskRes.json();
+                        // Extract array from { data: [] } or raw []
+                        const taTasksList = json.data || (Array.isArray(json) ? json : []);
+                        
+                        // Append and attach TA info
+                        const formattedTasks = taTasksList.map(t => {
+                            let mappedStatus = 'todo';
+                            const beStatus = (t.status || '').toLowerCase();
+                            if (beStatus === 'pending' || beStatus === 'todo') mappedStatus = 'todo';
+                            else if (beStatus === 'in progress' || beStatus === 'in_progress') mappedStatus = 'in_progress';
+                            else if (beStatus === 'completed' || beStatus === 'done' || beStatus === 'finished') mappedStatus = 'done';
+
+                            return {
+                                ...t,
+                                assignedTo: ta.taid,
+                                assignedToName: ta.fullName || ta.name,
+                                id: t.taTaskID || t.id,
+                                status: mappedStatus,
+                                deadline: t.dueDate || t.deadline
+                            };
+                        });
                         allTasks = [...allTasks, ...formattedTasks];
                     }
                 } catch (e) {
-                    console.error("Lỗi lấy task của TA", identifier, e);
+                    console.error("Lỗi lấy task của trợ giảng:", identifier, e);
                 }
             }
+
+            // 3. Sort tasks by dueDate (ascending)
+            allTasks.sort((a, b) => {
+                const dateA = new Date(a.deadline || a.dueDate || 0);
+                const dateB = new Date(b.deadline || b.dueDate || 0);
+                return dateA - dateB;
+            });
+
             setTasks(allTasks);
 
         } catch (error) {
             console.error('Lỗi khi tải dữ liệu công việc:', error);
-            toast.error('Lỗi kết nối máy chủ');
+            toast.error('Lỗi kết nối máy chủ khi tải danh sách công việc');
         } finally {
             setIsLoading(false);
         }
@@ -70,10 +93,10 @@ const TATaskManagementTab = ({ classId }) => {
         try {
             // map frontend data to API payload
             const payload = {
-                classTAId: taskData.classTAId || taskData.assignedTo,
+                classTAID: taskData.classTAId || taskData.assignedTo, // Đổi thành classTAID (Big D) theo BE
                 title: taskData.title,
                 dueDate: taskData.deadline,
-                type: taskData.type || 'Chấm điểm'
+                type: taskData.type || 'Grade' // Đổi thành Grade/Attendance... theo BE
             };
             
             const res = await taService.createTask(payload, user.token);
@@ -91,76 +114,74 @@ const TATaskManagementTab = ({ classId }) => {
         }
     };
 
-    const getPriorityBadge = (priority) => {
-        switch(priority) {
-            case 'high': return <span className="inline-flex items-center !px-2 !py-0.5 rounded-md text-[11px] font-bold bg-red-500/10 text-red-600 border border-red-500/20">CAO</span>;
-            case 'medium': return <span className="inline-flex items-center !px-2 !py-0.5 rounded-md text-[11px] font-bold bg-amber-500/10 text-amber-600 border border-amber-500/20">TRUNG BÌNH</span>;
-            case 'low': return <span className="inline-flex items-center !px-2 !py-0.5 rounded-md text-[11px] font-bold bg-slate-500/10 text-slate-600 border border-slate-500/20">THẤP</span>;
-            default: return null;
-        }
-    };
 
     const TaskCard = ({ task }) => {
         const taName = task.assignedToName || 'Không rõ';
+        
+        const getStatusStyles = (status) => {
+            switch(status) {
+                case 'in_progress':
+                    return "bg-amber-500/10 text-amber-600 border-amber-200/50";
+                case 'done':
+                    return "bg-green-500/10 text-green-600 border-green-200/50";
+                default:
+                    return "bg-slate-500/10 text-slate-600 border-slate-200/50";
+            }
+        };
+
+        const getStatusLabel = (status) => {
+            switch(status) {
+                case 'in_progress': return "Đang làm";
+                case 'done': return "Đã xong";
+                default: return "Cần làm";
+            }
+        };
 
         return (
-            <div className="bg-surface rounded-2xl border border-border flex-shrink-0 shadow-sm hover:shadow-md hover:border-primary/30 transition-all cursor-pointer group !p-4 flex flex-col !gap-3">
-                <div className="flex justify-between items-start !gap-2">
-                    <h4 className="font-bold text-text-main text-sm leading-snug group-hover:text-primary transition-colors">{task.title}</h4>
-                    {task.priority && getPriorityBadge(task.priority)}
+            <div className="bg-surface rounded-2xl border border-border shadow-sm hover:shadow-md hover:border-primary/30 transition-all !p-4 sm:!p-5 flex flex-col sm:flex-row sm:items-center justify-between !gap-4 group">
+                <div className="flex items-start !gap-4 flex-1">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                        task.type === 'Grade' ? 'bg-blue-500/10 text-blue-500' : 'bg-purple-500/10 text-purple-500'
+                    }`}>
+                        <Icon icon={task.type === 'Grade' ? "solar:pen-new-square-bold-duotone" : "solar:clipboard-list-bold-duotone"} className="text-xl" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                        <div className="flex items-center !gap-3 !mb-1">
+                            <h4 className="font-bold text-text-main text-base truncate group-hover:text-primary transition-colors">{task.title}</h4>
+                            <span className={`!px-2.5 !py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider shrink-0 ${getStatusStyles(task.status)}`}>
+                                {getStatusLabel(task.status)}
+                            </span>
+                        </div>
+                        <div className="flex flex-wrap items-center !gap-x-4 !gap-y-2 text-sm text-text-muted">
+                            <div className="flex items-center !gap-1.5">
+                                <Icon icon="solar:user-circle-linear" className="text-primary/70" />
+                                <span className="font-medium">{taName}</span>
+                            </div>
+                            <div className="flex items-center !gap-1.5">
+                                <Icon icon="solar:tag-linear" className="text-text-muted/70" />
+                                <span>{task.type || 'Nhiệm vụ'}</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
-                <div className="!pt-3 border-t border-border/50 flex items-center justify-between !gap-2 mt-auto">
-                    <div className="flex items-center !gap-2">
-                        <div className="w-6 h-6 rounded-full bg-purple-500/15 text-purple-600 flex items-center justify-center text-[10px] font-bold uppercase ring-2 ring-background">
-                            {taName.charAt(0)}
+                <div className="flex items-center justify-between sm:justify-end !gap-4 shrink-0 sm:border-l border-border/50 sm:!pl-6">
+                    <div className="flex flex-col sm:items-end">
+                        <span className="text-[10px] text-text-muted uppercase font-bold tracking-widest !mb-0.5">Hạn chót</span>
+                        <div className="flex items-center !gap-2 text-sm font-bold text-text-main">
+                            <Icon icon="solar:calendar-date-linear" className="text-primary" />
+                            {task.deadline ? new Date(task.deadline).toLocaleDateString('vi-VN', {day: '2-digit', month:'2-digit', year: 'numeric'}) : 'Không có'}
                         </div>
-                        <span className="text-xs font-medium text-text-muted truncate max-w-[80px]">{taName}</span>
                     </div>
-                    <div className="flex items-center !gap-1.5 text-xs font-medium text-text-muted bg-background !px-2 !py-1 rounded border border-border/50">
-                        <Icon icon="material-symbols:calendar-today-outline" className="text-primary/70" />
-                        {task.deadline ? new Date(task.deadline).toLocaleDateString('vi-VN', {day: '2-digit', month:'2-digit'}) : 'No date'}
-                    </div>
+                    <button className="w-8 h-8 rounded-lg hover:bg-background flex items-center justify-center text-text-muted hover:text-primary transition-colors">
+                        <Icon icon="solar:alt-arrow-right-linear" className="text-lg" />
+                    </button>
                 </div>
             </div>
         );
     };
 
-    const Column = ({ title, status, icon, colorClass, borderClass }) => {
-        const filteredTasks = tasks.filter(t => t.status === status && (t.title || '').toLowerCase().includes(searchQuery.toLowerCase()));
-        
-        return (
-            <div className={`bg-background/50 rounded-[2rem] border ${borderClass} flex flex-col min-w-[300px] sm:min-w-0 max-h-full`}>
-                <div className="!p-4 sm:!p-5 border-b border-border/50 flex items-center justify-between">
-                    <div className="flex items-center !gap-3">
-                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${colorClass}`}>
-                            <Icon icon={icon} className="text-lg" />
-                        </div>
-                        <h3 className="font-bold text-text-main">{title}</h3>
-                    </div>
-                    <span className="flex items-center justify-center !min-w-[1.5rem] !px-1.5 !h-6 rounded-full bg-surface border border-border text-xs font-bold text-text-muted shadow-sm">
-                        {filteredTasks.length}
-                    </span>
-                </div>
-                <div className="!p-3 sm:!p-4 flex flex-col !gap-3 flex-1 overflow-y-auto max-h-[600px] min-h-[150px] custom-scrollbar">
-                    {isLoading ? (
-                        <div className="flex-1 flex items-center justify-center text-primary">
-                            <Icon icon="solar:spinner-linear" className="animate-spin text-2xl" />
-                        </div>
-                    ) : filteredTasks.length > 0 ? (
-                        filteredTasks.map(task => <TaskCard key={task.id} task={task} />)
-                    ) : (
-                        <div className="flex-1 flex flex-col items-center justify-center text-center !p-6 opacity-60">
-                            <div className="w-12 h-12 rounded-full border border-dashed border-border flex items-center justify-center !mb-3">
-                                <Icon icon="solar:ghost-smile-bold-duotone" className="text-2xl text-text-muted" />
-                            </div>
-                            <p className="text-sm font-medium text-text-muted">Không có công việc nào</p>
-                        </div>
-                    )}
-                </div>
-            </div>
-        );
-    };
+    const filteredTasks = tasks.filter(t => (t.title || '').toLowerCase().includes(searchQuery.toLowerCase()));
 
     return (
         <div className="animate-fade-in !space-y-6">
@@ -187,29 +208,38 @@ const TATaskManagementTab = ({ classId }) => {
                 </Button>
             </div>
 
-            {/* Kanban Board */}
-            <div className="grid grid-cols-1 md:grid-cols-3 !gap-6 overflow-x-auto !pb-4 min-h-[400px]">
-                <Column 
-                    title="Cần làm" 
-                    status="todo" 
-                    icon="material-symbols:format-list-bulleted-rounded" 
-                    colorClass="bg-slate-500/10 text-slate-500" 
-                    borderClass="border-slate-200 dark:border-slate-800"
-                />
-                <Column 
-                    title="Đang làm" 
-                    status="in_progress" 
-                    icon="material-symbols:clock-loader-40-outline" 
-                    colorClass="bg-amber-500/10 text-amber-500" 
-                    borderClass="border-amber-200 dark:border-amber-900/30"
-                />
-                <Column 
-                    title="Đã xong" 
-                    status="done" 
-                    icon="material-symbols:check-circle-outline-rounded" 
-                    colorClass="bg-green-500/10 text-green-500" 
-                    borderClass="border-green-200 dark:border-green-900/30"
-                />
+            {/* Tasks List */}
+            <div className="bg-background/30 rounded-[2rem] border border-border !p-4 sm:!p-6 min-h-[400px] flex flex-col">
+                <div className="flex items-center justify-between !mb-6 !px-2">
+                    <div className="flex items-center !gap-3">
+                        <div className="w-10 h-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
+                            <Icon icon="solar:list-check-bold-duotone" className="text-2xl" />
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-text-main text-lg leading-tight">Danh sách công việc</h3>
+                            <p className="text-xs text-text-muted mt-0.5">Tổng số {filteredTasks.length} nhiệm vụ được phân công</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="!space-y-4 flex-1">
+                    {isLoading ? (
+                        <div className="flex-1 flex flex-col items-center justify-center !py-20 text-primary !gap-4">
+                            <Icon icon="solar:spinner-linear" className="animate-spin text-4xl" />
+                            <span className="font-medium text-text-muted">Đang tải danh sách công việc...</span>
+                        </div>
+                    ) : filteredTasks.length > 0 ? (
+                        filteredTasks.map(task => <TaskCard key={task.id} task={task} />)
+                    ) : (
+                        <div className="flex-1 flex flex-col items-center justify-center text-center !py-20 opacity-60">
+                            <div className="w-20 h-20 rounded-3xl border-2 border-dashed border-border flex items-center justify-center !mb-4">
+                                <Icon icon="solar:ghost-line-duotone" className="text-4xl text-text-muted" />
+                            </div>
+                            <h4 className="text-lg font-bold text-text-main">Không có công việc nào</h4>
+                            <p className="text-sm text-text-muted max-w-[250px] mt-1">Chưa có nhiệm vụ nào được giao hoặc không tìm thấy kết quả phù hợp</p>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {isCreateModalOpen && (
@@ -218,7 +248,7 @@ const TATaskManagementTab = ({ classId }) => {
                     onClose={() => setIsCreateModalOpen(false)} 
                     onAssign={handleAssignTask}
                     tas={tas}
-                    classes={null} // Removed mock classes
+                    classes={[]} 
                 />
             )}
         </div>

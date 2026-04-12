@@ -10,12 +10,8 @@ import useAuthStore from '../../../../../../store/authStore';
 const AddStudentModal = ({ isOpen, onClose, onAdd, classId }) => {
     const [formData, setFormData] = useState({
         fullName: '',
-        email: '',
         phoneNumber: '',
         password: '',
-        parentName: '',
-        parentPhone: '',
-        parentEmail: '',
         address: '',
         dob: ''
     });
@@ -52,8 +48,8 @@ const AddStudentModal = ({ isOpen, onClose, onAdd, classId }) => {
             
             // Dọn dẹp form và đóng modal
             setFormData({
-                fullName: '', email: '', phoneNumber: '', password: '',
-                parentName: '', parentPhone: '', parentEmail: '', address: '', dob: ''
+                fullName: '', phoneNumber: '', password: '',
+                address: '', dob: ''
             });
             onAdd(); // Trigger hàm load lại danh sách học sinh của lớp
             onClose();
@@ -132,16 +128,16 @@ const AddStudentModal = ({ isOpen, onClose, onAdd, classId }) => {
                                 </div>
                                 
                                 <div className="!space-y-1 group">
-                                    <label className={labelClasses}>Email Đăng Nhập <span className="text-red-500">*</span></label>
+                                    <label className={labelClasses}>Số điện thoại (Tài khoản) <span className="text-red-500">*</span></label>
                                     <div className="relative">
-                                        <Icon icon="solar:letter-linear" className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted/70 text-lg group-focus-within:text-primary transition-colors" />
+                                        <Icon icon="solar:phone-calling-linear" className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted/70 text-lg group-focus-within:text-primary transition-colors" />
                                         <input
-                                            type="email"
-                                            name="email"
+                                            type="tel"
+                                            name="phoneNumber"
                                             required
-                                            value={formData.email}
+                                            value={formData.phoneNumber}
                                             onChange={handleChange}
-                                            placeholder="hocsinh@example.com"
+                                            placeholder="Dùng làm tài khoản đăng nhập"
                                             className={inputClasses}
                                         />
                                     </div>
@@ -160,21 +156,6 @@ const AddStudentModal = ({ isOpen, onClose, onAdd, classId }) => {
                                             placeholder="Tối thiểu 6 ký tự"
                                             className={inputClasses}
                                             minLength={6}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="!space-y-1 group">
-                                    <label className={labelClasses}>Số điện thoại</label>
-                                    <div className="relative">
-                                        <Icon icon="solar:phone-calling-linear" className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted/70 text-lg group-focus-within:text-primary transition-colors" />
-                                        <input
-                                            type="tel"
-                                            name="phoneNumber"
-                                            value={formData.phoneNumber}
-                                            onChange={handleChange}
-                                            placeholder="SĐT học sinh"
-                                            className={inputClasses}
                                         />
                                     </div>
                                 </div>
@@ -204,65 +185,6 @@ const AddStudentModal = ({ isOpen, onClose, onAdd, classId }) => {
                                             placeholder="Vd: 123 Đường XYZ..."
                                             rows={2}
                                             className={`w-full !pl-11 !pr-4 !py-3 bg-background border border-border rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium text-text-main hover:border-text-muted/30 placeholder:text-text-muted/50 resize-none`}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Parent Info */}
-                        <div className="!space-y-6 shrink-0 pt-2">
-                            <div className="flex items-center !gap-3 border-b border-border !pb-3">
-                                <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-500 shrink-0">
-                                    <Icon icon="solar:users-group-two-rounded-bold-duotone" className="text-xl" />
-                                </div>
-                                <h3 className="text-lg font-bold text-text-main">Thông tin liên hệ phụ huynh</h3>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 !gap-x-6 !gap-y-5">
-                                <div className="!space-y-1 group">
-                                    <label className={labelClasses}>Họ và tên phụ huynh <span className="text-red-500">*</span></label>
-                                    <div className="relative">
-                                        <Icon icon="solar:user-circle-linear" className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted/70 text-lg group-focus-within:text-primary transition-colors" />
-                                        <input
-                                            type="text"
-                                            name="parentName"
-                                            required
-                                            value={formData.parentName}
-                                            onChange={handleChange}
-                                            placeholder="Vd: Nguyễn Văn B"
-                                            className={inputClasses}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="!space-y-1 group">
-                                    <label className={labelClasses}>Số điện thoại phụ huynh <span className="text-red-500">*</span></label>
-                                    <div className="relative">
-                                        <Icon icon="solar:phone-calling-rounded-linear" className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted/70 text-lg group-focus-within:text-primary transition-colors" />
-                                        <input
-                                            type="tel"
-                                            name="parentPhone"
-                                            required
-                                            value={formData.parentPhone}
-                                            onChange={handleChange}
-                                            placeholder="Dùng để liên hệ khẩn cấp"
-                                            className={inputClasses}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="!space-y-1 group md:col-span-2">
-                                    <label className={labelClasses}>Email phụ huynh</label>
-                                    <div className="relative">
-                                        <Icon icon="solar:letter-linear" className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted/70 text-lg group-focus-within:text-primary transition-colors" />
-                                        <input
-                                            type="email"
-                                            name="parentEmail"
-                                            value={formData.parentEmail}
-                                            onChange={handleChange}
-                                            placeholder="Gửi thông báo học tập"
-                                            className={inputClasses}
                                         />
                                     </div>
                                 </div>

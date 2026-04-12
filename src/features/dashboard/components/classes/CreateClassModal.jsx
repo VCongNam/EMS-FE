@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Icon } from '@iconify/react';
+import { toast } from 'react-toastify';
 
 const DAYS = [
     { key: 'T2', label: 'T2' },
@@ -14,7 +15,7 @@ const DAYS = [
 
 const initialForm = {
     className: '',
-    subject: '',
+    subjectName: '',
     gradeLevel: '',
     startDate: '',
     endDate: '',
@@ -66,13 +67,13 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
             if (initialData) {
                 setForm({
                     className: initialData.name || '',
-                    subject: initialData.subject || '', // Tạm thời để trống nếu mock chưa có
+                    subjectName: initialData.subjectName || initialData.subject || '', 
                     gradeLevel: initialData.gradeLevel || '', 
                     startDate: '', // Cần parse từ mock nếu có
                     endDate: '',
                     room: initialData.room || '',
                     tuitionFee: initialData.tuitionFee || '',
-                    maxCapacity: initialData.students?.max || '',
+                    maxCapacity: initialData.maxStudents || initialData.students?.max || '',
                     schedules: initialData.schedules || [],
                 });
             } else {
@@ -138,8 +139,8 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
     const validate = () => {
         const newErrors = {};
         if (!form.className.trim()) newErrors.className = 'Tên lớp học không được để trống.';
-        if (!form.subject.trim()) newErrors.subject = 'Môn học không được để trống.';
-        if (!form.gradeLevel.trim()) newErrors.gradeLevel = 'Khối lớp không được để trống.';
+        if (!form.subjectName.trim()) newErrors.subjectName = 'Môn học không được để trống.';
+        if (!form.gradeLevel.toString().trim()) newErrors.gradeLevel = 'Khối lớp không được để trống.';
         if (!form.startDate) newErrors.startDate = 'Vui lòng chọn ngày bắt đầu.';
         if (!form.endDate) newErrors.endDate = 'Vui lòng chọn ngày kết thúc.';
         
@@ -170,14 +171,36 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
 
     const handleSubmit = () => {
         const newErrors = validate();
-        if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
-        if (onSubmit) onSubmit(form);
-        else console.log('Create Class:', form);
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
+            toast.error('Vui lòng kiểm tra lại thông tin nhập liệu.');
+            return;
+        }
+
+        // Transform form data to match API requirements
+        const payload = {
+            className: form.className.trim(),
+            room: form.room.trim() || undefined,
+            startDate: form.startDate,
+            endDate: form.endDate,
+            tuitionFee: form.tuitionFee ? parseInt(form.tuitionFee) : 0,
+            maxStudents: form.maxCapacity ? parseInt(form.maxCapacity) : 0,
+            subjectName: form.subjectName.trim(),
+            gradeLevel: parseInt(form.gradeLevel),
+            schedules: form.schedules.map(s => ({
+                dayOfWeek: mapDayToNumber(s.day),
+                startTime: s.startTime.length === 5 ? `${s.startTime}:00` : s.startTime,
+                endTime: s.endTime.length === 5 ? `${s.endTime}:00` : s.endTime
+            }))
+        };
+
+        if (onSubmit) onSubmit(payload);
+        else console.log('Create Class Payload:', payload);
         onClose();
     };
 
     return createPortal(
-        <>
+        <div className="create-class-modal-portal">
             {/* Backdrop */}
             <div
                 className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] animate-fade-in"
@@ -226,8 +249,41 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
                     </div>
 
                     {/* ── Scrollable Body ── */}
-                    <div className="flex-1 overflow-y-auto overscroll-contain">
-                        <div className="!px-6 !py-7 flex flex-col !gap-8 sm:!px-8">
+                        <div className="flex-1 overflow-y-auto overscroll-contain">
+                            <div className="!px-6 !py-7 flex flex-col !gap-8 sm:!px-8">
+                            {/* Class Basic Info */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <InputField label="Tên lớp học" required error={errors.className}>
+                                    <input
+                                        type="text"
+                                        placeholder="Ví dụ: Toán nâng cao 12"
+                                        value={form.className}
+                                        onChange={e => handleChange('className', e.target.value)}
+                                        className={`${inputBase} !my-1 ${errors.className ? 'border-red-400 ring-2 ring-red-100' : 'border-border'}`}
+                                    />
+                                </InputField>
+                                <InputField label="Môn học" required error={errors.subjectName}>
+                                    <input
+                                        type="text"
+                                        placeholder="Ví dụ: Toán"
+                                        value={form.subjectName}
+                                        onChange={e => handleChange('subjectName', e.target.value)}
+                                        className={`${inputBase} !my-1 ${errors.subjectName ? 'border-red-400 ring-2 ring-red-100' : 'border-border'}`}
+                                    />
+                                </InputField>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <InputField label="Khối lớp" required error={errors.gradeLevel}>
+                                    <input
+                                        type="number"
+                                        placeholder="Ví dụ: 12"
+                                        value={form.gradeLevel}
+                                        onChange={e => handleChange('gradeLevel', e.target.value)}
+                                        className={`${inputBase} !my-1 ${errors.gradeLevel ? 'border-red-400 ring-2 ring-red-100' : 'border-border'}`}
+                                    />
+                                </InputField>
+                            </div>
 
                         {/* Start Date & End Date */}
                         <div className="grid grid-cols-2 gap-4">
@@ -370,7 +426,7 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
                     </div>
                 </div>
             </div>
-        </>,
+        </div>,
         document.body
     );
 };

@@ -51,5 +51,21 @@ export const taService = {
       method: 'GET',
       headers: { 'Authorization': `Bearer ${token}` }
     });
+  },
+
+  // GET /api/TeachingAssistants/getByMail?email=...
+  getTAByEmail: async (email, token) => {
+    return fetch(getApiUrl(`/api/TeachingAssistants/getByMail?email=${encodeURIComponent(email)}`), {
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+  },
+
+  // GET /api/Class/ta/{taId}/tasks
+  getMyTasks: async (taId, token) => {
+    return fetch(getApiUrl(`/api/Class/ta/${taId}/tasks`), {
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
   }
 };

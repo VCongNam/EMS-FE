@@ -39,7 +39,7 @@ const FeeCard = ({ fee, onPay, onViewInvoice }) => {
                 </div>
                 <div>
                     <span className="!text-[10px] !font-black !text-text-muted !uppercase !tracking-wider">Hạn thanh toán</span>
-                    <p className="!text-sm !font-black !text-text-main !mt-1">{fee.dueDate}</p>
+                    <p className="!text-sm !font-black !text-text-main !mt-1">{fee.dueDate ? new Date(fee.dueDate).toLocaleDateString('vi-VN') : 'N/A'}</p>
                 </div>
             </div>
 

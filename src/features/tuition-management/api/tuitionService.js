@@ -58,5 +58,33 @@ export const tuitionService = {
             body: formData
         });
         return response;
+    },
+
+    // Lấy danh sách giao dịch của tôi
+    getMyTransactions: async (token, classId = null) => {
+        const url = classId 
+            ? getApiUrl(`/api/StudentTuition/myTransactions?classId=${classId}`) 
+            : getApiUrl(`/api/StudentTuition/myTransactions`);
+            
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        return response;
+    },
+
+    // Lấy chi tiết giao dịch
+    getTransactionDetail: async (transactionId, token) => {
+        const response = await fetch(getApiUrl(`/api/StudentTuition/myTransactions/${transactionId}`), {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        return response;
     }
 };

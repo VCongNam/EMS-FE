@@ -43,15 +43,15 @@ import ScheduleManagementPage from '../features/schedule-management/pages/Schedu
 import ForgotPasswordPage from '../features/auth/pages/ForgotPasswordPage';
 import VerifyEmailPage from '../features/auth/pages/VerifyEmailPage';
 import UserAuthorizationPage from '../features/dashboard/pages/UserAuthorizationPage';
-
-import AcademicAnalyticsPage from '../features/academic-analytics/pages/AcademicAnalyticsPage';
-import ClassReportsPage from '../features/academic-analytics/pages/ClassReportsPage';
+import StudentTuitionPage from '../features/tuition-management/pages/StudentTuitionPage';
 import TuitionManagementPage from '../features/tuition-management/pages/TuitionManagementPage';
 import TotalRevenuePage from '../features/tuition-management/pages/TotalRevenuePage';
 import ClassFinancialReportsPage from '../features/tuition-management/pages/ClassFinancialReportsPage';
 import ClassFinancialDetailPage from '../features/tuition-management/pages/ClassFinancialDetailPage';
 import StudentNotificationPage from '../features/notifications/pages/StudentNotificationPage';
-import StudentTuitionPage from '../features/tuition-management/pages/StudentTuitionPage';
+
+// Class Detail Components
+import ClassReportsTab from '../features/dashboard/components/classes/detail/components/reports/ClassReportsTab';
 
 // Admin Features
 import SystemDashboardPage from '../features/admin/pages/SystemDashboardPage';
@@ -89,6 +89,7 @@ export const AppRoutes = () => {
                          <Route path="register" element={<RegisterPage />} />
                          <Route path="admin/login" element={<AdminLoginPage />} />
                          <Route path="forgot-password" element={<ForgotPasswordPage />} />
+                         <Route path="verify-email" element={<VerifyEmailPage />} />
                     </Route>
 
                     {/* Protected Dashboard Layout (SideMenu) */}
@@ -109,6 +110,7 @@ export const AppRoutes = () => {
                                    <Route path="grades" element={<ClassGradesPage />} />
                                    <Route path="schedule" element={<ClassSchedulePage />} />
                                    <Route path="attendance" element={<ClassAttendancePage />} />
+                                   <Route path="reports" element={<ClassReportsTab />} />
                                    <Route path="assistants" element={<TAManagementPage />} />
                               </Route>
 
@@ -126,6 +128,7 @@ export const AppRoutes = () => {
                                    <Route path="grades" element={<ClassGradesPage />} />
                                    <Route path="schedule" element={<ClassSchedulePage />} />
                                    <Route path="attendance" element={<ClassAttendancePage />} />
+                                   <Route path="reports" element={<ClassReportsTab />} />
                               </Route>
 
                               {/* TA Tasks */}
@@ -143,6 +146,7 @@ export const AppRoutes = () => {
                                    <Route path="grades" element={<ClassGradesPage />} />
                                    <Route path="schedule" element={<ClassSchedulePage />} />
                                    <Route path="attendance" element={<ClassAttendancePage />} />
+                                   <Route path="reports" element={<ClassReportsTab />} />
                                    <Route path="tuition" element={<StudentTuitionPage />} />
                               </Route>
 
@@ -163,10 +167,6 @@ export const AppRoutes = () => {
 
                               {/* Schedule Management */}
                               <Route path="schedule-management" element={<ScheduleManagementPage />} />
-
-                              {/* Academic Analytics */}
-                              <Route path="reports" element={<AcademicAnalyticsPage />} />
-                              <Route path="reports/:classId" element={<ClassReportsPage />} />
 
                               {/* Tuition Management */}
                               <Route path="tuition" element={<TuitionManagementPage />} />
