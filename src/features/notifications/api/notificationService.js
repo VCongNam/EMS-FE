@@ -16,11 +16,10 @@ export const notificationService = {
 
   /**
    * Mark a specific notification as read
-   * Note: uses 'mask-as-read' as per Notifications.json
    */
   markAsRead: async (notificationId, token) => {
-    const response = await fetch(getApiUrl(`/api/Notification/mask-as-read/${notificationId}`), {
-      method: 'GET', // Specified as GET in JSON
+    const response = await fetch(getApiUrl(`/api/Notification/mark-as-read/${notificationId}`), {
+      method: 'PATCH',
       headers: { 
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -34,7 +33,7 @@ export const notificationService = {
    */
   markAllAsRead: async (token) => {
     const response = await fetch(getApiUrl('/api/Notification/mark-all-as-read'), {
-      method: 'GET', // Specified as GET in JSON
+      method: 'PATCH',
       headers: { 
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
