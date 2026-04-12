@@ -300,13 +300,7 @@ const TuitionManagementPage = () => {
                                     </td>
                                     <td className="!px-6 !py-4 text-right">
                                         <div className="flex items-center justify-end gap-2">
-                                            <button
-                                                onClick={() => setInvoiceModal({ isOpen: true, classData: c })}
-                                                className="w-8 h-8 flex items-center justify-center rounded-lg !bg-blue-50 text-blue-600 hover:!bg-blue-600 hover:text-white transition-all shadow-sm"
-                                                title="Lên Bill cho tháng này"
-                                            >
-                                                <Icon icon="solar:bill-list-bold-duotone" className="text-lg" />
-                                            </button>
+                                            
                                             <button
                                                 onClick={() => setFeeModal({ isOpen: true, editData: c })}
                                                 className="w-8 h-8 flex items-center justify-center rounded-lg !bg-background text-text-muted hover:text-primary hover:!bg-primary/10 transition-all border border-border"
