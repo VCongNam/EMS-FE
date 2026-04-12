@@ -77,7 +77,7 @@ const SideMenu = ({ isOpen, onClose }) => {
 
                 <nav className="flex-1 !p-5 space-y-2 overflow-y-auto">
                     {menuItems.map((item) => {
-                        const isActive = location.pathname === item.path;
+                        const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(`${item.path}/`));
                         return (
                             <Link
                                 key={item.path}

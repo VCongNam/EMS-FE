@@ -11,7 +11,7 @@ const TuitionFeeModal = ({ isOpen, onClose, onSave, editData = null, classes = [
 
     const [form, setForm] = useState({
         classId: '',
-        tuitionFee: '',
+        pricePerSession: '',
         billingMethod: 'Postpaid',
         paymentDeadlineDays: '5',
     });
@@ -22,12 +22,12 @@ const TuitionFeeModal = ({ isOpen, onClose, onSave, editData = null, classes = [
             if (isEdit && editData) {
                 setForm({
                     classId: editData.classId || editData.id || '',
-                    tuitionFee: editData.tuitionFee?.toString() || editData.pricePerSession?.toString() || '',
+                    pricePerSession: editData.pricePerSession?.toString() || '',
                     billingMethod: editData.billingMethod || 'Postpaid',
                     paymentDeadlineDays: editData.paymentDeadlineDays?.toString() || '5',
                 });
             } else {
-                setForm({ classId: classes[0]?.id || '', tuitionFee: '', billingMethod: 'Postpaid', paymentDeadlineDays: '5' });
+                setForm({ classId: classes[0]?.classId || classes[0]?.id || '', pricePerSession: '', billingMethod: 'Postpaid', paymentDeadlineDays: '5' });
             }
             setErrors({});
         }
@@ -38,8 +38,8 @@ const TuitionFeeModal = ({ isOpen, onClose, onSave, editData = null, classes = [
     const validate = () => {
         const newErrors = {};
         if (!form.classId) newErrors.classId = 'Vui lòng chọn lớp học.';
-        if (!form.tuitionFee || isNaN(Number(form.tuitionFee)) || Number(form.tuitionFee) <= 0)
-            newErrors.tuitionFee = 'Đơn giá phải là số dương hợp lệ.';
+        if (!form.pricePerSession || isNaN(Number(form.pricePerSession)) || Number(form.pricePerSession) <= 0)
+            newErrors.pricePerSession = 'Đơn giá phải là số dương hợp lệ.';
         if (!form.paymentDeadlineDays || isNaN(Number(form.paymentDeadlineDays)) || Number(form.paymentDeadlineDays) < 0)
             newErrors.paymentDeadlineDays = 'Số ngày hạn nộp không hợp lệ.';
         return newErrors;
@@ -54,7 +54,7 @@ const TuitionFeeModal = ({ isOpen, onClose, onSave, editData = null, classes = [
         onSave({
             ...(editData || {}),
             classId: form.classId,
-            tuitionFee: Number(form.tuitionFee),
+            pricePerSession: Number(form.pricePerSession),
             billingMethod: form.billingMethod,
             paymentDeadlineDays: Number(form.paymentDeadlineDays),
         });
@@ -131,18 +131,18 @@ const TuitionFeeModal = ({ isOpen, onClose, onSave, editData = null, classes = [
                             <input
                                 type="number"
                                 min="0"
-                                value={form.tuitionFee}
-                                onChange={e => setForm(p => ({ ...p, tuitionFee: e.target.value }))}
+                                value={form.pricePerSession}
+                                onChange={e => setForm(p => ({ ...p, pricePerSession: e.target.value }))}
                                 placeholder="VD: 150000"
-                                className={`w-full !pl-8 !pr-4 !py-3 !bg-background border rounded-xl font-bold text-text-main outline-none transition-all ${errors.tuitionFee ? 'border-red-400' : 'border-border focus:border-primary'}`}
+                                className={`w-full !pl-8 !pr-4 !py-3 !bg-background border rounded-xl font-bold text-text-main outline-none transition-all ${errors.pricePerSession ? 'border-red-400' : 'border-border focus:border-primary'}`}
                             />
                         </div>
-                        {form.tuitionFee && !isNaN(Number(form.tuitionFee)) && Number(form.tuitionFee) > 0 && (
+                        {form.pricePerSession && !isNaN(Number(form.pricePerSession)) && Number(form.pricePerSession) > 0 && (
                             <p className="text-xs text-primary font-bold !mt-1">
-                                ≈ {Number(form.tuitionFee).toLocaleString('vi-VN')} ₫
+                                ≈ {Number(form.pricePerSession).toLocaleString('vi-VN')} ₫
                             </p>
                         )}
-                        {errors.tuitionFee && <p className="text-xs text-red-500 !mt-1 font-medium">{errors.tuitionFee}</p>}
+                        {errors.pricePerSession && <p className="text-xs text-red-500 !mt-1 font-medium">{errors.pricePerSession}</p>}
                     </div>
 
                     {/* Deadline Days */}

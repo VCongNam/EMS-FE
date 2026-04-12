@@ -50,6 +50,7 @@ import TuitionManagementPage from '../features/tuition-management/pages/TuitionM
 import TotalRevenuePage from '../features/tuition-management/pages/TotalRevenuePage';
 import ClassFinancialReportsPage from '../features/tuition-management/pages/ClassFinancialReportsPage';
 import ClassFinancialDetailPage from '../features/tuition-management/pages/ClassFinancialDetailPage';
+import TransactionReviewHubPage from '../features/tuition-management/pages/TransactionReviewHubPage';
 import StudentNotificationPage from '../features/notifications/pages/StudentNotificationPage';
 import StudentTuitionPage from '../features/tuition-management/pages/StudentTuitionPage';
 
@@ -173,6 +174,7 @@ export const AppRoutes = () => {
                               <Route path="tuition/revenue" element={<TotalRevenuePage />} />
                               <Route path="tuition/reports" element={<ClassFinancialReportsPage />} />
                               <Route path="tuition/reports/:classId" element={<ClassFinancialDetailPage />} />
+                              <Route path="tuition/transactions" element={<TransactionReviewHubPage />} />
 
                               {/* User Authorization (Admin) */}
                               <Route path="admin/authorization" element={<UserAuthorizationPage />} />

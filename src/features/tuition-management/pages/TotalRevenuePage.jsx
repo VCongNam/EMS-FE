@@ -1,38 +1,88 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '@iconify/react';
+import { toast } from 'react-toastify';
 import RevenueTrendChart from '../components/charts/RevenueTrendChart';
 import RevenueDistributionChart from '../components/charts/RevenueDistributionChart';
 import RevenueComparisonChart from '../components/charts/RevenueComparisonChart';
+import { tuitionService } from '../api/tuitionService';
+import useAuthStore from '../../../store/authStore';
 
-const MOCK_TOTAL_STATS = [
-    { label: 'Tổng doanh thu', value: '720.000.000 ₫', grow: '+12.5%', icon: 'solar:dollar-bold-duotone', color: 'text-primary' },
-    { label: 'Mục tiêu quý', value: '1.000.000.000 ₫', rate: '72%', icon: 'solar:target-bold-duotone', color: 'text-amber-500' },
-    { label: 'Trung bình/Lớp', value: '45.000.000 ₫', icon: 'solar:square-academic-cap-bold-duotone', color: 'text-emerald-500' },
-    { label: 'Tổng học sinh', value: '1,240', grow: '+4%', icon: 'solar:users-group-rounded-bold-duotone', color: 'text-blue-500' },
-];
-
-const MOCK_CLASS_REVENUE = [
-    { id: 'TC101', name: 'Toán Nâng Cao', students: 32, rate: '95%', revenue: 42000000 },
-    { id: 'TC102', name: 'Lý Thuyết Vật Lý', students: 25, rate: '88%', revenue: 38500000 },
-    { id: 'TC103', name: 'Hóa Học Cơ Bản', students: 18, rate: '100%', revenue: 21000000 },
-    { id: 'TC104', name: 'Luyện đề IELTS', students: 12, rate: '75%', revenue: 15600000 },
-];
+const formatVND = (amount) => amount?.toLocaleString('vi-VN') + ' ₫';
 
 const TotalRevenuePage = () => {
     const navigate = useNavigate();
+    const { user } = useAuthStore();
     const [timeframe, setTimeframe] = useState('Current Semester');
+    const [data, setData] = useState({
+        totalRevenue: 0,
+        totalStudents: 0,
+        averageRevenuePerClass: 0,
+        quarterlyTarget: 0,
+        revenueByClasses: [],
+        revenueTrends: []
+    });
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchAnalytics = async () => {
+            if (!user?.token) return;
+            try {
+                setIsLoading(true);
+                const res = await tuitionService.getDashboardAnalytics(user.token);
+                if (res.ok) {
+                    const result = await res.json();
+                    setData(result);
+                } else {
+                    toast.error("Không thể tải báo cáo doanh thu");
+                }
+            } catch (error) {
+                console.error("Lỗi lấy báo cáo:", error);
+                toast.error("Vui lòng kiểm tra lại kết nối");
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchAnalytics();
+    }, [user?.token, timeframe]);
+
+    // Data Mapping for Cards
+    const statsCards = useMemo(() => {
+        const rate = data.quarterlyTarget ? Math.round((data.totalRevenue / data.quarterlyTarget) * 100) : 0;
+        return [
+            { label: 'Tổng doanh thu', value: formatVND(data.totalRevenue), grow: '', icon: 'solar:dollar-bold-duotone', color: 'text-primary' },
+            { label: 'Mục tiêu quý', value: formatVND(data.quarterlyTarget), rate: `${rate}%`, icon: 'solar:target-bold-duotone', color: 'text-amber-500' },
+            { label: 'Trung bình/Lớp', value: formatVND(data.averageRevenuePerClass), icon: 'solar:square-academic-cap-bold-duotone', color: 'text-emerald-500' },
+            { label: 'Tổng học sinh', value: data.totalStudents.toLocaleString('vi-VN'), grow: '', icon: 'solar:users-group-rounded-bold-duotone', color: 'text-blue-500' },
+        ];
+    }, [data]);
+
+    // Data Mapping for Charts
+    const trendData = data.revenueTrends?.map(item => ({
+        name: item.monthLabel,
+        total: item.revenue
+    })) || [];
+
+    const distributionData = data.revenueByClasses?.map(item => ({
+        name: item.className,
+        value: item.revenue
+    })) || [];
+
+    const comparisonData = data.revenueByClasses?.map(item => ({
+        name: item.className,
+        revenue: item.revenue
+    })) || [];
 
     return (
         <div className="!min-h-full sm:!p-8 !space-y-8 !animate-fade-in custom-scrollbar">
             {/* Breadcrumbs & Navigation */}
-            <div className="!flex !items-center !gap-2">
+            <div className="!flex !items-center !gap-2 !mb-4">
                 <button 
                     onClick={() => navigate('/tuition')}
                     className="!flex !items-center !gap-2 !text-sm !font-bold !text-text-muted hover:!text-primary !transition-colors"
                 >
                     <Icon icon="solar:round-arrow-left-bold" className="!text-xl" />
-                    Quay lại Quản lý Học phí
+                    Quay lại
                 </button>
             </div>
 
@@ -65,7 +115,7 @@ const TotalRevenuePage = () => {
 
             {/* Executive Summary Cards */}
             <div className="!grid !grid-cols-1 md:!grid-cols-2 lg:!grid-cols-4 !gap-6">
-                {MOCK_TOTAL_STATS.map((stat, idx) => (
+                {statsCards.map((stat, idx) => (
                     <div key={idx} className="!bg-white !p-6 !rounded-[2rem] !border !border-border !shadow-sm hover:!shadow-md !transition-all">
                         <div className="!flex !items-center !justify-between !mb-4">
                             <div className={`!w-12 !h-12 !rounded-2xl !bg-background !flex !items-center !justify-center ${stat.color}`}>
@@ -83,7 +133,11 @@ const TotalRevenuePage = () => {
                             )}
                         </div>
                         <p className="!text-xs !font-black !text-text-muted !uppercase !tracking-widest !mb-1">{stat.label}</p>
-                        <h3 className="!text-2xl !font-black !text-text-main !tracking-tight">{stat.value}</h3>
+                        {isLoading ? (
+                            <div className="!h-8 !w-32 !bg-border !animate-pulse !rounded-md"></div>
+                        ) : (
+                            <h3 className="!text-2xl !font-black !text-text-main !tracking-tight">{stat.value}</h3>
+                        )}
                     </div>
                 ))}
             </div>
@@ -100,7 +154,7 @@ const TotalRevenuePage = () => {
                         <span className="!text-xs !font-black !text-text-muted !uppercase">Số thực thu</span>
                     </div>
                 </div>
-                <RevenueTrendChart />
+                {isLoading ? <div className="!h-[350px] !flex !items-center !justify-center text-text-muted">Đang tải biểu đồ...</div> : <RevenueTrendChart data={trendData} />}
             </div>
 
             {/* Distribution & Comparison Grid */}
@@ -108,12 +162,12 @@ const TotalRevenuePage = () => {
                 {/* Pie Chart */}
                 <div className="!bg-white !p-8 !rounded-[2.5rem] !border !border-border !shadow-sm">
                     <h2 className="!text-xl !font-black !text-text-main !tracking-tight !mb-6">Phân bổ theo lớp</h2>
-                    <RevenueDistributionChart />
+                    {isLoading ? <div className="!h-[350px] !flex !items-center !justify-center text-text-muted">Đang tải biểu đồ...</div> : <RevenueDistributionChart data={distributionData} />}
                 </div>
                 {/* Bar Chart */}
                 <div className="!bg-white !p-8 !rounded-[2.5rem] !border !border-border !shadow-sm">
                     <h2 className="!text-xl !font-black !text-text-main !tracking-tight !mb-6">So sánh doanh thu lớp học</h2>
-                    <RevenueComparisonChart />
+                    {isLoading ? <div className="!h-[350px] !flex !items-center !justify-center text-text-muted">Đang tải biểu đồ...</div> : <RevenueComparisonChart data={comparisonData} />}
                 </div>
             </div>
 
@@ -122,7 +176,7 @@ const TotalRevenuePage = () => {
                 <div className="!px-8 !py-6 !border-b !border-border !bg-background/20 !flex !items-center !justify-between">
                     <h2 className="!text-xl !font-black !text-text-main !tracking-tight">Chi tiết doanh thu từng lớp</h2>
                     <div className="!px-4 !py-1 !bg-primary/10 !text-primary !text-xs !font-black !rounded-full !uppercase">
-                        {MOCK_CLASS_REVENUE.length} Lớp đang hoạt động
+                        Lớp đang hoạt động
                     </div>
                 </div>
 
@@ -131,75 +185,53 @@ const TotalRevenuePage = () => {
                     <table className="!w-full !text-left !border-collapse">
                         <thead>
                             <tr className="!bg-[#F8FAFC] !border-b !border-border">
-                                <th className="!px-8 !py-5 !text-[11px] !font-black !text-text-muted !uppercase !tracking-widest">ID / Lớp học</th>
-                                <th className="!px-8 !py-5 !text-[11px] !font-black !text-text-muted !uppercase !tracking-widest">Sĩ số</th>
-                                <th className="!px-8 !py-5 !text-[11px] !font-black !text-text-muted !uppercase !tracking-widest">Tỷ lệ hoàn thành</th>
-                                <th className="!px-8 !py-5 !text-[11px] !font-black !text-text-muted !uppercase !tracking-widest">Thực thu (VND)</th>
+                                <th className="!px-8 !py-5 !text-[11px] !font-black !text-text-muted !uppercase !tracking-widest">Lớp học / Ghi chú</th>
+                                <th className="!px-8 !py-5 !text-[11px] !font-black !text-text-muted !uppercase !tracking-widest text-right">Thực thu (VND)</th>
                             </tr>
                         </thead>
                         <tbody className="!divide-y !divide-border">
-                            {MOCK_CLASS_REVENUE.map((cls) => (
-                                <tr key={cls.id} className="hover:!bg-[#F8FAFC] !transition-all">
-                                    <td className="!px-8 !py-5">
-                                        <div>
-                                            <p className="!text-sm !font-black !text-text-main">{cls.name}</p>
-                                            <p className="!text-[10px] !font-black !text-text-muted !uppercase">{cls.id}</p>
-                                        </div>
-                                    </td>
-                                    <td className="!px-8 !py-5">
-                                        <div className="!flex !items-center !gap-2">
-                                            <Icon icon="solar:users-group-rounded-bold" className="!text-primary" />
-                                            <span className="!text-sm !font-bold !text-text-main">{cls.students} học sinh</span>
-                                        </div>
-                                    </td>
-                                    <td className="!px-8 !py-5">
-                                        <div className="!flex !items-center !gap-3">
-                                            <div className="!flex-1 !h-1.5 !bg-background !rounded-full !overflow-hidden">
-                                                <div className="!h-full !bg-primary" style={{ width: cls.rate }}></div>
-                                            </div>
-                                            <span className="!text-xs !font-black !text-primary">{cls.rate}</span>
-                                        </div>
-                                    </td>
-                                    <td className="!px-8 !py-5">
-                                        <span className="!text-base !font-black !text-text-main">{cls.revenue.toLocaleString('vi-VN')} ₫</span>
-                                    </td>
+                            {isLoading ? (
+                                <tr>
+                                    <td colSpan={2} className="!py-16 !text-center text-text-muted">Đang tải dữ liệu...</td>
                                 </tr>
-                            ))}
+                            ) : data.revenueByClasses?.length === 0 ? (
+                                <tr>
+                                    <td colSpan={2} className="!py-16 !text-center text-text-muted">Chưa có dữ liệu thanh toán</td>
+                                </tr>
+                            ) : (
+                                data.revenueByClasses?.map((cls, idx) => (
+                                    <tr key={idx} className="hover:!bg-[#F8FAFC] !transition-all">
+                                        <td className="!px-8 !py-5">
+                                            <div>
+                                                <p className="!text-sm !font-black !text-text-main">{cls.className}</p>
+                                                <p className="!text-[10px] !font-bold !text-text-muted">Phân tích theo báo cáo doanh thu tuần.</p>
+                                            </div>
+                                        </td>
+                                        <td className="!px-8 !py-5 !text-right">
+                                            <span className="!text-base !font-black !text-text-main">{cls.revenue?.toLocaleString('vi-VN')} ₫</span>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
                         </tbody>
                     </table>
                 </div>
 
                 {/* ── Mobile Card List (below md) ─────────────────── */}
                 <div className="md:!hidden !divide-y !divide-border">
-                    {MOCK_CLASS_REVENUE.map((cls) => (
-                        <div key={cls.id} className="!p-6 !space-y-4">
+                    {data.revenueByClasses?.map((cls, idx) => (
+                        <div key={idx} className="!p-6 !space-y-4">
                             <div className="!flex !items-center !justify-between">
                                 <div className="!flex !items-center !gap-3">
                                     <div className="!w-10 !h-10 !bg-primary/10 !rounded-xl !flex !items-center !justify-center !text-primary">
                                         <Icon icon="solar:square-academic-cap-bold-duotone" className="!text-xl" />
                                     </div>
                                     <div>
-                                        <p className="!text-sm !font-black !text-text-main">{cls.name}</p>
-                                        <p className="!text-[10px] !font-black !text-text-muted">{cls.id}</p>
+                                        <p className="!text-sm !font-black !text-text-main">{cls.className}</p>
+                                        <p className="!text-[10px] !font-bold !text-text-muted">Thu trong kỳ</p>
                                     </div>
                                 </div>
-                                <span className="!text-base !font-black !text-primary">{cls.revenue.toLocaleString('vi-VN')} ₫</span>
-                            </div>
-
-                            <div className="!grid !grid-cols-2 !gap-4 !p-4 !bg-background !rounded-2xl !border !border-border">
-                                <div className="!space-y-1">
-                                    <p className="!text-[9px] !font-black !text-text-muted !uppercase !tracking-wider">Sĩ số</p>
-                                    <p className="!text-xs !font-bold !text-text-main">{cls.students} học sinh</p>
-                                </div>
-                                <div className="!space-y-1">
-                                    <p className="!text-[9px] !font-black !text-text-muted !uppercase !tracking-wider">Tỷ lệ thu</p>
-                                    <div className="!flex !items-center !gap-2">
-                                        <div className="!flex-1 !h-1 !bg-border !rounded-full !overflow-hidden">
-                                            <div className="!h-full !bg-primary" style={{ width: cls.rate }}></div>
-                                        </div>
-                                        <span className="!text-[10px] !font-black !text-primary">{cls.rate}</span>
-                                    </div>
-                                </div>
+                                <span className="!text-base !font-black !text-primary">{cls.revenue?.toLocaleString('vi-VN')} ₫</span>
                             </div>
                         </div>
                     ))}
