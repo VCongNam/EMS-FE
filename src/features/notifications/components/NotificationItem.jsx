@@ -24,6 +24,13 @@ const TYPE_CONFIG = {
 
 const NotificationItem = ({ notification, onClick }) => {
     const config = TYPE_CONFIG[notification.type] || TYPE_CONFIG.system;
+    
+    // Support both API fields and mock/fallback fields
+    const displayTitle = notification.title || 'Thông báo';
+    const displayMessage = notification.message || notification.content || '';
+    const displayTime = notification.createdAt 
+        ? new Date(notification.createdAt).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })
+        : notification.timestamp;
 
     return (
         <div 
@@ -36,34 +43,43 @@ const NotificationItem = ({ notification, onClick }) => {
         >
             {/* Type Icon */}
             <div className={`!w-14 !h-14 !rounded-2xl !flex-shrink-0 !flex !items-center !justify-center ${config.bg} ${config.color}`}>
-                <Icon icon={config.icon} className="!text-2xl" />
+                <Icon icon={notification.icon || config.icon} className="!text-2xl" />
             </div>
 
             {/* Content */}
             <div className="!flex-1 !min-w-0">
                 <div className="!flex !items-center !justify-between !mb-1">
                     <span className={`!text-[10px] !font-black !uppercase !tracking-widest ${config.color}`}>
-                        {config.label}
+                        {notification.typeLabel || config.label}
                     </span>
                     <span className="!text-[11px] !font-bold !text-text-muted">
-                        {notification.timestamp}
+                        {displayTime}
                     </span>
                 </div>
                 
                 <h3 className={`!text-base !font-black !mb-1 !truncate ${notification.isRead ? '!text-text-main' : '!text-primary'}`}>
-                    {notification.title}
+                    {displayTitle}
                 </h3>
                 
                 <p className="!text-sm !font-medium !text-text-muted !line-clamp-2">
-                    {notification.content}
+                    {displayMessage}
                 </p>
 
-                {notification.teacherName && (
+                {(notification.teacherName || notification.senderName) && (
                     <div className="!mt-4 !flex !items-center !gap-2">
                         <div className="!w-6 !h-6 !rounded-full !bg-primary/20 !flex !items-center !justify-center !text-[10px] !font-black !text-primary">
-                            {notification.teacherName.charAt(0)}
+                            {(notification.teacherName || notification.senderName).charAt(0)}
                         </div>
-                        <span className="!text-xs !font-bold !text-text-main">Thầy {notification.teacherName}</span>
+                        <span className="!text-xs !font-bold !text-text-main">
+                            {notification.teacherName ? `Thầy ${notification.teacherName}` : notification.senderName}
+                        </span>
+                    </div>
+                )}
+
+                {notification.actionUrl && (
+                    <div className="!mt-3 !flex !items-center !gap-1 !text-[10px] !font-black !text-primary !uppercase !tracking-wider">
+                        <span>Chi tiết</span>
+                        <Icon icon="solar:alt-arrow-right-bold-duotone" />
                     </div>
                 )}
             </div>

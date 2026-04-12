@@ -52,9 +52,10 @@ const TransactionReviewHubPage = () => {
         try {
             const payload = {
                 isApproved,
-                note: reviewNote
+                note: reviewNote.trim() || null
             };
-            const res = await tuitionService.reviewTransaction(selectedTx.id || selectedTx.transactionId, payload, user.token);
+            const targetId = selectedTx.transactionId || selectedTx.id;
+            const res = await tuitionService.reviewTransaction(targetId, payload, user.token);
             if (res.ok) {
                 toast.success(isApproved ? "Đã duyệt giao dịch thành công!" : "Đã từ chối giao dịch!");
                 setSelectedTx(null);

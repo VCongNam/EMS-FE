@@ -205,7 +205,7 @@ export const tuitionService = {
     // Lệnh Kế Toán thực hiện xác nhận (Duyệt/Thất bại) hóa đơn (Màn 5)
     reviewTransaction: async (transactionId, payload, token) => {
         // payload: { isApproved: boolean, note: string }
-        const response = await fetch(getApiUrl(`/api/TuitionFee/${transactionId}/review`), {
+        const response = await fetch(getApiUrl(`/api/TuitionFee/transaction/${transactionId}/review`), {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,

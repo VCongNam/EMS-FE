@@ -99,7 +99,7 @@ const TuitionManagementPage = () => {
     const handleSaveFeeConfig = async (data) => {
         try {
             const payload = {
-                pricePerSession: data.pricePerSession,
+                tuitionFee: data.tuitionFee,
                 billingMethod: data.billingMethod,
                 paymentDeadlineDays: data.paymentDeadlineDays
             };
@@ -291,8 +291,8 @@ const TuitionManagementPage = () => {
                                                     Trả sau
                                                 </span>
                                             )}
-                                            {c.pricePerSession ? (
-                                                <span className="font-black text-text-main text-xs">{formatVND(c.pricePerSession)} <span className="text-text-muted font-medium">/buổi</span></span>
+                                            {(c.tuitionFee || c.pricePerSession) ? (
+                                                <span className="font-black text-text-main text-xs">{formatVND(c.tuitionFee || c.pricePerSession)} <span className="text-text-muted font-medium">/buổi</span></span>
                                             ) : (
                                                 <span className="text-xs text-orange-500 font-bold">--</span>
                                             )}

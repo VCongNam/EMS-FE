@@ -1,14 +1,55 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import DashboardStatCards from './DashboardStatCards';
 import DashboardActionHub from './DashboardActionHub';
 import DashboardDeadlines from './DashboardDeadlines'; // It's actually the List view now
 import DashboardRecentNotifications from './DashboardRecentNotifications';
 import useAuthStore from '../../../store/authStore';
+import { notificationService } from '../../notifications/api/notificationService';
 
 const TADashboard = () => {
     const { user } = useAuthStore();
-    const userName = user?.name || 'Trợ giảng';
+    const token = user?.token;
+    const userName = (user?.fullName || 'Trợ giảng').split(' ').pop();
+    const navigate = useNavigate();
+
+    const [notifications, setNotifications] = useState([]);
+
+    useEffect(() => {
+        const fetchRecentNotifications = async () => {
+            if (!token) return;
+            try {
+                const response = await notificationService.getNotifications(token);
+                if (response.ok) {
+                    const data = await response.json();
+                    setNotifications(data.slice(0, 3)); // Only show top 3
+                }
+            } catch (error) {
+                console.error('Failed to fetch dashboard notifications:', error);
+            }
+        };
+        fetchRecentNotifications();
+    }, [token]);
+
+    const handleNotificationClick = async (notif) => {
+        // Mark as read in UI
+        if (notif.isRead === false) {
+            setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, isRead: true } : n));
+            try {
+                await notificationService.markAsRead(notif.id, token);
+            } catch (error) {
+                console.error('Error marking as read:', error);
+            }
+        }
+        
+        // Navigate
+        if (notif.actionUrl) {
+            navigate(notif.actionUrl);
+        } else {
+            navigate('/notifications');
+        }
+    };
 
     // Mock Data for TA
     const MOCK_TA_NEXT_CLASS = { subject: 'Giải tích 1 (SE1701)', time: '14:00 - 15:30', room: 'P.302' };
@@ -39,11 +80,6 @@ const TADashboard = () => {
     const TA_TASKS = [
         { id: 1, title: 'Hỗ trợ SV làm bài lab 3', subtitle: 'Lớp SE1701', rightText: 'Hạn: Hôm nay 17:00', statusColor: '!bg-red-500', actionIcon: 'solar:check-circle-bold-duotone' },
         { id: 2, title: 'Tổng hợp danh sách cấm thi', subtitle: 'Theo yêu cầu Thầy Hùng', rightText: 'Hạn: Ngày mai 10:00', statusColor: '!bg-orange-500', actionIcon: 'solar:check-circle-bold-duotone' },
-    ];
-
-    const TA_NOTIFS = [
-        { id: 1, type: 'Task', content: 'Thầy Hùng vừa giao cho bạn 1 nhiệm vụ mới: Chấm bài tập 15p', time: '1 giờ trước', icon: 'solar:clipboard-add-bold-duotone', color: '!text-purple-500' },
-        { id: 2, type: 'Message', content: 'SV Nguyễn Văn A: Em không tải được tài liệu buổi 3 ạ', time: '30 phút trước', icon: 'solar:chat-round-unread-bold-duotone', color: '!text-blue-500' },
     ];
 
     return (
@@ -120,7 +156,9 @@ const TADashboard = () => {
                     icon="solar:history-bold-duotone"
                     iconBgBase="!bg-emerald-50"
                     iconColor="!text-emerald-500"
-                    notifications={TA_NOTIFS}
+                    notifications={notifications}
+                    onNotificationClick={handleNotificationClick}
+                    viewAllLink="/notifications"
                 />
             </div>
 

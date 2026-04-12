@@ -25,6 +25,7 @@ const SideMenu = ({ isOpen, onClose }) => {
             { name: 'Báo cáo tiến độ', path: '/reports', icon: 'material-symbols:analytics-rounded' },
             { name: 'Quản lý Lịch học', path: '/schedule-management', icon: 'solar:calendar-add-bold-duotone' },
             { name: 'Quản lý Học phí', path: '/tuition', icon: 'solar:wallet-money-bold-duotone' },
+            { name: 'Thông báo', path: '/notifications', icon: 'material-symbols:circle-notifications-sharp' },
             { name: 'Trang cá nhân', path: '/profile', icon: 'material-symbols:person-rounded' },
         ],
         TA: [
@@ -33,12 +34,14 @@ const SideMenu = ({ isOpen, onClose }) => {
             { name: 'Lớp hỗ trợ', path: '/assisted-classes', icon: 'material-symbols:handshake-rounded' },
             { name: 'Danh sách học sinh', path: '/students', icon: 'material-symbols:group-rounded' },
             { name: 'Báo cáo tiến độ', path: '/reports', icon: 'material-symbols:analytics-rounded' },
+            { name: 'Thông báo', path: '/notifications', icon: 'material-symbols:circle-notifications-sharp' },
             { name: 'Trang cá nhân', path: '/profile', icon: 'material-symbols:person-rounded' },
         ],
         admin: [
             { name: 'Tổng quan Hệ thống', path: '/admin/dashboard', icon: 'material-symbols:dashboard-rounded' },
             { name: 'Quản lý Tài khoản', path: '/admin/accounts', icon: 'material-symbols:manage-accounts-rounded' },
-            { name: 'Phân quyền Cán bộ', path: '/admin/authorization', icon: 'material-symbols:admin-panel-settings-rounded' }
+            { name: 'Phân quyền Cán bộ', path: '/admin/authorization', icon: 'material-symbols:admin-panel-settings-rounded' },
+            { name: 'Thông báo', path: '/notifications', icon: 'material-symbols:circle-notifications-sharp' }
         ],
     };
 
