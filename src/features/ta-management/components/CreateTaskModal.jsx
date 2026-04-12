@@ -8,9 +8,8 @@ const CreateTaskModal = ({ isOpen, onClose, onAssign, tas = [], classes = [] }) 
         title: '',
         description: '',
         assignedTo: '',
-        classId: '',
         deadline: '',
-        priority: 'medium'
+        type: 'Grade'
     });
 
     if (!isOpen) return null;
@@ -77,21 +76,9 @@ const CreateTaskModal = ({ isOpen, onClose, onAssign, tas = [], classes = [] }) 
                                 >
                                     <option value="">-- Chọn Trợ giảng --</option>
                                     {tas.map(ta => (
-                                        <option key={ta.id} value={ta.id}>{ta.name} ({ta.id})</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div className="!space-y-1.5">
-                                <label className="block text-sm font-semibold text-text-main">Lớp liên quan</label>
-                                <select
-                                    value={taskData.classId}
-                                    onChange={e => setTaskData({...taskData, classId: e.target.value})}
-                                    className="w-full !px-4 !py-3 rounded-xl bg-background border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium text-text-main outline-none appearance-none"
-                                >
-                                    <option value="">-- Tất cả lớp / Không cụ thể --</option>
-                                    {classes.map(c => (
-                                        <option key={c.id} value={c.id}>{c.name}</option>
+                                        <option key={ta.classTAId || ta.taid} value={ta.classTAId || ta.taid}>
+                                            {ta.fullName || ta.name}
+                                        </option>
                                     ))}
                                 </select>
                             </div>
@@ -108,15 +95,17 @@ const CreateTaskModal = ({ isOpen, onClose, onAssign, tas = [], classes = [] }) 
                             </div>
 
                             <div className="!space-y-1.5">
-                                <label className="block text-sm font-semibold text-text-main">Mức độ ưu tiên</label>
+                                <label className="block text-sm font-semibold text-text-main">Loại công việc <span className="text-red-500">*</span></label>
                                 <select
-                                    value={taskData.priority}
-                                    onChange={e => setTaskData({...taskData, priority: e.target.value})}
+                                    required
+                                    value={taskData.type}
+                                    onChange={e => setTaskData({...taskData, type: e.target.value})}
                                     className="w-full !px-4 !py-3 rounded-xl bg-background border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium text-text-main outline-none appearance-none"
                                 >
-                                    <option value="low">Thấp</option>
-                                    <option value="medium">Trung bình</option>
-                                    <option value="high">Cao</option>
+                                    <option value="Attendance">Điểm danh (Attendance)</option>
+                                    <option value="Grade">Chấm điểm (Grade)</option>
+                                    <option value="Report">Báo cáo (Report)</option>
+                                    <option value="Assignment">Bài tập (Assignment)</option>
                                 </select>
                             </div>
                         </div>

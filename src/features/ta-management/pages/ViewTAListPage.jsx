@@ -3,12 +3,14 @@ import { Icon } from '@iconify/react';
 import { toast } from 'react-toastify';
 import useAuthStore from '../../../store/authStore';
 import { taService } from '../api/taService';
+import AddTAModal from '../components/AddTAModal';
 
 const ViewTAListPage = ({ classId }) => {
     const { user } = useAuthStore();
     const [searchQuery, setSearchQuery] = useState('');
     const [assistants, setAssistants] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
     const fetchAssistants = async () => {
         if (!classId || !user?.token) return;
@@ -69,6 +71,13 @@ const ViewTAListPage = ({ classId }) => {
                             </button>
                         )}
                     </div>
+                    <button 
+                        onClick={() => setIsAddModalOpen(true)}
+                        className="!flex !items-center !gap-2 !px-6 !py-3 !bg-primary !text-white !rounded-xl !font-bold !shadow-lg !shadow-primary/20 hover:!bg-primary-hover !transition-all shrink-0"
+                    >
+                        <Icon icon="solar:user-plus-bold-duotone" className="text-xl" />
+                        <span className="hidden sm:inline">Thêm trợ giảng</span>
+                    </button>
                 </div>
                 <div className="!pt-2 flex items-center justify-between text-sm">
                     <span className="text-text-muted font-medium">
@@ -83,7 +92,6 @@ const ViewTAListPage = ({ classId }) => {
                     <table className="w-full text-left border-collapse min-w-[700px]">
                         <thead>
                             <tr className="bg-background/80 border-b border-border">
-                                <th className="!p-5 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap">Mã TG</th>
                                 <th className="!p-5 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap">Tên Trợ giảng</th>
                                 <th className="!p-5 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap">Quyền hiện tại</th>
                                 <th className="!p-5 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap text-center">Lương / Buổi</th>
@@ -92,14 +100,13 @@ const ViewTAListPage = ({ classId }) => {
                         <tbody className="divide-y divide-border/50">
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan="4" className="!p-10 text-center text-primary">
+                                    <td colSpan="3" className="!p-10 text-center text-primary">
                                         <Icon icon="solar:spinner-linear" className="animate-spin text-3xl mx-auto mb-2" />
                                         <p className="font-medium">Đang tải cấu hình...</p>
                                     </td>
                                 </tr>
                             ) : filteredAssistants.map((assistant) => (
                                 <tr key={assistant.taid} className="hover:bg-primary/5 transition-colors group">
-                                    <td className="!p-5 font-mono text-sm text-text-muted font-medium">{assistant.taid}</td>
                                     <td className="!p-5 text-text-main">
                                         <div className="flex items-center !gap-3 w-max">
                                             <div className="w-10 h-10 rounded-full bg-purple-500/10 text-purple-600 flex items-center justify-center font-bold text-sm uppercase shrink-0">
@@ -127,7 +134,7 @@ const ViewTAListPage = ({ classId }) => {
                             ))}
                             {!isLoading && filteredAssistants.length === 0 && (
                                 <tr>
-                                    <td colSpan="4" className="!p-16 text-center">
+                                    <td colSpan="3" className="!p-16 text-center">
                                         <div className="flex flex-col items-center justify-center opacity-70">
                                             <div className="w-20 h-20 bg-background rounded-full flex items-center justify-center !mb-4 border border-border">
                                                 <Icon icon="solar:ghost-smile-bold-duotone" className="text-4xl text-text-muted" />
@@ -163,7 +170,6 @@ const ViewTAListPage = ({ classId }) => {
                                     </div>
                                     <div className="min-w-0">
                                         <p className="font-bold text-text-main truncate">{assistant.fullName}</p>
-                                        <p className="text-xs font-mono text-text-muted">{assistant.taid}</p>
                                     </div>
                                 </div>
                             </div>
@@ -181,6 +187,13 @@ const ViewTAListPage = ({ classId }) => {
                     ))
                 )}
             </div>
+
+            <AddTAModal 
+                isOpen={isAddModalOpen}
+                onClose={() => setIsAddModalOpen(false)}
+                onAdd={fetchAssistants}
+                classId={classId}
+            />
         </div>
     );
 };
