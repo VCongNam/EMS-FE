@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import { toast } from 'react-toastify';
 import TuitionFeeModal from '../components/TuitionFeeModal';
 import GenerateInvoiceModal from '../components/GenerateInvoiceModal';
-import ConfirmModal from '../../../components/ui/ConfirmModal';
 import DashboardStatCards from '../../dashboard/components/DashboardStatCards';
+import RevenueTrendChart from '../components/charts/RevenueTrendChart';
+import RevenueDistributionChart from '../components/charts/RevenueDistributionChart';
 import { tuitionService } from '../api/tuitionService';
 import useAuthStore from '../../../store/authStore';
 
@@ -19,11 +20,9 @@ const TuitionManagementPage = () => {
     
     // API State
     const [configs, setConfigs] = useState([]);
-    const [stats, setStats] = useState({
-        totalActualRevenue: 0,
-        paidInvoicesCount: 0,
-        pendingInvoicesCount: 0
-    });
+    const [analytics, setAnalytics] = useState({ totalRevenue: 0, revenueTrends: [], revenueByClasses: [] });
+    const [summaries, setSummaries] = useState([]);
+    const [pendingCount, setPendingCount] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
 
     // Modal state
@@ -35,33 +34,21 @@ const TuitionManagementPage = () => {
         if (!user?.token) return;
         try {
             setIsLoading(true);
-            
-            // Lấy danh sách cấu hình
-            const configsRes = await tuitionService.getTuitionConfigs(user.token);
-            if (configsRes.ok) {
-                const data = await configsRes.json();
-                setConfigs(data || []);
-            }
+            const [configsRes, analyticsRes, summariesRes, pendingRes] = await Promise.all([
+                tuitionService.getTuitionConfigs(user.token),
+                tuitionService.getDashboardAnalytics(user.token),
+                tuitionService.getClassFinancialSummaries(user.token),
+                tuitionService.getPendingTransactions(user.token) // API might not exist depending on backend but handling gracefully
+            ]);
 
-            // Lấy thống kê
-            const statsRes = await tuitionService.getDashboardAnalytics(user.token);
-            if (statsRes.ok) {
-                const statsData = await statsRes.json();
-                setStats({
-                    totalActualRevenue: statsData.totalActualRevenue || 0,
-                    paidInvoicesCount: statsData.paidInvoicesCount || 0,
-                    pendingInvoicesCount: statsData.pendingInvoicesCount || 0,
-                });
-            }
+            if (configsRes.ok) setConfigs(await configsRes.json() || []);
+            if (analyticsRes.ok) setAnalytics(await analyticsRes.json() || { totalRevenue: 0, revenueTrends: [], revenueByClasses: [] });
+            if (summariesRes.ok) setSummaries(await summariesRes.json() || []);
+            if (pendingRes.ok) setPendingCount((await pendingRes.json() || []).length);
+
         } catch (error) {
             console.error('Error fetching tuition data:', error);
-            // toast.error('Không thể tải dữ liệu học phí.');
-            // Dùng mock data dự phòng nếu Backend chưa hoàn thiện endpoint
-             setConfigs([
-                { classId: 'c1', className: 'Toán 10', studentCount: 20, billingMethod: 'Prepaid', tuitionFee: 150000, paymentDeadlineDays: 5, monthlyStatus: 'Đã chốt' },
-                { classId: 'c2', className: 'Lý 11', studentCount: 15, billingMethod: 'Postpaid', tuitionFee: 120000, paymentDeadlineDays: 7, monthlyStatus: 'Chưa đến kỳ' },
-             ]);
-             setStats({ totalActualRevenue: 15000000, paidInvoicesCount: 45, pendingInvoicesCount: 12 });
+            toast.error('Không thể tải dữ liệu học phí. Vui lòng kiểm tra lại kết nối!');
         } finally {
             setIsLoading(false);
         }
@@ -71,10 +58,36 @@ const TuitionManagementPage = () => {
         fetchData();
     }, [user?.token]);
 
+    // Derived Statistics
+    const totalDebt = useMemo(() => {
+        return summaries.reduce((sum, cls) => sum + (cls.debtAmount || 0), 0);
+    }, [summaries]);
+
+    const trendData = analytics.revenueTrends?.map(item => ({
+        name: item.monthLabel,
+        total: item.revenue
+    })) || [];
+
+    const distributionData = analytics.revenueByClasses?.map(item => ({
+        name: item.className,
+        value: item.revenue
+    })) || [];
+
+    // Combine configs with summaries for the table
+    const tableData = useMemo(() => {
+        return configs.map(config => {
+            const summary = summaries.find(s => s.classId === config.classId) || {};
+            return {
+                ...config,
+                studentCount: summary.studentCount || summary.studentsCount || config.studentCount || 0,
+                collectionRate: Math.round(summary.collectionRate || 0)
+            };
+        });
+    }, [configs, summaries]);
+
     // ── Handlers ───────────────────────────────────────────────────────────
     const extractApiError = (errorData, defaultMessage) => {
         if (errorData?.errors && typeof errorData.errors === 'object') {
-            // Extract the first error message from the field errors array
             const firstErrorField = Object.keys(errorData.errors)[0];
             if (firstErrorField && errorData.errors[firstErrorField].length > 0) {
                 return errorData.errors[firstErrorField][0];
@@ -91,21 +104,18 @@ const TuitionManagementPage = () => {
                 paymentDeadlineDays: data.paymentDeadlineDays
             };
             
-            // Gọi API thực tế
             const response = await tuitionService.updateTuitionFee(data.classId, payload, user.token);
-            
             if (!response.ok) {
                 const errorData = await response.json().catch(() => null);
                 throw errorData || new Error("Failed to update");
             }
             
-            setConfigs(prev => prev.map(c => c.classId === data.classId ? { ...c, ...payload } : c));
             toast.success('Cập nhật luật học phí thành công!');
             setFeeModal({ isOpen: false, editData: null });
+            fetchData();
         } catch (error) {
             const errorMessage = extractApiError(error, 'Lỗi khi cập nhật học phí');
             toast.error(errorMessage);
-            console.error(error);
         }
     };
 
@@ -125,140 +135,178 @@ const TuitionManagementPage = () => {
 
             toast.success(`Khởi tạo yêu cầu thu học phí thành công!`);
             setInvoiceModal({ isOpen: false, classData: null });
-            fetchData(); // reload
+            fetchData();
         } catch (error) {
             const errorMessage = extractApiError(error, 'Đã xảy ra lỗi khi tạo hóa đơn.');
             toast.error(errorMessage);
-            console.error(error);
         }
     };
 
     return (
-        <div className="space-y-6 animate-fade-in-up pb-10">
+        <div className="!space-y-8 !animate-fade-in-up !pb-10 !px-4 sm:!px-8">
+            {/* Header */}
+            <div>
+                <h1 className="!text-3xl sm:!text-4xl !font-black !text-text-main !tracking-tight font-['Outfit']">
+                    Bảng điều khiển Tài chính
+                </h1>
+                <p className="!text-sm !font-medium !text-text-muted !mt-2">
+                    Cái nhìn tổng quan về sức khỏe dòng tiền trên toàn hệ thống.
+                </p>
+            </div>
 
-            {/* ── Settings Header ─────────────────────────────────────────────── */}
-            <div className="!bg-white !mb-2 rounded-[2.5rem] border border-dashed border-border !p-6 sm:!p-8 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-                <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-2xl !bg-primary/10 flex items-center justify-center text-primary shadow-inner">
-                        <Icon icon="solar:wallet-money-bold-duotone" className="text-3xl" />
+            {/* Dashboard Stats */}
+            <div className="!grid !grid-cols-1 md:!grid-cols-3 !gap-6">
+                 <div className="!bg-emerald-50 !border !border-emerald-100 !p-6 !rounded-[2rem] !shadow-sm !hover:shadow-md !transition-all">
+                    <div className="!flex !items-center !justify-between !mb-4">
+                        <div className="!w-12 !h-12 !rounded-2xl !bg-emerald-500 !shadow-emerald-500/20 !flex !items-center !justify-center !text-white">
+                            <Icon icon="solar:cash-out-bold-duotone" className="!text-2xl" />
+                        </div>
                     </div>
-                    <div>
-                        <h1 className="text-2xl font-black text-text-main tracking-tight !mb-1">Cấu hình Thiết lập Học phí</h1>
-                        <p className="text-sm text-text-muted font-medium">Theo dõi doanh thu tổng quát và định hình luật lệ thu phí</p>
+                    <p className="!text-xs !font-black !text-emerald-900 !uppercase !tracking-widest !mb-1">Tổng doanh thu (Thực thu)</p>
+                    {isLoading ? <div className="!h-8 !w-32 !bg-emerald-200 !animate-pulse !rounded-md"></div> : 
+                        <h3 className="!text-3xl !font-black !text-emerald-600 !tracking-tight">{formatVND(analytics.totalRevenue)}</h3>
+                    }
+                </div>
+
+                <div className="!bg-red-50 !border !border-red-100 !p-6 !rounded-[2rem] !shadow-sm !hover:shadow-md !transition-all">
+                    <div className="!flex !items-center !justify-between !mb-4">
+                        <div className="!w-12 !h-12 !rounded-2xl !bg-red-500 !shadow-red-500/20 !flex !items-center !justify-center !text-white">
+                            <Icon icon="solar:danger-triangle-bold-duotone" className="!text-2xl" />
+                        </div>
                     </div>
+                    <p className="!text-xs !font-black !text-red-900 !uppercase !tracking-widest !mb-1">Tổng công nợ (Chưa thu)</p>
+                    {isLoading ? <div className="!h-8 !w-32 !bg-red-200 !animate-pulse !rounded-md"></div> : 
+                        <h3 className="!text-3xl !font-black !text-red-600 !tracking-tight">{formatVND(totalDebt)}</h3>
+                    }
+                </div>
+
+                <div 
+                    onClick={() => navigate('/tuition/transactions')}
+                    className="!bg-amber-50 !border !border-amber-100 !p-6 !rounded-[2rem] !shadow-sm hover:!shadow-md hover:!-translate-y-1 !transition-all !cursor-pointer"
+                >
+                    <div className="!flex !items-center !justify-between !mb-4">
+                        <div className={`!w-12 !h-12 !rounded-2xl !bg-amber-500 !shadow-amber-500/20 !flex !items-center !justify-center !text-white ${pendingCount > 0 ? '!animate-bounce' : ''}`}>
+                            <Icon icon={pendingCount > 0 ? "solar:bell-bing-bold-duotone" : "solar:bell-bold-duotone"} className="!text-2xl" />
+                        </div>
+                        <span className="!px-3 !py-1 !bg-amber-200 !text-amber-700 !text-[10px] !font-black !rounded-lg !uppercase border border-amber-300">
+                            Xử lý ngay
+                        </span>
+                    </div>
+                    <p className="!text-xs !font-black !text-amber-900 !uppercase !tracking-widest !mb-1">Biên lai chờ duyệt</p>
+                    {isLoading ? <div className="!h-8 !w-32 !bg-amber-200 !animate-pulse !rounded-md"></div> : 
+                        <div className="!flex !items-baseline !gap-2">
+                             <h3 className="!text-3xl !font-black !text-amber-600 !tracking-tight">{pendingCount}</h3>
+                             <span className="!text-sm !font-bold !text-amber-700">Yêu cầu</span>
+                        </div>
+                    }
                 </div>
             </div>
 
-            {/* ── Dashboard Stats ── */}
-            <DashboardStatCards 
-                card1={{
-                    title: 'Doanh thu thực tế',
-                    subject: `${formatVND(stats.totalActualRevenue)}`,
-                    time: 'Đã nhận vào hệ thống',
-                    room: '',
-                    icon: 'solar:cash-out-bold-duotone'
-                }}
-                card2={{
-                    title: 'Tỷ lệ hoàn thành',
-                    value: Math.round((stats.paidInvoicesCount / (stats.paidInvoicesCount + stats.pendingInvoicesCount || 1)) * 100) || 0,
-                    trendText: `${stats.paidInvoicesCount} HĐ đã đóng`,
-                    icon: 'solar:check-circle-bold-duotone',
-                    trendColor: '!text-emerald-500'
-                }}
-                card3={{
-                    bgClass: '!bg-orange-50 !border-orange-100',
-                    iconBgClass: '!bg-orange-500 !shadow-orange-500/20',
-                    titleClass: '!text-orange-900',
-                    valueClass: '!text-orange-600',
-                    title: 'Tồn đọng / Nợ',
-                    value: stats.pendingInvoicesCount,
-                    unit: 'Hóa đơn',
-                    icon: 'solar:bill-cross-bold-duotone',
-                    button: { label: 'Xem chi tiết báo cáo', className: '!text-orange-600 !border-orange-200 hover:!bg-orange-100', path: '/tuition/reports' }
-                }}
-            />
-
-            {/* ── Section: Current Fees Table ──────────────────────────────── */}
-            <div className="!bg-white !mt-2 rounded-3xl border border-border shadow-sm overflow-hidden">
-                <div className="!px-6 !py-5 border-b border-border flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-2xl !bg-primary/10 text-primary flex items-center justify-center">
-                        <Icon icon="solar:round-alt-arrow-right-bold" className="text-xl" />
+            {/* Charts Section */}
+            <div className="!grid !grid-cols-1 lg:!grid-cols-2 !gap-8">
+                <div className="!bg-white !p-8 !rounded-[2.5rem] !border !border-border !shadow-sm">
+                    <div className="!mb-6">
+                        <h2 className="!text-xl !font-black !text-text-main !tracking-tight">Xu hướng doanh thu (6 tháng)</h2>
+                        <p className="!text-sm !font-bold !text-text-muted !mt-1">Dựa trên biểu đồ cột so sánh theo từng kỳ</p>
                     </div>
-                    <div>
-                        <h2 className="text-base font-black text-text-main">Luật học phí & Lên Bill</h2>
-                        <p className="text-xs text-text-muted font-medium">{configs.length} lớp học đang quản lý</p>
-                    </div>
+                    {isLoading ? <div className="!h-[350px] !flex !items-center !justify-center text-text-muted">Đang tải biểu đồ...</div> : <RevenueTrendChart data={trendData} />}
                 </div>
 
-                <div className="overflow-x-auto custom-scrollbar">
-                    <table className="w-full text-left border-collapse">
+                <div className="!bg-white !p-8 !rounded-[2.5rem] !border !border-border !shadow-sm">
+                    <div className="!mb-6">
+                        <h2 className="!text-xl !font-black !text-text-main !tracking-tight">Tỷ trọng doanh thu</h2>
+                        <p className="!text-sm !font-bold !text-text-muted !mt-1">Phân bổ nguồn thu theo từng lớp học</p>
+                    </div>
+                    {isLoading ? <div className="!h-[350px] !flex !items-center !justify-center text-text-muted">Đang tải biểu đồ...</div> : <RevenueDistributionChart data={distributionData} />}
+                </div>
+            </div>
+
+            {/* Class Table Section */}
+            <div className="!bg-white !rounded-[2.5rem] !border !border-border !shadow-sm !overflow-hidden">
+                <div className="!px-8 !py-6 !border-b !border-border !bg-background/20 !flex !flex-col sm:!flex-row sm:!items-center !justify-between !gap-4">
+                    <div>
+                        <h2 className="!text-xl !font-black !text-text-main !tracking-tight">Bảng tóm tắt theo lớp</h2>
+                        <p className="!text-sm !font-bold !text-text-muted !mt-1">Danh sách lớp và tiến độ thu phí</p>
+                    </div>
+                    <button 
+                        onClick={() => navigate('/tuition/reports')}
+                        className="!flex !items-center !gap-2 !px-4 !py-2 !bg-white !border !border-border !rounded-xl !text-sm !font-black !text-text-main hover:!bg-background !transition-colors"
+                    >
+                        Quản lý Công nợ chi tiết
+                        <Icon icon="solar:arrow-right-line-duotone" />
+                    </button>
+                </div>
+
+                <div className="!overflow-x-auto custom-scrollbar">
+                    <table className="!w-full !text-left !border-collapse">
                         <thead>
-                            <tr className="!bg-[#F8FAFC] border-b border-border">
+                            <tr className="!bg-[#F8FAFC] !border-b !border-border">
                                 <th className="!px-6 !py-4 text-[11px] font-black text-text-muted uppercase tracking-widest">Lớp học</th>
-                                <th className="!px-6 !py-4 text-[11px] font-black text-text-muted uppercase tracking-widest">Loại thu</th>
-                                <th className="!px-6 !py-4 text-[11px] font-black text-text-muted uppercase tracking-widest">Đơn giá/Buổi</th>
-                                <th className="!px-6 !py-4 text-[11px] font-black text-text-muted uppercase tracking-widest hidden md:table-cell">Luật Hạn Nộp</th>
-                                <th className="!px-6 !py-4 text-[11px] font-black text-text-muted uppercase tracking-widest text-right">Thao tác</th>
+                                <th className="!px-6 !py-4 text-[11px] font-black text-text-muted uppercase tracking-widest text-center">Sĩ số</th>
+                                <th className="!px-6 !py-4 text-[11px] font-black text-text-muted uppercase tracking-widest">Tỉ lệ thu học phí</th>
+                                <th className="!px-6 !py-4 text-[11px] font-black text-text-muted uppercase tracking-widest">Loại thu / Đơn giá</th>
+                                <th className="!px-6 !py-4 text-[11px] font-black text-text-muted uppercase tracking-widest text-right">Cấu hình</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-border">
                             {isLoading ? (
                                  <tr>
-                                    <td colSpan={5} className="!py-10 text-center text-text-muted">Đang tải dữ liệu...</td>
+                                    <td colSpan={5} className="!py-10 text-center text-text-muted font-bold">Đang tải dữ liệu...</td>
                                  </tr>
-                            ) : configs.length === 0 ? (
+                            ) : tableData.length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} className="!py-16 text-center">
-                                        <div className="flex flex-col items-center gap-3 opacity-40">
-                                            <Icon icon="solar:wallet-money-bold-duotone" className="text-6xl" />
-                                            <p className="font-bold">Chưa có danh sách lớp</p>
-                                        </div>
-                                    </td>
+                                    <td colSpan={5} className="!py-16 text-center text-text-muted font-bold">Chưa có danh sách lớp</td>
                                 </tr>
-                            ) : configs.map(c => (
+                            ) : tableData.map(c => (
                                 <tr key={c.classId} className="group hover:!bg-[#F8FAFC] transition-all">
                                     <td className="!px-6 !py-4">
-                                        <p className="font-bold text-text-main text-sm">{c.className}</p>
-                                        <p className="text-xs text-text-muted">{c.studentCount} Học sinh</p>
+                                        <p className="font-black text-text-main text-sm">{c.className}</p>
+                                    </td>
+                                    <td className="!px-6 !py-4 text-center">
+                                         <span className="font-bold text-text-main text-sm bg-background px-3 py-1 rounded-lg border border-border">
+                                            {c.studentCount}
+                                         </span>
                                     </td>
                                     <td className="!px-6 !py-4">
-                                        {c.billingMethod === 'Prepaid' ? (
-                                            <span className="!px-3 !py-1 rounded-full text-xs font-black !bg-emerald-100 text-emerald-700 border border-emerald-200">
-                                                Trả trước
-                                            </span>
-                                        ) : (
-                                            <span className="!px-3 !py-1 rounded-full text-xs font-black !bg-purple-100 text-purple-700 border border-purple-200">
-                                                Trả sau
-                                            </span>
-                                        )}
+                                        <div className="flex flex-col gap-1.5">
+                                            <div className="flex justify-between items-center text-xs font-bold text-text-main">
+                                                 <span>Đã thu {c.collectionRate}%</span>
+                                            </div>
+                                            <div className="w-full sm:w-32 h-1.5 rounded-full bg-border overflow-hidden">
+                                                <div 
+                                                    className={`h-full ${c.collectionRate >= 80 ? 'bg-emerald-500' : c.collectionRate >= 50 ? 'bg-amber-500' : 'bg-red-500'}`}
+                                                    style={{ width: `${c.collectionRate}%` }}
+                                                />
+                                            </div>
+                                        </div>
                                     </td>
                                     <td className="!px-6 !py-4">
-                                        {c.tuitionFee ? (
-                                            <span className="font-black text-primary text-base">{formatVND(c.tuitionFee)}</span>
-                                        ) : (
-                                            <span className="text-xs text-orange-500 font-black px-2 py-1 bg-orange-50 rounded-md">Chưa thiết lập</span>
-                                        )}
-                                    </td>
-                                    <td className="!px-6 !py-4 hidden md:table-cell">
-                                        <span className="text-sm font-medium text-text-main">
-                                            {c.paymentDeadlineDays} ngày <span className="text-text-muted text-xs">sau chốt bill</span>
-                                        </span>
+                                        <div className="flex items-center gap-2">
+                                            {c.billingMethod === 'Prepaid' ? (
+                                                <span className="!px-2 !py-0.5 rounded text-[10px] font-black !bg-emerald-100 text-emerald-700 border border-emerald-200">
+                                                    Trả trước
+                                                </span>
+                                            ) : (
+                                                <span className="!px-2 !py-0.5 rounded text-[10px] font-black !bg-purple-100 text-purple-700 border border-purple-200">
+                                                    Trả sau
+                                                </span>
+                                            )}
+                                            {(c.tuitionFee || c.pricePerSession) ? (
+                                                <span className="font-black text-text-main text-xs">{formatVND(c.tuitionFee || c.pricePerSession)} <span className="text-text-muted font-medium">/buổi</span></span>
+                                            ) : (
+                                                <span className="text-xs text-orange-500 font-bold">--</span>
+                                            )}
+                                        </div>
                                     </td>
                                     <td className="!px-6 !py-4 text-right">
                                         <div className="flex items-center justify-end gap-2">
+                                            
                                             <button
                                                 onClick={() => setFeeModal({ isOpen: true, editData: c })}
-                                                className="w-9 h-9 flex items-center justify-center rounded-xl !bg-background text-text-muted hover:text-primary hover:!bg-primary/10 transition-all border border-border"
-                                                title="Chỉnh sửa luật học phí"
+                                                className="w-8 h-8 flex items-center justify-center rounded-lg !bg-background text-text-muted hover:text-primary hover:!bg-primary/10 transition-all border border-border"
+                                                title="Cấu hình học phí"
                                             >
-                                                <Icon icon="solar:settings-bold-duotone" className="text-base" />
-                                            </button>
-                                            <button
-                                                onClick={() => setInvoiceModal({ isOpen: true, classData: c })}
-                                                className="!px-3 !py-1.5 flex items-center justify-center rounded-xl font-bold text-xs gap-1.5 !bg-text-main text-white hover:!bg-text-main/90 transition-all shadow-md"
-                                            >
-                                                <Icon icon="solar:bill-check-bold" className="text-sm" />
-                                                Lên Bill
+                                                <Icon icon="solar:settings-bold-duotone" className="text-lg" />
                                             </button>
                                         </div>
                                     </td>
@@ -269,7 +317,7 @@ const TuitionManagementPage = () => {
                 </div>
             </div>
 
-            {/* ── Modals ─────────────────────────────────────────────────────── */}
+            {/* Modals */}
             <TuitionFeeModal
                 isOpen={feeModal.isOpen}
                 onClose={() => setFeeModal({ isOpen: false, editData: null })}

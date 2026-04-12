@@ -22,12 +22,12 @@ const TuitionFeeModal = ({ isOpen, onClose, onSave, editData = null, classes = [
             if (isEdit && editData) {
                 setForm({
                     classId: editData.classId || editData.id || '',
-                    tuitionFee: editData.tuitionFee?.toString() || editData.pricePerSession?.toString() || '',
+                    tuitionFee: (editData.tuitionFee || editData.pricePerSession)?.toString() || '',
                     billingMethod: editData.billingMethod || 'Postpaid',
                     paymentDeadlineDays: editData.paymentDeadlineDays?.toString() || '5',
                 });
             } else {
-                setForm({ classId: classes[0]?.id || '', tuitionFee: '', billingMethod: 'Postpaid', paymentDeadlineDays: '5' });
+                setForm({ classId: classes[0]?.classId || classes[0]?.id || '', tuitionFee: '', billingMethod: 'Postpaid', paymentDeadlineDays: '5' });
             }
             setErrors({});
         }

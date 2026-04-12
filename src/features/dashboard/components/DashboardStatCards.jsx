@@ -2,11 +2,11 @@ import React from 'react';
 import { Icon } from '@iconify/react';
 import { Link } from 'react-router-dom';
 
-const DashboardStatCards = ({ card1, card2, card3 }) => {
+const DashboardStatCards = ({ card1, card2, card3, card4 }) => {
     return (
-        <div className="!grid !grid-cols-1 md:!grid-cols-3 !gap-6">
+        <div className={`!grid !grid-cols-1 ${card4 ? 'md:!grid-cols-2 lg:!grid-cols-4' : 'md:!grid-cols-3'} !gap-6`}>
             {/* Dark themed card (Next Class / Next Schedule) */}
-            <div className="!bg-[#355872] !p-8 !rounded-[2.5rem] !text-white !relative !overflow-hidden !group !shadow-xl !shadow-[#355872]/20">
+            <div className="!bg-primary !p-8 !rounded-[2.5rem] !text-white !relative !overflow-hidden !group !shadow-xl !shadow-[#355872]/20">
                 <div className="!absolute !-right-10 !-top-10 !w-40 !h-40 !bg-white/10 !rounded-full !blur-3xl !group-hover:!bg-white/20 !transition-all" />
                 <div className="!relative !z-10 !space-y-4">
                     <div className="!flex !items-center !gap-3 !opacity-80">
@@ -14,9 +14,9 @@ const DashboardStatCards = ({ card1, card2, card3 }) => {
                         <span className="!text-xs !font-black !uppercase !tracking-widest">{card1?.title || 'Tiết học tiếp theo'}</span>
                     </div>
                     <div>
-                        <h2 className="!text-2xl !font-black !tracking-tight">{card1?.subject || 'Toán học 101'}</h2>
+                        <h2 className="!text-2xl !text-white !tracking-tight">{card1?.subject || 'Toán học 101'}</h2>
                         <p className="!text-sm !font-bold !opacity-60 !mt-1">
-                            {card1?.time || '14:00 - 15:30'} | {card1?.room || 'Phòng 2.01'}
+                            {card1?.time || '14:00 - 15:30'} 
                         </p>
                     </div>
                 </div>
@@ -68,6 +68,32 @@ const DashboardStatCards = ({ card1, card2, card3 }) => {
                     </Link>
                 )}
             </div>
+
+            {/* Card 4 (Optional Actionable) */}
+            {card4 && (
+                <div className={`!p-8 !rounded-[2.5rem] !border !flex !flex-col !justify-center !gap-4 !relative !overflow-hidden ${card4?.bgClass || '!bg-emerald-50 !border-emerald-100'}`}>
+                    <div className="!flex !items-center !gap-4">
+                        <div className={`!w-12 !h-12 !rounded-2xl !text-white !flex !items-center !justify-center !shadow-lg ${card4?.iconBgClass || '!bg-emerald-500 !shadow-emerald-500/20'}`}>
+                            <Icon icon={card4?.icon || "solar:bill-check-bold-duotone"} className="!text-2xl" />
+                        </div>
+                        <div>
+                            <h4 className={`!text-sm !font-black ${card4?.titleClass || '!text-emerald-900'}`}>{card4?.title}</h4>
+                            <p className={`!text-2xl !font-black !tracking-tighter ${card4?.valueClass || '!text-emerald-600'}`}>
+                                {card4?.value} <span className="!text-sm">{card4?.unit}</span>
+                            </p>
+                        </div>
+                    </div>
+                    {card4?.button && (
+                        <Link 
+                            to={card4?.button.path || "/"}
+                            className={`!w-full !px-4 !py-3 !bg-white !border !rounded-xl !text-sm !font-black !flex !items-center !justify-center !gap-2 !transition-all ${card4?.button.className || '!text-emerald-600 !border-emerald-200 hover:!bg-emerald-100'}`}
+                        >
+                            {card4?.button.label}
+                            <Icon icon="solar:arrow-right-bold" />
+                        </Link>
+                    )}
+                </div>
+            )}
         </div>
     );
 };

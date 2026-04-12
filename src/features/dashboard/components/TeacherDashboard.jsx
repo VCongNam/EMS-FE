@@ -1,14 +1,55 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import DashboardStatCards from './DashboardStatCards';
 import DashboardActionHub from './DashboardActionHub';
 import DashboardDeadlines from './DashboardDeadlines'; // It's actually the List view now
 import DashboardRecentNotifications from './DashboardRecentNotifications';
 import useAuthStore from '../../../store/authStore';
+import { notificationService } from '../../notifications/api/notificationService';
 
 const TeacherDashboard = () => {
     const { user } = useAuthStore();
-    const userName = user?.name || 'Giáo viên';
+    const token = user?.token;
+    const userName = (user?.fullName || 'Giáo viên').split(' ').pop();
+    const navigate = useNavigate();
+
+    const [notifications, setNotifications] = useState([]);
+
+    useEffect(() => {
+        const fetchRecentNotifications = async () => {
+            if (!token) return;
+            try {
+                const response = await notificationService.getNotifications(token);
+                if (response.ok) {
+                    const data = await response.json();
+                    setNotifications(data.slice(0, 3)); // Only show top 3
+                }
+            } catch (error) {
+                console.error('Failed to fetch dashboard notifications:', error);
+            }
+        };
+        fetchRecentNotifications();
+    }, [token]);
+
+    const handleNotificationClick = async (notif) => {
+        // Mark as read in UI
+        if (notif.isRead === false) {
+            setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, isRead: true } : n));
+            try {
+                await notificationService.markAsRead(notif.id, token);
+            } catch (error) {
+                console.error('Error marking as read:', error);
+            }
+        }
+        
+        // Navigate
+        if (notif.actionUrl) {
+            navigate(notif.actionUrl);
+        } else {
+            navigate('/notifications');
+        }
+    };
 
     // Mock Data for Teacher
     const MOCK_TEACHER_NEXT_CLASS = { subject: 'Giải tích 1 (SE1701)', time: '14:00 - 15:30', room: 'P.302' };
@@ -49,11 +90,6 @@ const TeacherDashboard = () => {
         { id: 1, title: 'Giải tích 1 (SE1701)', subtitle: 'P.302', rightText: 'Hôm nay, 14:00', statusColor: '!bg-red-500', actionIcon: 'solar:users-group-two-rounded-bold-duotone' },
         { id: 2, title: 'Vật lý Đại cương (SE1702)', subtitle: 'P.105', rightText: 'Ngày mai, 08:00', statusColor: '!bg-orange-500', actionIcon: 'solar:users-group-two-rounded-bold-duotone' },
         { id: 3, title: 'Triết học Mác-Lênin (SE1703)', subtitle: 'Hội trường A', rightText: 'Thứ 4, 13:00', statusColor: '!bg-emerald-500', actionIcon: 'solar:users-group-two-rounded-bold-duotone' },
-    ];
-
-    const TEACHER_NOTIFS = [
-        { id: 1, type: 'Alert', content: 'Học sinh Nguyễn Văn A nộp trễ bài tập môn Giải tích', time: '10 phút trước', icon: 'solar:danger-bold-duotone', color: '!text-red-500' },
-        { id: 2, type: 'System', content: 'Có 15 bài kiểm tra Vật lý vừa được nộp', time: '1 giờ trước', icon: 'solar:document-bold-duotone', color: '!text-orange-500' },
     ];
 
     return (
@@ -128,7 +164,8 @@ const TeacherDashboard = () => {
                 <DashboardRecentNotifications 
                     title="Thông báo sinh viên"
                     icon="solar:bell-bing-bold-duotone"
-                    notifications={TEACHER_NOTIFS}
+                    notifications={notifications}
+                    onNotificationClick={handleNotificationClick}
                     viewAllLink="/notifications"
                 />
             </div>

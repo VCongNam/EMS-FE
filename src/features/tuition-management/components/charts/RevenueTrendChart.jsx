@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
-    AreaChart, 
-    Area, 
+    BarChart, 
+    Bar, 
     XAxis, 
     YAxis, 
     CartesianGrid, 
@@ -39,16 +39,10 @@ const RevenueTrendChart = ({ data = MOCK_DATA }) => {
     return (
         <div className="!h-[350px] !w-full">
             <ResponsiveContainer width="100%" height="100%">
-                <AreaChart
+                <BarChart
                     data={data}
                     margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
                 >
-                    <defs>
-                        <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#355872" stopOpacity={0.15}/>
-                            <stop offset="95%" stopColor="#355872" stopOpacity={0}/>
-                        </linearGradient>
-                    </defs>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                     <XAxis 
                         dataKey="name" 
@@ -63,17 +57,14 @@ const RevenueTrendChart = ({ data = MOCK_DATA }) => {
                         tick={{ fontSize: 11, fontWeight: 700, fill: '#64748b' }}
                         tickFormatter={(value) => `${value / 1000000}M`}
                     />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Area 
-                        type="monotone" 
+                    <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
+                    <Bar 
                         dataKey="total" 
-                        stroke="#355872" 
-                        strokeWidth={3}
-                        fillOpacity={1} 
-                        fill="url(#colorTotal)" 
+                        fill="#355872" 
+                        radius={[6, 6, 0, 0]}
                         animationDuration={1500}
                     />
-                </AreaChart>
+                </BarChart>
             </ResponsiveContainer>
         </div>
     );

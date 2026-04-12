@@ -7,6 +7,10 @@ import feature1 from '../../../assets/images/feature1.png';
 import feature2 from '../../../assets/images/feature2.png';
 import feature3 from '../../../assets/images/feature3.png';
 import feature4 from '../../../assets/images/feature4.png';
+import attendance from '../../../assets/images/attendance.png';
+import dash from '../../../assets/images/dash.png';
+import report from '../../../assets/images/report.png';
+import finance from '../../../assets/images/finance.png';
 import FeatureCard from '../components/FeatureCard';
 import StepCard from '../components/StepCard';
 import CTASection from '../../../components/common/CTASection';
@@ -63,7 +67,7 @@ const LandingPage = () => {
 
     const carouselImages = [
         {
-            src: 'https://placehold.co/1280x720/355872/ffffff?text=Trang+Tổng+Quan',
+            src: dash,
             alt: 'Trang tổng quan',
             caption: 'Bảng điều khiển tổng quan — theo dõi mọi thứ trong một màn hình'
         },
@@ -73,17 +77,17 @@ const LandingPage = () => {
             caption: 'Quản lý lớp học — sắp xếp lịch học và phân công giáo viên dễ dàng'
         },
         {
-            src: 'https://placehold.co/1280x720/7AAACE/ffffff?text=Báo+Cáo+Học+Phí',
+            src: finance,
             alt: 'Báo cáo học phí',
             caption: 'Báo cáo học phí — theo dõi doanh thu và lịch sử thanh toán'
         },
         {
-            src: 'https://placehold.co/1280x720/4a6fa5/ffffff?text=Điểm+Danh+Trực+Tuyến',
+            src: attendance,
             alt: 'Điểm danh trực tuyến',
             caption: 'Điểm danh trực tuyến — ghi nhận sự tham gia của học viên tức thì'
         },
         {
-            src: 'https://placehold.co/1280x720/5d8a8a/ffffff?text=Báo+Cáo+Phụ+Huynh',
+            src: report,
             alt: 'Báo cáo phụ huynh',
             caption: 'Báo cáo phụ huynh — tự động gửi tiến độ học tập định kỳ'
         },
