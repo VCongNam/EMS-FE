@@ -2,21 +2,21 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Icon } from '@iconify/react';
 import Modal from '../../../components/common/Modal';
 import useAuthStore from '../../../store/authStore';
-import { tuitionService } from '../api/tuitionService';
+import { tuitionService } from '../api/tuitionServiceStudent';
 import { toast } from 'react-toastify';
 
 const PaymentModal = ({ isOpen, onClose, fee, onSuccess }) => {
     // step 1: QR & Upload, step 2: Success
     const [step, setStep] = useState(1);
-    
+
     const { user } = useAuthStore();
     const [qrData, setQrData] = useState(null);
     const [isLoadingQr, setIsLoadingQr] = useState(false);
-    
+
     const [proofFile, setProofFile] = useState(null);
     const [proofPreview, setProofPreview] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
-    
+
     const fileInputRef = useRef(null);
 
     // Reset and fetch QR when modal opens
@@ -31,7 +31,7 @@ const PaymentModal = ({ isOpen, onClose, fee, onSuccess }) => {
 
     const fetchQrCode = async () => {
         const targetInvoiceId = fee.invoiceId || fee.id;
-        
+
         if (!targetInvoiceId || targetInvoiceId === 'undefined') {
             console.error("Missing invoiceId for payment:", fee);
             toast.error("Không tìm thấy mã hóa đơn hợp lệ");
@@ -77,7 +77,7 @@ const PaymentModal = ({ isOpen, onClose, fee, onSuccess }) => {
             toast.error("Vui lòng tải lên ảnh minh chứng giao dịch");
             return;
         }
-        
+
         try {
             setIsUploading(true);
             const targetInvoiceId = fee.invoiceId || fee.id;
@@ -111,7 +111,7 @@ const PaymentModal = ({ isOpen, onClose, fee, onSuccess }) => {
                             <h3 className="!text-xl !font-black !text-text-main">Thanh toán với VietQR</h3>
                             <p className="!text-sm !font-medium !text-text-muted !mt-1">Sử dụng Ứng dụng Ngân hàng để quét mã</p>
                         </div>
-                        
+
                         {/* QR Display */}
                         <div className="!relative !mx-auto !w-64 !h-64 !p-4 !bg-white !border-2 !border-primary/20 !rounded-3xl !shadow-xl !flex !items-center !justify-center !overflow-hidden">
                             {isLoadingQr ? (
@@ -148,16 +148,16 @@ const PaymentModal = ({ isOpen, onClose, fee, onSuccess }) => {
                         {/* Upload Proof Area */}
                         <div>
                             <p className="!text-sm !font-black !text-text-main !mb-2">Ảnh minh chứng giao dịch</p>
-                            <input 
-                                type="file" 
-                                accept="image/*" 
-                                className="!hidden" 
+                            <input
+                                type="file"
+                                accept="image/*"
+                                className="!hidden"
                                 ref={fileInputRef}
                                 onChange={handleFileChange}
                             />
-                            
+
                             {!proofPreview ? (
-                                <button 
+                                <button
                                     onClick={() => fileInputRef.current?.click()}
                                     className="!w-full !p-6 !border-2 !border-dashed !border-border !rounded-2xl !flex !flex-col !items-center !justify-center hover:!border-primary/50 hover:!bg-primary/5 !transition-all !group"
                                 >
@@ -171,14 +171,14 @@ const PaymentModal = ({ isOpen, onClose, fee, onSuccess }) => {
                                 <div className="!relative !w-full !h-32 !border !border-border !rounded-2xl !overflow-hidden !group">
                                     <img src={proofPreview} alt="Proof preview" className="!w-full !h-full !object-cover" />
                                     <div className="!absolute !inset-0 !bg-black/40 !opacity-0 group-hover:!opacity-100 !transition-opacity !flex !items-center !justify-center !gap-3">
-                                        <button 
+                                        <button
                                             onClick={() => fileInputRef.current?.click()}
                                             className="!w-10 !h-10 !rounded-full !bg-white/90 !text-primary !flex !items-center !justify-center hover:!bg-white"
                                             title="Tải ảnh khác"
                                         >
                                             <Icon icon="solar:camera-add-bold-duotone" className="!text-xl" />
                                         </button>
-                                        <button 
+                                        <button
                                             onClick={() => { setProofPreview(null); setProofFile(null); }}
                                             className="!w-10 !h-10 !rounded-full !bg-danger/90 !text-white !flex !items-center !justify-center hover:!bg-danger"
                                             title="Xóa ảnh"
@@ -192,13 +192,13 @@ const PaymentModal = ({ isOpen, onClose, fee, onSuccess }) => {
 
                         {/* Footer Controls */}
                         <div className="!flex !items-center !gap-3 !pt-2">
-                            <button 
+                            <button
                                 onClick={onClose}
                                 className="!flex-1 !px-6 !py-3.5 !bg-background !text-text-muted !rounded-xl !text-sm !font-black hover:!bg-border !transition-all"
                             >
                                 Hủy bỏ
                             </button>
-                            <button 
+                            <button
                                 onClick={handleComplete}
                                 disabled={isUploading || !proofFile}
                                 className="!flex-[2] !px-6 !py-3.5 !bg-primary !text-white !rounded-xl !text-sm !font-black !shadow-lg !shadow-primary/20 hover:!bg-primary/90 !transition-all disabled:!opacity-50 !flex !items-center !justify-center !gap-2"
@@ -224,9 +224,9 @@ const PaymentModal = ({ isOpen, onClose, fee, onSuccess }) => {
                         </div>
                         <div>
                             <h3 className="!text-2xl !font-black !text-text-main">Thanh toán Thành công!</h3>
-                            <p className="!text-sm !font-medium !text-text-muted !mt-2">Ảnh minh chứng đã được gửi thành công.<br/>Chúng tôi sẽ xác nhận trong thời gian sớm nhất.</p>
+                            <p className="!text-sm !font-medium !text-text-muted !mt-2">Ảnh minh chứng đã được gửi thành công.<br />Chúng tôi sẽ xác nhận trong thời gian sớm nhất.</p>
                         </div>
-                        <button 
+                        <button
                             onClick={onClose} // Về cơ bản khi close có thể call reload data ở page ngoài cũng đc
                             className="!px-10 !py-3.5 !bg-primary !text-white !rounded-xl !text-sm !font-black !shadow-lg !shadow-primary/20 hover:!bg-primary/90 !transition-all"
                         >

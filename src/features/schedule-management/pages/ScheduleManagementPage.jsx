@@ -89,108 +89,221 @@ const LessonCard = ({ lesson, onEdit, onDelete }) => {
 
 // --- Week View ---
 const WeekView = ({ weekStart, lessons, onEdit, onDelete }) => {
-    const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
     const today = toDateStr(new Date());
+    const [selectedDateStr, setSelectedDateStr] = useState(today);
+
+    // Auto-select today if in the week, or the first day
+    useEffect(() => {
+        const currentDays = Array.from({ length: 7 }, (_, i) => toDateStr(addDays(weekStart, i)));
+        if (!currentDays.includes(selectedDateStr)) {
+            if (currentDays.includes(today)) {
+                setSelectedDateStr(today);
+            } else {
+                setSelectedDateStr(currentDays[0]);
+            }
+        }
+    }, [weekStart, today, selectedDateStr]);
+
+    const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+    const selectedLessons = lessons
+        .filter(l => l.date === selectedDateStr)
+        .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
     return (
-        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 !gap-3">
-            {days.map((day, i) => {
-                const ds = toDateStr(day);
-                const isToday = ds === today;
-                const dayLessons = lessons
-                    .filter(l => l.date === ds)
-                    .sort((a, b) => a.startTime.localeCompare(b.startTime));
+        <div className="!space-y-6">
+            {/* Tabs Row */}
+            <div className="grid grid-cols-7 !gap-2 sm:!gap-4">
+                {days.map((day, i) => {
+                    const ds = toDateStr(day);
+                    const isToday = ds === today;
+                    const isSelected = ds === selectedDateStr;
+                    const dayLessons = lessons.filter(l => l.date === ds);
+                    const dots = [...new Set(dayLessons.map(l => l.color))].slice(0, 3); // Max 3 dots
 
-                return (
-                    <div key={`col-${i}`} className="flex flex-col h-full border border-border rounded-xl bg-surface/30 !pb-2 overflow-hidden shadow-sm">
-                        {/* Day Header */}
-                        <div className={`text-center !py-3 border-b flex flex-col items-center justify-center ${isToday ? 'bg-primary/5 border-primary/30' : 'border-border bg-surface'}`}>
-                            <p className={`text-xs font-bold uppercase tracking-wider !mb-1 ${isToday ? 'text-primary' : 'text-text-muted'}`}>
+                    return (
+                        <button 
+                            key={`tab-${i}`}
+                            onClick={() => setSelectedDateStr(ds)}
+                            className={`flex flex-col items-center justify-center !py-3 sm:!py-4 rounded-xl border transition-all ${
+                                isSelected 
+                                ? 'bg-primary border-primary shadow-lg shadow-primary/30 transform scale-[1.02] relative z-10' 
+                                : 'bg-surface border-border hover:border-primary/40 hover:bg-background'
+                            }`}
+                        >
+                            <p className={`text-[10px] sm:text-xs font-bold uppercase tracking-wider !mb-1 ${isSelected ? 'text-white/90' : isToday ? 'text-primary' : 'text-text-muted'}`}>
                                 {WEEKDAYS_VN[i]}
                             </p>
-                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-extrabold text-sm transition-all ${
-                                isToday ? 'bg-primary text-white shadow-md shadow-primary/30' : 'text-text-main bg-background border border-border'
-                            }`}>
+                            <div className={`text-lg sm:text-xl font-extrabold ${isSelected ? 'text-white' : 'text-text-main'}`}>
                                 {day.getDate()}
                             </div>
-                        </div>
+                            
+                            {/* Dots Indicator */}
+                            <div className="flex gap-1 h-1.5 mt-2">
+                                {dayLessons.length > 0 ? (
+                                    dots.map((color, idx) => (
+                                        <div key={idx} className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-white' : COLOR_MAP[color].dot}`} />
+                                    ))
+                                ) : (
+                                    <div className="w-1.5 h-1.5 rounded-full opacity-0" /> // spacer
+                                )}
+                            </div>
+                        </button>
+                    );
+                })}
+            </div>
 
-                        {/* Lessons List */}
-                        <div className="flex-1 !p-2 !space-y-2 mt-1">
-                            {dayLessons.map(lesson => (
-                                <LessonCard key={lesson.id} lesson={lesson} onEdit={onEdit} onDelete={onDelete} />
-                            ))}
-                            {dayLessons.length === 0 && (
-                                <div className="h-16 rounded-xl border-2 border-dashed border-border flex items-center justify-center opacity-50">
-                                    <Icon icon="solar:sleeping-bold-duotone" className="text-xl text-text-muted" />
-                                </div>
-                            )}
-                        </div>
+            {/* Selected Day Classes */}
+            <div className="bg-background rounded-[2rem] border border-border !p-6 shadow-inner min-h-[300px]">
+                <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                        <Icon icon="solar:calendar-mark-bold-duotone" className="text-xl" />
                     </div>
-                );
-            })}
+                    <div>
+                        <h3 className="text-lg font-bold text-text-main">
+                            Lịch dạy {new Date(selectedDateStr).toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' })}
+                        </h3>
+                        <p className="text-xs text-text-muted mt-0.5">
+                            {selectedLessons.length > 0 ? `Có ${selectedLessons.length} ca học trong ngày này.` : 'Không có ca học nào được xếp lịch.'}
+                        </p>
+                    </div>
+                </div>
+
+                {selectedLessons.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 !gap-4 animate-fade-in-up">
+                        {selectedLessons.map(lesson => (
+                            <LessonCard key={lesson.id} lesson={lesson} onEdit={onEdit} onDelete={onDelete} />
+                        ))}
+                    </div>
+                ) : (
+                    <div className="flex flex-col items-center justify-center py-20 text-text-muted opacity-60">
+                         <Icon icon="solar:sleeping-bold-duotone" className="text-5xl mb-3" />
+                         <p className="text-sm font-semibold">Trống lịch! Bạn có thể thoải mái thư giãn.</p>
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
 
 // --- Month View ---
 const MonthView = ({ year, month, lessons, onEdit, onDelete }) => {
+    const today = toDateStr(new Date());
+    const [selectedDateStr, setSelectedDateStr] = useState(today);
+
+    useEffect(() => {
+        const selDate = new Date(selectedDateStr);
+        if (selDate.getFullYear() !== year || selDate.getMonth() !== month) {
+            const tDate = new Date(today);
+            if (tDate.getFullYear() === year && tDate.getMonth() === month) {
+                setSelectedDateStr(today);
+            } else {
+                setSelectedDateStr(toDateStr(new Date(year, month, 1)));
+            }
+        }
+    }, [year, month, today, selectedDateStr]);
+
     const firstDay = new Date(year, month, 1);
     const lastDay  = new Date(year, month + 1, 0);
-    // Monday-first grid
     let startOffset = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
-    const today = toDateStr(new Date());
 
     const cells = [];
-    // leading blanks
     for (let i = 0; i < startOffset; i++) cells.push(null);
-    // days
     for (let d = 1; d <= lastDay.getDate(); d++) cells.push(new Date(year, month, d));
 
-    // chunk into weeks
     const weeks = [];
     for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
 
+    const selectedLessons = lessons
+        .filter(l => l.date === selectedDateStr)
+        .sort((a, b) => a.startTime.localeCompare(b.startTime));
+
     return (
-        <div className="!space-y-1">
-            {/* Header */}
-            <div className="grid grid-cols-7 !mb-2">
-                {WEEKDAYS_VN.map(d => (
-                    <div key={d} className="text-center text-xs font-bold text-text-muted uppercase tracking-wider !py-2 bg-surface rounded-lg">{d}</div>
-                ))}
+        <div className="flex flex-col xl:flex-row !gap-6">
+            {/* Grid */}
+            <div className="flex-1 xl:w-2/3 bg-background rounded-[2rem] !p-6 border border-border shadow-inner">
+                <div className="grid grid-cols-7 !mb-4">
+                    {WEEKDAYS_VN.map(d => (
+                        <div key={d} className="text-center text-xs font-bold text-text-muted uppercase tracking-wider">{d}</div>
+                    ))}
+                </div>
+
+                <div className="grid grid-cols-7 !gap-2">
+                    {weeks.map((week, wi) => (
+                        <React.Fragment key={wi}>
+                            {(week.length < 7 ? [...week, ...Array(7 - week.length).fill(null)] : week).map((day, di) => {
+                                if (!day) return <div key={`empty-${wi}-${di}`} className="min-h-[60px] sm:min-h-[80px] rounded-xl bg-surface/30" />;
+                                
+                                const ds = toDateStr(day);
+                                const isToday = ds === today;
+                                const isSelected = ds === selectedDateStr;
+                                const dayLessons = lessons.filter(l => l.date === ds);
+                                const dots = [...new Set(dayLessons.map(l => l.color))].slice(0, 3); // Max 3 dots
+
+                                return (
+                                    <button 
+                                        key={`day-${di}`}
+                                        onClick={() => setSelectedDateStr(ds)}
+                                        className={`flex flex-col min-h-[60px] sm:min-h-[80px] rounded-xl border !p-2 items-center transition-all ${
+                                            isSelected 
+                                            ? 'border-primary ring-2 ring-primary/20 bg-primary/5 shadow-sm transform scale-[1.02] relative z-10' 
+                                            : 'border-border bg-surface hover:border-primary/50 hover:bg-background'
+                                        }`}
+                                    >
+                                        <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold ${
+                                            isSelected ? 'bg-primary text-white shadow-md' : isToday ? 'text-primary bg-primary/10' : 'text-text-main'
+                                        }`}>
+                                            {day.getDate()}
+                                        </div>
+                                        <div className="flex gap-1 mt-auto pb-1 h-2">
+                                            {dayLessons.length > 0 ? (
+                                                dots.map((color, idx) => (
+                                                    <div key={idx} className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-white' : COLOR_MAP[color].dot}`} />
+                                                ))
+                                            ) : (
+                                                <div className="w-1.5 h-1.5 rounded-full opacity-0" />
+                                            )}
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </React.Fragment>
+                    ))}
+                </div>
             </div>
 
-            {weeks.map((week, wi) => (
-                <div key={wi} className="grid grid-cols-7 !gap-2">
-                    {(week.length < 7 ? [...week, ...Array(7 - week.length).fill(null)] : week).map((day, di) => {
-                        if (!day) return <div key={di} className="min-h-[120px] rounded-2xl bg-surface/30" />;
-                        
-                        const ds = toDateStr(day);
-                        const isToday = ds === today;
-                        const dayLessons = lessons.filter(l => l.date === ds)
-                            .sort((a, b) => a.startTime.localeCompare(b.startTime));
-
-                        return (
-                            <div key={di}
-                                className={`flex flex-col min-h-[140px] rounded-2xl border !p-2 transition-all ${
-                                    isToday ? 'border-primary shadow-sm bg-primary/5' : 'border-border bg-surface/30 hover:bg-surface'
-                                }`}
-                            >
-                                <div className={`w-7 h-7 shrink-0 rounded-full flex items-center justify-center text-xs font-bold !mb-2 ${
-                                    isToday ? 'bg-primary text-white shadow-md' : 'text-text-main hover:bg-background'
-                                }`}>
-                                    {day.getDate()}
-                                </div>
-                                <div className="flex-1 !space-y-2 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
-                                    {dayLessons.map(lesson => (
-                                        <LessonCard key={lesson.id} lesson={lesson} onEdit={onEdit} onDelete={onDelete} />
-                                    ))}
-                                </div>
-                            </div>
-                        );
-                    })}
+            {/* Selected Day Classes Pane */}
+            <div className="xl:w-1/3 flex flex-col bg-surface rounded-[2rem] border border-border !p-6 shadow-sm min-h-[400px]">
+                <div className="flex items-center justify-between gap-3 mb-6 pb-4 border-b border-border">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                            <Icon icon="solar:calendar-mark-bold-duotone" className="text-xl" />
+                        </div>
+                        <div>
+                            <h3 className="text-base font-bold text-text-main leading-tight tracking-tight">
+                            {new Date(selectedDateStr).toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit' })}
+                            </h3>
+                            <p className="text-xs text-text-muted mt-0.5">
+                                {selectedLessons.length} lớp học
+                            </p>
+                        </div>
+                    </div>
                 </div>
-            ))}
+
+                <div className="flex-1 overflow-y-auto custom-scrollbar !pr-2">
+                    {selectedLessons.length > 0 ? (
+                        <div className="flex flex-col gap-4 animate-fade-in-right">
+                            {selectedLessons.map(lesson => (
+                                <LessonCard key={lesson.id} lesson={lesson} onEdit={onEdit} onDelete={onDelete} />
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center h-full text-text-muted opacity-60 min-h-[200px]">
+                            <Icon icon="solar:sleeping-bold-duotone" className="text-5xl mb-3" />
+                            <p className="text-sm font-semibold">Hiện không có lớp học</p>
+                        </div>
+                    )}
+                </div>
+            </div>
         </div>
     );
 };

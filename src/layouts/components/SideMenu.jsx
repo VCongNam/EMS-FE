@@ -22,7 +22,6 @@ const SideMenu = ({ isOpen, onClose }) => {
             { name: 'Quản lý Lớp học', path: '/teacher/classes', icon: 'material-symbols:school-rounded' },
             { name: 'Quản lý Học sinh', path: '/students', icon: 'material-symbols:group-rounded' },
             { name: 'Quản lý Trợ giảng', path: '/assistants', icon: 'material-symbols:handshake-rounded' },
-            { name: 'Báo cáo tiến độ', path: '/reports', icon: 'material-symbols:analytics-rounded' },
             { name: 'Quản lý Lịch học', path: '/schedule-management', icon: 'solar:calendar-add-bold-duotone' },
             { name: 'Quản lý Học phí', path: '/tuition', icon: 'solar:wallet-money-bold-duotone' },
             { name: 'Thông báo', path: '/notifications', icon: 'material-symbols:circle-notifications-sharp' },

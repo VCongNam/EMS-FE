@@ -8,53 +8,64 @@ const MyTasksPage = () => {
     const [selectedTask, setSelectedTask] = useState(null);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [tasks, setTasks] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
 
-    // Mock Tasks for the current TA (identifying as TA001 for demo)
-    const [tasks, setTasks] = useState([
-        {
-            id: 'TASK-1',
-            title: 'Chấm 40 bài tập lớn',
-            description: 'Chấm điểm và ghi chú lỗi sai cho sinh viên lớp Toán Cao Cấp. Chú ý các bài nộp muộn.',
-            assignedTo: 'TA001',
-            classId: 'MATH101',
-            deadline: '2026-03-25',
-            priority: 'high',
-            status: 'todo'
-        },
-        {
-            id: 'TASK-2',
-            title: 'Soạn slide ôn tập chương 3',
-            description: 'Tổng hợp lại lý thuyết chương 3 theo giáo trình mới. Tập trung vào phần Đạo hàm và Tích phân.',
-            assignedTo: 'TA001',
-            classId: 'MATH101',
-            deadline: '2026-03-28',
-            priority: 'medium',
-            status: 'in_progress'
-        },
-        {
-            id: 'TASK-4',
-            title: 'Hỗ trợ giải đáp thắc mắc Lab 2',
-            description: 'Trực tuyến trên MS Teams để trả lời câu hỏi của sinh viên về bài Lab 2: Cài đặt môi trường.',
-            assignedTo: 'TA001',
-            classId: 'CS101',
-            deadline: '2026-03-22',
-            priority: 'high',
-            status: 'done'
-        },
-        {
-            id: 'TASK-5',
-            title: 'Kiểm tra sĩ số đầu giờ',
-            description: 'Ghi lại danh sách sinh viên vắng mặt không phép.',
-            assignedTo: 'TA001',
-            classId: 'CS101',
-            deadline: '2026-03-30',
-            priority: 'low',
-            status: 'todo'
+    const fetchTasks = async () => {
+        if (!user?.taId || !user?.token) {
+            setIsLoading(false);
+            return;
         }
-    ]);
+        
+        try {
+            setIsLoading(true);
+            const res = await taService.getMyTasks(user.taId, user.token);
+            if (res.ok) {
+                const json = await res.json();
+                const rawTasks = json.data || (Array.isArray(json) ? json : []);
+                
+                // Map backend tasks to frontend structure
+                const mappedTasks = rawTasks.map(t => {
+                    let mappedStatus = 'todo';
+                    const beStatus = (t.status || '').toLowerCase();
+                    if (beStatus === 'pending' || beStatus === 'todo' || beStatus === 'open') {
+                        mappedStatus = 'todo';
+                    } else if (beStatus === 'in progress' || beStatus === 'in_progress' || beStatus === 'processing') {
+                        mappedStatus = 'in_progress';
+                    } else if (beStatus === 'done' || beStatus === 'completed' || beStatus === 'finished') {
+                        mappedStatus = 'done';
+                    }
 
-    const handleUpdateStatus = (taskId, newStatus) => {
+                    return {
+                        id: t.taTaskID || t.id,
+                        title: t.title,
+                        description: t.description || '', // Fallback if missing
+                        assignedTo: user.taId,
+                        classId: t.className || t.classId || 'N/A', // Display class info if available
+                        deadline: t.dueDate || t.deadline,
+                        priority: t.priority?.toLowerCase() || 'medium', // Use backend priority if exists
+                        status: mappedStatus,
+                        type: t.type
+                    };
+                });
+                
+                setTasks(mappedTasks);
+            }
+        } catch (error) {
+            console.error("Error fetching TA tasks:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    React.useEffect(() => {
+        fetchTasks();
+    }, [user?.taId]);
+
+    const handleUpdateStatus = async (taskId, newStatus) => {
+        // Optimistic update
         setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
+        // TODO: Call API to update status if backend supports it
     };
 
     const handleViewDetail = (task) => {
@@ -72,7 +83,7 @@ const MyTasksPage = () => {
     };
 
     const Column = ({ title, status, icon, colorClass }) => {
-        const filteredTasks = tasks.filter(t => t.status === status && t.title.toLowerCase().includes(searchQuery.toLowerCase()));
+        const filteredTasks = tasks.filter(t => t.status === status && (t.title || '').toLowerCase().includes(searchQuery.toLowerCase()));
         
         return (
             <div className="flex flex-col !bg-background/50 rounded-[2rem] border border-border/50 min-h-[400px]">
@@ -103,17 +114,23 @@ const MyTasksPage = () => {
                                     {getPriorityBadge(task.priority)}
                                 </div>
                                 
-                                {task.classId && (
+                                <div className="flex flex-col !gap-2">
                                     <div className="flex items-center gap-1.5 text-[11px] font-semibold text-primary !bg-primary/5 !px-2 !py-1 rounded-lg border border-primary/10 w-fit">
                                         <Icon icon="material-symbols:school-outline-rounded" />
                                         <span>Lớp: {task.classId}</span>
                                     </div>
-                                )}
+                                    {task.type && (
+                                        <div className="flex items-center gap-1.5 text-[11px] font-semibold text-purple-600 !bg-purple-500/5 !px-2 !py-1 rounded-lg border border-purple-500/10 w-fit">
+                                            <Icon icon="solar:tag-linear" />
+                                            <span>Loại: {task.type}</span>
+                                        </div>
+                                    )}
+                                </div>
 
                                 <div className="flex items-center justify-between !pt-2 border-t border-border/50">
                                     <div className="flex items-center gap-1.5 text-xs text-text-muted font-medium !bg-background !px-2 !py-1 rounded-lg border border-border/50">
                                         <Icon icon="material-symbols:calendar-today-outline" className="text-primary/70" />
-                                        {new Date(task.deadline).toLocaleDateString('vi-VN', {day:'2-digit', month:'2-digit'})}
+                                        {task.deadline ? new Date(task.deadline).toLocaleDateString('vi-VN', {day:'2-digit', month:'2-digit'}) : 'Chưa có hạn'}
                                     </div>
                                     <div className="w-7 h-7 rounded-full !bg-primary/10 flex items-center justify-center text-primary opacity-0 group-hover:opacity-100 transition-opacity">
                                         <Icon icon="material-symbols:arrow-forward-rounded" />
@@ -159,26 +176,33 @@ const MyTasksPage = () => {
             </div>
 
             {/* Kanban Board */}
-            <div className="grid grid-cols-1 md:grid-cols-3 !gap-6">
-                <Column 
-                    title="Cần làm" 
-                    status="todo" 
-                    icon="material-symbols:format-list-bulleted-rounded" 
-                    colorClass="!bg-slate-500/10 text-slate-500" 
-                />
-                <Column 
-                    title="Đang làm" 
-                    status="in_progress" 
-                    icon="material-symbols:calendar-clock" 
-                    colorClass="!bg-amber-500/10 text-amber-500" 
-                />
-                <Column 
-                    title="Hoàn thành" 
-                    status="done" 
-                    icon="material-symbols:check-circle-outline-rounded" 
-                    colorClass="!bg-green-500/10 text-green-500" 
-                />
-            </div>
+            {isLoading ? (
+                <div className="flex flex-col items-center justify-center !py-40 !gap-4">
+                    <Icon icon="solar:spinner-linear" className="animate-spin text-5xl text-primary" />
+                    <p className="text-text-muted font-bold">Đang tải nhiệm vụ...</p>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 !gap-6">
+                    <Column 
+                        title="Cần làm" 
+                        status="todo" 
+                        icon="material-symbols:format-list-bulleted-rounded" 
+                        colorClass="!bg-slate-500/10 text-slate-500" 
+                    />
+                    <Column 
+                        title="Đang làm" 
+                        status="in_progress" 
+                        icon="material-symbols:calendar-clock" 
+                        colorClass="!bg-amber-500/10 text-amber-500" 
+                    />
+                    <Column 
+                        title="Hoàn thành" 
+                        status="done" 
+                        icon="material-symbols:check-circle-outline-rounded" 
+                        colorClass="!bg-green-500/10 text-green-500" 
+                    />
+                </div>
+            )}
 
             <TaskDetailModal 
                 isOpen={isDetailModalOpen}

@@ -84,6 +84,8 @@ const TeacherClassListPage = () => {
                 return {
                     id: apiClass.classId,
                     name: apiClass.className,
+                    subjectName: apiClass.subjectName || 'N/A',
+                    gradeLevel: apiClass.gradeLevel || 'N/A',
                     code: apiClass.room || 'N/A', // Lấy tạm room làm mã phụ
                     status: mappedStatus,
                     createdAt: apiClass.startDate || 'N/A',
@@ -126,29 +128,7 @@ const TeacherClassListPage = () => {
         setViewClass(classData);
     };
 
-    const handleSaveClass = async (formData) => {
-        // Mapping sang JSON Backend yêu cầu (dùng chung cho cả Tạo mới và Cập nhật)
-        const payload = {
-            className: formData.className,
-            room: formData.room || "",
-            startDate: parseDate(formData.startDate),
-            tuitionFee: formData.tuitionFee ? parseInt(formData.tuitionFee) : 0,
-            maxStudents: formData.maxCapacity ? parseInt(formData.maxCapacity) : 0,
-            subjectName: formData.subject,
-            gradeLevel: parseInt(formData.gradeLevel.replace(/\D/g, '')) || parseInt(formData.gradeLevel) || 0,
-            schedules: formData.schedules && formData.schedules.length > 0
-                ? formData.schedules.map(schedule => ({
-                    dayOfWeek: mapDaysToIso([schedule.day])[0],
-                    startTime: parseTime(schedule.startTime),
-                    endTime: parseTime(schedule.endTime)
-                }))
-                : []
-        };
-
-        if (formData.endDate) {
-            payload.endDate = parseDate(formData.endDate);
-        }
-
+    const handleSaveClass = async (payload) => {
         try {
             const token = useAuthStore.getState().user?.token;
             if (!token) return toast.error('Vui lòng đăng nhập lại!');
