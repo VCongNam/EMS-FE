@@ -28,8 +28,14 @@ const useAuthStore = create(
                         else if (rawRole === "Admin") role = "admin";
                         else if (rawRole === "Student") role = "student";
                         
+                        const decoded = jwtDecode(token);
+                        const studentIdFromToken = decoded["StudentId"] || decoded["studentId"] || decoded["student_id"];
+                        const taIdFromToken = decoded["TeachingAssistantId"] || decoded["TAId"] || decoded["taId"] || decoded["AssistantId"];
+
                         const userData = {
-                            id: loginResponse.accountId,
+                            id: loginResponse.accountId || decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"],
+                            studentId: loginResponse.studentId || studentIdFromToken || null,
+                            taId: loginResponse.taId || taIdFromToken || null,
                             email: loginResponse.email,
                             fullName: loginResponse.fullName,
                             avatarUrl: loginResponse.avatarUrl || null,

@@ -1,16 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { toast } from 'react-toastify';
+import useAuthStore from '../../../store/authStore';
 
-const AcademicReportModal = ({ isOpen, onClose, onSave, defaultClass, editData, month, year }) => {
+const AcademicReportModal = ({ isOpen, onClose, onSave, defaultClass, editData, month, year, className }) => {
+    const { user } = useAuthStore();
+    const isStudent = user?.role === 'student';
+
     const [evaluation, setEvaluation] = useState('');
     const [selectedClass, setSelectedClass] = useState(defaultClass || 'TC101');
     const [selectedPeriod, setSelectedPeriod] = useState(`Tháng ${month?.toString().padStart(2, '0')}/${year}`);
     const [selectedStudent, setSelectedStudent] = useState('');
 
-    const isEdit = !!editData;
+    const isEdit = !!editData?.reportId;
 
-    // Effect to pre-fill data when editing
+    // Effect to pre-fill data when editing or creating for a specific student
     useEffect(() => {
         if (isOpen) {
             const periodStr = `Tháng ${month?.toString().padStart(2, '0')}/${year}`;
@@ -43,7 +47,7 @@ const AcademicReportModal = ({ isOpen, onClose, onSave, defaultClass, editData, 
             reportId: isEdit ? editData.reportId : null,
             title: reportTitle,
             studentId: isEdit ? editData.studentId : selectedStudent,
-            studentName: isEdit ? editData.studentName : (selectedStudent === 'SV001' ? 'Nguyễn Văn A' : 'Trần Thị B'),
+            studentName: isEdit || editData?.studentName ? editData.studentName : (selectedStudent === 'SV001' ? 'Nguyễn Văn A' : 'Trần Thị B'),
             classId: selectedClass,
             periodMonth: month,
             periodYear: year,
@@ -72,10 +76,10 @@ const AcademicReportModal = ({ isOpen, onClose, onSave, defaultClass, editData, 
                         </div>
                         <div>
                             <h2 className="!text-lg sm:!text-2xl !font-black !text-text-main !tracking-tight">
-                                {isEdit ? 'Chỉnh sửa báo cáo' : 'Khởi tạo báo cáo'}
+                                {isStudent ? 'Chi tiết báo cáo' : (isEdit ? 'Chỉnh sửa báo cáo' : 'Khởi tạo báo cáo')}
                             </h2>
                             <p className="!text-[11px] sm:!text-sm !text-text-muted !mt-0.5 sm:!mt-1 !font-medium">
-                                {isEdit ? `Đang chỉnh sửa cho ${editData.studentName}` : `Tạo báo cáo mới cho học sinh.`}
+                                {isStudent ? `Báo cáo học tập cá nhân của bạn` : (isEdit ? `Đang chỉnh sửa cho ${editData.studentName}` : `Tạo báo cáo mới cho học sinh.`)}
                             </p>
                         </div>
                     </div>
@@ -100,7 +104,7 @@ const AcademicReportModal = ({ isOpen, onClose, onSave, defaultClass, editData, 
                                         disabled={true}
                                         className="!w-full !px-4 !py-4 !bg-background !border !border-border !rounded-2xl !font-bold !text-text-main !outline-none !appearance-none disabled:!opacity-60"
                                     >
-                                        <option value={selectedClass}>{selectedClass}</option>
+                                        <option value={selectedClass}>{className || selectedClass}</option>
                                     </select>
                                     <Icon icon="material-symbols:lock-outline-rounded" className="!absolute !right-4 !top-1/2 !-translate-y-1/2 !text-text-muted !text-xl" />
                                 </div>
@@ -151,8 +155,9 @@ const AcademicReportModal = ({ isOpen, onClose, onSave, defaultClass, editData, 
                             <textarea 
                                 value={evaluation}
                                 onChange={(e) => setEvaluation(e.target.value)}
-                                placeholder="Nhập nội dung đánh giá dành cho học sinh... (Nội dung sẽ hiển thị ngay ở phần xem trước bên phải)"
-                                className="!w-full !px-5 !py-4 !bg-background !border !border-border !rounded-2xl !text-base !font-medium !focus:border-primary !outline-none !h-48 !resize-none custom-scrollbar shadow-inner"
+                                disabled={isStudent}
+                                placeholder={isStudent ? "" : "Nhập nội dung đánh giá dành cho học sinh... (Nội dung sẽ hiển thị ngay ở phần xem trước bên phải)"}
+                                className="!w-full !px-5 !py-4 !bg-background !border !border-border !rounded-2xl !text-base !font-medium !focus:border-primary !outline-none !h-48 !resize-none custom-scrollbar shadow-inner disabled:!bg-white disabled:!italic"
                             />
                         </div>
                     </div>
@@ -183,13 +188,13 @@ const AcademicReportModal = ({ isOpen, onClose, onSave, defaultClass, editData, 
                                     <div>
                                         <p className="!text-[10px] !font-black !text-text-muted !uppercase !tracking-widest">Học sinh</p>
                                         <p className="!text-base !font-bold !text-text-main !mt-1">
-                                            {isEdit ? editData.studentName : (selectedStudent === 'SV001' ? 'Nguyễn Văn A' : 'Trần Thị B')}
+                                            {isEdit || editData?.studentName ? editData.studentName : (selectedStudent === 'SV001' ? 'Nguyễn Văn A' : 'Trần Thị B')}
                                         </p>
                                         <p className="!text-xs !text-text-muted !font-medium">ID: {isEdit ? editData.studentId : selectedStudent}</p>
                                     </div>
                                     <div>
                                         <p className="!text-[10px] !font-black !text-text-muted !uppercase !tracking-widest">Lớp học / Kỳ học</p>
-                                        <p className="!text-base !font-bold !text-text-main !mt-1">{selectedClass}</p>
+                                        <p className="!text-sm !font-bold !text-text-main !mt-1">{className || selectedClass}</p>
                                         <p className="!text-xs !text-text-muted !font-medium">Tháng {month?.toString().padStart(2, '0')}/{year}</p>
                                     </div>
                                 </div>
@@ -241,22 +246,26 @@ const AcademicReportModal = ({ isOpen, onClose, onSave, defaultClass, editData, 
                         onClick={onClose}
                         className="!px-6 sm:!px-8 !py-3 sm:!py-4 !rounded-2xl !text-sm !font-black !text-text-muted hover:!bg-background !transition-all"
                     >
-                        Hủy bỏ
+                        {isStudent ? 'Đóng' : 'Hủy bỏ'}
                     </button>
-                    <button 
-                        onClick={() => handleAction('Draft')}
-                        className="!px-6 sm:!px-8 !py-3 sm:!py-4 !rounded-2xl !bg-amber-500/10 !text-amber-600 !font-black hover:!bg-amber-500 hover:!text-white !transition-all !flex !items-center !gap-2"
-                    >
-                        <Icon icon="material-symbols:draft-orders-outline-rounded" className="!text-xl" />
-                        Lưu nháp
-                    </button>
-                    <button 
-                        onClick={() => handleAction('Sent')}
-                        className="!bg-primary !text-white !px-6 sm:!px-10 !py-3 sm:!py-4 !rounded-2xl !font-black !shadow-xl !shadow-primary/20 hover:!bg-primary/90 !transition-all !flex !items-center !gap-2 sm:!gap-3 hover:scale-[1.02] active:scale-95"
-                    >
-                        <Icon icon="material-symbols:send-rounded" className="!text-xl" />
-                        Gửi báo cáo
-                    </button>
+                    {!isStudent && (
+                        <>
+                            <button 
+                                onClick={() => handleAction('Draft')}
+                                className="!px-6 sm:!px-8 !py-3 sm:!py-4 !rounded-2xl !bg-amber-500/10 !text-amber-600 !font-black hover:!bg-amber-500 hover:!text-white !transition-all !flex !items-center !gap-2"
+                            >
+                                <Icon icon="material-symbols:draft-orders-outline-rounded" className="!text-xl" />
+                                Lưu nháp
+                            </button>
+                            <button 
+                                onClick={() => handleAction('Sent')}
+                                className="!bg-primary !text-white !px-6 sm:!px-10 !py-3 sm:!py-4 !rounded-2xl !font-black !shadow-xl !shadow-primary/20 hover:!bg-primary/90 !transition-all !flex !items-center !gap-2 sm:!gap-3 hover:scale-[1.02] active:scale-95"
+                            >
+                                <Icon icon="material-symbols:send-rounded" className="!text-xl" />
+                                Gửi báo cáo
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
         </div>
