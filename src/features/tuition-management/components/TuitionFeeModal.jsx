@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 
-const FEE_TYPE_OPTIONS = [
-    { value: 'monthly', label: 'Hàng tháng' },
-    { value: 'per_course', label: 'Theo khóa học' },
-    { value: 'per_session', label: 'Theo buổi học' },
-    { value: 'quarterly', label: 'Hàng quý' },
+const BILLING_METHOD_OPTIONS = [
+    { value: 'Prepaid', label: 'Trả trước' },
+    { value: 'Postpaid', label: 'Trả sau' },
 ];
 
 const TuitionFeeModal = ({ isOpen, onClose, onSave, editData = null, classes = [] }) => {
@@ -13,9 +11,9 @@ const TuitionFeeModal = ({ isOpen, onClose, onSave, editData = null, classes = [
 
     const [form, setForm] = useState({
         classId: '',
-        amount: '',
-        feeType: 'monthly',
-        notes: '',
+        tuitionFee: '',
+        billingMethod: 'Postpaid',
+        paymentDeadlineDays: '5',
     });
     const [errors, setErrors] = useState({});
 
@@ -23,13 +21,13 @@ const TuitionFeeModal = ({ isOpen, onClose, onSave, editData = null, classes = [
         if (isOpen) {
             if (isEdit && editData) {
                 setForm({
-                    classId: editData.classId || '',
-                    amount: editData.amount?.toString() || '',
-                    feeType: editData.feeType || 'monthly',
-                    notes: editData.notes || '',
+                    classId: editData.classId || editData.id || '',
+                    tuitionFee: (editData.tuitionFee || editData.pricePerSession)?.toString() || '',
+                    billingMethod: editData.billingMethod || 'Postpaid',
+                    paymentDeadlineDays: editData.paymentDeadlineDays?.toString() || '5',
                 });
             } else {
-                setForm({ classId: classes[0]?.id || '', amount: '', feeType: 'monthly', notes: '' });
+                setForm({ classId: classes[0]?.classId || classes[0]?.id || '', tuitionFee: '', billingMethod: 'Postpaid', paymentDeadlineDays: '5' });
             }
             setErrors({});
         }
@@ -40,8 +38,10 @@ const TuitionFeeModal = ({ isOpen, onClose, onSave, editData = null, classes = [
     const validate = () => {
         const newErrors = {};
         if (!form.classId) newErrors.classId = 'Vui lòng chọn lớp học.';
-        if (!form.amount || isNaN(Number(form.amount)) || Number(form.amount) <= 0)
-            newErrors.amount = 'Số tiền phải là số dương hợp lệ.';
+        if (!form.tuitionFee || isNaN(Number(form.tuitionFee)) || Number(form.tuitionFee) <= 0)
+            newErrors.tuitionFee = 'Đơn giá phải là số dương hợp lệ.';
+        if (!form.paymentDeadlineDays || isNaN(Number(form.paymentDeadlineDays)) || Number(form.paymentDeadlineDays) < 0)
+            newErrors.paymentDeadlineDays = 'Số ngày hạn nộp không hợp lệ.';
         return newErrors;
     };
 
@@ -54,9 +54,9 @@ const TuitionFeeModal = ({ isOpen, onClose, onSave, editData = null, classes = [
         onSave({
             ...(editData || {}),
             classId: form.classId,
-            amount: Number(form.amount),
-            feeType: form.feeType,
-            notes: form.notes,
+            tuitionFee: Number(form.tuitionFee),
+            billingMethod: form.billingMethod,
+            paymentDeadlineDays: Number(form.paymentDeadlineDays),
         });
     };
 
@@ -68,14 +68,14 @@ const TuitionFeeModal = ({ isOpen, onClose, onSave, editData = null, classes = [
                 <div className="!p-6 border-b border-border flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="w-12 h-12 !bg-primary rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20">
-                            <Icon icon="solar:wallet-money-bold-duotone" className="text-white text-2xl" />
+                            <Icon icon="solar:settings-bold-duotone" className="text-white text-2xl" />
                         </div>
                         <div>
                             <h2 className="text-xl font-black text-text-main tracking-tight">
-                                {isEdit ? 'Chỉnh sửa Học phí' : 'Thiết lập Học phí'}
+                                {isEdit ? 'Cài đặt Học phí' : 'Thiết lập Học phí'}
                             </h2>
                             <p className="text-xs text-text-muted !mt-0.5 font-medium">
-                                {isEdit ? `Lớp: ${editData.className}` : 'Cấu hình mức học phí cho lớp học'}
+                                {isEdit ? `Lớp: ${editData.className || editData.name}` : 'Thiết lập luật thu học phí cho lớp'}
                             </p>
                         </div>
                     </div>
@@ -98,7 +98,7 @@ const TuitionFeeModal = ({ isOpen, onClose, onSave, editData = null, classes = [
                             >
                                 <option value="">-- Chọn lớp --</option>
                                 {classes.map(c => (
-                                    <option key={c.id} value={c.id}>{c.name}</option>
+                                    <option key={c.classId || c.id} value={c.classId || c.id}>{c.className || c.name}</option>
                                 ))}
                             </select>
                             <Icon icon="material-symbols:keyboard-arrow-down-rounded" className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted text-xl pointer-events-none" />
@@ -106,38 +106,16 @@ const TuitionFeeModal = ({ isOpen, onClose, onSave, editData = null, classes = [
                         {errors.classId && <p className="text-xs text-red-500 !mt-1 font-medium">{errors.classId}</p>}
                     </div>
 
-                    {/* Amount */}
+                    {/* Billing Method */}
                     <div className="space-y-1.5">
-                        <label className="text-xs font-black text-text-muted uppercase tracking-widest !ml-0.5">Số tiền học phí (₫)</label>
-                        <div className="relative">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted font-black text-sm">₫</span>
-                            <input
-                                type="number"
-                                min="0"
-                                value={form.amount}
-                                onChange={e => setForm(p => ({ ...p, amount: e.target.value }))}
-                                placeholder="VD: 1500000"
-                                className={`w-full !pl-8 !pr-4 !py-3 !bg-background border rounded-xl font-bold text-text-main outline-none transition-all ${errors.amount ? 'border-red-400' : 'border-border focus:border-primary'}`}
-                            />
-                        </div>
-                        {form.amount && !isNaN(Number(form.amount)) && Number(form.amount) > 0 && (
-                            <p className="text-xs text-primary font-bold !mt-1">
-                                ≈ {Number(form.amount).toLocaleString('vi-VN')} ₫
-                            </p>
-                        )}
-                        {errors.amount && <p className="text-xs text-red-500 !mt-1 font-medium">{errors.amount}</p>}
-                    </div>
-
-                    {/* Fee Type */}
-                    <div className="space-y-1.5">
-                        <label className="text-xs font-black text-text-muted uppercase tracking-widest !ml-0.5">Chu kỳ thu phí</label>
+                        <label className="text-xs font-black text-text-muted uppercase tracking-widest !ml-0.5">Hình thức thu phí</label>
                         <div className="relative">
                             <select
-                                value={form.feeType}
-                                onChange={e => setForm(p => ({ ...p, feeType: e.target.value }))}
+                                value={form.billingMethod}
+                                onChange={e => setForm(p => ({ ...p, billingMethod: e.target.value }))}
                                 className="w-full !px-4 !py-3 !bg-background border border-border rounded-xl font-bold text-text-main outline-none transition-all appearance-none focus:border-primary"
                             >
-                                {FEE_TYPE_OPTIONS.map(o => (
+                                {BILLING_METHOD_OPTIONS.map(o => (
                                     <option key={o.value} value={o.value}>{o.label}</option>
                                 ))}
                             </select>
@@ -145,17 +123,45 @@ const TuitionFeeModal = ({ isOpen, onClose, onSave, editData = null, classes = [
                         </div>
                     </div>
 
-                    {/* Notes */}
+                    {/* Amount */}
                     <div className="space-y-1.5">
-                        <label className="text-xs font-black text-text-muted uppercase tracking-widest !ml-0.5">Ghi chú <span className="normal-case font-bold opacity-50">(Tùy chọn)</span></label>
-                        <textarea
-                            value={form.notes}
-                            onChange={e => setForm(p => ({ ...p, notes: e.target.value }))}
-                            placeholder="VD: Học phí đã bao gồm tài liệu học tập..."
-                            rows={3}
-                            className="w-full !px-4 !py-3 !bg-background border border-border rounded-xl text-sm font-medium text-text-main outline-none transition-all resize-none focus:border-primary custom-scrollbar"
-                        />
+                        <label className="text-xs font-black text-text-muted uppercase tracking-widest !ml-0.5">Đơn giá / Buổi (₫)</label>
+                        <div className="relative">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted font-black text-sm">₫</span>
+                            <input
+                                type="number"
+                                min="0"
+                                value={form.tuitionFee}
+                                onChange={e => setForm(p => ({ ...p, tuitionFee: e.target.value }))}
+                                placeholder="VD: 150000"
+                                className={`w-full !pl-8 !pr-4 !py-3 !bg-background border rounded-xl font-bold text-text-main outline-none transition-all ${errors.tuitionFee ? 'border-red-400' : 'border-border focus:border-primary'}`}
+                            />
+                        </div>
+                        {form.tuitionFee && !isNaN(Number(form.tuitionFee)) && Number(form.tuitionFee) > 0 && (
+                            <p className="text-xs text-primary font-bold !mt-1">
+                                ≈ {Number(form.tuitionFee).toLocaleString('vi-VN')} ₫
+                            </p>
+                        )}
+                        {errors.tuitionFee && <p className="text-xs text-red-500 !mt-1 font-medium">{errors.tuitionFee}</p>}
                     </div>
+
+                    {/* Deadline Days */}
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-black text-text-muted uppercase tracking-widest !ml-0.5">Số ngày hạn nộp (Sau khi chốt)</label>
+                        <div className="relative">
+                            <input
+                                type="number"
+                                min="0"
+                                value={form.paymentDeadlineDays}
+                                onChange={e => setForm(p => ({ ...p, paymentDeadlineDays: e.target.value }))}
+                                placeholder="VD: 5"
+                                className={`w-full !px-4 !py-3 !bg-background border rounded-xl font-bold text-text-main outline-none transition-all ${errors.paymentDeadlineDays ? 'border-red-400' : 'border-border focus:border-primary'}`}
+                            />
+                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted font-black text-xs uppercase tracking-widest">Ngày</span>
+                        </div>
+                        {errors.paymentDeadlineDays && <p className="text-xs text-red-500 !mt-1 font-medium">{errors.paymentDeadlineDays}</p>}
+                    </div>
+
                 </div>
 
                 {/* Footer */}
@@ -168,7 +174,7 @@ const TuitionFeeModal = ({ isOpen, onClose, onSave, editData = null, classes = [
                         className="!bg-primary text-white !px-8 !py-2.5 rounded-xl font-black shadow-lg shadow-primary/20 hover:!bg-primary/90 transition-all flex items-center gap-2 active:scale-95"
                     >
                         <Icon icon="material-symbols:save-rounded" className="text-lg" />
-                        {isEdit ? 'Lưu thay đổi' : 'Lưu học phí'}
+                        Lưu cấu hình
                     </button>
                 </div>
             </div>

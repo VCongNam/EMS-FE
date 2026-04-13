@@ -1,54 +1,92 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Icon } from '@iconify/react';
+import useAuthStore from '../../../store/authStore';
+import { notificationService } from '../api/notificationService';
 import NotificationFilters from '../components/NotificationFilters';
 import NotificationItem from '../components/NotificationItem';
 import { showNotification } from '../utils/toastUtils';
+import { toast } from 'react-toastify';
 
-const MOCK_NOTIFICATIONS = [
-    { 
-        id: 1, type: 'teacher', title: 'Bài tập mới: Giải tích 1', content: 'Thầy Hùng vừa đăng bài tập chương 2. Hạn chót nộp bài là thứ 6 tuần này.', 
-        timestamp: '2 phút trước', isRead: false, teacherName: 'Hùng', classId: 'MATH101' 
-    },
-    { 
-        id: 2, type: 'promo', title: 'Ưu đãi hè rực rỡ!', content: 'Giảm ngay 20% học phí cho các khóa học Tiếng Anh cấp tốc khi đăng ký trước ngày 15/10.', 
-        timestamp: '1 giờ trước', isRead: false 
-    },
-    { 
-        id: 3, type: 'system', title: 'Bảo trì hệ thống', content: 'Hệ thống sẽ tạm ngưng hoạt động từ 00:00 đến 02:00 ngày mai để nâng cấp tính năng mới.', 
-        timestamp: '5 giờ trước', isRead: true 
-    },
-    { 
-        id: 4, type: 'teacher', title: 'Kết quả kiểm tra 15p', content: 'Thầy Minh đã cập nhật điểm kiểm tra miệng lớp Vật lý 101. Các em vào xem lại kết quả nhé.', 
-        timestamp: 'Hôm qua', isRead: true, teacherName: 'Minh', classId: 'PHYS101' 
-    },
-    { 
-        id: 5, type: 'promo', title: 'Tặng Voucher 500k', content: 'Chúc mừng bạn đã hoàn thành xuất sắc kỳ thi thử! Nhận ngay voucher mua tài liệu học tập.', 
-        timestamp: '2 ngày trước', isRead: true 
-    },
-];
+const NotificationPage = () => {
+    const navigate = useNavigate();
+    const { user } = useAuthStore();
+    const token = user?.token;
 
-const StudentNotificationPage = () => {
-    const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
+    const [notifications, setNotifications] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
 
+    const fetchNotifications = async () => {
+        if (!token) return;
+        setLoading(true);
+        try {
+            const response = await notificationService.getNotifications(token);
+            if (response.ok) {
+                const data = await response.json();
+                setNotifications(data);
+            } else {
+                toast.error('Không thể tải thông báo');
+            }
+        } catch (error) {
+            console.error('Fetch notifications error:', error);
+            toast.error('Lỗi kết nối máy chủ');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchNotifications();
+    }, [token]);
+
     const filteredNotifications = notifications.filter(notif => {
+        const title = notif.title || '';
+        const message = notif.message || notif.content || '';
+        
         const matchesFilter = filter === 'all' || 
             (filter === 'teacher' && notif.type === 'teacher') || 
             (filter === 'system' && (notif.type === 'system' || notif.type === 'promo'));
             
-        const matchesSearch = notif.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            notif.content.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesSearch = title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            message.toLowerCase().includes(searchQuery.toLowerCase());
             
         return matchesFilter && matchesSearch;
     });
 
-    const handleMarkAsRead = (notifId) => {
-        setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, isRead: true } : n));
+    const handleMarkAsRead = async (notif) => {
+        // Optimistic UI update
+        if (!notif.isRead) {
+            setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, isRead: true } : n));
+            try {
+                await notificationService.markAsRead(notif.id, token);
+            } catch (error) {
+                console.error('Mark as read error:', error);
+            }
+        }
+
+        // Navigate if actionUrl exists
+        if (notif.actionUrl) {
+            navigate(notif.actionUrl);
+        }
     };
 
-    const handleMarkAllRead = () => {
+    const handleMarkAllRead = async () => {
+        // Optimistic UI update
+        const hasUnread = notifications.some(n => !n.isRead);
+        if (!hasUnread) return;
+
         setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+        try {
+            const response = await notificationService.markAllAsRead(token);
+            if (response.ok) {
+                toast.success('Đã đánh dấu tất cả là đã đọc');
+            }
+        } catch (error) {
+            console.error('Mark all read error:', error);
+            toast.error('Không thể cập nhật trạng thái');
+        }
     };
 
     return (
@@ -62,36 +100,19 @@ const StudentNotificationPage = () => {
                     <div>
                         <h1 className="!text-3xl sm:!text-4xl !font-black !text-text-main !tracking-tight">Trung tâm Thông báo</h1>
                         <p className="!text-sm !font-medium !text-text-muted !mt-2 !ml-1">
-                            Chào bạn! Bạn đang có <span className="!text-primary !font-black">{notifications.filter(n => !n.isRead).length} thông báo chưa đọc.</span>
+                            Chào {(user?.fullName || '').split(' ').pop()}! Bạn đang có <span className="!text-primary !font-black">{notifications.filter(n => !n.isRead).length} thông báo chưa đọc.</span>
                         </p>
                     </div>
                 </div>
 
                 <div className="!flex !flex-col sm:!flex-row !items-start md:!items-center !gap-4 !w-full md:!w-auto">
                     <button 
-                        onClick={() => showNotification({
-                            title: 'Thầy Hùng (Toán 101)',
-                            message: 'Vừa đăng một bài tập mới về Giải tích 1. Hạn chót là thứ 6!',
-                            type: 'teacher',
-                            onAction: () => console.log('Navigating to homework...')
-                        })}
+                        onClick={fetchNotifications}
+                        disabled={loading}
                         className="!w-full sm:!w-auto !px-6 !py-3 !bg-white !text-primary !border !border-primary/20 !rounded-2xl !text-sm !font-black hover:!bg-primary/5 !transition-all !flex !items-center !justify-center !gap-2"
                     >
-                        <Icon icon="solar:user-speak-bold-duotone" />
-                        Test Toast (GV)
-                    </button>
-                    <button 
-                        onClick={() => showNotification({
-                            title: 'Khuyến mãi Hệ thống',
-                            message: 'Giảm 20% học phí khi đăng ký khóa học Tiếng Anh ngay hôm nay!',
-                            type: 'promo',
-                            icon: 'solar:fire-bold-duotone',
-                            onAction: () => console.log('Opening promo page...')
-                        })}
-                        className="!w-full sm:!w-auto !px-6 !py-3 !bg-orange-500 !text-white !rounded-2xl !text-sm !font-black hover:!bg-orange-600 !transition-all !flex !items-center !justify-center !gap-2 !shadow-lg !shadow-orange-500/20"
-                    >
-                        <Icon icon="solar:fire-bold-duotone" />
-                        Test Toast (Ads)
+                        <Icon icon="solar:refresh-bold-duotone" className={loading ? 'animate-spin' : ''} />
+                        Làm mới
                     </button>
                 </div>
             </div>
@@ -107,7 +128,14 @@ const StudentNotificationPage = () => {
 
             {/* Notifications List */}
             <div className="!space-y-4">
-                {filteredNotifications.length === 0 ? (
+                {loading ? (
+                    <div className="!py-32 !text-center !bg-white !rounded-[40px] !border !border-border !shadow-sm">
+                        <div className="!flex !justify-center !mb-6">
+                            <Icon icon="solar:loading-bold-duotone" className="!text-5xl !text-primary !animate-spin" />
+                        </div>
+                        <h3 className="!text-xl !font-black !text-text-main !mb-2">Đang tải thông báo...</h3>
+                    </div>
+                ) : filteredNotifications.length === 0 ? (
                     <div className="!py-32 !text-center !bg-white !rounded-[40px] !border !border-border !shadow-sm">
                         <div className="!w-24 !h-24 !bg-background !rounded-full !flex !items-center !justify-center !mx-auto !mb-6">
                             <Icon icon="solar:ghost-bold-duotone" className="!text-5xl !text-text-muted" />
@@ -121,7 +149,7 @@ const StudentNotificationPage = () => {
                             <NotificationItem 
                                 key={notif.id} 
                                 notification={notif} 
-                                onClick={(n) => handleMarkAsRead(n.id)} 
+                                onClick={handleMarkAsRead} 
                             />
                         ))}
                     </div>
@@ -135,11 +163,11 @@ const StudentNotificationPage = () => {
                 </div>
                 <div>
                     <h4 className="!text-sm !font-black !text-text-main">Mẹo nhỏ cho bạn</h4>
-                    <p className="!text-xs !font-bold !text-text-muted">Bấm vào bất kỳ thông báo nào để đánh dấu là "Đã đọc" và xem chi tiết nội dung nhé!</p>
+                    <p className="!text-xs !font-bold !text-text-muted">Bấm vào bất kỳ thông báo nào để xem chi tiết và đánh dấu là "Đã đọc" nhé!</p>
                 </div>
             </div>
         </div>
     );
 };
 
-export default StudentNotificationPage;
+export default NotificationPage;

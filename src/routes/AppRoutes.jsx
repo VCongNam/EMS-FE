@@ -43,15 +43,16 @@ import ScheduleManagementPage from '../features/schedule-management/pages/Schedu
 import ForgotPasswordPage from '../features/auth/pages/ForgotPasswordPage';
 import VerifyEmailPage from '../features/auth/pages/VerifyEmailPage';
 import UserAuthorizationPage from '../features/dashboard/pages/UserAuthorizationPage';
-import StudentTuitionPage from '../features/tuition-management/pages/StudentTuitionPage';
 import TuitionManagementPage from '../features/tuition-management/pages/TuitionManagementPage';
 import TotalRevenuePage from '../features/tuition-management/pages/TotalRevenuePage';
 import ClassFinancialReportsPage from '../features/tuition-management/pages/ClassFinancialReportsPage';
 import ClassFinancialDetailPage from '../features/tuition-management/pages/ClassFinancialDetailPage';
-import StudentNotificationPage from '../features/notifications/pages/StudentNotificationPage';
 
 // Class Detail Components
 import ClassReportsTab from '../features/dashboard/components/classes/detail/components/reports/ClassReportsTab';
+import TransactionReviewHubPage from '../features/tuition-management/pages/TransactionReviewHubPage';
+import NotificationPage from '../features/notifications/pages/NotificationPage';
+import StudentTuitionPage from '../features/tuition-management/pages/StudentTuitionPage';
 
 // Admin Features
 import SystemDashboardPage from '../features/admin/pages/SystemDashboardPage';
@@ -93,7 +94,7 @@ export const AppRoutes = () => {
                     </Route>
 
                     {/* Protected Dashboard Layout (SideMenu) */}
-                    <Route element={<ProtectedRoute isAuthenticated={isAuthenticated || true} />}>
+                    <Route element={<ProtectedRoute />}>
                          <Route element={<DashboardLayout />}>
                               <Route path="dashboard" element={<DashboardPage />} />
                               <Route path="profile" element={<ProfilePage />} />
@@ -128,7 +129,6 @@ export const AppRoutes = () => {
                                    <Route path="grades" element={<ClassGradesPage />} />
                                    <Route path="schedule" element={<ClassSchedulePage />} />
                                    <Route path="attendance" element={<ClassAttendancePage />} />
-                                   <Route path="reports" element={<ClassReportsTab />} />
                               </Route>
 
                               {/* TA Tasks */}
@@ -151,7 +151,7 @@ export const AppRoutes = () => {
                               </Route>
 
                               {/* Student Notifications */}
-                              <Route path="notifications" element={<StudentNotificationPage />} />
+                              <Route path="notifications" element={<NotificationPage />} />
                               <Route path="tuition-payment" element={<StudentTuitionPage />} />
 
                               {/* Student Management */}
@@ -173,6 +173,7 @@ export const AppRoutes = () => {
                               <Route path="tuition/revenue" element={<TotalRevenuePage />} />
                               <Route path="tuition/reports" element={<ClassFinancialReportsPage />} />
                               <Route path="tuition/reports/:classId" element={<ClassFinancialDetailPage />} />
+                              <Route path="tuition/transactions" element={<TransactionReviewHubPage />} />
 
                               {/* User Authorization (Admin) */}
                               <Route path="admin/authorization" element={<UserAuthorizationPage />} />
