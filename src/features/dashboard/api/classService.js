@@ -70,5 +70,25 @@ export const classService = {
       },
       body: JSON.stringify({ studentID: studentId })
     });
+  },
+
+  removeStudentFromClass: async (classId, studentId, token) => {
+    return fetch(getApiUrl(`/api/Class/${classId}/students/${studentId}/remove`), {
+      method: 'PUT',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+  },
+
+  restoreStudentToClass: async (classId, studentId, token) => {
+    return fetch(getApiUrl(`/api/Class/${classId}/students/${studentId}/restore`), {
+      method: 'PUT',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+  },
+
+  getClassStaff: async (id, token) => {
+    return fetch(getApiUrl(`/api/Class/${id}/staff`), {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
   }
 };

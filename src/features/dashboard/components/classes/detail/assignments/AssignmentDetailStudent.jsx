@@ -290,7 +290,7 @@ const AssignmentDetailStudent = ({ assignment, onRefresh }) => {
                         <button
                             onClick={handleTurnIn}
                             className={`w-full font-black rounded-2xl !p-4 shadow-xl transition-all transform active:scale-[0.98] flex items-center justify-center gap-2 ${(localFiles.length > 0 || isSubmitted) && !isSubmitting
-                                ? 'bg-primary text-white hover:bg-primary-hover shadow-primary/20'
+                                ? '!bg-primary text-white hover:bg-primary-hover shadow-primary/20'
                                 : 'bg-border text-text-muted cursor-not-allowed'
                                 }`}
                             disabled={(localFiles.length === 0 && !isSubmitted) || isSubmitting}

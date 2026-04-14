@@ -171,7 +171,6 @@ const ClassGradesPage = () => {
                                     <h4 className={`!text-sm !font-bold !truncate ${selectedStudentId === student.id ? '!text-primary' : '!text-text-main'}`}>
                                         {student.name}
                                     </h4>
-                                    <p className="!text-xs !text-text-muted !truncate">{student.studentId}</p>
                                 </div>
                                 <div className="!text-right">
                                     <span className={`!text-sm !font-black ${student.average >= 8 ? '!text-emerald-600' : student.average >= 5 ? '!text-amber-600' : '!text-destructive'}`}>
@@ -194,7 +193,6 @@ const ClassGradesPage = () => {
                                 <img src={activeStudent.avatar} alt={activeStudent.name} className="!w-16 sm:!w-20 !h-16 sm:!h-20 !rounded-3xl !border-4 !border-primary/5 !shadow-sm" />
                                 <div>
                                     <h2 className="!text-2xl sm:!text-3xl !font-black !text-text-main !tracking-tight">{activeStudent.name}</h2>
-                                    <p className="!text-sm !font-medium !text-text-muted !mt-1">Mã định danh: {activeStudent.studentId}</p>
                                 </div>
                             </div>
                             <div className="!p-4 sm:!p-6 !rounded-2xl !bg-primary/5 !border !border-primary/10 !w-full sm:!w-auto !flex sm:!flex-col !justify-between !items-center sm:!items-end !gap-1">
