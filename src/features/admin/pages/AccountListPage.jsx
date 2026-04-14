@@ -8,7 +8,6 @@ const AccountListPage = () => {
     const [accounts, setAccounts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
-    const [roleFilter, setRoleFilter] = useState('all');
     const [statusFilter, setStatusFilter] = useState('all');
     
     // Drawer State
@@ -43,10 +42,9 @@ const AccountListPage = () => {
     // Client-side filtering
     const filteredAccounts = accounts.filter(acc => {
         const matchesSearch = acc.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                              acc.email?.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesRole = roleFilter === 'all' || acc.roleName === roleFilter;
+                              acc.phoneNumber?.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesStatus = statusFilter === 'all' || acc.status === statusFilter;
-        return matchesSearch && matchesRole && matchesStatus;
+        return matchesSearch && matchesStatus;
     });
 
     // Client-side pagination logic
@@ -58,17 +56,7 @@ const AccountListPage = () => {
 
     useEffect(() => {
         setCurrentPage(1); // Reset to first page when filtering
-    }, [searchQuery, roleFilter, statusFilter]);
-
-    const getRoleBadge = (role) => {
-        switch (role) {
-            case 'Admin': return <span className="!px-3 !py-1 rounded-xl !bg-purple-50 text-purple-600 text-[10px] font-black uppercase tracking-wider border border-purple-100">Admin</span>;
-            case 'Teacher': return <span className="!px-3 !py-1 rounded-xl !bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase tracking-wider border border-emerald-100">Giáo viên</span>;
-            case 'TA': return <span className="!px-3 !py-1 rounded-xl !bg-amber-50 text-amber-600 text-[10px] font-black uppercase tracking-wider border border-amber-100">Trợ giảng</span>;
-            case 'Student': return <span className="!px-3 !py-1 rounded-xl !bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-wider border border-blue-100">Học sinh</span>;
-            default: return <span className="!px-3 !py-1 rounded-xl !bg-slate-50 text-slate-600 text-[10px] font-black uppercase tracking-wider border border-slate-100">{role}</span>;
-        }
-    };
+    }, [searchQuery, statusFilter]);
 
     const getStatusBadge = (status) => {
         if (status === 'Active') return <span className="!px-3 !py-1 !bg-green-50 text-green-700 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 w-max border border-green-100"><div className="w-1.5 h-1.5 rounded-full !bg-green-500"></div> Hoạt động</span>;
@@ -99,28 +87,13 @@ const AccountListPage = () => {
                     <Icon icon="solar:magnifer-bold-duotone" className="absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary text-xl" />
                     <input
                         type="text"
-                        placeholder="Tìm kiếm theo Tên, Email hoặc Số điện thoại..."
+                        placeholder="Tìm kiếm theo Tên hoặc Số điện thoại..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full !pl-12 !pr-5 !py-3.5 !bg-background border-2 border-transparent rounded-2xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary focus:!bg-white transition-all placeholder:text-text-muted"
                     />
                 </div>
                 <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
-                    <div className="flex items-center gap-2 !bg-background !px-3 !py-1.5 rounded-2xl border border-border flex-1 xl:flex-none">
-                        <Icon icon="solar:user-rounded-bold-duotone" className="text-text-secondary text-lg" />
-                        <select
-                            value={roleFilter}
-                            onChange={(e) => setRoleFilter(e.target.value)}
-                            className="!bg-transparent border-none text-xs font-black uppercase tracking-wider focus:ring-0 cursor-pointer text-text-main py-2 pr-8"
-                        >
-                            <option value="all">Tất cả vai trò</option>
-                            <option value="Student">Học sinh</option>
-                            <option value="Teacher">Giáo viên</option>
-                            <option value="TA">Trợ giảng</option>
-                            <option value="Admin">Admin</option>
-                        </select>
-                    </div>
-
                     <div className="flex items-center gap-2 !bg-background !px-3 !py-1.5 rounded-2xl border border-border flex-1 xl:flex-none">
                         <Icon icon="solar:shield-check-bold-duotone" className="text-text-secondary text-lg" />
                         <select
@@ -151,10 +124,12 @@ const AccountListPage = () => {
                     <table className="w-full text-left text-sm whitespace-nowrap">
                         <thead className="!bg-background/50 border-b border-border text-[10px] font-black uppercase tracking-widest text-text-secondary">
                             <tr>
-                                <th className="!px-8 !py-5">Người dùng</th>
-                                <th className="!px-6 !py-5">Vai trò</th>
-                                <th className="!px-6 !py-5">Trạng thái</th>
+                                <th className="!px-8 !py-5">Người dùng (GV)</th>
+                                <th className="!px-6 !py-5">SĐT</th>
+                                <th className="!px-6 !py-5">Số Lớp</th>
+                                <th className="!px-6 !py-5">Sĩ Số</th>
                                 <th className="!px-6 !py-5">Ngày tạo</th>
+                                <th className="!px-6 !py-5">Trạng thái</th>
                                 <th className="!px-8 !py-5 text-right">Quản lý</th>
                             </tr>
                         </thead>
@@ -164,35 +139,50 @@ const AccountListPage = () => {
                                     <tr key={idx} className="animate-pulse">
                                         <td className="!px-8 !py-5"><div className="h-10 w-48 !bg-slate-100 rounded-xl"></div></td>
                                         <td className="!px-6 !py-5"><div className="h-6 w-20 !bg-slate-100 rounded-lg"></div></td>
-                                        <td className="!px-6 !py-5"><div className="h-6 w-24 !bg-slate-100 rounded-lg"></div></td>
+                                        <td className="!px-6 !py-5"><div className="h-6 w-16 !bg-slate-100 rounded-lg"></div></td>
+                                        <td className="!px-6 !py-5"><div className="h-6 w-16 !bg-slate-100 rounded-lg"></div></td>
                                         <td className="!px-6 !py-5"><div className="h-6 w-32 !bg-slate-100 rounded-lg"></div></td>
+                                        <td className="!px-6 !py-5"><div className="h-6 w-24 !bg-slate-100 rounded-lg"></div></td>
                                         <td className="!px-8 !py-5 text-right"><div className="h-8 w-8 !bg-slate-100 rounded-lg ml-auto"></div></td>
                                     </tr>
                                 ))
                             ) : paginatedAccounts.length > 0 ? (
                                 paginatedAccounts.map((account) => (
-                                    <tr key={account.accountId} className="group hover:!bg-background/40 transition-all">
+                                    <tr key={account.teacherId} className="group hover:!bg-background/40 transition-all">
                                         <td className="!px-8 !py-5">
                                             <div className="flex items-center gap-4">
-                                                <div className="w-11 h-11 rounded-2xl !bg-primary/10 text-primary flex items-center justify-center font-black text-lg shrink-0 border-2 border-white shadow-sm group-hover:scale-110 transition-transform">
-                                                    {account.fullName.charAt(0)}
-                                                </div>
+                                                {account.avatarUrl ? (
+                                                    <img src={account.avatarUrl} alt="Avatar" className="w-11 h-11 rounded-2xl object-cover shrink-0 border-2 border-white shadow-sm group-hover:scale-110 transition-transform" />
+                                                ) : (
+                                                    <div className="w-11 h-11 rounded-2xl !bg-primary/10 text-primary flex items-center justify-center font-black text-lg shrink-0 border-2 border-white shadow-sm group-hover:scale-110 transition-transform">
+                                                        {account.fullName?.charAt(0) || 'U'}
+                                                    </div>
+                                                )}
                                                 <div>
                                                     <p className="font-black text-text-main text-sm">{account.fullName}</p>
-                                                    <p className="text-xs text-text-secondary font-medium tracking-tight mt-0.5">{account.email}</p>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="!px-6 !py-5">{getRoleBadge(account.roleName)}</td>
-                                        <td className="!px-6 !py-5">{getStatusBadge(account.status)}</td>
+                                        <td className="!px-6 !py-5 font-medium text-xs text-text-secondary">{account.phoneNumber || 'N/A'}</td>
                                         <td className="!px-6 !py-5">
-                                            <span className="text-xs font-bold text-text-secondary">
-                                                {new Date(account.createdAt).toLocaleDateString('vi-VN')}
+                                            <span className="!px-2.5 !py-1 rounded-xl !bg-slate-100 text-slate-700 text-[11px] font-bold">
+                                                {account.activeClassesCount || 0} lớp
                                             </span>
                                         </td>
+                                        <td className="!px-6 !py-5">
+                                            <span className="!px-2.5 !py-1 rounded-xl !bg-blue-50 text-blue-600 text-[11px] font-bold">
+                                                {account.totalStudentsCount || 0} hs
+                                            </span>
+                                        </td>
+                                        <td className="!px-6 !py-5">
+                                            <span className="text-xs font-bold text-text-secondary">
+                                                {new Date(account.joinedDate).toLocaleDateString('vi-VN')}
+                                            </span>
+                                        </td>
+                                        <td className="!px-6 !py-5">{getStatusBadge(account.status)}</td>
                                         <td className="!px-8 !py-5 text-right">
                                             <button 
-                                                onClick={() => handleOpenDrawer(account.accountId)}
+                                                onClick={() => handleOpenDrawer(account.teacherId)}
                                                 className="w-10 h-10 rounded-xl !bg-primary text-white flex items-center justify-center hover:!bg-primary-dark transition-all shadow-md active:scale-95"
                                                 title="Xem và chỉnh sửa"
                                             >
@@ -211,7 +201,7 @@ const AccountListPage = () => {
                                             <h3 className="text-lg font-black text-text-main">Không có kết quả</h3>
                                             <p className="text-sm text-text-secondary mt-1">Chúng tôi không tìm thấy tài khoản nào phù hợp với bộ lọc hiện tại của bạn.</p>
                                             <button 
-                                                onClick={() => {setSearchQuery(''); setRoleFilter('all'); setStatusFilter('all');}}
+                                                onClick={() => {setSearchQuery(''); setStatusFilter('all');}}
                                                 className="!mt-4 text-primary font-bold hover:underline text-sm"
                                             >
                                                 Xóa tất cả bộ lọc
