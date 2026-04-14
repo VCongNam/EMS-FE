@@ -10,25 +10,37 @@ const SideMenu = ({ isOpen, onClose }) => {
 
     const menuConfigs = {
         student: [
-            { name: 'Tổng quan', path: '/dashboard', icon: 'material-symbols:dashboard-rounded' },
-            { name: 'Lớp học của tôi', path: '/my-classes', icon: 'material-symbols:school-rounded' },
+            { name: 'Bảng điều khiển', path: '/dashboard', icon: 'material-symbols:dashboard-rounded' },
+            { name: 'Lớp học của tôi', path: '/student/classes', icon: 'material-symbols:class-rounded' },
             { name: 'Thời khóa biểu', path: '/schedule', icon: 'material-symbols:calendar-month-rounded' },
-            { name: 'Kết quả học tập', path: '/results', icon: 'material-symbols:trending-up-rounded' },
+            { name: 'Thông báo', path: '/notifications', icon: 'material-symbols:circle-notifications-sharp', badge: 3 },
+            { name: 'Học phí', path: '/tuition-payment', icon: 'solar:wallet-money-bold-duotone' },
             { name: 'Trang cá nhân', path: '/profile', icon: 'material-symbols:person-rounded' },
         ],
         teacher: [
             { name: 'Tổng quan', path: '/dashboard', icon: 'material-symbols:dashboard-rounded' },
             { name: 'Quản lý Lớp học', path: '/teacher/classes', icon: 'material-symbols:school-rounded' },
-            { name: 'Quản lý Học sinh', path: '/group-rounded', icon: 'material-symbols:group-rounded' },
-            { name: 'Lịch dạy', path: '/schedule', icon: 'material-symbols:calendar-month-rounded' },
+            { name: 'Quản lý Học sinh', path: '/students', icon: 'material-symbols:group-rounded' },
+            { name: 'Quản lý Trợ giảng', path: '/assistants', icon: 'material-symbols:handshake-rounded' },
+            { name: 'Quản lý Lịch học', path: '/schedule-management', icon: 'solar:calendar-add-bold-duotone' },
+            { name: 'Quản lý Học phí', path: '/tuition', icon: 'solar:wallet-money-bold-duotone' },
+            { name: 'Thông báo', path: '/notifications', icon: 'material-symbols:circle-notifications-sharp' },
             { name: 'Trang cá nhân', path: '/profile', icon: 'material-symbols:person-rounded' },
         ],
-        assistant: [
+        TA: [
             { name: 'Tổng quan', path: '/dashboard', icon: 'material-symbols:dashboard-rounded' },
+            { name: 'Nhiệm vụ của tôi', path: '/ta/tasks', icon: 'material-symbols:task-rounded' },
             { name: 'Lớp hỗ trợ', path: '/assisted-classes', icon: 'material-symbols:handshake-rounded' },
             { name: 'Danh sách học sinh', path: '/students', icon: 'material-symbols:group-rounded' },
-            { name: 'Lịch trực', path: '/schedule', icon: 'material-symbols:calendar-month-rounded' },
+            { name: 'Báo cáo tiến độ', path: '/reports', icon: 'material-symbols:analytics-rounded' },
+            { name: 'Thông báo', path: '/notifications', icon: 'material-symbols:circle-notifications-sharp' },
             { name: 'Trang cá nhân', path: '/profile', icon: 'material-symbols:person-rounded' },
+        ],
+        admin: [
+            { name: 'Tổng quan Hệ thống', path: '/admin/dashboard', icon: 'material-symbols:dashboard-rounded' },
+            { name: 'Quản lý Tài khoản', path: '/admin/accounts', icon: 'material-symbols:manage-accounts-rounded' },
+            { name: 'Phân quyền Cán bộ', path: '/admin/authorization', icon: 'material-symbols:admin-panel-settings-rounded' },
+            { name: 'Thông báo', path: '/notifications', icon: 'material-symbols:circle-notifications-sharp' }
         ],
     };
 
@@ -54,7 +66,7 @@ const SideMenu = ({ isOpen, onClose }) => {
                             <Icon icon="material-symbols:school" className="text-3xl text-white" />
                         </div>
                         <span className="text-2xl font-bold font-['Outfit'] tracking-tight">
-                            {role === 'student' ? 'EMS' : role === 'teacher' ? 'EMS' : 'EMS'}
+                            {role === 'student' ? 'EMS' : role === 'admin' ? 'EMS Admin' : 'EMS'}
                         </span>
                     </div>
                     <button
@@ -67,7 +79,7 @@ const SideMenu = ({ isOpen, onClose }) => {
 
                 <nav className="flex-1 !p-5 space-y-2 overflow-y-auto">
                     {menuItems.map((item) => {
-                        const isActive = location.pathname === item.path;
+                        const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(`${item.path}/`));
                         return (
                             <Link
                                 key={item.path}
@@ -80,7 +92,14 @@ const SideMenu = ({ isOpen, onClose }) => {
                                     : 'hover:bg-white/10 text-white/70 hover:text-white'
                                     }`}
                             >
-                                <Icon icon={item.icon} className="text-2xl" />
+                                <div className="!relative">
+                                    <Icon icon={item.icon} className="text-2xl" />
+                                    {item.badge > 0 && (
+                                        <span className="!absolute !-top-1 !-right-1 !w-4 !h-4 !bg-red-500 !text-white !text-[9px] !font-black !flex !items-center !justify-center !rounded-full !border-2 !border-[#355872] group-hover:!border-white/10 !transition-all">
+                                            {item.badge}
+                                        </span>
+                                    )}
+                                </div>
                                 {item.name}
                             </Link>
                         );
@@ -95,7 +114,7 @@ const SideMenu = ({ isOpen, onClose }) => {
                         <div className="flex-1 min-w-0">
                             <p className="text-sm font-bold text-white leading-none truncate">{user?.fullName || 'Người dùng'}</p>
                             <p className="text-xs text-white/70 mt-1 truncate">
-                                {role === 'student' ? 'Học sinh' : role === 'teacher' ? 'Giáo viên' : role === 'assistant' ? 'Trợ giảng' : 'Thành viên'}
+                                {role === 'student' ? 'Học sinh' : role === 'teacher' ? 'Giáo viên' : role === 'TA' ? 'Trợ giảng' : role === 'admin' ? 'Quản trị viên' : 'Thành viên'}
                             </p>
                         </div>
                     </div>

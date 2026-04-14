@@ -2,151 +2,284 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Button from '../../../components/ui/Button';
 import AuthLayout from '../components/AuthLayout';
-import RoleSelector from '../components/RoleSelector';
-import { authService } from '@/services/authService';
+import useAuthStore from '../../../store/authStore';
+import { authService } from '../api/authService';
+import { Icon } from '@iconify/react';
+
+const ROLES = [
+    { id: 'student', label: 'Học viên', icon: 'ph:student-bold', color: 'blue', apiRole: 'Student' },
+    { id: 'teacher', label: 'Giáo viên', icon: 'ph:chalkboard-teacher-bold', color: 'purple', apiRole: 'Teacher' },
+    { id: 'TA', label: 'Trợ giảng', icon: 'ph:user-gear-bold', color: 'orange', apiRole: 'TA' },
+];
 
 const LoginPage = () => {
-    const [role, setRole] = useState('student');
-    const [focusedField, setFocusedField] = useState(null);
-    const [isLoading, setIsLoading] = useState(false);
-    const [errorMessage, setErrorMessage] = useState('');
     const navigate = useNavigate();
+    const { login } = useAuthStore();
 
-    // 1. THÊM STATE ĐỂ LƯU DỮ LIỆU NGƯỜI DÙNG NHẬP VÀO
-    const [formData, setFormData] = useState({
-        email: '',
-        password: '',
-    });
+    // Login Form State
+    const [identifier, setIdentifier] = useState('');
+    const [password, setPassword] = useState('');
+    const [selectedRole, setSelectedRole] = useState('student');
+    const [showPassword, setShowPassword] = useState(false);
+    
+    // Auth Flow State
+    const [step, setStep] = useState(0); // 0: Login, 1: Profile Selection
+    const [tempToken, setTempToken] = useState(null);
+    const [availableProfiles, setAvailableProfiles] = useState([]);
+    
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
-    // 2. THÊM HÀM LẮNG NGHE SỰ THAY ĐỔI CỦA INPUT
-    const handleChange = (e) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value
-        });
-    };
-
-    // 3. THÊM HÀM GỌI API KHI BẤM ĐĂNG NHẬP
     const handleLogin = async (e) => {
         e.preventDefault();
-        setIsLoading(true);
-        setErrorMessage('');
+        setLoading(true);
+        setError(null);
 
         try {
-            // Gửi role (vai trò) kèm theo email và password lên server
-            const data = await authService.login(formData.email, formData.password, role);
-            console.log('Đăng nhập thành công:', data);
+            const roleConfig = ROLES.find(r => r.id === selectedRole);
+            const response = await authService.login({ 
+                identifier, 
+                password, 
+                selectedRole: roleConfig?.apiRole || 'Student' 
+            });
 
-            // Giả lập lưu token (nếu API có trả về token)
-            if (data?.token) {
-                localStorage.setItem('accessToken', data.token);
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại!');
             }
 
-            // Chuyển trang sau khi đăng nhập thành công
-            // (Bạn đổi '/dashboard' thành đường dẫn thực tế của bạn)
-            navigate('/dashboard'); 
+            const data = await response.json();
 
-        } catch (error) {
-            console.error('Lỗi đăng nhập:', error);
-            if (error.response && error.response.data) {
-                setErrorMessage(error.response.data.message || 'Sai thông tin đăng nhập!');
-            } else {
-                setErrorMessage('Không thể kết nối đến máy chủ!');
+            // Nếu Backend yêu cầu chọn profile (Học sinh)
+            if (data.requiresProfileSelection) {
+                setAvailableProfiles(data.availableProfiles || []);
+                setTempToken(data.tempToken);
+                setStep(1); // Chuyển sang bước chọn profile
+                return;
             }
+
+            // Nếu không cần chọn profile -> Đăng nhập hoàn tất
+            login(data);
+            handleRedirect(data.roleName || '');
+
+        } catch (err) {
+            setError(err.message);
         } finally {
-            setIsLoading(false);
+            setLoading(false);
         }
     };
 
-    return (
-        <AuthLayout
-            title="Đăng nhập 👋"
-            subtitle="Chào mừng bạn quay lại! Vui lòng chọn vai trò và nhập thông tin để truy cập."
-        >
-            <RoleSelector activeRole={role} onRoleChange={setRole} />
+    const handleSelectProfile = async (studentId) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const res = await authService.selectProfile(studentId, tempToken);
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Không thể chọn hồ sơ này.');
+            }
+            const data = await res.json();
+            
+            // Lưu session hoàn tất
+            login(data);
+            handleRedirect(data.roleName || 'Student');
 
-            <div className="p-6 rounded-2xl bg-white/40 backdrop-blur-md border border-white/60 shadow-lg shadow-primary/10 mb-6">
-                
-                {/* 4. GẮN HÀM XỬ LÝ VÀO FORM */}
-                <form className="space-y-5" onSubmit={handleLogin}>
-                    
-                    {/* HIỂN THỊ THÔNG BÁO LỖI NẾU CÓ */}
-                    {errorMessage && (
-                        <div className="p-3 bg-red-100 text-red-600 rounded-xl text-sm border border-red-200 text-center font-medium">
-                            {errorMessage}
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleRedirect = (roleName) => {
+        const role = roleName.toLowerCase();
+        if (role === 'teacher') {
+            navigate('/teacher/classes');
+        } else if (role === 'ta') {
+            navigate('/dashboard'); 
+        } else if (role === 'student') {
+            navigate('/dashboard'); 
+        } else if (role === 'admin') {
+            navigate('/admin/dashboard');
+        } else {
+            navigate('/dashboard');
+        }
+    };
+
+    // Render Profile Selection Step
+    if (step === 1) {
+        return (
+            <AuthLayout
+                title="Chọn hồ sơ học sinh"
+                subtitle="Tài khoản của bạn liên kết với nhiều hồ sơ. Vui lòng chọn một hồ sơ để tiếp tục."
+            >
+                <div className="!space-y-6 animate-fade-in">
+                    {error && (
+                        <div className="!p-4 rounded-xl bg-red-50 border border-red-400/20 text-red-600 text-sm font-medium flex items-center !gap-3">
+                            <Icon icon="solar:danger-bold-duotone" className="text-xl" />
+                            {error}
                         </div>
                     )}
 
-                    <div>
-                        <label className="block mb-2 text-sm font-semibold text-text-main">
-                            {role === 'student' ? 'Mã học sinh / Email' : 'Email công việc'}
-                        </label>
-                        <input
-                            type="email"
-                            name="email"                    // Bổ sung name
-                            value={formData.email}          // Bổ sung value
-                            onChange={handleChange}         // Bổ sung onChange
-                            placeholder="example@ems.com"
-                            onFocus={() => setFocusedField('email')}
-                            onBlur={() => setFocusedField(null)}
-                            className={`w-full px-5 py-4 rounded-xl bg-white/60 border transition-all duration-300 outline-none ${focusedField === 'email'
-                                ? 'border-primary shadow-lg shadow-primary/20 bg-white/80 scale-105'
-                                : 'border-white/40 hover:border-white/60 hover:bg-white/70'
-                                }`}
-                            required
-                        />
+                    <div className="!grid !grid-cols-1 !gap-4">
+                        {availableProfiles.map((p) => (
+                            <button
+                                key={p.studentId}
+                                onClick={() => handleSelectProfile(p.studentId)}
+                                disabled={loading}
+                                className="!flex !items-center !gap-4 !p-4 !rounded-2xl !border-2 !border-border hover:!border-primary hover:!bg-primary/5 !transition-all !group !text-left"
+                            >
+                                <div className="!w-12 !h-12 !rounded-xl !bg-primary/10 !text-primary !flex !items-center !justify-center !group-hover:bg-primary !group-hover:text-white !transition-colors">
+                                    <Icon icon="solar:user-circle-bold-duotone" className="!text-2xl" />
+                                </div>
+                                <div className="!flex-1">
+                                    <h4 className="!font-black !text-text-main !group-hover:text-primary !transition-colors">{p.fullName}</h4>
+                                    <p className="!text-xs !text-text-muted">Mã HS: {p.studentId.substring(0, 8).toUpperCase()}</p>
+                                </div>
+                                <Icon icon="solar:alt-arrow-right-bold-duotone" className="!text-text-muted !group-hover:text-primary !group-hover:translate-x-1 !transition-all" />
+                            </button>
+                        ))}
                     </div>
 
-                    <div>
-                        <div className="flex justify-between items-center mb-2">
-                            <label className="text-sm font-semibold text-text-main">Mật khẩu</label>
-                            <a href="#" className="text-sm font-medium text-primary hover:text-primary-hover transition-colors">Quên mật khẩu?</a>
-                        </div>
-                        <input
-                            type="password"
-                            name="password"                 // Bổ sung name
-                            value={formData.password}       // Bổ sung value
-                            onChange={handleChange}         // Bổ sung onChange
-                            placeholder="••••••••"
-                            onFocus={() => setFocusedField('password')}
-                            onBlur={() => setFocusedField(null)}
-                            className={`w-full px-5 py-4 rounded-xl bg-white/60 border transition-all duration-300 outline-none ${focusedField === 'password'
-                                ? 'border-primary shadow-lg shadow-primary/20 bg-white/80 scale-105'
-                                : 'border-white/40 hover:border-white/60 hover:bg-white/70'
-                                }`}
-                            required
-                        />
-                    </div>
-
-                    <div className="flex items-center gap-2 mb-6">
-                        <input
-                            type="checkbox"
-                            id="remember"
-                            className="w-4 h-4 rounded border-white/60 text-primary accent-primary cursor-pointer transition-all hover:border-primary"
-                        />
-                        <label htmlFor="remember" className="text-sm text-text-muted cursor-pointer hover:text-primary transition-colors">Ghi nhớ đăng nhập</label>
-                    </div>
-
-                    {/* 5. CẬP NHẬT NÚT BẤM (GẮN TRẠNG THÁI LOADING) */}
-                    <Button 
-                        type="submit" 
-                        variant="primary" 
-                        size="lg" 
-                        className="w-full flex justify-center items-center"
-                        disabled={isLoading}
+                    <button 
+                        onClick={() => setStep(0)}
+                        className="!w-full !py-3 !text-sm !font-bold !text-text-muted hover:!text-primary !transition-colors"
                     >
-                        {isLoading ? 'Đang xác thực...' : 'Đăng nhập ngay'}
-                    </Button>
+                        ← Quay lại đăng nhập
+                    </button>
+                </div>
+            </AuthLayout>
+        );
+    }
 
-                    <div className="mt-8 pt-6 border-t border-white/40 text-center text-text-muted">
-                        {role === 'teacher' ? (
-                            <p>Bạn chưa có tài khoản? <Link to="/register" className="text-primary font-bold hover:text-primary-hover transition-colors">Đăng ký ngay</Link></p>
-                        ) : (
-                            <p>Học sinh được cấp tài khoản bởi Nhà trường/Giáo viên.</p>
-                        )}
+    // Render Login Step
+    return (
+        <AuthLayout
+            title="Chào mừng trở lại!"
+            subtitle="Đăng nhập vào tài khoản của bạn để tiếp tục."
+        >
+            <form className="animate-fade-in-up !space-y-6" onSubmit={handleLogin}>
+                {error && (
+                    <div className="!p-4 rounded-xl bg-red-50 border border-border-red-400/20 text-red-600 text-sm font-medium flex items-center !gap-3 animate-shake">
+                        <div className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center shrink-0">
+                            <Icon icon="solar:danger-bold-duotone" className="text-xl" />
+                        </div>
+                        {error}
                     </div>
-                </form>
-            </div>
+                )}
+                
+                {/* Role Selector */}
+                <div className="!space-y-3">
+                    <label className="block text-sm font-bold text-text-main uppercase tracking-widest text-[10px]">
+                        Tôi là...
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        {ROLES.map((role) => (
+                            <button
+                                key={role.id}
+                                type="button"
+                                onClick={() => setSelectedRole(role.id)}
+                                className={`
+                                    relative flex flex-col items-center !gap-2 !p-3 rounded-2xl border-2 transition-all duration-300
+                                    ${selectedRole === role.id 
+                                        ? `bg-primary/5 border-primary shadow-md shadow-primary/10 translate-y-[-2px]` 
+                                        : 'bg-background border-border hover:border-primary/30 hover:bg-surface'}
+                                `}
+                            >
+                                <div className={`
+                                    w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300
+                                    ${selectedRole === role.id ? 'bg-primary text-white scale-110' : 'bg-surface text-text-muted'}
+                                `}>
+                                    <Icon icon={role.icon} className="text-xl" />
+                                </div>
+                                <span className={`text-[11px] font-bold uppercase tracking-tight ${selectedRole === role.id ? 'text-primary' : 'text-text-muted'}`}>
+                                    {role.label}
+                                </span>
+                                {selectedRole === role.id && (
+                                    <div className="absolute top-1.5 right-1.5 w-4 h-4 bg-primary text-white rounded-full flex items-center justify-center animate-scale-in">
+                                        <Icon icon="material-symbols:check-small-rounded" className="text-sm" />
+                                    </div>
+                                )}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="!space-y-5">
+                    {/* Identifier Input */}
+                    <div>
+                        <label className="block text-sm font-semibold text-text-main !mb-2">
+                            {selectedRole === 'student' ? 'Số điện thoại đăng nhập' : 'Email đăng nhập'}
+                        </label>
+                        <div className="relative group">
+                            <div className="absolute inset-y-0 left-0 !pl-4 flex items-center pointer-events-none text-text-muted group-focus-within:text-primary transition-colors">
+                                <Icon icon={selectedRole === 'student' ? "solar:phone-calling-bold-duotone" : "solar:user-bold-duotone"} className="text-xl" />
+                            </div>
+                            <input
+                                type="text"
+                                placeholder={selectedRole === 'student' ? "0xxxxxxxxx" : "name@school.edu.vn"}
+                                value={identifier}
+                                onChange={(e) => setIdentifier(e.target.value)}
+                                required
+                                className="w-full !pl-12 !pr-4 !py-3.5 rounded-xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all text-text-main font-medium placeholder:text-text-muted/50"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Password Input */}
+                    <div>
+                        <div className="flex items-center justify-between !mb-2">
+                            <label className="text-sm font-semibold text-text-main">
+                                Mật khẩu
+                            </label>
+                            <Link to="/forgot-password" className="text-sm font-medium text-primary hover:text-primary-dark hover:underline transition-colors">
+                                Quên mật khẩu?
+                            </Link>
+                        </div>
+                        <div className="relative group">
+                            <div className="absolute inset-y-0 left-0 !pl-4 flex items-center pointer-events-none text-text-muted group-focus-within:text-primary transition-colors">
+                                <Icon icon="solar:lock-password-bold-duotone" className="text-xl" />
+                            </div>
+                            <input
+                                type={showPassword ? "text" : "password"}
+                                placeholder="••••••••"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                                className="w-full !pl-12 !pr-16 !py-3.5 rounded-xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all text-text-main font-medium placeholder:text-text-muted/50 font-mono tracking-wider"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute inset-y-0 right-0 !pr-4 flex items-center text-sm font-semibold text-text-muted hover:text-primary transition-colors"
+                            >
+                                <Icon icon={showPassword ? "solar:eye-closed-bold-duotone" : "solar:eye-bold-duotone"} className="text-xl" />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="!pt-2">
+                    <Button
+                        variant="primary"
+                        size="lg"
+                        type="submit"
+                        disabled={loading}
+                        className="w-full !py-4 text-[15px] !text-primary rounded-xl font-bold shadow-premium-primary hover:shadow-premium-primary-hover hover:-translate-y-0.5 transition-all duration-300 bg-primary text-white disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
+                    >
+                        {loading ? 'Đang xử lý...' : 'Đăng nhập ngay'}
+                    </Button>
+                </div>
+
+                <div className="text-center !mt-6">
+                    <p className="text-text-muted font-medium">
+                        Chưa có tài khoản?{' '}
+                        <Link to="/register" className="text-primary font-bold hover:underline transition-all">
+                            Đăng ký
+                        </Link>
+                    </p>
+                </div>
+            </form>
         </AuthLayout>
     );
 };

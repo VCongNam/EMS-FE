@@ -1,29 +1,168 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import useAuthStore from '../../../store/authStore';
 import Button from '../../../components/ui/Button';
-
+import { profileService } from '../api/profileService';
+import { toast } from 'react-toastify';
 const ProfilePage = () => {
     const { user, updateProfile } = useAuthStore();
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({ ...user });
 
-    const handleSave = () => {
-        updateProfile(formData);
-        setIsEditing(false);
+    // Change password states
+    const [oldPassword, setOldPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmNewPassword, setConfirmNewPassword] = useState('');
+    const [passwordLoading, setPasswordLoading] = useState(false);
+    const [passwordError, setPasswordError] = useState('');
+    const [passwordSuccess, setPasswordSuccess] = useState('');
+
+    // Toggle states for masking personal info
+    const [showEmail, setShowEmail] = useState(false);
+    const [showPhone, setShowPhone] = useState(false);
+
+    useEffect(() => {
+        const fetchProfile = async () => {
+            if (!user?.token) return;
+            try {
+                const response = await profileService.getProfile(user.token);
+
+                if (response.ok) {
+                    const data = await response.json();
+                    setFormData(prev => ({ ...prev, ...data }));
+                    updateProfile(data);
+                }
+            } catch (error) {
+                console.error("Fetch profile failed:", error);
+            }
+        };
+
+        fetchProfile();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.token]);
+
+    const [saving, setSaving] = useState(false);
+    const [banks, setBanks] = useState([]);
+    const [showBankDropdown, setShowBankDropdown] = useState(false);
+
+    useEffect(() => {
+        const fetchBanks = async () => {
+            try {
+                const response = await fetch('https://api.vietqr.io/v2/banks');
+                if (response.ok) {
+                    const result = await response.json();
+                    setBanks(result.data || []);
+                }
+            } catch (error) {
+                console.error("Fetch banks failed:", error);
+            }
+        };
+        fetchBanks();
+    }, []);
+
+    const getBankDisplay = (val) => {
+        if (!val) return '';
+        const bank = banks.find(b => b.bin === val);
+        return bank ? bank.shortName : val;
+    };
+
+    const filteredBanks = banks.filter(bank =>
+        (bank.shortName || '').toLowerCase().includes((formData.roleSpecificData?.bankName || '').toLowerCase()) ||
+        (bank.name || '').toLowerCase().includes((formData.roleSpecificData?.bankName || '').toLowerCase()) ||
+        (bank.bin || '').includes(formData.roleSpecificData?.bankName || '')
+    );
+
+    const handleSave = async () => {
+        if (!user?.token) return;
+        setSaving(true);
+
+        try {
+            // Determine endpoint based on role dynamically
+            const rolePath = user.role?.toLowerCase() || 'ta';
+            const endpoint = `/api/Account/${rolePath}/profile`;
+
+            // Build base payload
+            let payload = {
+                fullName: formData.fullName,
+                phoneNumber: formData.phoneNumber || ""
+            };
+
+            // Add role-specific data for TA and Teacher
+            if (user.role === 'TA' || user.role === 'teacher') {
+                payload = {
+                    ...payload,
+                    bio: formData.roleSpecificData?.bio || "",
+                    bankName: formData.roleSpecificData?.bankName || "",
+                    bankAccount: formData.roleSpecificData?.bankAccount || "",
+                    bankAccountName: formData.roleSpecificData?.bankAccountName || ""
+                };
+                if (user.role === 'teacher') {
+                    payload.specialization = formData.roleSpecificData?.specialization || "";
+                }
+            }
+
+            const response = await profileService.updateProfile(rolePath, payload, user.token);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Lỗi ${response.status}: ${errorText || 'Không rõ nguyên nhân'}`);
+            }
+
+            // Sync with local Zustand store only if successful
+            updateProfile(formData);
+            setIsEditing(false);
+            toast.success("Cập nhật hồ sơ thành công!");
+        } catch (error) {
+            console.error("Save profile error:", error);
+            toast.error(error.message);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleChangePassword = async (e) => {
+        e.preventDefault();
+        setPasswordError('');
+        setPasswordSuccess('');
+
+        if (newPassword !== confirmNewPassword) {
+            setPasswordError('Mật khẩu xác nhận không khớp!');
+            return;
+        }
+
+        if (!user?.token) return;
+        setPasswordLoading(true);
+
+        try {
+            const response = await profileService.changePassword({ oldPassword, newPassword }, user.token);
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || "Đổi mật khẩu thất bại. Vui lòng kiểm tra lại mật khẩu cũ!");
+            }
+
+            setPasswordSuccess("Đổi mật khẩu thành công!");
+            setOldPassword('');
+            setNewPassword('');
+            setConfirmNewPassword('');
+        } catch (err) {
+            setPasswordError(err.message);
+        } finally {
+            setPasswordLoading(false);
+        }
     };
 
     const roleLabels = {
         student: 'Học sinh',
         teacher: 'Giáo viên',
-        assistant: 'Trợ giảng'
+        TA: 'Trợ giảng'
     };
 
     return (
         <div className="w-full mx-auto">
             {/* Header / Banner Section */}
             <div className="relative">
-            
+
 
                 <div className="flex flex-col sm:flex-row items-center sm:items-end justify-between gap-6 relative z-10">
                     <div className="flex flex-col sm:flex-row items-center sm:items-end gap-6 w-full sm:w-auto">
@@ -80,10 +219,6 @@ const ProfilePage = () => {
                         </h3>
                         <div className="space-y-4">
                             <div className="!p-4 !mt-2 bg-background rounded-2xl border border-border/50 flex flex-col gap-1">
-                                <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Mã người dùng</span>
-                                <span className="font-mono text-sm text-text-main font-medium">{user?.id || 'EMS-DEV-2026'}</span>
-                            </div>
-                            <div className="!p-4 !mt-2 bg-background rounded-2xl border border-border/50 flex flex-col gap-1">
                                 <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Ngày tham gia</span>
                                 <span className="text-sm text-text-main font-medium flex items-center gap-2">
                                     <Icon icon="material-symbols:calendar-today-rounded" className="text-primary text-base" />
@@ -114,7 +249,7 @@ const ProfilePage = () => {
                 {/* Right Column: Detailed Sections */}
                 <div className="lg:col-span-8 space-y-6">
                     {/* General Bio Section (Visible to Teachers/Assistants) */}
-                    {(user?.role === 'teacher' || user?.role === 'assistant') && (
+                    {(user?.role === 'teacher' || user?.role === 'TA') && (
                         <div className="bg-surface !p-8 rounded-[2rem] border border-border shadow-sm">
                             <div className="flex items-center justify-between mb-8">
                                 <h3 className="text-xl font-bold text-text-main flex items-center gap-3">
@@ -126,10 +261,26 @@ const ProfilePage = () => {
                                 <textarea
                                     disabled={!isEditing}
                                     rows="4"
+                                    value={formData.roleSpecificData?.bio || ''}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, roleSpecificData: { ...prev.roleSpecificData, bio: e.target.value } }))}
                                     placeholder="Chia sẻ về kinh nghiệm giảng dạy, chuyên môn của bạn..."
                                     className="w-full !mt-2 !p-5 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 resize-none font-medium text-text-main placeholder:text-text-muted/50 shadow-inner"
                                 ></textarea>
                             </div>
+
+                            {user?.role === 'teacher' && (
+                                <div className="!mt-6 space-y-2">
+                                    <label className="block text-xs font-bold text-text-muted uppercase tracking-widest px-1">Chuyên môn / Môn giảng dạy</label>
+                                    <input
+                                        type="text"
+                                        disabled={!isEditing}
+                                        value={formData.roleSpecificData?.specialization || ''}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, roleSpecificData: { ...prev.roleSpecificData, specialization: e.target.value } }))}
+                                        placeholder="Ví dụ: Toán, Văn, Anh..."
+                                        className="w-full !mt-2 !px-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main"
+                                    />
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -156,25 +307,43 @@ const ProfilePage = () => {
                                 <label className="block text-xs !mt-2 font-bold text-text-muted uppercase tracking-widest px-1">Địa chỉ Email</label>
                                 <div className="relative group">
                                     <input
-                                        type="email"
+                                        type={showEmail ? "email" : "password"}
                                         disabled={!isEditing}
                                         value={formData.email || ''}
                                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                        className="w-full !mt-2 !pl-2 !pr-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main"
+                                        className="w-full !mt-2 !pl-2 !pr-12 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main"
                                     />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowEmail(!showEmail)}
+                                        className="absolute right-4 top-[55%] -translate-y-1/2 text-text-muted hover:text-primary transition-colors focus:outline-none"
+                                        title={showEmail ? "Ẩn" : "Hiện"}
+                                        disabled={!isEditing && !formData.email}
+                                    >
+                                        <Icon icon={showEmail ? "mdi:eye-off-outline" : "mdi:eye-outline"} className="text-2xl" />
+                                    </button>
                                 </div>
                             </div>
                             <div className="space-y-2">
                                 <label className="block text-xs font-bold text-text-muted uppercase tracking-widest px-1">Số điện thoại</label>
                                 <div className="relative group">
                                     <input
-                                        type="text"
+                                        type={showPhone ? "text" : "password"}
                                         disabled={!isEditing}
                                         placeholder="Chưa cập nhật"
-                                        value={formData.phone || ''}
-                                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                        className="w-full !mt-2 !pl-2 !pr-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main"
+                                        value={formData.phoneNumber || ''}
+                                        onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                                        className="w-full !mt-2 !pl-2 !pr-12 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main"
                                     />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPhone(!showPhone)}
+                                        className="absolute right-4 top-[55%] -translate-y-1/2 text-text-muted hover:text-primary transition-colors focus:outline-none"
+                                        title={showPhone ? "Ẩn" : "Hiện"}
+                                        disabled={!isEditing && !formData.phoneNumber}
+                                    >
+                                        <Icon icon={showPhone ? "mdi:eye-off-outline" : "mdi:eye-outline"} className="text-2xl" />
+                                    </button>
                                 </div>
                             </div>
                             {user?.role === 'student' && (
@@ -216,27 +385,135 @@ const ProfilePage = () => {
                         </div>
                     )}
 
-                    {(user?.role === 'teacher' || user?.role === 'assistant') && (
+                    {(user?.role === 'teacher' || user?.role === 'TA') && (
                         <div className="bg-surface !mt-2 !p-8 rounded-[2rem] border border-border shadow-sm animate-fade-in-up">
                             <h3 className="text-xl font-bold text-text-main mb-8 flex items-center gap-3">
                                 <Icon icon="material-symbols:account-balance-wallet" className="text-2xl text-primary" /> Thông tin thanh toán
                             </h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-8">
-                                <div className="space-y-2">
+                                <div className="space-y-2 relative">
                                     <label className="block text-xs font-bold !mt-2 text-text-muted uppercase tracking-widest px-1">Ngân hàng thụ hưởng</label>
-                                    <input type="text" disabled={!isEditing} placeholder="Techcombank" className="w-full !mt-2 !px-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main" />
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            disabled={!isEditing}
+                                            value={getBankDisplay(formData.roleSpecificData?.bankName || '')}
+                                            onChange={(e) => {
+                                                setFormData(prev => ({ ...prev, roleSpecificData: { ...prev.roleSpecificData, bankName: e.target.value } }));
+                                                setShowBankDropdown(true);
+                                            }}
+                                            onFocus={() => isEditing && setShowBankDropdown(true)}
+                                            placeholder="Chọn hoặc nhập tên ngân hàng"
+                                            className="w-full !mt-2 !px-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main"
+                                        />
+
+                                        {isEditing && showBankDropdown && filteredBanks.length > 0 && (
+                                            <div className="absolute left-0 right-0 top-full !mt-2 max-h-64 overflow-y-auto bg-surface border border-border rounded-2xl shadow-xl z-50 animate-fade-in-up">
+                                                {filteredBanks.map((bank) => (
+                                                    <button
+                                                        key={bank.id}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setFormData(prev => ({ ...prev, roleSpecificData: { ...prev.roleSpecificData, bankName: bank.bin } }));
+                                                            setShowBankDropdown(false);
+                                                        }}
+                                                        className="w-full !px-4 !py-3 flex items-center gap-3 hover:bg-primary/5 transition-colors border-b border-border/50 last:border-0"
+                                                    >
+                                                        <div className="w-10 h-10 rounded-lg bg-white border border-border flex items-center justify-center p-1 overflow-hidden flex-shrink-0">
+                                                            <img src={bank.logo} alt={bank.shortName} className="max-w-full max-h-full object-contain" />
+                                                        </div>
+                                                        <div className="text-left">
+                                                            <div className="text-sm font-bold text-text-main">{bank.shortName}</div>
+                                                            <div className="text-[10px] text-text-muted line-clamp-1">{bank.name}</div>
+                                                        </div>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                    {isEditing && showBankDropdown && (
+                                        <div
+                                            className="fixed inset-0 z-40"
+                                            onClick={() => setShowBankDropdown(false)}
+                                        ></div>
+                                    )}
                                 </div>
                                 <div className="space-y-2">
                                     <label className="block text-xs font-bold !mt-2 text-text-muted uppercase tracking-widest px-1">Số tài khoản</label>
-                                    <input type="text" disabled={!isEditing} placeholder="1903xxxxxx8888" className="w-full !mt-2 !px-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main font-mono" />
+                                    <input type="text" disabled={!isEditing} value={formData.roleSpecificData?.bankAccount || ''} onChange={(e) => setFormData(prev => ({ ...prev, roleSpecificData: { ...prev.roleSpecificData, bankAccount: e.target.value } }))} placeholder="1903xxxxxx8888" className="w-full !mt-2 !px-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main font-mono" />
                                 </div>
                                 <div className="space-y-2 sm:col-span-2">
                                     <label className="block text-xs font-bold  text-text-muted uppercase tracking-widest px-1">Chủ tài khoản (Không dấu)</label>
-                                    <input type="text" disabled={!isEditing} placeholder="NGUYEN VAN B" className="w-full !mt-2 !px-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main uppercase" />
+                                    <input type="text" disabled={!isEditing} value={formData.roleSpecificData?.bankAccountName || ''} onChange={(e) => setFormData(prev => ({ ...prev, roleSpecificData: { ...prev.roleSpecificData, bankAccountName: e.target.value } }))} placeholder="NGUYEN VAN B" className="w-full !mt-2 !px-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main uppercase" />
                                 </div>
                             </div>
                         </div>
                     )}
+
+                    {/* Change Password Section */}
+                    <div className="bg-surface !mt-2 !p-8 rounded-[2rem] border border-border shadow-sm animate-fade-in-up">
+                        <h3 className="text-xl font-bold text-text-main mb-8 flex items-center gap-3">
+                            <Icon icon="material-symbols:lock-reset-rounded" className="text-2xl text-primary" /> Đổi mật khẩu
+                        </h3>
+
+                        <form onSubmit={handleChangePassword} className="space-y-6">
+                            {passwordError && (
+                                <div className="!p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-medium">
+                                    {passwordError}
+                                </div>
+                            )}
+                            {passwordSuccess && (
+                                <div className="!p-4 bg-green-50 border border-green-200 text-green-700 rounded-xl text-sm font-medium">
+                                    {passwordSuccess}
+                                </div>
+                            )}
+
+                            <div className="space-y-2">
+                                <label className="block text-xs font-bold text-text-muted uppercase tracking-widest px-1">Mật khẩu cũ</label>
+                                <input
+                                    type="password"
+                                    required
+                                    value={oldPassword}
+                                    onChange={(e) => setOldPassword(e.target.value)}
+                                    placeholder="••••••••"
+                                    className="w-full !mt-2 !px-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all text-text-main font-mono"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="block text-xs font-bold text-text-muted uppercase tracking-widest px-1">Mật khẩu mới</label>
+                                <input
+                                    type="password"
+                                    required
+                                    value={newPassword}
+                                    onChange={(e) => setNewPassword(e.target.value)}
+                                    placeholder="••••••••"
+                                    className="w-full !mt-2 !px-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all text-text-main font-mono"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="block text-xs font-bold text-text-muted uppercase tracking-widest px-1">Xác nhận mật khẩu mới</label>
+                                <input
+                                    type="password"
+                                    required
+                                    value={confirmNewPassword}
+                                    onChange={(e) => setConfirmNewPassword(e.target.value)}
+                                    placeholder="••••••••"
+                                    className="w-full !mt-2 !px-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all text-text-main font-mono"
+                                />
+                            </div>
+                            <div className="!pt-4">
+                                <Button
+                                    type="submit"
+                                    disabled={passwordLoading}
+                                    variant="outline"
+                                    className="!px-8 !py-4 font-bold rounded-xl border-2 hover:bg-background transition-colors text-text-main disabled:opacity-70 disabled:cursor-not-allowed"
+                                >
+                                    {passwordLoading ? 'Đang cập nhật...' : 'Cập nhật mật khẩu'}
+                                </Button>
+                            </div>
+                        </form>
+                    </div>
+
                 </div>
             </div>
         </div>

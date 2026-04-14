@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { jwtDecode } from 'jwt-decode';
 
 const useAuthStore = create(
     persist(
@@ -7,12 +8,59 @@ const useAuthStore = create(
             user: null,
             isAuthenticated: false,
 
-            login: (userData) => {
-                // userData should include role: 'student' | 'teacher' | 'assistant'
-                set({
-                    user: userData,
-                    isAuthenticated: true,
-                });
+            login: (loginResponse) => {
+                try {
+                    const token = loginResponse.token;
+                    if (token) {
+                        let rawRole;
+                        // Ưu tiên dùng roleName trả về từ API mới nhất
+                        if (loginResponse.roleName) {
+                            rawRole = loginResponse.roleName;
+                        } else {
+                            // Cố gắng decode token nếu backend không trả roleName (tương thích ngược)
+                            const decoded = jwtDecode(token);
+                            rawRole = decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
+                        }
+
+                        let role = "student";
+                        if (rawRole === "Teacher") role = "teacher";
+                        else if (rawRole === "TA" || rawRole === "Assistant" || rawRole === "TeachingAssistant") role = "TA";
+                        else if (rawRole === "Admin") role = "admin";
+                        else if (rawRole === "Student") role = "student";
+                        
+                        const decoded = jwtDecode(token);
+                        const studentIdFromToken = decoded["StudentId"] || decoded["studentId"] || decoded["student_id"];
+                        const taIdFromToken = decoded["TeachingAssistantId"] || decoded["TAId"] || decoded["taId"] || decoded["AssistantId"];
+
+                        const userData = {
+                            id: loginResponse.accountId || decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"],
+                            studentId: loginResponse.studentId || studentIdFromToken || null,
+                            taId: loginResponse.taId || taIdFromToken || null,
+                            email: loginResponse.email,
+                            fullName: loginResponse.fullName,
+                            avatarUrl: loginResponse.avatarUrl || null,
+                            role: role,
+                            token: token
+                        };
+
+                        set({
+                            user: userData,
+                            isAuthenticated: true,
+                        });
+                    } else {
+                        // fallback for old standard logic
+                        set({
+                            user: loginResponse,
+                            isAuthenticated: true,
+                        });
+                    }
+                } catch (error) {
+                    console.error("Failed to decode token", error);
+                    set({
+                        user: loginResponse,
+                        isAuthenticated: true,
+                    });
+                }
             },
 
             logout: () => {
