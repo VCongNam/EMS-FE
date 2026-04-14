@@ -1,4 +1,5 @@
 import { getApiUrl } from '../../../config/api';
+// Force reload triggers
 
 export const taService = {
   // GET /api/Class/{classId}/tas
@@ -61,6 +62,13 @@ export const taService = {
     });
   },
 
+  // GET /api/Class/ta/{taId}/classes
+  getAssignedClasses: async (taId, token) => {
+    return fetch(getApiUrl(`/api/Class/ta/${taId}/classes`), {
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+  },
   // GET /api/Class/ta/{taId}/tasks
   getMyTasks: async (taId, token) => {
     return fetch(getApiUrl(`/api/Class/ta/${taId}/tasks`), {
@@ -83,5 +91,31 @@ export const taService = {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${token}` }
     });
+  },
+
+  // PATCH /api/TeachingAssistants/{taskId}/status
+  updateTaskStatus: async (taskId, status, token) => {
+    return fetch(getApiUrl(`/api/TeachingAssistants/${taskId}/status`), {
+      method: 'PATCH',
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json' 
+      },
+      body: JSON.stringify({ status })
+    });
+  },
+
+  // PATCH /api/TeachingAssistants/{taskId}/review
+  reviewTask: async (taskId, payload, token) => {
+    return fetch(getApiUrl(`/api/TeachingAssistants/${taskId}/review`), {
+      method: 'PATCH',
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json' 
+      },
+      body: JSON.stringify(payload)
+    });
   }
 };
+
+export default taService;

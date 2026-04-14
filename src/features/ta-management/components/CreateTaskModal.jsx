@@ -6,7 +6,6 @@ import Button from '../../../components/ui/Button';
 const CreateTaskModal = ({ isOpen, onClose, onAssign, tas = [], classes = [] }) => {
     const [taskData, setTaskData] = useState({
         title: '',
-        description: '',
         assignedTo: '',
         deadline: '',
         type: 'Grade'
@@ -110,16 +109,6 @@ const CreateTaskModal = ({ isOpen, onClose, onAssign, tas = [], classes = [] }) 
                             </div>
                         </div>
 
-                        <div className="!space-y-1.5">
-                            <label className="block text-sm font-semibold text-text-main">Mô tả chi tiết</label>
-                            <textarea
-                                rows="4"
-                                value={taskData.description}
-                                onChange={e => setTaskData({...taskData, description: e.target.value})}
-                                placeholder="Ghi chú cụ thể những việc trợ giảng cần làm..."
-                                className="w-full !px-4 !py-3 rounded-xl bg-background border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium text-text-main outline-none resize-none"
-                            ></textarea>
-                        </div>
                     </form>
                 </div>
 

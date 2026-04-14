@@ -3,19 +3,33 @@ import { Icon } from '@iconify/react';
 import { useNavigate } from 'react-router-dom';
 
 const getStatusConfig = (status) => {
-    switch (status) {
+    const s = (status || '').toLowerCase();
+    switch (s) {
         case 'ongoing':
+        case 'active':
             return { label: 'Đang diễn ra', color: 'text-green-600', bg: 'bg-green-100', dot: 'bg-green-500' };
+        case 'scheduled':
         case 'upcoming':
-            return { label: 'Sắp khai giảng', color: 'text-blue-600', bg: 'bg-blue-100', dot: 'bg-blue-500' };
+            return { label: 'Đã lên lịch', color: 'text-blue-600', bg: 'bg-blue-100', dot: 'bg-blue-500' };
         case 'completed':
+        case 'archived':
             return { label: 'Đã kết thúc', color: 'text-gray-600', bg: 'bg-gray-100', dot: 'bg-gray-500' };
         default:
             return { label: 'Không xác định', color: 'text-gray-600', bg: 'bg-gray-100', dot: 'bg-gray-500' };
     }
 };
 
-const ClassCard = ({ classData, onEdit, onArchive, onUnarchive, onViewDetails, basePath = '/teacher/classes' }) => {
+const ClassCard = ({ 
+    classData, 
+    onEdit, 
+    onArchive, 
+    onUnarchive, 
+    onViewDetails, 
+    basePath = '/teacher/classes',
+    showProgress = true,
+    salary = null,
+    permission = null
+}) => {
     const navigate = useNavigate();
     const statusConfig = getStatusConfig(classData.status);
     const progressPercent = classData.progress?.totalSessions > 0 
@@ -147,13 +161,36 @@ const ClassCard = ({ classData, onEdit, onArchive, onUnarchive, onViewDetails, b
                     )}
                     <div className="flex items-center text-sm text-text-muted gap-2">
                         <Icon icon="material-symbols:group-outline-rounded" className="text-primary text-base" />
-                        <span>{classData.students?.count || 0} / {classData.students?.max || 0} học viên</span>
+                        <span>{classData.students?.count || classData.studentCount || 0} / {classData.students?.max || '--'} học viên</span>
                     </div>
                 </div>
+
+                {/* Additional Info for TAs */}
+                {(salary || permission) && (
+                    <div className="mt-4 pt-4 border-t border-border/50 space-y-2">
+                        {permission && (
+                            <div className="flex items-center gap-2">
+                                <Icon icon="solar:shield-keyhole-linear" className="text-amber-500 text-base" />
+                                <span className="text-xs font-semibold text-text-main">Quyền: </span>
+                                <span className="text-xs text-text-muted truncate">{permission}</span>
+                            </div>
+                        )}
+                        {salary && (
+                            <div className="flex items-center gap-2">
+                                <Icon icon="solar:wad-of-money-linear" className="text-emerald-500 text-base" />
+                                <span className="text-xs font-semibold text-text-main">Phụ cấp: </span>
+                                <span className="text-xs font-bold text-emerald-600">
+                                    {typeof salary === 'number' ? salary.toLocaleString('vi-VN') + ' đ' : salary}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* Progress Bar */}
-            <div className="bg-background !p-4 rounded-xl border border-border/50">
+            {showProgress && classData.progress && (
+                <>
                 <div className="flex justify-between items-end !mb-3">
                     <span className="text-xs font-bold text-text-muted uppercase tracking-wider">Tiến độ</span>
                     <span className="text-sm font-bold text-primary">{classData.progress.currentSession}/{classData.progress.totalSessions} buổi</span>
@@ -164,7 +201,8 @@ const ClassCard = ({ classData, onEdit, onArchive, onUnarchive, onViewDetails, b
                         style={{ width: `${progressPercent}%` }}
                     ></div>
                 </div>
-            </div>
+                </>
+            )}
         </div>
     );
 };
