@@ -5,33 +5,7 @@ import GradeSettingsView from './grades/GradeSettingsView';
 import { Icon } from '@iconify/react';
 import { useParams } from 'react-router-dom';
 import { gradebookService } from '../../../api/gradebookService';
-
-// --- MOCK DATA ---
-const MOCK_STUDENTS = [
-    { id: '1', name: 'Nguyễn Văn A', avatar: 'https://i.pravatar.cc/150?u=1', studentId: 'SV001', average: 8.5 },
-    { id: '2', name: 'Trần Thị B', avatar: 'https://i.pravatar.cc/150?u=2', studentId: 'SV002', average: 9.0 },
-    { id: '3', name: 'Lê Hoàng C', avatar: 'https://i.pravatar.cc/150?u=3', studentId: 'SV003', average: 6.5 },
-    { id: '4', name: 'Phạm Văn D', avatar: 'https://i.pravatar.cc/150?u=4', studentId: 'SV004', average: 7.2 },
-    { id: '5', name: 'Hoàng Thị E', avatar: 'https://i.pravatar.cc/150?u=5', studentId: 'SV005', average: 8.8 },
-];
-
-// Categories will be fetched via API
-// const MOCK_CATEGORIES = [];
-
-const MOCK_GRADES = {
-    '1': [
-        { id: 'g1', assignmentTitle: 'Bài tập 1', categoryId: 'c1', score: 8, maxScore: 10, feedback: 'Làm bài tốt' },
-        { id: 'g2', assignmentTitle: 'Bài tập 2', categoryId: 'c1', score: 9, maxScore: 10, feedback: '' },
-        { id: 'g3', assignmentTitle: 'Bài thi giữa kỳ', categoryId: 'c2', score: 8.5, maxScore: 10, feedback: 'Cần cẩn thận hơn ở câu 3' },
-        { id: 'g4', assignmentTitle: 'Bài thi cuối kỳ', categoryId: 'c3', score: 8.5, maxScore: 10, feedback: '' },
-    ],
-    '2': [
-        { id: 'g1', assignmentTitle: 'Bài tập 1', categoryId: 'c1', score: 10, maxScore: 10, feedback: 'Rất xuất sắc' },
-        { id: 'g2', assignmentTitle: 'Bài tập 2', categoryId: 'c1', score: 9, maxScore: 10, feedback: '' },
-        { id: 'g3', assignmentTitle: 'Bài thi giữa kỳ', categoryId: 'c2', score: 9.5, maxScore: 10, feedback: '' },
-        { id: 'g4', assignmentTitle: 'Bài thi cuối kỳ', categoryId: 'c3', score: 8.5, maxScore: 10, feedback: '' },
-    ]
-};
+import { toast } from 'react-toastify';
 
 const ClassGradesPage = () => {
     const { user } = useAuthStore();
@@ -39,10 +13,12 @@ const ClassGradesPage = () => {
     const { classId } = useParams();
     
     const [activeTab, setActiveTab] = useState(role === 'student' ? 'individual' : 'overview');
-    const [selectedStudentId, setSelectedStudentId] = useState(MOCK_STUDENTS[0].id);
+    const [selectedStudentId, setSelectedStudentId] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [categories, setCategories] = useState([]);
+    const [gradeTableData, setGradeTableData] = useState(null);
     const [isLoadingCategories, setIsLoadingCategories] = useState(true);
+    const [isLoadingTable, setIsLoadingTable] = useState(true);
 
     const fetchCategories = async () => {
         try {
@@ -50,14 +26,7 @@ const ClassGradesPage = () => {
             const res = await gradebookService.getGradeCategories(classId, user?.token);
             if (res.ok) {
                 const data = await res.json();
-                // Map gradeCategoryId to id to match mock expectations in other views
-                const mappedData = data.map(c => ({
-                    ...c,
-                    id: c.gradeCategoryId
-                }));
-                setCategories(mappedData);
-            } else {
-                console.error("Lỗi lấy danh sách hạng mục:", res.status);
+                setCategories(data);
             }
         } catch (error) {
             console.error("Lỗi mạng:", error);
@@ -66,32 +35,74 @@ const ClassGradesPage = () => {
         }
     };
 
+    const fetchGradeTable = async () => {
+        try {
+            setIsLoadingTable(true);
+            const res = await gradebookService.getGradeTable(classId, user?.token);
+            if (res.ok) {
+                const data = await res.json();
+                setGradeTableData(data);
+                // Select first student by default if none selected
+                if (!selectedStudentId && data.studentRows?.length > 0) {
+                    setSelectedStudentId(data.studentRows[0].studentId);
+                }
+            }
+        } catch (error) {
+            console.error("Lỗi mạng:", error);
+        } finally {
+            setIsLoadingTable(false);
+        }
+    };
+
+    const refreshAll = () => {
+        fetchCategories();
+        fetchGradeTable();
+    };
+
     useEffect(() => {
         if (classId) {
-            fetchCategories();
+            refreshAll();
         }
-    }, [classId, user?.token]);
+    }, [classId, user?.token, activeTab]);
 
     // If student, lock to their own data (mocking student ID match)
     useEffect(() => {
-        if (role === 'student') {
-            // Find student by email or ID in real app. Here we just pick index 0 for mock.
-            setSelectedStudentId('1');
+        if (role === 'student' && user?.id) {
+            setSelectedStudentId(user.id);
             setActiveTab('individual');
         }
-    }, [role]);
+    }, [role, user?.id]);
 
-    const filteredStudents = MOCK_STUDENTS.filter(s => 
-        s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    const filteredStudents = gradeTableData?.studentRows?.filter(s => 
+        s.studentName.toLowerCase().includes(searchQuery.toLowerCase()) || 
         s.studentId.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    ) || [];
 
-    const activeStudent = MOCK_STUDENTS.find(s => s.id === selectedStudentId);
-    const studentGrades = MOCK_GRADES[selectedStudentId] || [];
+    const activeStudent = gradeTableData?.studentRows?.find(s => s.studentId === selectedStudentId);
 
-    const handleExport = () => {
-        toast.info('Đang chuẩn bị tệp bảng điểm Excel cho lớp học...');
-        console.log('Exporting gradebook for role:', role);
+    const handleExport = async (type) => {
+        try {
+            toast.info(`Đang tạo file ${type.toUpperCase()}...`);
+            const res = type === 'excel' 
+                ? await gradebookService.exportToExcel(classId, user?.token)
+                : await gradebookService.exportToPdf(classId, user?.token);
+            
+            if (res.ok) {
+                const blob = await res.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Gradebook_${classId}_${new Date().toLocaleDateString()}.${type === 'excel' ? 'xlsx' : 'pdf'}`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                toast.success(`Xuất file ${type.toUpperCase()} thành công!`);
+            } else {
+                toast.error("Xuất file thất bại");
+            }
+        } catch (error) {
+            toast.error("Lỗi mạng khi xuất file");
+        }
     };
 
     const renderHeader = () => (
@@ -107,12 +118,7 @@ const ClassGradesPage = () => {
                         >
                             Tổng quan
                         </button>
-                        <button 
-                            onClick={() => setActiveTab('individual')}
-                            className={`!px-4 !py-1.5 !rounded-lg !text-sm !font-bold !transition-all !whitespace-nowrap ${activeTab === 'individual' ? '!bg-white !text-primary !shadow-sm' : '!text-text-muted hover:!text-text-main'}`}
-                        >
-                            Cá nhân
-                        </button>
+                        
                         {role === 'teacher' && (
                             <button 
                                 onClick={() => setActiveTab('settings')}
@@ -126,13 +132,22 @@ const ClassGradesPage = () => {
             </div>
             
             {role === 'teacher' && (
-                <button 
-                    onClick={handleExport}
-                    className="!w-full sm:!w-auto !justify-center !px-5 !py-2.5 !bg-primary !text-white !rounded-xl !font-bold !hover:bg-primary/95 !flex !items-center !gap-2 !transition-all !shadow-lg !shadow-primary/20"
-                >
-                    <Icon icon="material-symbols:download" className="!text-xl" />
-                    Xuất file
-                </button>
+                <div className="!flex !items-center !gap-2">
+                    <button 
+                        onClick={() => handleExport('excel')}
+                        className="!w-full sm:!w-auto !justify-center !px-4 !py-2 !bg-emerald-600 !text-white !rounded-xl !text-sm !font-bold hover:!bg-emerald-700 !flex !items-center !gap-2 !transition-all"
+                    >
+                        <Icon icon="vscode-icons:file-type-excel" className="!text-lg" />
+                        Excel
+                    </button>
+                    <button 
+                        onClick={() => handleExport('pdf')}
+                        className="!w-full sm:!w-auto !justify-center !px-4 !py-2 !bg-rose-600 !text-white !rounded-xl !text-sm !font-bold hover:!bg-rose-700 !flex !items-center !gap-2 !transition-all"
+                    >
+                        <Icon icon="vscode-icons:file-type-pdf2" className="!text-lg" />
+                        PDF
+                    </button>
+                </div>
             )}
         </div>
     );
@@ -158,23 +173,26 @@ const ClassGradesPage = () => {
                     <div className="!flex-1 !overflow-y-auto !p-2 !space-y-1 custom-scrollbar">
                         {filteredStudents.map(student => (
                             <button
-                                key={student.id}
-                                onClick={() => setSelectedStudentId(student.id)}
+                                key={student.studentId}
+                                onClick={() => setSelectedStudentId(student.studentId)}
                                 className={`!w-full !flex !items-center !gap-3 !p-3 !rounded-xl !transition-all !text-left ${
-                                    selectedStudentId === student.id 
+                                    selectedStudentId === student.studentId 
                                         ? '!bg-primary/5 !border !border-primary/20' 
                                         : 'hover:!bg-white hover:!border-border border border-transparent'
                                 }`}
                             >
-                                <img src={student.avatar} alt={student.name} className="!w-10 !h-10 !rounded-full !object-cover !border !border-border" />
+                                <div className="!w-10 !h-10 !rounded-full !bg-primary/10 !flex !items-center !justify-center !text-primary !font-bold !border !border-primary/20">
+                                    {student.studentName?.charAt(0)}
+                                </div>
                                 <div className="!flex-1 !min-w-0">
-                                    <h4 className={`!text-sm !font-bold !truncate ${selectedStudentId === student.id ? '!text-primary' : '!text-text-main'}`}>
-                                        {student.name}
+                                    <h4 className={`!text-sm !font-bold !truncate ${selectedStudentId === student.studentId ? '!text-primary' : '!text-text-main'}`}>
+                                        {student.studentName}
                                     </h4>
+                                    <p className="!text-[10px] !text-text-muted">{student.studentId}</p>
                                 </div>
                                 <div className="!text-right">
-                                    <span className={`!text-sm !font-black ${student.average >= 8 ? '!text-emerald-600' : student.average >= 5 ? '!text-amber-600' : '!text-destructive'}`}>
-                                        {student.average.toFixed(1)}
+                                    <span className={`!text-sm !font-black ${student.finalAverage >= 8 ? '!text-emerald-600' : student.finalAverage >= 5 ? '!text-amber-600' : '!text-destructive'}`}>
+                                        {student.finalAverage?.toFixed(1) || '--'}
                                     </span>
                                 </div>
                             </button>
@@ -203,53 +221,50 @@ const ClassGradesPage = () => {
                             </div>
                         </div>
 
-                        {/* Grades List */}
+                        {/* Grades List segmented by categories */}
                         <div className="!flex-1 md:!overflow-y-auto !p-6 sm:!p-8 !space-y-8 custom-scrollbar">
                             {categories.map(category => {
-                                const categoryGrades = studentGrades.filter(g => g.categoryId === category.id);
-                                if(categoryGrades.length === 0) return null;
+                                // Find assignments in this category from columns
+                                const categoryColumns = gradeTableData.columns.filter(c => c.gradeCategoryId === category.gradeCategoryId);
+                                if(categoryColumns.length === 0) return null;
 
                                 return (
-                                    <div key={category.id} className="!bg-white !border !border-border !rounded-2xl !overflow-hidden !shadow-sm">
+                                    <div key={category.gradeCategoryId} className="!bg-white !border !border-border !rounded-2xl !overflow-hidden !shadow-sm">
                                         <div className="!px-6 !py-4 !bg-background/40 !border-b !border-border !flex !justify-between !items-center">
-                                            <h3 className="!font-bold !text-text-main">{category.name} <span className="!text-text-muted !font-normal !text-sm !ml-2">({category.weight}%)</span></h3>
+                                            <h3 className="!font-bold !text-text-main">
+                                                {category.name} 
+                                                <span className="!text-text-muted !font-normal !text-sm !ml-2">({category.weight}%)</span>
+                                            </h3>
                                         </div>
                                         
                                         <div className="!divide-y !divide-border">
-                                            {categoryGrades.map(grade => (
-                                                <div key={grade.id} className="!p-6 !flex !flex-col sm:!flex-row !gap-6 transition-colors hover:!bg-background/20">
-                                                    <div className="!w-full sm:!w-1/3">
-                                                        <h4 className="!font-bold !text-text-main !mb-1">{grade.assignmentTitle}</h4>
-                                                        <p className="!text-xs !text-text-muted">Tổng điểm: {grade.maxScore}</p>
-                                                    </div>
-                                                    <div className="!flex !items-center !w-full sm:!w-1/4">
-                                                        {role !== 'student' ? (
-                                                            <input 
-                                                                type="number" 
-                                                                defaultValue={grade.score}
-                                                                className="!w-24 !px-4 !py-2 !bg-background !border !border-border !rounded-xl !text-base !font-bold !text-primary focus:!border-primary focus:!ring-4 focus:!ring-primary/10 !transition-all"
-                                                            />
-                                                        ) : (
+                                            {categoryColumns.map(col => {
+                                                const studentGrade = activeStudent.grades.find(g => g.assignmentId === col.assignmentId);
+                                                return (
+                                                    <div key={col.assignmentId} className="!p-6 !flex !flex-col sm:!flex-row !gap-6 transition-colors hover:!bg-background/20">
+                                                        <div className="!w-full sm:!w-1/3">
+                                                            <h4 className="!font-bold !text-text-main !mb-1">{col.title}</h4>
+                                                            <p className="!text-[10px] !text-text-muted !font-bold !uppercase">TRỌNG SỐ: {col.weight}%</p>
+                                                        </div>
+                                                        <div className="!flex !items-center !w-full sm:!w-1/4">
                                                             <div className="!px-4 !py-2 !bg-background !rounded-xl !font-black !text-primary !text-lg">
-                                                                {grade.score}
+                                                                {studentGrade?.grade !== null ? studentGrade.grade : '--'}
                                                             </div>
-                                                        )}
-                                                        <span className="!text-text-muted !text-sm !ml-3">/ {grade.maxScore}</span>
+                                                            <span className="!text-text-muted !text-sm !ml-3">/ 10</span>
+                                                        </div>
+                                                        <div className="!w-full sm:!w-1/2 !flex !items-center !text-sm !text-text-muted">
+                                                            {studentGrade?.submissionId ? (
+                                                                <span className="!flex !items-center !gap-1.5 !text-emerald-600 !font-semibold">
+                                                                    <Icon icon="material-symbols:check-circle" />
+                                                                    Đã nộp bài
+                                                                </span>
+                                                            ) : (
+                                                                <span className="!italic !opacity-60">Chưa nộp / Offline</span>
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                    <div className="!w-full sm:!w-1/2">
-                                                        {grade.feedback || role !== 'student' ? (
-                                                            <textarea 
-                                                                placeholder={role === 'student' ? "Chưa có nhận xét" : "Thêm nhận xét cho học sinh..." }
-                                                                defaultValue={grade.feedback}
-                                                                readOnly={role === 'student'}
-                                                                className="!w-full !px-4 !py-3 !bg-background/50 !border !border-border !rounded-xl !text-sm !focus:outline-none !focus:border-primary !resize-none !h-24 sm:!h-16 custom-scrollbar !text-text-main"
-                                                            />
-                                                        ) : (
-                                                            <div className="!text-xs !text-text-muted/40 !italic">Chưa có nhận xét nào từ giáo viên.</div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            ))}
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 )
@@ -271,15 +286,11 @@ const ClassGradesPage = () => {
             {renderHeader()}
             
             <div className="!flex-1 !flex !flex-col !overflow-hidden">
-                {activeTab === 'overview' && role !== 'student' && (
+                {activeTab === 'overview' && role !== 'student' && gradeTableData && (
                     <GradeMasterView 
-                        students={MOCK_STUDENTS} 
-                        categories={categories} 
-                        grades={MOCK_GRADES}
-                        onSelectStudent={(id) => {
-                            setSelectedStudentId(id);
-                            setActiveTab('individual');
-                        }}
+                        classId={classId}
+                        gradeTableData={gradeTableData}
+                        onRefresh={refreshAll}
                     />
                 )}
                 
@@ -289,7 +300,8 @@ const ClassGradesPage = () => {
                     <GradeSettingsView 
                         classId={classId}
                         categories={categories} 
-                        onRefresh={fetchCategories}
+                        gradeTableData={gradeTableData}
+                        onRefresh={refreshAll}
                         isLoading={isLoadingCategories}
                     />
                 )}
