@@ -61,6 +61,10 @@ import StudentTuitionPage from '../features/tuition-management/pages/StudentTuit
 import SystemDashboardPage from '../features/admin/pages/SystemDashboardPage';
 import AccountListPage from '../features/admin/pages/AccountListPage';
 import AccountDetailPage from '../features/admin/pages/AccountDetailPage';
+import FeedbackCenterPage from '../features/admin/pages/FeedbackCenterPage';
+
+// Teacher Features
+import TeacherFeedbackPage from '../features/dashboard/pages/TeacherFeedbackPage';
 
 export const AppRoutes = () => {
      const { isAuthenticated } = useAuthStore();
@@ -103,6 +107,7 @@ export const AppRoutes = () => {
                               <Route path="profile" element={<ProfilePage />} />
                               <Route path="feedback" element={<FeedbackPage />} />
                               <Route path="teacher/classes" element={<TeacherClassListPage />} />
+                              <Route path="teacher/feedback" element={<TeacherFeedbackPage />} />
                               <Route path="teacher/classes/:classId" element={<ClassDetailLayout />}>
                                    <Route index element={<Navigate to="stream" replace />} />
                                    <Route path="stream" element={<ClassStreamPage />} />
@@ -186,6 +191,7 @@ export const AppRoutes = () => {
                               <Route path="admin/dashboard" element={<SystemDashboardPage />} />
                               <Route path="admin/accounts" element={<AccountListPage />} />
                               <Route path="admin/accounts/:id" element={<AccountDetailPage />} />
+                              <Route path="admin/feedback" element={<FeedbackCenterPage />} />
                          </Route>
                     </Route>
 
