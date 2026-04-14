@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import Button from "../../../../../components/ui/Button";
 import ConfirmModal from '../../../../../components/ui/ConfirmModal';
 import AddStudentModal from './components/AddStudentModal';
+import ImportStudentModal from './components/ImportStudentModal';
 import useAuthStore from '../../../../../store/authStore';
 import TAPermissionsModal from './components/TAPermissionsModal';
 import { classService } from '../../../api/classService';
@@ -16,6 +17,7 @@ const ClassPeoplePage = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isPermissionsModalOpen, setIsPermissionsModalOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -185,9 +187,13 @@ const ClassPeoplePage = () => {
                                     <Icon icon="solar:user-plus-bold-duotone" className="text-lg !mr-2" />
                                     Thêm học sinh
                                 </Button>
-                                <Button variant="outline" className="w-full !py-2.5 bg-surface hover:bg-background flex justify-center items-center">
-                                    <Icon icon="solar:download-square-bold-duotone" className="text-lg !mr-2 text-text-muted" />
-                                    Xuất danh sách
+                                <Button
+                                    onClick={() => setIsImportModalOpen(true)}
+                                    variant="outline"
+                                    className="w-full !py-2.5 bg-surface hover:bg-primary/5 flex justify-center items-center !text-primary border-primary/20 hover:border-primary/50"
+                                >
+                                    <Icon icon="solar:document-add-bold-duotone" className="text-lg !mr-2" />
+                                    Thêm bằng danh sách
                                 </Button>
                             </>
                         )}
@@ -482,6 +488,13 @@ const ClassPeoplePage = () => {
                 isOpen={isAddModalOpen}
                 onClose={() => setIsAddModalOpen(false)}
                 onAdd={handleAddStudent}
+                classId={classId}
+            />
+
+            <ImportStudentModal
+                isOpen={isImportModalOpen}
+                onClose={() => setIsImportModalOpen(false)}
+                onImportSuccess={fetchMembers}
                 classId={classId}
             />
 

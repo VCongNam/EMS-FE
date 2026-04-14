@@ -26,6 +26,7 @@ const SideMenu = ({ isOpen, onClose }) => {
             { name: 'Quản lý Học phí', path: '/tuition', icon: 'solar:wallet-money-bold-duotone' },
             { name: 'Thông báo', path: '/notifications', icon: 'material-symbols:circle-notifications-sharp' },
             { name: 'Trang cá nhân', path: '/profile', icon: 'material-symbols:person-rounded' },
+            { name: 'Phản hồi hệ thống', path: '/feedback', icon: 'solar:letter-bold-duotone' },
         ],
         TA: [
             { name: 'Tổng quan', path: '/dashboard', icon: 'material-symbols:dashboard-rounded' },
