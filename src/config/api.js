@@ -1,7 +1,7 @@
 // API Base URLs
 const DEV_URL = 'https://localhost:7049';
-const PROD_URL = 'https://ems-be-2-s2nk.onrender.com';
-
+// const PROD_URL = 'https://ems-be-2-s2nk.onrender.com';
+const PROD_URL = 'https://ems-be-izp9.onrender.com';
 // Bật cờ này thành true nếu bạn muốn test API bằng localhost
 const USE_LOCAL_API = false;
 

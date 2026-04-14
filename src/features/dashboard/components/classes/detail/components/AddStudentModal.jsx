@@ -33,7 +33,7 @@ const AddStudentModal = ({ isOpen, onClose, onAdd, classId }) => {
             // Bước 1: Tạo tài khoản học sinh mới
             const createRes = await studentService.createStudentAccount(formData, token);
             if (!createRes.ok) throw new Error('Không thể tạo tài khoản học sinh');
-            
+
             const createData = await createRes.json();
             const newStudentId = createData.studentId;
 
@@ -41,11 +41,11 @@ const AddStudentModal = ({ isOpen, onClose, onAdd, classId }) => {
 
             // Bước 2: Gán học sinh vừa tạo vào Lớp học
             const assignRes = await classService.assignStudent(classId, newStudentId, token);
-            
+
             if (!assignRes.ok) throw new Error('Không thể gán học sinh vào lớp');
 
             toast.success('Học sinh đã được tạo và gán vào lớp thành công!');
-            
+
             // Dọn dẹp form và đóng modal
             setFormData({
                 fullName: '', phoneNumber: '', password: '',
@@ -90,7 +90,7 @@ const AddStudentModal = ({ isOpen, onClose, onAdd, classId }) => {
                                 <p className="text-xs sm:text-sm text-text-muted mt-1">Khởi tạo hồ sơ và đồng thời gán vào lớp học này</p>
                             </div>
                         </div>
-                        <button 
+                        <button
                             type="button"
                             onClick={onClose}
                             className="w-10 h-10 rounded-xl bg-background border border-border flex items-center justify-center text-text-muted hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-all shrink-0"
@@ -109,7 +109,7 @@ const AddStudentModal = ({ isOpen, onClose, onAdd, classId }) => {
                                 </div>
                                 <h3 className="text-lg font-bold text-text-main">Thông tin cá nhân học sinh</h3>
                             </div>
-                            
+
                             <div className="grid grid-cols-1 md:grid-cols-2 !gap-x-6 !gap-y-5">
                                 <div className="!space-y-1 group">
                                     <label className={labelClasses}>Họ và Tên <span className="text-red-500">*</span></label>
@@ -126,7 +126,7 @@ const AddStudentModal = ({ isOpen, onClose, onAdd, classId }) => {
                                         />
                                     </div>
                                 </div>
-                                
+
                                 <div className="!space-y-1 group">
                                     <label className={labelClasses}>Số điện thoại (Tài khoản) <span className="text-red-500">*</span></label>
                                     <div className="relative">
@@ -196,9 +196,9 @@ const AddStudentModal = ({ isOpen, onClose, onAdd, classId }) => {
                             <Button type="button" variant="outline" onClick={onClose} className="w-full sm:w-auto justify-center">
                                 Hủy bỏ
                             </Button>
-                            <Button 
-                                type="submit" 
-                                variant="!primary" 
+                            <Button
+                                type="submit"
+                                variant="!primary"
                                 disabled={isSubmitting}
                                 className="w-full sm:w-auto !p-3 justify-center shadow-primary/30 shadow-lg group"
                             >

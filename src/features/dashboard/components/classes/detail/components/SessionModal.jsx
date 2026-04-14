@@ -152,8 +152,8 @@ const SessionModal = ({ isOpen, onClose, onSave, initialData = null }) => {
                         {/* Footer */}
                         <div className="!px-6 md:!px-8 !pb-6 !pt-5 border-t border-border flex flex-col-reverse sm:flex-row justify-end !gap-3 sm:!gap-4 shrink-0 bg-surface/50">
                             <Button type="button" variant="outline" onClick={onClose} className="w-full sm:w-auto justify-center">Hủy bỏ</Button>
-                            <Button type="submit" variant="!primary" disabled={!isFormValid()} className="w-full sm:w-auto !p-3 justify-center shadow-primary/30 shadow-lg group disabled:opacity-50 hover:bg-primary">
-                                <Icon icon="solar:diskette-bold-duotone" className="text-xl text-white !mr-2 group-hover:scale-110 transition-transform" />
+                            <Button type="submit" variant="primary" disabled={!isFormValid()} className="w-full sm:w-auto justify-center shadow-lg group">
+                                <Icon icon="solar:diskette-bold-duotone" className="text-xl text-white group-hover:scale-110 transition-transform" />
                                 <span className="text-white font-bold">{initialData ? 'Lưu thay đổi' : 'Tạo buổi học'}</span>
                             </Button>
                         </div>

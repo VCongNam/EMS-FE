@@ -262,7 +262,6 @@ const ClassReportsTab = () => {
                                                 </div>
                                                 <div className="flex flex-col">
                                                     <span className="font-semibold text-sm">{report.studentName}</span>
-                                                    <span className="text-[11px] text-text-muted font-mono">{report.studentId}</span>
                                                 </div>
                                             </div>
                                         </td>
