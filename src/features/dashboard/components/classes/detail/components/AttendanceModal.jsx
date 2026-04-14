@@ -109,7 +109,7 @@ const AttendanceModal = ({ isOpen, lesson, existingRecord, onClose, onSave }) =>
 
         try {
             const res = await sessionService.saveAttendance(lesson.id, payload, token);
-            
+
             if (res.ok) {
                 toast.success(`Đã lưu điểm danh Buổi ${lesson.session} thành công!`);
                 onSave(lesson.id, students);
@@ -124,9 +124,9 @@ const AttendanceModal = ({ isOpen, lesson, existingRecord, onClose, onSave }) =>
     };
 
     const presentCount = students.filter(s => s.status === 'present').length;
-    const lateCount    = students.filter(s => s.status === 'late').length;
-    const absentCount  = students.filter(s => s.status === 'absent').length;
-    const noneCount    = students.filter(s => s.status === 'none').length;
+    const lateCount = students.filter(s => s.status === 'late').length;
+    const absentCount = students.filter(s => s.status === 'absent').length;
+    const noneCount = students.filter(s => s.status === 'none').length;
 
     const formatDate = (dateStr) => {
         if (!dateStr) return '';
@@ -136,7 +136,7 @@ const AttendanceModal = ({ isOpen, lesson, existingRecord, onClose, onSave }) =>
             weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric'
         });
     };
-    
+
     const formattedDateSplitted = formatDate(lesson.date).split(', ');
     const displayDate = formattedDateSplitted.length > 1 ? formattedDateSplitted[1] : lesson.date;
 
@@ -258,11 +258,10 @@ const AttendanceModal = ({ isOpen, lesson, existingRecord, onClose, onSave }) =>
                                                         key={opt.key}
                                                         title={opt.label}
                                                         onClick={() => handleStatusChange(student.id, opt.key)}
-                                                        className={`flex items-center !gap-1.5 !px-3 !py-1.5 rounded-xl border text-xs font-semibold transition-all whitespace-nowrap ${
-                                                            student.status === opt.key
+                                                        className={`flex items-center !gap-1.5 !px-3 !py-1.5 rounded-xl border text-xs font-semibold transition-all whitespace-nowrap ${student.status === opt.key
                                                                 ? opt.activeClass
                                                                 : `!bg-surface border-border text-text-muted ${opt.borderHover}`
-                                                        }`}
+                                                            }`}
                                                     >
                                                         <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${student.status === opt.key ? opt.dotClass : '!bg-border'}`} />
                                                         {opt.label}
@@ -287,11 +286,10 @@ const AttendanceModal = ({ isOpen, lesson, existingRecord, onClose, onSave }) =>
                                                     <button
                                                         key={opt.key}
                                                         onClick={() => handleStatusChange(student.id, opt.key)}
-                                                        className={`flex-1 flex items-center justify-center !gap-1.5 !py-2 rounded-xl border text-xs font-semibold transition-all ${
-                                                            student.status === opt.key
+                                                        className={`flex-1 flex items-center justify-center !gap-1.5 !py-2 rounded-xl border text-xs font-semibold transition-all ${student.status === opt.key
                                                                 ? opt.activeClass
                                                                 : `!bg-surface border-border text-text-muted ${opt.borderHover}`
-                                                        }`}
+                                                            }`}
                                                     >
                                                         <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${student.status === opt.key ? opt.dotClass : '!bg-border'}`} />
                                                         {opt.label}

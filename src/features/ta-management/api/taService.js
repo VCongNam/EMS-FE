@@ -67,5 +67,21 @@ export const taService = {
       method: 'GET',
       headers: { 'Authorization': `Bearer ${token}` }
     });
+  },
+
+  // GET /api/TeachingAssistants/myTas
+  getMyTas: async (token) => {
+    return fetch(getApiUrl(`/api/TeachingAssistants/myTas`), {
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+  },
+
+  // DELETE /api/Class/{classId}/tas/{taId}/remove
+  removeTAFromClass: async (classId, taId, token) => {
+    return fetch(getApiUrl(`/api/Class/${classId}/tas/${taId}/remove`), {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
   }
 };

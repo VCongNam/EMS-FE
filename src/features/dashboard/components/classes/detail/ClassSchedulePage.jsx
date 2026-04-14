@@ -17,8 +17,8 @@ const DAYS_OF_WEEK = [
 
 const STATUS_CONFIG = {
     scheduled: { label: 'Sắp diễn ra', className: 'bg-blue-100 text-blue-700 border-blue-200', dot: 'bg-blue-500' },
-    completed:  { label: 'Đã hoàn thành', className: 'bg-green-100 text-green-700 border-green-200', dot: 'bg-green-500' },
-    canceled:  { label: 'Đã hủy', className: 'bg-red-100 text-red-700 border-red-200', dot: 'bg-red-400' },
+    completed: { label: 'Đã hoàn thành', className: 'bg-green-100 text-green-700 border-green-200', dot: 'bg-green-500' },
+    canceled: { label: 'Đã hủy', className: 'bg-red-100 text-red-700 border-red-200', dot: 'bg-red-400' },
     cancelled: { label: 'Đã hủy', className: 'bg-red-100 text-red-700 border-red-200', dot: 'bg-red-400' },
 };
 
@@ -40,7 +40,7 @@ const ClassSchedulePage = () => {
     const [scheduleConfig, setScheduleConfig] = useState(MOCK_SCHEDULE_CONFIG);
     const [lessons, setLessons] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
-    
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [sessionModalState, setSessionModalState] = useState({ isOpen: false, initialData: null });
     const [filterStatus, setFilterStatus] = useState('all');
@@ -53,11 +53,11 @@ const ClassSchedulePage = () => {
         if (!classId) return;
         const token = useAuthStore.getState().user?.token;
         const role = user?.role?.toUpperCase();
-        
+
         try {
             setIsLoading(true);
             let res;
-            
+
             if (role === 'STUDENT') {
                 // Students use the StudentSchedule API
                 const params = {
@@ -75,12 +75,12 @@ const ClassSchedulePage = () => {
                 const response = await res.json();
                 // Both APIs return an array of sessions in response.data or raw array
                 const sessionData = Array.isArray(response) ? response : response.data || [];
-                
+
                 const mappedLessons = sessionData.map((item, index) => {
                     const dateObj = new Date(item.date);
                     const dayIdx = dateObj.getDay();
                     const dayLabels = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
-                    
+
                     return {
                         id: item.sessionId || item.sessionID,
                         session: index + 1,
@@ -93,7 +93,7 @@ const ClassSchedulePage = () => {
                         raw: item
                     };
                 });
-                
+
                 // Sort by date and startTime
                 mappedLessons.sort((a, b) => {
                     const dateDesc = new Date(a.date) - new Date(b.date);
@@ -102,7 +102,7 @@ const ClassSchedulePage = () => {
                     }
                     return dateDesc;
                 });
-                
+
                 setLessons(mappedLessons);
             } else {
                 console.error('Failed to fetch sessions');
@@ -137,7 +137,7 @@ const ClassSchedulePage = () => {
     const handleConfirmDelete = async () => {
         const id = confirmModal.sessionId;
         if (!id) return;
-        
+
         const token = useAuthStore.getState().user?.token;
         if (!token) return;
 
@@ -176,7 +176,7 @@ const ClassSchedulePage = () => {
             };
 
             const isEdit = sessionModalState.initialData?.sessionId;
-            const res = isEdit 
+            const res = isEdit
                 ? await sessionService.updateSession(sessionModalState.initialData.sessionId, payload, token)
                 : await sessionService.createSession(payload, token);
 
@@ -217,48 +217,48 @@ const ClassSchedulePage = () => {
 
             {/* ── Config Summary Card ── */}
             {scheduleConfig ? (
-            <div className="bg-surface !p-6 rounded-[2rem] border border-border shadow-sm">
-                <div className="flex items-start justify-between !mb-5">
-                    <div className="flex items-center !gap-3">
-                        <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                            <Icon icon="solar:settings-bold-duotone" className="text-xl" />
-                        </div>
-                        <div>
-                            <h2 className="text-base font-bold text-text-main">Cấu hình lịch định kỳ</h2>
-                            <p className="text-xs text-text-muted">Thông tin thiết lập hiện tại của lớp</p>
-                        </div>
-                    </div>
-                    {isTeacherOrTA && (
-                    <div className="flex items-center !gap-2">
-                        <button onClick={() => setIsModalOpen(true)} className="flex items-center !gap-1.5 text-xs font-semibold text-primary !px-3 !py-2 border border-primary/30 rounded-xl hover:bg-primary/5 transition-colors">
-                            <Icon icon="solar:pen-bold-duotone" className="text-sm" /> Chỉnh sửa
-                        </button>
-                        <button onClick={handleDeleteSchedule} className="flex items-center !gap-1.5 text-xs font-semibold text-red-500 !px-3 !py-2 border border-red-200 rounded-xl hover:bg-red-50 transition-colors">
-                            <Icon icon="solar:trash-bin-2-bold-duotone" className="text-sm" /> Xóa cấu hình
-                        </button>
-                    </div>
-                    )}
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 !gap-3">
-                    {[
-                        { icon: 'solar:calendar-date-bold-duotone', color: 'text-blue-500 bg-blue-500/10', label: 'Ngày khai giảng', value: new Date(scheduleConfig.openingDate + 'T00:00:00').toLocaleDateString('vi-VN') },
-                        { icon: 'solar:calendar-mark-bold-duotone', color: 'text-violet-500 bg-violet-500/10', label: 'Ngày học', value: scheduleConfig.selectedDays.map(id => DAYS_OF_WEEK.find(d => d.id === id)?.label).join(', ') },
-                        { icon: 'solar:clock-circle-bold-duotone', color: 'text-orange-500 bg-orange-500/10', label: 'Ca học', value: `${scheduleConfig.startTime} – ${scheduleConfig.endTime}` },
-                        { icon: 'solar:document-text-bold-duotone', color: 'text-indigo-500 bg-indigo-500/10', label: 'Bảng điểm', value: templateLabels[scheduleConfig.transcriptTemplateId] || '-' },
-                        { icon: 'solar:tag-price-bold-duotone', color: 'text-emerald-500 bg-emerald-500/10', label: 'Học phí/buổi', value: Number(scheduleConfig.pricePerLesson).toLocaleString('vi-VN') + ' ₫' },
-                        { icon: 'solar:card-transfer-bold-duotone', color: 'text-pink-500 bg-pink-500/10', label: 'Thanh toán', value: paymentLabels[scheduleConfig.paymentMethod] || '-' },
-                    ].map((item, i) => (
-                        <div key={i} className="flex flex-col !gap-2 !p-4 bg-background rounded-2xl border border-border">
-                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${item.color}`}>
-                                <Icon icon={item.icon} className="text-base" />
+                <div className="bg-surface !p-6 rounded-[2rem] border border-border shadow-sm">
+                    <div className="flex items-start justify-between !mb-5">
+                        <div className="flex items-center !gap-3">
+                            <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                                <Icon icon="solar:settings-bold-duotone" className="text-xl" />
                             </div>
-                            <p className="text-[11px] text-text-muted">{item.label}</p>
-                            <p className="text-sm font-bold text-text-main leading-tight truncate">{item.value}</p>
+                            <div>
+                                <h2 className="text-base font-bold text-text-main">Cấu hình lịch định kỳ</h2>
+                                <p className="text-xs text-text-muted">Thông tin thiết lập hiện tại của lớp</p>
+                            </div>
                         </div>
-                    ))}
+                        {isTeacherOrTA && (
+                            <div className="flex items-center !gap-2">
+                                <button onClick={() => setIsModalOpen(true)} className="flex items-center !gap-1.5 text-xs font-semibold text-primary !px-3 !py-2 border border-primary/30 rounded-xl hover:bg-primary/5 transition-colors">
+                                    <Icon icon="solar:pen-bold-duotone" className="text-sm" /> Chỉnh sửa
+                                </button>
+                                <button onClick={handleDeleteSchedule} className="flex items-center !gap-1.5 text-xs font-semibold text-red-500 !px-3 !py-2 border border-red-200 rounded-xl hover:bg-red-50 transition-colors">
+                                    <Icon icon="solar:trash-bin-2-bold-duotone" className="text-sm" /> Xóa cấu hình
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 !gap-3">
+                        {[
+                            { icon: 'solar:calendar-date-bold-duotone', color: 'text-blue-500 bg-blue-500/10', label: 'Ngày khai giảng', value: new Date(scheduleConfig.openingDate + 'T00:00:00').toLocaleDateString('vi-VN') },
+                            { icon: 'solar:calendar-mark-bold-duotone', color: 'text-violet-500 bg-violet-500/10', label: 'Ngày học', value: scheduleConfig.selectedDays.map(id => DAYS_OF_WEEK.find(d => d.id === id)?.label).join(', ') },
+                            { icon: 'solar:clock-circle-bold-duotone', color: 'text-orange-500 bg-orange-500/10', label: 'Ca học', value: `${scheduleConfig.startTime} – ${scheduleConfig.endTime}` },
+                            { icon: 'solar:document-text-bold-duotone', color: 'text-indigo-500 bg-indigo-500/10', label: 'Bảng điểm', value: templateLabels[scheduleConfig.transcriptTemplateId] || '-' },
+                            { icon: 'solar:tag-price-bold-duotone', color: 'text-emerald-500 bg-emerald-500/10', label: 'Học phí/buổi', value: Number(scheduleConfig.pricePerLesson).toLocaleString('vi-VN') + ' ₫' },
+                            { icon: 'solar:card-transfer-bold-duotone', color: 'text-pink-500 bg-pink-500/10', label: 'Thanh toán', value: paymentLabels[scheduleConfig.paymentMethod] || '-' },
+                        ].map((item, i) => (
+                            <div key={i} className="flex flex-col !gap-2 !p-4 bg-background rounded-2xl border border-border">
+                                <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${item.color}`}>
+                                    <Icon icon={item.icon} className="text-base" />
+                                </div>
+                                <p className="text-[11px] text-text-muted">{item.label}</p>
+                                <p className="text-sm font-bold text-text-main leading-tight truncate">{item.value}</p>
+                            </div>
+                        ))}
+                    </div>
                 </div>
-            </div>
             ) : (
                 <div className="flex flex-col items-center text-center !gap-4 !py-8 bg-surface rounded-[2rem] border border-dashed border-border">
                     <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
@@ -299,9 +299,8 @@ const ClassSchedulePage = () => {
                                 { id: 'cancelled', label: 'Đã hủy', count: lessons.filter(l => l.status === 'cancelled' || l.status === 'canceled').length },
                             ].map(tab => (
                                 <button key={tab.id} onClick={() => setFilterStatus(tab.id)}
-                                    className={`flex whitespace-nowrap items-center !gap-1.5 !px-3 !py-2 rounded-lg text-xs font-semibold transition-all ${
-                                        filterStatus === tab.id ? '!bg-primary text-white shadow-sm' : 'text-text-muted hover:text-text-main'
-                                    }`}>
+                                    className={`flex whitespace-nowrap items-center !gap-1.5 !px-3 !py-2 rounded-lg text-xs font-semibold transition-all ${filterStatus === tab.id ? '!bg-primary text-white shadow-sm' : 'text-text-muted hover:text-text-main'
+                                        }`}>
                                     {tab.label}
                                     <span className={`text-[10px] font-bold !px-1.5 !py-0.5 rounded-md ${filterStatus === tab.id ? 'bg-white/20' : 'bg-border'}`}>
                                         {tab.count}
@@ -309,12 +308,12 @@ const ClassSchedulePage = () => {
                                 </button>
                             ))}
                         </div>
-                        
+
                         {/* Add Session Button */}
                         {isTeacherOrTA && (
                             <button
                                 onClick={() => setSessionModalState({ isOpen: true, initialData: null })}
-                                className="flex shrink-0 items-center justify-center !w-10 !h-10 sm:!w-auto sm:!px-4 bg-primary text-white rounded-xl shadow-md shadow-primary/30 hover:bg-primary/90 hover:scale-105 transition-all"
+                                className="flex shrink-0 items-center justify-center !w-10 !h-10 sm:!w-auto sm:!px-4 !bg-primary text-white rounded-xl shadow-md shadow-primary/30 hover:bg-primary/90 hover:scale-105 transition-all"
                                 title="Thêm buổi học thủ công"
                             >
                                 <Icon icon="solar:medical-kit-bold" className="text-lg sm:!mr-2" />
@@ -336,10 +335,9 @@ const ClassSchedulePage = () => {
                             const isDeleting = deletingId === lesson.id;
                             return (
                                 <div key={lesson.id || idx}
-                                    className={`flex flex-col sm:flex-row items-start sm:items-center justify-between !gap-4 !p-4 rounded-2xl border transition-all group ${
-                                        isDeleting ? 'opacity-0 scale-95 border-red-200 bg-red-50' :
-                                        'border-border hover:border-primary/30 hover:shadow-sm bg-background'
-                                    }`}>
+                                    className={`flex flex-col sm:flex-row items-start sm:items-center justify-between !gap-4 !p-4 rounded-2xl border transition-all group ${isDeleting ? 'opacity-0 scale-95 border-red-200 bg-red-50' :
+                                            'border-border hover:border-primary/30 hover:shadow-sm bg-background'
+                                        }`}>
                                     <div className="flex items-center !gap-4 w-full sm:w-auto">
                                         <div className="flex flex-col items-center justify-center min-w-[56px] !px-3 !py-2.5 bg-primary/10 rounded-xl text-primary border border-primary/20 shrink-0">
                                             <span className="text-[9px] font-bold uppercase tracking-wide opacity-70">Buổi</span>
@@ -370,29 +368,29 @@ const ClassSchedulePage = () => {
                                         </span>
 
                                         {isTeacherOrTA && (
-                                        <div className="flex items-center !gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                                            <button
-                                                onClick={() => handleOpenAttendance(lesson)}
-                                                className={`flex items-center !gap-1.5 !px-3 !py-1.5 text-xs font-bold rounded-xl shadow-sm transition-all whitespace-nowrap ${lesson.status === 'scheduled' ? '!bg-primary text-white hover:bg-primary/90' : 'bg-background border border-border text-text-main hover:border-primary'}`}
-                                            >
-                                                <Icon icon={lesson.status === 'scheduled' ? "material-symbols:fact-check-rounded" : "material-symbols:visibility-rounded"} className="text-sm" />
-                                                Điểm danh
-                                            </button>
-                                            <button
-                                                title="Sửa thông tin"
-                                                onClick={() => setSessionModalState({ isOpen: true, initialData: lesson.raw })}
-                                                className="!p-2 text-text-muted hover:text-primary hover:bg-primary/10 rounded-xl transition-colors border border-transparent hover:border-primary/20 bg-background"
-                                            >
-                                                <Icon icon="solar:pen-bold-duotone" className="text-lg" />
-                                            </button>
-                                            <button
-                                                title="Xóa kết quả buổi học"
-                                                onClick={() => handleDeleteLessonAPI(lesson.id)}
-                                                className="!p-2 text-text-muted hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors border border-transparent hover:border-red-200 bg-background"
-                                            >
-                                                <Icon icon="material-symbols:delete-outline-rounded" className="text-lg" />
-                                            </button>
-                                        </div>
+                                            <div className="flex items-center !gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                                <button
+                                                    onClick={() => handleOpenAttendance(lesson)}
+                                                    className={`flex items-center !gap-1.5 !px-3 !py-1.5 text-xs font-bold rounded-xl shadow-sm transition-all whitespace-nowrap ${lesson.status === 'scheduled' ? '!bg-primary text-white hover:bg-primary/90' : 'bg-background border border-border text-text-main hover:border-primary'}`}
+                                                >
+                                                    <Icon icon={lesson.status === 'scheduled' ? "material-symbols:fact-check-rounded" : "material-symbols:visibility-rounded"} className="text-sm" />
+                                                    Điểm danh
+                                                </button>
+                                                <button
+                                                    title="Sửa thông tin"
+                                                    onClick={() => setSessionModalState({ isOpen: true, initialData: lesson.raw })}
+                                                    className="!p-2 text-text-muted hover:text-primary hover:bg-primary/10 rounded-xl transition-colors border border-transparent hover:border-primary/20 bg-background"
+                                                >
+                                                    <Icon icon="solar:pen-bold-duotone" className="text-lg" />
+                                                </button>
+                                                <button
+                                                    title="Xóa kết quả buổi học"
+                                                    onClick={() => handleDeleteLessonAPI(lesson.id)}
+                                                    className="!p-2 text-text-muted hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors border border-transparent hover:border-red-200 bg-background"
+                                                >
+                                                    <Icon icon="material-symbols:delete-outline-rounded" className="text-lg" />
+                                                </button>
+                                            </div>
                                         )}
                                     </div>
                                 </div>
@@ -423,7 +421,7 @@ const ClassSchedulePage = () => {
                 onSave={handleSaveAttendance}
             />
 
-            <ConfirmModal 
+            <ConfirmModal
                 isOpen={confirmModal.isOpen}
                 onClose={() => setConfirmModal({ isOpen: false, sessionId: null })}
                 onConfirm={handleConfirmDelete}

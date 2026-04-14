@@ -36,6 +36,7 @@ import useAuthStore from '../store/authStore';
 // New Features Imports
 import StudentManagementPage from '../features/student-management/pages/StudentManagementPage';
 import TAManagementPage from '../features/ta-management/pages/TAManagementPage';
+import GlobalTAManagementPage from '../features/ta-management/pages/GlobalTAManagementPage';
 import ViewSchedulePage from '../features/schedule-attendance/pages/ViewSchedulePage';
 import TakeAttendancePage from '../features/schedule-attendance/pages/TakeAttendancePage';
 import UpdateAttendanceRecordPage from '../features/schedule-attendance/pages/UpdateAttendanceRecordPage';
@@ -158,7 +159,7 @@ export const AppRoutes = () => {
                               <Route path="students" element={<StudentManagementPage />} />
 
                               {/* TA Management */}
-                              <Route path="assistants" element={<TAManagementPage />} />
+                              <Route path="assistants" element={<GlobalTAManagementPage />} />
 
                               {/* Schedule & Attendance */}
                               <Route path="schedule" element={<ViewSchedulePage />} />

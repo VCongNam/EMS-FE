@@ -165,7 +165,6 @@ const SetTAPermissionsPage = ({ classId }) => {
                                 }`}
                             >
                                 <div className="text-sm font-semibold truncate">{ta.fullName}</div>
-                                <div className={`text-xs !mt-0.5 font-mono ${selectedTA === ta.taid ? 'text-white/80' : 'text-text-muted'}`}>{ta.taid}</div>
                             </button>
                         ))}
                     </div>

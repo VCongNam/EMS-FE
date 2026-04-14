@@ -111,120 +111,120 @@ const SetupRecurringScheduleModal = ({ isOpen, onClose, onSave, initialData = nu
         <form onSubmit={handleSave} className="flex-1 flex flex-col overflow-hidden">
             {/* Scrollable body */}
             <div className="flex-1 overflow-y-auto !px-6 md:!px-8 !py-6 !space-y-7" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-            {/* Section 1: Opening Date */}
-            <div className="shrink-0">
-                <SectionHeader icon="solar:calendar-date-bold-duotone" color="bg-blue-500/10 text-blue-500" title="1. Ngày khai giảng dự kiến" />
-                <div className="!space-y-1 group">
-                    <label className={labelClasses}>Ngày khai giảng <span className="text-red-500">*</span></label>
-                    <div className="relative">
-                        <Icon icon="solar:calendar-linear" className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted/70 text-lg group-focus-within:text-primary transition-colors pointer-events-none" />
-                        <input type="date" name="openingDate" required value={formData.openingDate} onChange={handleChange} className={`${inputClasses} !pl-11`} />
+                {/* Section 1: Opening Date */}
+                <div className="shrink-0">
+                    <SectionHeader icon="solar:calendar-date-bold-duotone" color="bg-blue-500/10 text-blue-500" title="1. Ngày khai giảng dự kiến" />
+                    <div className="!space-y-1 group">
+                        <label className={labelClasses}>Ngày khai giảng <span className="text-red-500">*</span></label>
+                        <div className="relative">
+                            <Icon icon="solar:calendar-linear" className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted/70 text-lg group-focus-within:text-primary transition-colors pointer-events-none" />
+                            <input type="date" name="openingDate" required value={formData.openingDate} onChange={handleChange} className={`${inputClasses} !pl-11`} />
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            {/* Section 2: Transcript Template */}
-            <div className="shrink-0">
-                <SectionHeader icon="solar:document-text-bold-duotone" color="bg-violet-500/10 text-violet-500" title="2. Cấu trúc bảng điểm danh mẫu" />
-                <div className="grid grid-cols-1 sm:grid-cols-2 !gap-3">
-                    {TRANSCRIPT_TEMPLATES.map(t => {
-                        const isSelected = formData.transcriptTemplateId === t.id;
-                        return (
-                            <div key={t.id} onClick={() => handleTranscriptSelect(t.id)}
-                                className={`border rounded-2xl !p-4 cursor-pointer transition-all ${isSelected ? 'border-primary ring-2 ring-primary/20 bg-primary/5' : 'border-border hover:border-primary/50 bg-background'}`}>
-                                <div className="flex items-start !gap-3">
-                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 ${isSelected ? 'border-primary bg-primary' : 'border-text-muted/40'}`}>
-                                        {isSelected && <div className="w-2 h-2 bg-white rounded-full" />}
-                                    </div>
-                                    <div>
-                                        <p className={`text-sm font-bold leading-snug ${isSelected ? 'text-primary' : 'text-text-main'}`}>{t.name}</p>
-                                        <p className="text-xs text-text-muted mt-0.5">{t.description}</p>
+                {/* Section 2: Transcript Template */}
+                <div className="shrink-0">
+                    <SectionHeader icon="solar:document-text-bold-duotone" color="bg-violet-500/10 text-violet-500" title="2. Cấu trúc bảng điểm danh mẫu" />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 !gap-3">
+                        {TRANSCRIPT_TEMPLATES.map(t => {
+                            const isSelected = formData.transcriptTemplateId === t.id;
+                            return (
+                                <div key={t.id} onClick={() => handleTranscriptSelect(t.id)}
+                                    className={`border rounded-2xl !p-4 cursor-pointer transition-all ${isSelected ? 'border-primary ring-2 ring-primary/20 bg-primary/5' : 'border-border hover:border-primary/50 bg-background'}`}>
+                                    <div className="flex items-start !gap-3">
+                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 ${isSelected ? 'border-primary bg-primary' : 'border-text-muted/40'}`}>
+                                            {isSelected && <div className="w-2 h-2 bg-white rounded-full" />}
+                                        </div>
+                                        <div>
+                                            <p className={`text-sm font-bold leading-snug ${isSelected ? 'text-primary' : 'text-text-main'}`}>{t.name}</p>
+                                            <p className="text-xs text-text-muted mt-0.5">{t.description}</p>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
-
-            {/* Section 3: Time Frame */}
-            <div className="shrink-0">
-                <SectionHeader icon="solar:clock-circle-bold-duotone" color="bg-orange-500/10 text-orange-500" title="3. Khung giờ học" />
-                <div className="!mb-5">
-                    <label className={labelClasses}>Ngày trong tuần <span className="text-red-500">*</span></label>
-                    <div className="flex !gap-2 flex-wrap">
-                        {DAYS_OF_WEEK.map(day => {
-                            const isOn = formData.selectedDays.includes(day.id);
-                            return (
-                                <button key={day.id} type="button" onClick={() => handleDayToggle(day.id)}
-                                    className={`w-12 h-12 rounded-xl font-bold text-sm transition-all ${isOn ? '!bg-primary text-white shadow-lg shadow-primary/30' : 'bg-background border border-border text-text-muted hover:border-primary/50 hover:text-primary'}`}>
-                                    {day.label}
-                                </button>
                             );
                         })}
                     </div>
-                    {formData.selectedDays.length > 0 && (
-                        <p className="text-xs text-primary mt-2 font-medium">
-                            Đã chọn: {formData.selectedDays.map(id => DAYS_OF_WEEK.find(d => d.id === id)?.label).join(', ')}
-                        </p>
-                    )}
                 </div>
-                <div className="grid grid-cols-2 !gap-4">
-                    <div className="!space-y-1 group">
-                        <label className={labelClasses}>Giờ bắt đầu <span className="text-red-500">*</span></label>
-                        <div className="relative">
-                            <Icon icon="solar:clock-linear" className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted/70 text-lg group-focus-within:text-primary transition-colors pointer-events-none" />
-                            <input type="time" name="startTime" required value={formData.startTime} onChange={handleChange} className={`${inputClasses} !pl-11`} />
-                        </div>
-                    </div>
-                    <div className="!space-y-1 group">
-                        <label className={labelClasses}>Giờ kết thúc <span className="text-red-500">*</span></label>
-                        <div className="relative">
-                            <Icon icon="solar:clock-linear" className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted/70 text-lg group-focus-within:text-primary transition-colors pointer-events-none" />
-                            <input type="time" name="endTime" required value={formData.endTime} onChange={handleChange} className={`${inputClasses} !pl-11`} />
-                        </div>
-                    </div>
-                </div>
-                {formData.startTime && formData.endTime && formData.endTime > formData.startTime && (
-                    <div className="flex items-center !gap-2 !mt-3 !px-4 !py-2.5 bg-green-500/10 border border-green-500/20 rounded-xl">
-                        <Icon icon="solar:clock-circle-bold-duotone" className="text-green-500 shrink-0" />
-                        <p className="text-xs text-green-700 font-semibold">Ca học: {formData.startTime} – {formData.endTime}</p>
-                    </div>
-                )}
-            </div>
 
-            {/* Section 4: Pricing */}
-            <div className="shrink-0">
-                <SectionHeader icon="solar:dollar-minimalistic-bold-duotone" color="bg-emerald-500/10 text-emerald-500" title="4. Học phí & Thanh toán" />
-                <div className="grid grid-cols-1 md:grid-cols-2 !gap-5">
-                    <div className="!space-y-1 group">
-                        <label className={labelClasses}>Giá / 1 buổi học (VNĐ) <span className="text-red-500">*</span></label>
-                        <div className="relative">
-                            <Icon icon="solar:tag-price-linear" className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted/70 text-lg group-focus-within:text-primary transition-colors pointer-events-none" />
-                            <input type="number" name="pricePerLesson" required min="0" step="1000" value={formData.pricePerLesson} onChange={handleChange} placeholder="Vd: 150000" className={`${inputClasses} !pl-11`} />
-                        </div>
-                        {formData.pricePerLesson && (
-                            <p className="text-xs text-emerald-600 font-semibold !mt-1">= {Number(formData.pricePerLesson).toLocaleString('vi-VN')} ₫ / buổi</p>
-                        )}
-                    </div>
-                    <div className="!space-y-1.5">
-                        <label className={labelClasses}>Phương thức thanh toán <span className="text-red-500">*</span></label>
-                        <div className="!space-y-2">
-                            {PAYMENT_METHODS.map(m => {
-                                const isSelected = formData.paymentMethod === m.id;
+                {/* Section 3: Time Frame */}
+                <div className="shrink-0">
+                    <SectionHeader icon="solar:clock-circle-bold-duotone" color="bg-orange-500/10 text-orange-500" title="3. Khung giờ học" />
+                    <div className="!mb-5">
+                        <label className={labelClasses}>Ngày trong tuần <span className="text-red-500">*</span></label>
+                        <div className="flex !gap-2 flex-wrap">
+                            {DAYS_OF_WEEK.map(day => {
+                                const isOn = formData.selectedDays.includes(day.id);
                                 return (
-                                    <button key={m.id} type="button" onClick={() => handlePaymentSelect(m.id)}
-                                        className={`w-full flex items-center !gap-3 !px-4 !py-3 border rounded-xl transition-all text-sm font-semibold ${isSelected ? 'border-primary bg-primary/5 text-primary ring-1 ring-primary/20' : 'border-border bg-background text-text-muted hover:border-primary/40 hover:text-text-main'}`}>
-                                        <Icon icon={m.icon} className="text-xl shrink-0" />
-                                        {m.label}
-                                        {isSelected && <Icon icon="solar:check-circle-bold" className="ml-auto text-primary text-lg" />}
+                                    <button key={day.id} type="button" onClick={() => handleDayToggle(day.id)}
+                                        className={`w-12 h-12 rounded-xl font-bold text-sm transition-all ${isOn ? '!bg-primary text-white shadow-lg shadow-primary/30' : 'bg-background border border-border text-text-muted hover:border-primary/50 hover:text-primary'}`}>
+                                        {day.label}
                                     </button>
                                 );
                             })}
                         </div>
+                        {formData.selectedDays.length > 0 && (
+                            <p className="text-xs text-primary mt-2 font-medium">
+                                Đã chọn: {formData.selectedDays.map(id => DAYS_OF_WEEK.find(d => d.id === id)?.label).join(', ')}
+                            </p>
+                        )}
+                    </div>
+                    <div className="grid grid-cols-2 !gap-4">
+                        <div className="!space-y-1 group">
+                            <label className={labelClasses}>Giờ bắt đầu <span className="text-red-500">*</span></label>
+                            <div className="relative">
+                                <Icon icon="solar:clock-linear" className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted/70 text-lg group-focus-within:text-primary transition-colors pointer-events-none" />
+                                <input type="time" name="startTime" required value={formData.startTime} onChange={handleChange} className={`${inputClasses} !pl-11`} />
+                            </div>
+                        </div>
+                        <div className="!space-y-1 group">
+                            <label className={labelClasses}>Giờ kết thúc <span className="text-red-500">*</span></label>
+                            <div className="relative">
+                                <Icon icon="solar:clock-linear" className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted/70 text-lg group-focus-within:text-primary transition-colors pointer-events-none" />
+                                <input type="time" name="endTime" required value={formData.endTime} onChange={handleChange} className={`${inputClasses} !pl-11`} />
+                            </div>
+                        </div>
+                    </div>
+                    {formData.startTime && formData.endTime && formData.endTime > formData.startTime && (
+                        <div className="flex items-center !gap-2 !mt-3 !px-4 !py-2.5 bg-green-500/10 border border-green-500/20 rounded-xl">
+                            <Icon icon="solar:clock-circle-bold-duotone" className="text-green-500 shrink-0" />
+                            <p className="text-xs text-green-700 font-semibold">Ca học: {formData.startTime} – {formData.endTime}</p>
+                        </div>
+                    )}
+                </div>
+
+                {/* Section 4: Pricing */}
+                <div className="shrink-0">
+                    <SectionHeader icon="solar:dollar-minimalistic-bold-duotone" color="bg-emerald-500/10 text-emerald-500" title="4. Học phí & Thanh toán" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 !gap-5">
+                        <div className="!space-y-1 group">
+                            <label className={labelClasses}>Giá / 1 buổi học (VNĐ) <span className="text-red-500">*</span></label>
+                            <div className="relative">
+                                <Icon icon="solar:tag-price-linear" className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted/70 text-lg group-focus-within:text-primary transition-colors pointer-events-none" />
+                                <input type="number" name="pricePerLesson" required min="0" step="1000" value={formData.pricePerLesson} onChange={handleChange} placeholder="Vd: 150000" className={`${inputClasses} !pl-11`} />
+                            </div>
+                            {formData.pricePerLesson && (
+                                <p className="text-xs text-emerald-600 font-semibold !mt-1">= {Number(formData.pricePerLesson).toLocaleString('vi-VN')} ₫ / buổi</p>
+                            )}
+                        </div>
+                        <div className="!space-y-1.5">
+                            <label className={labelClasses}>Phương thức thanh toán <span className="text-red-500">*</span></label>
+                            <div className="!space-y-2">
+                                {PAYMENT_METHODS.map(m => {
+                                    const isSelected = formData.paymentMethod === m.id;
+                                    return (
+                                        <button key={m.id} type="button" onClick={() => handlePaymentSelect(m.id)}
+                                            className={`w-full flex items-center !gap-3 !px-4 !py-3 border rounded-xl transition-all text-sm font-semibold ${isSelected ? 'border-primary bg-primary/5 text-primary ring-1 ring-primary/20' : 'border-border bg-background text-text-muted hover:border-primary/40 hover:text-text-main'}`}>
+                                            <Icon icon={m.icon} className="text-xl shrink-0" />
+                                            {m.label}
+                                            {isSelected && <Icon icon="solar:check-circle-bold" className="ml-auto text-primary text-lg" />}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
             </div>{/* end scrollable body */}
 
             {/* Footer - fixed outside scroll */}
