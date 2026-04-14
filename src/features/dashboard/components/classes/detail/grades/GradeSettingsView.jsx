@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import useAuthStore from '../../../../../../store/authStore';
 import { gradebookService } from '../../../../api/gradebookService';
 
-const GradeSettingsView = ({ classId, categories, onRefresh, isLoading }) => {
+const GradeSettingsView = ({ classId, categories, gradeTableData, onRefresh, isLoading }) => {
     const { user } = useAuthStore();
     const [newName, setNewName] = useState('');
     const [newWeight, setNewWeight] = useState('');
@@ -22,12 +22,12 @@ const GradeSettingsView = ({ classId, categories, onRefresh, isLoading }) => {
 
     const handleAddCategory = async (e) => {
         e.preventDefault();
-        
+
         if (!newName.trim()) {
             toast.error('Vui lòng nhập tên hạng mục');
             return;
         }
-        
+
         const weightValue = parseFloat(newWeight);
         if (isNaN(weightValue) || weightValue <= 0) {
             toast.error('Trọng số phải lớn hơn 0');
@@ -78,7 +78,7 @@ const GradeSettingsView = ({ classId, categories, onRefresh, isLoading }) => {
             toast.error('Vui lòng nhập tên hạng mục');
             return;
         }
-        
+
         const weightValue = parseFloat(editWeight);
         if (isNaN(weightValue) || weightValue <= 0) {
             toast.error('Trọng số phải lớn hơn 0');
@@ -94,7 +94,7 @@ const GradeSettingsView = ({ classId, categories, onRefresh, isLoading }) => {
             };
 
             const res = await gradebookService.updateGradeCategory(classId, payload, user?.token);
-            
+
             if (res.ok) {
                 toast.success('Cập nhật hạng mục thành công!');
                 setEditingCategoryId(null);
@@ -119,7 +119,7 @@ const GradeSettingsView = ({ classId, categories, onRefresh, isLoading }) => {
         try {
             setIsActionSubmitting(true);
             const res = await gradebookService.deleteGradeCategory(classId, id, user?.token);
-            
+
             if (res.ok) {
                 toast.success('Đã xóa hạng mục thành công!');
                 if (onRefresh) onRefresh();
@@ -149,7 +149,7 @@ const GradeSettingsView = ({ classId, categories, onRefresh, isLoading }) => {
     return (
         <div className="!flex-1 !p-6 !bg-surface !overflow-y-auto !animate-fade-in custom-scrollbar">
             <div className="!max-w-3xl !mx-auto !space-y-6">
-                
+
                 {/* Header Information */}
                 <div className="!bg-white !rounded-2xl !border !border-border !shadow-sm !overflow-hidden">
                     <div className="!p-6 !border-b !border-border !bg-background/50 !flex !items-center !justify-between">
@@ -180,7 +180,7 @@ const GradeSettingsView = ({ classId, categories, onRefresh, isLoading }) => {
                         <Icon icon="material-symbols:list-alt-outline-rounded" className="!text-text-muted !mr-2 !text-xl" />
                         <h4 className="!font-bold !text-text-main">Danh sách hạng mục hiện có</h4>
                     </div>
-                    
+
                     {validCategories.length === 0 ? (
                         <div className="!p-10 !text-center !text-text-muted">
                             <Icon icon="material-symbols:inbox-outline" className="!text-5xl !mx-auto !opacity-20 !mb-3" />
@@ -190,22 +190,22 @@ const GradeSettingsView = ({ classId, categories, onRefresh, isLoading }) => {
                         <div className="!divide-y !divide-border">
                             {validCategories.map((cat) => {
                                 const isEditing = editingCategoryId === (cat.id || cat.gradeCategoryId);
-                                
+
                                 if (isEditing) {
                                     return (
                                         <div key="editing" className="!p-5 !bg-primary/5">
                                             <div className="!flex !flex-col md:!flex-row !gap-4 !items-start md:!items-center">
                                                 <div className="!flex-1 !w-full">
-                                                    <input 
-                                                        type="text" 
+                                                    <input
+                                                        type="text"
                                                         value={editName}
                                                         onChange={(e) => setEditName(e.target.value)}
                                                         className="!w-full !px-3 !py-2 !bg-white !border !border-border !rounded-lg !text-sm focus:!outline-none focus:!border-primary focus:!ring-2 focus:!ring-primary/20"
                                                     />
                                                 </div>
                                                 <div className="!w-full md:!w-32 !relative">
-                                                    <input 
-                                                        type="number" 
+                                                    <input
+                                                        type="number"
                                                         step="0.01"
                                                         min="0"
                                                         value={editWeight}
@@ -215,14 +215,14 @@ const GradeSettingsView = ({ classId, categories, onRefresh, isLoading }) => {
                                                     <span className="!absolute !right-3 !top-1/2 !-translate-y-1/2 !text-text-muted !text-xs !font-bold">%</span>
                                                 </div>
                                                 <div className="!flex !items-center !gap-2">
-                                                    <button 
+                                                    <button
                                                         onClick={() => setEditingCategoryId(null)}
                                                         disabled={isActionSubmitting}
                                                         className="!px-3 !py-2 !text-sm !font-bold !text-text-muted hover:!bg-background !rounded-lg !transition-colors disabled:!opacity-50"
                                                     >
                                                         Hủy
                                                     </button>
-                                                    <button 
+                                                    <button
                                                         onClick={handleSaveEdit}
                                                         disabled={isActionSubmitting}
                                                         className="!px-4 !py-2 !bg-primary !text-white !text-sm !font-bold !rounded-lg hover:!bg-primary/90 !transition-colors !flex !items-center !gap-2 disabled:!opacity-50"
@@ -236,37 +236,82 @@ const GradeSettingsView = ({ classId, categories, onRefresh, isLoading }) => {
                                 }
 
                                 return (
-                                    <div key={cat.id || cat.gradeCategoryId} className="!flex !items-center !justify-between !p-5 transition-colors hover:!bg-background/30">
-                                        <div className="!flex-1">
-                                            <div className="!font-bold !text-text-main !text-base">{cat.name}</div>
-                                        </div>
-                                        <div className="!flex !items-center !gap-6">
-                                            <div className="!text-right">
-                                                <div className="!text-sm !text-text-muted">Trọng số</div>
-                                                <div className="!font-black !text-primary !text-lg">{cat.weight}%</div>
+                                    <div key={cat.id || cat.gradeCategoryId} className="!p-5 transition-colors hover:!bg-background/10">
+                                        <div className="!flex !items-center !justify-between">
+                                            <div className="!flex-1">
+                                                <div className="!font-bold !text-text-main !text-base">{cat.name}</div>
                                             </div>
-                                            <div className="!flex !items-center !gap-2 !border-l !border-border !pl-6 h-10">
-                                                <button 
-                                                    className="!p-2 !text-text-muted hover:!text-primary hover:!bg-primary/10 !rounded-lg !transition-colors disabled:!opacity-50"
-                                                    title="Chỉnh sửa"
-                                                    onClick={() => handleEditCategory(cat)}
-                                                    disabled={isActionSubmitting}
-                                                >
-                                                    <Icon icon="material-symbols:edit-document-outline-rounded" className="!text-xl" />
-                                                </button>
-                                                <button 
-                                                    className="!p-2 !text-text-muted hover:!text-destructive hover:!bg-destructive/10 !rounded-lg !transition-colors disabled:!opacity-50"
-                                                    title="Xóa"
-                                                    onClick={() => handleDeleteCategory(cat.id || cat.gradeCategoryId)}
-                                                    disabled={isActionSubmitting}
-                                                >
-                                                    <Icon icon="material-symbols:delete-outline-rounded" className="!text-xl" />
-                                                </button>
+                                            <div className="!flex !items-center !gap-6">
+                                                <div className="!text-right">
+                                                    <div className="!text-sm !text-text-muted">Trọng số</div>
+                                                    <div className="!font-black !text-primary !text-lg">{cat.weight}%</div>
+                                                </div>
+                                                <div className="!flex !items-center !gap-2 !border-l !border-border !pl-6 h-10">
+                                                    <button
+                                                        className="!p-2 !text-text-muted hover:!text-primary hover:!bg-primary/10 !rounded-lg !transition-colors disabled:!opacity-50"
+                                                        title="Chỉnh sửa hạng mục"
+                                                        onClick={() => handleEditCategory(cat)}
+                                                        disabled={isActionSubmitting}
+                                                    >
+                                                        <Icon icon="material-symbols:edit-document-outline-rounded" className="!text-xl" />
+                                                    </button>
+                                                    <button
+                                                        className="!p-2 !text-text-muted hover:!text-destructive hover:!bg-destructive/10 !rounded-lg !transition-colors disabled:!opacity-50"
+                                                        title="Xóa hạng mục"
+                                                        onClick={() => handleDeleteCategory(cat.id || cat.gradeCategoryId)}
+                                                        disabled={isActionSubmitting}
+                                                    >
+                                                        <Icon icon="material-symbols:delete-outline-rounded" className="!text-xl" />
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
+
+                                        {/* Display Assignments (Đầu mục điểm) for this category */}
+                                        {gradeTableData?.columns?.some(col => col.gradeCategoryId === (cat.id || cat.gradeCategoryId)) && (
+                                            <div className="!mt-4 !ml-4 !pl-4 !border-l-2 !border-border !space-y-2">
+                                                <p className="!text-[10px] !font-black !text-text-muted !uppercase !tracking-widest !mb-2">Đầu mục điểm thuộc hạng mục này:</p>
+                                                <div className="!flex !flex-wrap !gap-2">
+                                                    {gradeTableData.columns
+                                                        .filter(col => col.gradeCategoryId === (cat.id || cat.gradeCategoryId))
+                                                        .map(col => (
+                                                            <div key={col.assignmentId} className="!px-3 !py-1 !bg-background !border !border-border !rounded-lg !text-xs !font-medium !text-text-main !flex !items-center !gap-1.5">
+                                                                <Icon icon="material-symbols:assignment-outline-rounded" className="!text-primary" />
+                                                                {col.title}
+                                                            </div>
+                                                        ))
+                                                    }
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 );
                             })}
+
+                            {/* Uncategorized Assignments Section */}
+                            {gradeTableData?.columns?.filter(col => !validCategories.some(cat => (cat.id || cat.gradeCategoryId) === col.gradeCategoryId)).length > 0 && (
+                                <div className="!p-5 !bg-red-50/30">
+                                    <div className="!flex !items-center !justify-between !mb-3">
+                                        <div className="!font-bold !text-destructive !flex !items-center !gap-2">
+                                            <Icon icon="material-symbols:warning-rounded" />
+                                            Đầu mục chưa phân loại
+                                        </div>
+                                        <div className="!text-[10px] !text-destructive !font-bold !uppercase">Cần kiểm tra lại CATEGORY ID</div>
+                                    </div>
+                                    <div className="!flex !flex-wrap !gap-2">
+                                        {gradeTableData.columns
+                                            .filter(col => !validCategories.some(cat => (cat.id || cat.gradeCategoryId) === col.gradeCategoryId))
+                                            .map(col => (
+                                                <div key={col.assignmentId} className="!px-3 !py-1 !bg-white !border !border-red-200 !rounded-lg !text-xs !font-medium !text-red-700 !flex !items-center !gap-1.5">
+                                                    <Icon icon="material-symbols:assignment-outline-rounded" />
+                                                    {col.title}
+                                                </div>
+                                            ))
+                                        }
+                                    </div>
+                                    <p className="!text-[10px] !text-destructive/60 !mt-2 !italic">Lưu ý: Các đầu mục này có Category ID không khớp với danh sách hạng mục hiện có.</p>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>

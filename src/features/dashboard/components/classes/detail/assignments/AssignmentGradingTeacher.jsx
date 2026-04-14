@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
 import FileViewer from 'react-file-viewer';
+import { assignmentService } from '../../../../api/assignmentService';
+import useAuthStore from '../../../../../../store/authStore';
+import { toast } from 'react-toastify';
 
 /* ─── helpers ─────────────────────────────────────────────────────────────── */
 const getFileIcon = (type = '', name = '') => {
@@ -24,20 +27,26 @@ const getInitials = (name = '') =>
 
 const StatusBadge = ({ status }) => {
     const map = {
-        'Đã nộp':   { bg: 'bg-green-100',  text: 'text-green-700'  },
-        'Nộp muộn': { bg: 'bg-amber-100',  text: 'text-amber-700'  },
-        'Chưa nộp': { bg: 'bg-red-100',    text: 'text-red-600'    },
+        'In Time':  { bg: 'bg-green-100',  text: 'text-green-700', label: 'Đã nộp' },
+        'Late':     { bg: 'bg-amber-100',  text: 'text-amber-700', label: 'Nộp muộn' },
+        'Pending':  { bg: 'bg-red-100',    text: 'text-red-600',   label: 'Chưa nộp' },
+        'Đã nộp':   { bg: 'bg-green-100',  text: 'text-green-700', label: 'Đã nộp' },
+        'Nộp muộn': { bg: 'bg-amber-100',  text: 'text-amber-700', label: 'Nộp muộn' },
+        'Chưa nộp': { bg: 'bg-red-100',    text: 'text-red-600',   label: 'Chưa nộp' },
     };
-    const s = map[status] ?? { bg: 'bg-gray-100', text: 'text-gray-600' };
+    const s = map[status] ?? { bg: 'bg-gray-100', text: 'text-gray-600', label: status };
     return (
         <span className={`inline-flex items-center !px-2.5 !py-0.5 rounded-full text-[11px] font-semibold ${s.bg} ${s.text}`}>
-            {status}
+            {s.label}
         </span>
     );
 };
 
 const AvatarCircle = ({ name, status, size = 'md' }) => {
     const colorMap = {
+        'In Time':  'bg-green-100 text-green-700',
+        'Late':     'bg-amber-100 text-amber-700',
+        'Pending':  'bg-red-100   text-red-600',
         'Đã nộp':   'bg-green-100 text-green-700',
         'Nộp muộn': 'bg-amber-100 text-amber-700',
         'Chưa nộp': 'bg-red-100   text-red-600',
@@ -120,24 +129,79 @@ const FilePreview = ({ file }) => {
 };
 
 /* ─── Main Component ──────────────────────────────────────────────────────── */
-const AssignmentGradingTeacher = ({ assignment }) => {
+const AssignmentGradingTeacher = ({ assignment, onRefresh }) => {
+    const { user } = useAuthStore();
     const [selectedStudent, setSelectedStudent] = useState(null);
     const [scoreInput,  setScoreInput]  = useState('');
     const [commentInput, setCommentInput] = useState('');
     const [previewFile, setPreviewFile]  = useState(null);
+    const [isGrading, setIsGrading] = useState(false);
+    const [isFeedbackPosting, setIsFeedbackPosting] = useState(false);
 
     const submissions    = assignment.submissions || [];
-    const countTurnedIn  = submissions.filter((s) => s.status !== 'Chưa nộp').length;
+    const countTurnedIn  = submissions.filter((s) => s.status === 'In Time' || s.status === 'Late' || s.status === 'Đã nộp' || s.status === 'Nộp muộn').length;
     const countMissing   = submissions.length - countTurnedIn;
 
     const handleSelectStudent = (sub) => {
         setSelectedStudent(sub);
-        setScoreInput(sub.score ?? '');
+        setScoreInput(sub.grade ?? sub.score ?? '');
         setCommentInput('');
         setPreviewFile(null);
     };
 
     const handleBack = () => setSelectedStudent(null);
+
+    const handleGrade = async () => {
+        if (!selectedStudent || !selectedStudent.submissionId) {
+            toast.error("Không tìm thấy thông tin bài nộp");
+            return;
+        }
+
+        try {
+            setIsGrading(true);
+            const res = await assignmentService.gradeSubmission(
+                selectedStudent.submissionId, 
+                scoreInput, 
+                user?.token
+            );
+            if (res.ok) {
+                toast.success("Đã chấm điểm thành công!");
+                if (onRefresh) onRefresh();
+                // Cập nhật local state
+                setSelectedStudent(prev => ({...prev, grade: scoreInput}));
+            } else {
+                toast.error("Lỗi khi chấm điểm");
+            }
+        } catch (error) {
+            toast.error("Lỗi mạng khi chấm điểm");
+        } finally {
+            setIsGrading(false);
+        }
+    };
+
+    const handlePostFeedback = async () => {
+        if (!selectedStudent || !selectedStudent.submissionId) return;
+
+        try {
+            setIsFeedbackPosting(true);
+            const res = await assignmentService.giveFeedback(
+                selectedStudent.submissionId,
+                commentInput,
+                user?.token
+            );
+            if (res.ok) {
+                toast.success("Đã gửi nhận xét thành công!");
+                setCommentInput('');
+                // Note: If BE returns actual feedback list, we should fetch it here
+            } else {
+                toast.error("Lỗi khi gửi nhận xét");
+            }
+        } catch (error) {
+            toast.error("Lỗi mạng khi gửi nhận xét");
+        } finally {
+            setIsFeedbackPosting(false);
+        }
+    };
 
     /* ── LEFT COLUMN ── */
     const LeftColumn = (
@@ -185,10 +249,10 @@ const AssignmentGradingTeacher = ({ assignment }) => {
             {/* Student list */}
             <div className="flex-1 overflow-y-auto">
                 {submissions.map((sub) => {
-                    const isActive = selectedStudent?.id === sub.id;
+                    const isActive = selectedStudent?.submissionId === sub.submissionId;
                     return (
                         <button
-                            key={sub.id}
+                            key={sub.submissionId}
                             onClick={() => handleSelectStudent(sub)}
                             className={`
                                 w-full text-left flex items-center !gap-3 !px-4 !py-3
@@ -199,16 +263,18 @@ const AssignmentGradingTeacher = ({ assignment }) => {
                                     : 'hover:bg-surface border-l-transparent'}
                             `}
                         >
-                            <AvatarCircle name={sub.studentName} status={sub.status} size="sm" />
+                            <AvatarCircle name={sub.fullName || sub.studentName} status={sub.status} size="sm" />
                             <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-sm text-text-main truncate">{sub.studentName}</p>
+                                <p className="font-semibold text-sm text-text-main truncate">{sub.fullName || sub.studentName}</p>
                                 <StatusBadge status={sub.status} />
                             </div>
                             <div className="flex items-center !gap-1 shrink-0">
                                 <span className="text-xs font-bold text-text-main whitespace-nowrap">
-                                    {sub.score !== null && sub.score !== undefined
-                                        ? `${sub.score}/${assignment.maxScore ?? 10}`
-                                        : `--/${assignment.maxScore ?? 10}`}
+                                    {sub.grade !== null && sub.grade !== undefined
+                                        ? `${sub.grade}/${assignment.maxScore ?? 10}`
+                                        : (sub.score !== null && sub.score !== undefined 
+                                            ? `${sub.score}/${assignment.maxScore ?? 10}`
+                                            : `--/${assignment.maxScore ?? 10}`)}
                                 </span>
                                 <Icon icon="material-symbols:chevron-right-rounded" className="text-text-muted text-base md:hidden" />
                             </div>
@@ -236,10 +302,10 @@ const AssignmentGradingTeacher = ({ assignment }) => {
                 <div className="flex flex-wrap items-center justify-between !gap-3">
                     {/* Student info */}
                     <div className="flex items-center !gap-3 min-w-0">
-                        <AvatarCircle name={selectedStudent.studentName} status={selectedStudent.status} size="md" />
+                        <AvatarCircle name={selectedStudent.fullName || selectedStudent.studentName} status={selectedStudent.status} size="md" />
                         <div className="min-w-0">
                             <h3 className="text-base font-bold text-text-main truncate leading-tight">
-                                {selectedStudent.studentName}
+                                {selectedStudent.fullName || selectedStudent.studentName}
                             </h3>
                             <div className="!mt-0.5">
                                 <StatusBadge status={selectedStudent.status} />
@@ -261,8 +327,12 @@ const AssignmentGradingTeacher = ({ assignment }) => {
                                 / {assignment.maxScore ?? 10}
                             </span>
                         </div>
-                        <button className="!bg-primary text-white font-bold !px-5 !py-2 rounded-xl hover:bg-primary/90 transition-colors text-sm shadow-sm">
-                            Trả bài
+                        <button 
+                            onClick={handleGrade}
+                            disabled={isGrading}
+                            className="!bg-primary text-white font-bold !px-5 !py-2 rounded-xl hover:bg-primary/90 transition-colors text-sm shadow-sm disabled:opacity-50"
+                        >
+                            {isGrading ? <Icon icon="solar:spinner-linear" className="animate-spin text-lg" /> : 'Trả bài'}
                         </button>
                     </div>
                 </div>
@@ -369,10 +439,11 @@ const AssignmentGradingTeacher = ({ assignment }) => {
                             className="w-full bg-surface border border-border rounded-xl !p-3 resize-none focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm transition-colors text-text-main placeholder:text-text-muted"
                         />
                         <button
-                            disabled={!commentInput.trim()}
-                            className="w-full bg-primary/10 text-primary font-bold !py-2 rounded-xl hover:bg-primary hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-sm"
+                            onClick={handlePostFeedback}
+                            disabled={!commentInput.trim() || isFeedbackPosting}
+                            className="w-full bg-primary/10 text-primary font-bold !py-2 rounded-xl hover:bg-primary hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-sm flex items-center justify-center gap-2"
                         >
-                            Đăng nhận xét
+                            {isFeedbackPosting ? <Icon icon="solar:spinner-linear" className="animate-spin text-lg" /> : 'Đăng nhận xét'}
                         </button>
                     </div>
                 </div>
