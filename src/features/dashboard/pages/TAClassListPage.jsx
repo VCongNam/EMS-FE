@@ -4,8 +4,10 @@ import Button from '../../../components/ui/Button';
 import ClassCard from '../components/classes/ClassCard';
 import ClassListFilter from '../components/classes/ClassListFilter';
 import ClassDetailsModal from '../components/classes/ClassDetailsModal';
+import Pagination from '../../../components/ui/Pagination';
 import useAuthStore from '../../../store/authStore';
 import taService from '../../ta-management/api/taService';
+import { sessionService } from '../api/sessionService';
 
 const TAClassListPage = () => {
     const { user } = useAuthStore();
@@ -14,6 +16,10 @@ const TAClassListPage = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
     const [viewClass, setViewClass] = useState(null);
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8;
 
     const fetchClasses = async () => {
         const effectiveTaId = user?.taId || user?.id;
@@ -31,24 +37,51 @@ const TAClassListPage = () => {
                 const rawData = json.data || (Array.isArray(json) ? json : []);
                 
                 // Map backend response specifically for TA view
-                const mappedData = rawData.map(item => {
+                // Fetch sessions in parallel for progress accurately
+                const mappedData = await Promise.all(rawData.map(async (item) => {
                     const status = (item.status || 'Active').toLowerCase();
                     // For TAs, treat Archived as Completed
                     const finalStatus = status === 'archived' ? 'completed' : status;
                     
+                    // Fetch sessions to calculate progress
+                    let currentSession = 0;
+                    let totalSessions = 0;
+                    try {
+                        const sessionRes = await sessionService.getClassSessions(item.classID, user.token);
+                        if (sessionRes.ok) {
+                            const sessions = await sessionRes.json();
+                            const sessionList = Array.isArray(sessions) ? sessions : (sessions.data || []);
+                            totalSessions = sessionList.length;
+                            currentSession = sessionList.filter(s => 
+                                (s.status || '').toLowerCase().includes('completed') || 
+                                (s.status || '').toLowerCase().includes('đã kết thúc')
+                            ).length;
+                        }
+                    } catch (e) {
+                        console.warn(`Failed to fetch sessions for TA class ${item.classID}`, e);
+                    }
+
                     return {
                         id: item.classID,
                         name: item.className,
                         code: item.subjectName || 'Chưa phân loại',
                         teacher: item.teacherName,
                         status: finalStatus,
-                        studentCount: item.studentCount || 0,
+                        studentCount: item.currentStudents || item.studentCount || 0,
+                        students: {
+                            count: item.currentStudents || item.studentCount || 0,
+                            max: item.maxStudents || 30
+                        },
+                        progress: {
+                            currentSession: currentSession,
+                            totalSessions: totalSessions || 10
+                        },
                         schedule: Array.isArray(item.schedules) ? item.schedules.join(', ') : 'Chưa có lịch',
                         salary: item.salaryPerSession,
                         permission: item.permission,
                         createdAt: item.createdAt ? new Date(item.createdAt).toLocaleDateString('vi-VN') : 'Unknown'
                     };
-                });
+                }));
                 setClasses(mappedData);
             }
         } catch (error) {
@@ -87,6 +120,18 @@ const TAClassListPage = () => {
         });
     }, [searchQuery, filterStatus, classes]);
 
+    // Reset to page 1 when search or filter changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, filterStatus]);
+
+    // Get current items
+    const paginatedClasses = useMemo(() => {
+        const indexOfLastItem = currentPage * itemsPerPage;
+        const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+        return filteredClasses.slice(indexOfFirstItem, indexOfLastItem);
+    }, [filteredClasses, currentPage, itemsPerPage]);
+
     return (
         <>
         <div className="w-full mx-auto animate-fade-in">
@@ -120,9 +165,10 @@ const TAClassListPage = () => {
                     <Icon icon="solar:spinner-linear" className="animate-spin text-5xl mb-4" />
                     <span className="font-medium text-text-muted">Đang tải danh sách lớp học...</span>
                 </div>
-            ) : filteredClasses.length > 0 ? (
+            ) : paginatedClasses.length > 0 ? (
+                <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-fade-in-up">
-                    {filteredClasses.map((cls) => (
+                    {paginatedClasses.map((cls) => (
                         <ClassCard 
                             key={cls.id} 
                             classData={cls} 
@@ -134,6 +180,14 @@ const TAClassListPage = () => {
                         />
                     ))}
                 </div>
+
+                <Pagination
+                    totalItems={filteredClasses.length}
+                    itemsPerPage={itemsPerPage}
+                    currentPage={currentPage}
+                    onPageChange={setCurrentPage}
+                />
+                </>
             ) : (
                 <div className="bg-surface rounded-2xl border border-border !p-12 flex flex-col items-center justify-center text-center shadow-sm min-h-[300px]">
                     <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center !mb-6">

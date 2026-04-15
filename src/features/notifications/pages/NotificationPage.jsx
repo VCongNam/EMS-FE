@@ -7,6 +7,7 @@ import NotificationFilters from '../components/NotificationFilters';
 import NotificationItem from '../components/NotificationItem';
 import { showNotification } from '../utils/toastUtils';
 import { toast } from 'react-toastify';
+import Pagination from '../../../components/ui/Pagination';
 
 const NotificationPage = () => {
     const navigate = useNavigate();
@@ -17,6 +18,10 @@ const NotificationPage = () => {
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10; // 5 rows of 2
 
     const fetchNotifications = async () => {
         if (!token) return;
@@ -41,6 +46,11 @@ const NotificationPage = () => {
         fetchNotifications();
     }, [token]);
 
+    // Reset to page 1 when filter or search changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [filter, searchQuery]);
+
     const filteredNotifications = notifications.filter(notif => {
         const title = notif.title || '';
         const message = notif.message || notif.content || '';
@@ -54,6 +64,13 @@ const NotificationPage = () => {
             
         return matchesFilter && matchesSearch;
     });
+
+    // Get current notifications for pagination
+    const paginatedNotifications = React.useMemo(() => {
+        const indexOfLastItem = currentPage * itemsPerPage;
+        const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+        return filteredNotifications.slice(indexOfFirstItem, indexOfLastItem);
+    }, [filteredNotifications, currentPage, itemsPerPage]);
 
     const handleMarkAsRead = async (notif) => {
         // Optimistic UI update
@@ -144,15 +161,24 @@ const NotificationPage = () => {
                         <p className="!text-sm !font-medium !text-text-muted !max-w-xs !mx-auto">Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm xem sao bạn nhé.</p>
                     </div>
                 ) : (
-                    <div className="!grid !grid-cols-1 md:!grid-cols-2 !gap-6">
-                        {filteredNotifications.map(notif => (
-                            <NotificationItem 
-                                key={notif.id} 
-                                notification={notif} 
-                                onClick={handleMarkAsRead} 
-                            />
-                        ))}
-                    </div>
+                    <>
+                        <div className="!grid !grid-cols-1 md:!grid-cols-2 !gap-6">
+                            {paginatedNotifications.map(notif => (
+                                <NotificationItem 
+                                    key={notif.id} 
+                                    notification={notif} 
+                                    onClick={handleMarkAsRead} 
+                                />
+                            ))}
+                        </div>
+
+                        <Pagination
+                            totalItems={filteredNotifications.length}
+                            itemsPerPage={itemsPerPage}
+                            currentPage={currentPage}
+                            onPageChange={setCurrentPage}
+                        />
+                    </>
                 )}
             </div>
 

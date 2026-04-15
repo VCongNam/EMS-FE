@@ -30,9 +30,23 @@ const AddStudentModal = ({ isOpen, onClose, onAdd, classId }) => {
         const token = useAuthStore.getState().user?.token;
 
         try {
-            // Bước 1: Tạo tài khoản học sinh mới
-            const createRes = await studentService.createStudentAccount(formData, token);
-            if (!createRes.ok) throw new Error('Không thể tạo tài khoản học sinh');
+            // Standardize DOB for C# backend (as seen in API image: 2026-04-11T16:13:58.393Z)
+            let isoDob = new Date().toISOString(); 
+            if (formData.dob) {
+                isoDob = new Date(formData.dob).toISOString();
+            }
+
+            const payload = {
+                ...formData,
+                dob: isoDob
+            };
+
+            // Bước 1: Tạo tài khoản học sinh mới (Cần dùng classService theo API chuẩn)
+            const createRes = await classService.createStudentAccount(payload, token);
+            if (!createRes.ok) {
+                const errorText = await createRes.text();
+                throw new Error(errorText || 'Không thể tạo tài khoản học sinh');
+            }
 
             const createData = await createRes.json();
             const newStudentId = createData.studentId;
@@ -69,12 +83,12 @@ const AddStudentModal = ({ isOpen, onClose, onAdd, classId }) => {
         <>
             {/* Backdrop */}
             <div
-                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] animate-fade-in"
+                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9997] animate-fade-in"
                 onClick={onClose}
             />
 
             {/* Modal */}
-            <div className="fixed inset-0 z-[9999] flex items-center justify-center !p-4 pointer-events-none">
+            <div className="fixed inset-0 z-[9998] flex items-center justify-center !p-4 pointer-events-none">
                 <div
                     className="bg-surface rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto animate-fade-in-up pointer-events-auto flex flex-col relative custom-scrollbar"
                     onClick={e => e.stopPropagation()}

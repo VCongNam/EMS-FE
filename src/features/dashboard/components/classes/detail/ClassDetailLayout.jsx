@@ -71,8 +71,11 @@ const ClassDetailLayout = () => {
         { path: 'people', label: 'Thành viên', icon: 'material-symbols:group-rounded' },
         { path: 'grades', label: 'Điểm số', icon: 'material-symbols:grading-rounded' },
         { path: 'schedule', label: 'Lịch học', icon: 'solar:calendar-bold-duotone' },
-        { path: 'attendance', label: 'Điểm danh', icon: 'material-symbols:fact-check-rounded' },
     ];
+
+    if (!isStudentPortal) {
+        tabs.push({ path: 'attendance', label: 'Điểm danh', icon: 'material-symbols:fact-check-rounded' });
+    }
 
     tabs.push({ path: 'reports', label: 'Tiến độ', icon: 'material-symbols:analytics-rounded' });
 
