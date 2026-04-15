@@ -50,7 +50,7 @@ export const tuitionService = {
         const formData = new FormData();
         formData.append('ProofImage', file);
 
-        const response = await fetch(getApiUrl(`/api/StudentTuition/${invoiceId}/proof`), { 
+        const response = await fetch(getApiUrl(`/api/StudentTuition/${invoiceId}/proof`), {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -61,10 +61,22 @@ export const tuitionService = {
     },
 
     // --- CÁC API DÀNH CHO TEACHER / QUẢN TRỊ VIÊN ---
-    
+
     // Tổng quan cấu hình học phí các lớp (Màn hình 1)
     getTuitionConfigs: async (token) => {
         const response = await fetch(getApiUrl(`/api/TuitionFee/configs`), {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        return response;
+    },
+
+    // Lấy thống kê cấu hình cho một lớp cụ thể
+    getTuitionFeeConfig: async (classId, token) => {
+        const response = await fetch(getApiUrl(`/api/TuitionFee/class/${classId}/config`), {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -88,7 +100,7 @@ export const tuitionService = {
 
     // Cập nhật cấu hình phí cho lớp
     updateTuitionFee: async (classId, data, token) => {
-        const response = await fetch(getApiUrl(`/api/TuitionFee/class/${classId}/fee`), {
+        const response = await fetch(getApiUrl(`/api/TuitionFee/class/${classId}/config`), {
             method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -140,6 +152,18 @@ export const tuitionService = {
         return response;
     },
 
+    // Lấy tổng quan các lớp học theo tháng/năm ở màn Dashboard
+    getClassesOverview: async (month, year, token) => {
+        const response = await fetch(getApiUrl(`/api/TuitionFee/reports/classes-overview?month=${month}&year=${year}`), {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        return response;
+    },
+
     // Lấy báo cáo thống kê tóm tắt (Màn 2)
     getOverallReportSummary: async (token) => {
         const response = await fetch(getApiUrl(`/api/TuitionFee/report/summary`), {
@@ -152,9 +176,21 @@ export const tuitionService = {
         return response;
     },
 
-    // Lấy chi tiết tài khoản/hóa đơn cho từng học sinh trong 1 lớp (Màn 4)
-    getClassFinancialDetail: async (classId, month, year, token) => {
-        const response = await fetch(getApiUrl(`/api/TuitionFee/class/${classId}/detail?month=${month}&year=${year}`), {
+    // Lấy báo cáo hóa đơn chi tiết của từng sinh viên trong lớp
+    getClassInvoicesReport: async (classId, month, year, token) => {
+        const response = await fetch(getApiUrl(`/api/TuitionFee/invoices/report?classId=${classId}&month=${month}&year=${year}`), {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        return response;
+    },
+
+    // Lấy tóm tắt hóa đơn của lớp học theo tháng, năm (Revenue, Debt)
+    getClassInvoiceSummary: async (classId, month, year, token) => {
+        const response = await fetch(getApiUrl(`/api/TuitionFee/invoices/summary?classId=${classId}&month=${month}&year=${year}`), {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -167,7 +203,7 @@ export const tuitionService = {
     // Gia hạn số ngày hoàn thành hóa đơn cho một học sinh (Màn 4)
     extendInvoiceDueDate: async (invoiceId, additionalDays, token) => {
         const response = await fetch(getApiUrl(`/api/TuitionFee/invoice/${invoiceId}/extend-due-date`), {
-            method: 'PUT',
+            method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
@@ -202,10 +238,74 @@ export const tuitionService = {
         return response;
     },
 
+    // Lấy tổng quan dashboard theo tháng/năm (KPIs + biểu đồ xu hướng + tỷ trọng)
+    getDashboardOverview: async (month, year, token) => {
+        const response = await fetch(getApiUrl(`/api/TuitionFee/dashboard/overview?month=${month}&year=${year}`), {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        return response;
+    },
+
+    // Lấy toàn bộ lịch sử giao dịch (tất cả status)
+    getFullTransactionHistory: async (token) => {
+        const response = await fetch(getApiUrl(`/api/TuitionFee/transactions/full-history`), {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        return response;
+    },
+
+    // Lấy danh sách giao dịch của một lớp học cụ thể
+    getClassTransactions: async (classId, token) => {
+        const response = await fetch(getApiUrl(`/api/TuitionFee/class/${classId}/transactions`), {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        return response;
+    },
+
     // Lệnh Kế Toán thực hiện xác nhận (Duyệt/Thất bại) hóa đơn (Màn 5)
     reviewTransaction: async (transactionId, payload, token) => {
         // payload: { isApproved: boolean, note: string }
         const response = await fetch(getApiUrl(`/api/TuitionFee/transaction/${transactionId}/review`), {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+        return response;
+    },
+
+    // Phát hành hóa đơn hàng loạt cho lớp (Yêu cầu mới)
+    generateInvoices: async (classId, payload, token) => {
+        // payload: { periodMonth, periodYear, dueDate }
+        const response = await fetch(getApiUrl(`/api/TuitionFee/class/${classId}/generate-invoices`), {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+        return response;
+    },
+
+    // Gia hạn hạn nộp hàng loạt cho lớp (Yêu cầu mới)
+    extendClassDueDate: async (classId, payload, token) => {
+        // payload: { periodMonth, periodYear, additionalDays }
+        const response = await fetch(getApiUrl(`/api/TuitionFee/class/${classId}/extend-due-date`), {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
