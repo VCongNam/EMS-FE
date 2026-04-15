@@ -8,7 +8,7 @@ export const studentAssignmentService = {
       Page: page,
       Size: size
     });
-    const url = getApiUrl(`/api/StudentAssignment/Assignments?${queryParams.toString()}`);
+    const url = getApiUrl(`/api/Assignment/student/assignments?${queryParams.toString()}`);
 
     return fetch(url, {
       method: 'GET',
@@ -20,7 +20,7 @@ export const studentAssignmentService = {
 
   // Get specific assignment detail (Student Portal)
   getAssignmentDetail: async (assignmentId, token) => {
-    return fetch(getApiUrl(`/api/StudentAssignment/${assignmentId}/detail`), {
+    return fetch(getApiUrl(`/api/Assignment/student/${assignmentId}/detail`), {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`
@@ -30,7 +30,7 @@ export const studentAssignmentService = {
 
   // Submit or update assignment (Student Portal)
   submitAssignment: async (assignmentId, formData, token) => {
-    return fetch(getApiUrl(`/api/StudentAssignment/${assignmentId}/submit`), {
+    return fetch(getApiUrl(`/api/Assignment/student/${assignmentId}/submit`), {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`
@@ -42,7 +42,7 @@ export const studentAssignmentService = {
 
   // Unsubmit assignment (Student Portal)
   unsubmitAssignment: async (assignmentId, token) => {
-    return fetch(getApiUrl(`/api/StudentAssignment/${assignmentId}/unsubmit`), {
+    return fetch(getApiUrl(`/api/Assignment/student/${assignmentId}/unsubmit`), {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${token}`

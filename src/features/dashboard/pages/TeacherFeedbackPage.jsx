@@ -7,7 +7,7 @@ const TeacherFeedbackPage = () => {
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
-    
+
     const [formData, setFormData] = useState({
         title: '',
         type: 'General',
@@ -38,7 +38,7 @@ const TeacherFeedbackPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
         if (!formData.title.trim()) {
             return toast.warning('Vui lòng nhập tiêu đề góp ý.');
         }
@@ -90,7 +90,7 @@ const TeacherFeedbackPage = () => {
                                 <label className="text-xs font-black uppercase text-text-secondary tracking-widest !mb-2 flex items-center gap-2">
                                     <Icon icon="solar:tag-bold-duotone" className="text-primary text-base" /> Phân Loại
                                 </label>
-                                <select 
+                                <select
                                     name="type"
                                     value={formData.type}
                                     onChange={handleChange}
@@ -107,7 +107,7 @@ const TeacherFeedbackPage = () => {
                                 <label className="text-xs font-black uppercase text-text-secondary tracking-widest !mb-2 flex items-center gap-2">
                                     <Icon icon="solar:text-field-bold-duotone" className="text-primary text-base" /> Tiêu Đề
                                 </label>
-                                <input 
+                                <input
                                     type="text"
                                     name="title"
                                     value={formData.title}
@@ -121,7 +121,7 @@ const TeacherFeedbackPage = () => {
                                 <label className="text-xs font-black uppercase text-text-secondary tracking-widest !mb-2 flex items-center gap-2">
                                     <Icon icon="solar:document-text-bold-duotone" className="text-primary text-base" /> Nội Dung Chi Tiết
                                 </label>
-                                <textarea 
+                                <textarea
                                     name="content"
                                     value={formData.content}
                                     onChange={handleChange}
@@ -131,14 +131,13 @@ const TeacherFeedbackPage = () => {
                                 ></textarea>
                             </div>
 
-                            <button 
+                            <button
                                 type="submit"
                                 disabled={submitting}
-                                className={`w-full !py-4 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl transition-all flex items-center justify-center gap-3 !mt-6 ${
-                                    submitting
-                                    ? '!bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
-                                    : '!bg-primary text-white hover:shadow-primary/30 transform hover:-translate-y-1'
-                                }`}
+                                className={`w-full !py-4 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl transition-all flex items-center justify-center gap-3 !mt-6 ${submitting
+                                        ? '!bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
+                                        : '!bg-primary text-white hover:shadow-primary/30 transform hover:-translate-y-1'
+                                    }`}
                             >
                                 {submitting ? (
                                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -157,7 +156,7 @@ const TeacherFeedbackPage = () => {
                         <h2 className="text-lg font-black text-text-main flex items-center gap-2">
                             <Icon icon="solar:history-bold-duotone" className="text-primary" /> Lịch sử gửi Phản hồi
                         </h2>
-                        
+
                         <div className="!space-y-4">
                             {loading ? (
                                 Array.from({ length: 3 }).map((_, idx) => (
@@ -169,9 +168,8 @@ const TeacherFeedbackPage = () => {
                                 ))
                             ) : history.length > 0 ? (
                                 history.map(item => (
-                                    <div key={item.feedbackId} className={`!bg-white !p-6 rounded-3xl border shadow-sm transition-all flex flex-col gap-4 ${
-                                        item.status === 'Resolved' ? 'border-green-100 shadow-green-500/5' : 'border-border'
-                                    }`}>
+                                    <div key={item.feedbackId} className={`!bg-white !p-6 rounded-3xl border shadow-sm transition-all flex flex-col gap-4 ${item.status === 'Resolved' ? 'border-green-100 shadow-green-500/5' : 'border-border'
+                                        }`}>
                                         <div className="flex items-start justify-between gap-4">
                                             <div>
                                                 <div className="flex items-center gap-3 !mb-2">

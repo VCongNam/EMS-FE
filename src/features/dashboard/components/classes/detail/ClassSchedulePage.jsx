@@ -17,9 +17,12 @@ const DAYS_OF_WEEK = [
 
 const STATUS_CONFIG = {
     scheduled: { label: 'Sắp diễn ra', className: '!bg-blue-100 text-blue-700 border-blue-200', dot: '!bg-blue-500' },
+    'sắp diễn ra': { label: 'Sắp diễn ra', className: '!bg-blue-100 text-blue-700 border-blue-200', dot: '!bg-blue-500' },
     completed: { label: 'Đã hoàn thành', className: '!bg-green-100 text-green-700 border-green-200', dot: '!bg-green-500' },
+    'đã kết thúc': { label: 'Đã kết thúc', className: '!bg-green-100 text-green-700 border-green-200', dot: '!bg-green-500' },
     canceled: { label: 'Đã hủy', className: '!bg-red-100 text-red-700 border-red-200', dot: '!bg-red-400' },
     cancelled: { label: 'Đã hủy', className: '!bg-red-100 text-red-700 border-red-200', dot: '!bg-red-400' },
+    'đã hủy': { label: 'Đã hủy', className: '!bg-red-100 text-red-700 border-red-200', dot: '!bg-red-400' },
 };
 
 const MOCK_SCHEDULE_CONFIG = {
@@ -81,6 +84,10 @@ const ClassSchedulePage = () => {
                     const dayIdx = dateObj.getDay();
                     const dayLabels = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
 
+                    // Normalize status: handle both English keys and Vietnamese strings
+                    const rawStatus = item.status || '';
+                    const normalizedStatus = rawStatus.toLowerCase();
+
                     return {
                         id: item.sessionId || item.sessionID,
                         session: index + 1,
@@ -88,7 +95,8 @@ const ClassSchedulePage = () => {
                         date: item.date ? item.date.split('T')[0] : '',
                         startTime: item.startTime?.substring(0, 5) || '--:--',
                         endTime: item.endTime?.substring(0, 5) || '--:--',
-                        status: item.status ? item.status.toLowerCase() : 'scheduled',
+                        status: normalizedStatus || 'scheduled',
+                        attendanceStatus: item.attendanceStatus || null,
                         title: item.title || item.className,
                         raw: item
                     };
@@ -121,7 +129,12 @@ const ClassSchedulePage = () => {
     const itemsPerPage = 8;
     const [currentPage, setCurrentPage] = useState(1);
 
-    const filteredLessons = filterStatus === 'all' ? lessons : lessons.filter(l => l.status === filterStatus || (l.status === 'canceled' && filterStatus === 'cancelled'));
+    const filteredLessons = filterStatus === 'all' ? lessons : lessons.filter(l => {
+        if (filterStatus === 'scheduled') return l.status === 'scheduled' || l.status === 'sắp diễn ra';
+        if (filterStatus === 'completed') return l.status === 'completed' || l.status === 'đã kết thúc';
+        if (filterStatus === 'cancelled') return l.status === 'cancelled' || l.status === 'canceled' || l.status === 'đã hủy';
+        return l.status === filterStatus;
+    });
 
     useEffect(() => {
         setCurrentPage(1);
@@ -304,9 +317,9 @@ const ClassSchedulePage = () => {
                         <div className="flex flex-1 items-center !gap-1 !bg-background border border-border rounded-xl !p-1 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
                             {[
                                 { id: 'all', label: 'Tất cả', count: lessons.length },
-                                { id: 'scheduled', label: 'Sắp tới', count: lessons.filter(l => l.status === 'scheduled').length },
-                                { id: 'completed', label: 'Hoàn thành', count: lessons.filter(l => l.status === 'completed').length },
-                                { id: 'cancelled', label: 'Đã hủy', count: lessons.filter(l => l.status === 'cancelled' || l.status === 'canceled').length },
+                                { id: 'scheduled', label: 'Sắp tới', count: lessons.filter(l => l.status === 'scheduled' || l.status === 'sắp diễn ra').length },
+                                { id: 'completed', label: 'Hoàn thành', count: lessons.filter(l => l.status === 'completed' || l.status === 'đã kết thúc').length },
+                                { id: 'cancelled', label: 'Đã hủy', count: lessons.filter(l => l.status === 'cancelled' || l.status === 'canceled' || l.status === 'đã hủy').length },
                             ].map(tab => (
                                 <button key={tab.id} onClick={() => setFilterStatus(tab.id)}
                                     className={`flex whitespace-nowrap items-center !gap-1.5 !px-3 !py-2 rounded-lg text-xs font-semibold transition-all ${filterStatus === tab.id ? '!bg-primary text-white shadow-sm' : 'text-text-muted hover:text-text-main'
@@ -346,7 +359,7 @@ const ClassSchedulePage = () => {
                             return (
                                 <div key={lesson.id || idx}
                                     className={`flex flex-col sm:flex-row items-start sm:items-center justify-between !gap-4 !p-4 rounded-2xl border transition-all group ${isDeleting ? 'opacity-0 scale-95 border-red-200 !bg-red-50' :
-                                            'border-border hover:border-primary/30 hover:shadow-sm !bg-background'
+                                        'border-border hover:border-primary/30 hover:shadow-sm !bg-background'
                                         }`}>
                                     <div className="flex items-center !gap-4 w-full sm:w-auto">
                                         <div className="flex flex-col items-center justify-center min-w-[56px] !px-3 !py-2.5 !bg-primary/10 rounded-xl text-primary border border-primary/20 shrink-0">
@@ -408,32 +421,30 @@ const ClassSchedulePage = () => {
                         })}
                     </div>
                 )}
-                
+
                 {/* Pagination Controls */}
                 {totalPages > 1 && (
                     <div className="flex justify-center items-center gap-2 mt-6">
                         <button
                             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                             disabled={currentPage === 1}
-                            className={`p-2 rounded-xl border transition-colors ${
-                                currentPage === 1 
-                                    ? 'border-border text-border !bg-background cursor-not-allowed' 
-                                    : 'border-border text-text-main hover:!bg-primary/5 hover:border-primary/30 !bg-background'
-                            }`}
+                            className={`p-2 rounded-xl border transition-colors ${currentPage === 1
+                                ? 'border-border text-border !bg-background cursor-not-allowed'
+                                : 'border-border text-text-main hover:!bg-primary/5 hover:border-primary/30 !bg-background'
+                                }`}
                         >
                             <Icon icon="solar:alt-arrow-left-linear" className="text-lg" />
                         </button>
-                        
+
                         <div className="flex items-center gap-1">
                             {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
                                 <button
                                     key={page}
                                     onClick={() => setCurrentPage(page)}
-                                    className={`w-9 h-9 rounded-xl text-sm font-bold transition-all ${
-                                        currentPage === page
-                                            ? '!bg-primary text-white shadow-md shadow-primary/30'
-                                            : 'text-text-muted hover:!bg-primary/5 hover:text-text-main'
-                                    }`}
+                                    className={`w-9 h-9 rounded-xl text-sm font-bold transition-all ${currentPage === page
+                                        ? '!bg-primary text-white shadow-md shadow-primary/30'
+                                        : 'text-text-muted hover:!bg-primary/5 hover:text-text-main'
+                                        }`}
                                 >
                                     {page}
                                 </button>
@@ -443,11 +454,10 @@ const ClassSchedulePage = () => {
                         <button
                             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                             disabled={currentPage === totalPages}
-                            className={`p-2 rounded-xl border transition-colors ${
-                                currentPage === totalPages 
-                                    ? 'border-border text-border !bg-background cursor-not-allowed' 
-                                    : 'border-border text-text-main hover:!bg-primary/5 hover:border-primary/30 !bg-background'
-                            }`}
+                            className={`p-2 rounded-xl border transition-colors ${currentPage === totalPages
+                                ? 'border-border text-border !bg-background cursor-not-allowed'
+                                : 'border-border text-text-main hover:!bg-primary/5 hover:border-primary/30 !bg-background'
+                                }`}
                         >
                             <Icon icon="solar:alt-arrow-right-linear" className="text-lg" />
                         </button>

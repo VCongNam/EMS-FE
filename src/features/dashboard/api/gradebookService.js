@@ -139,5 +139,16 @@ export const gradebookService = {
       console.log(`[API Response Status] PUT /api/Gradebook/classes/${classId}/categories/bulk-update: ${res.status}`);
     }
     return res;
+  },
+
+  // Lấy bảng điểm của học sinh (Student Portal)
+  getStudentGrades: async (classId, token) => {
+    return fetch(getApiUrl(`/api/Gradebook/student/${classId}/myGrades`), {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
   }
 };

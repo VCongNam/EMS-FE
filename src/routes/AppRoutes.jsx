@@ -18,7 +18,6 @@ import ProfilePage from '../features/dashboard/pages/ProfilePage';
 import TeacherClassListPage from '../features/dashboard/pages/TeacherClassListPage';
 import TAClassListPage from '../features/dashboard/pages/TAClassListPage';
 import StudentClassListPage from '../features/dashboard/pages/StudentClassListPage';
-import FeedbackPage from '../features/dashboard/pages/FeedbackPage';
 import ClassDetailLayout from '../features/dashboard/components/classes/detail/ClassDetailLayout';
 import ClassStreamPage from '../features/dashboard/components/classes/detail/ClassStreamPage';
 import ClassMaterialsPage from '../features/dashboard/components/classes/detail/ClassMaterialsPage';
@@ -38,7 +37,7 @@ import useAuthStore from '../store/authStore';
 import StudentManagementPage from '../features/student-management/pages/StudentManagementPage';
 import TAManagementPage from '../features/ta-management/pages/TAManagementPage';
 import GlobalTAManagementPage from '../features/ta-management/pages/GlobalTAManagementPage';
-import ViewSchedulePage from '../features/schedule-attendance/pages/ViewSchedulePage';
+// ViewSchedulePage replaced by ScheduleManagementPage which handles all roles
 import TakeAttendancePage from '../features/schedule-attendance/pages/TakeAttendancePage';
 import UpdateAttendanceRecordPage from '../features/schedule-attendance/pages/UpdateAttendanceRecordPage';
 import ScheduleManagementPage from '../features/schedule-management/pages/ScheduleManagementPage';
@@ -105,7 +104,6 @@ export const AppRoutes = () => {
                          <Route element={<DashboardLayout />}>
                               <Route path="dashboard" element={<DashboardPage />} />
                               <Route path="profile" element={<ProfilePage />} />
-                              <Route path="feedback" element={<FeedbackPage />} />
                               <Route path="teacher/classes" element={<TeacherClassListPage />} />
                               <Route path="teacher/feedback" element={<TeacherFeedbackPage />} />
                               <Route path="teacher/classes/:classId" element={<ClassDetailLayout />}>
@@ -170,7 +168,7 @@ export const AppRoutes = () => {
                               <Route path="assistants" element={<GlobalTAManagementPage />} />
 
                               {/* Schedule & Attendance */}
-                              <Route path="schedule" element={<ViewSchedulePage />} />
+                              <Route path="schedule" element={<ScheduleManagementPage />} />
                               <Route path="attendance/take" element={<TakeAttendancePage />} />
                               <Route path="attendance/update" element={<UpdateAttendanceRecordPage />} />
 

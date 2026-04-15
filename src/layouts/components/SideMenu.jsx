@@ -27,7 +27,6 @@ const SideMenu = ({ isOpen, onClose }) => {
             { name: 'Thông báo', path: '/notifications', icon: 'material-symbols:circle-notifications-sharp' },
             { name: 'Hỗ trợ & Góp ý', path: '/teacher/feedback', icon: 'material-symbols:feedback-rounded' },
             { name: 'Trang cá nhân', path: '/profile', icon: 'material-symbols:person-rounded' },
-            { name: 'Phản hồi hệ thống', path: '/feedback', icon: 'solar:letter-bold-duotone' },
         ],
         TA: [
             { name: 'Tổng quan', path: '/dashboard', icon: 'material-symbols:dashboard-rounded' },
