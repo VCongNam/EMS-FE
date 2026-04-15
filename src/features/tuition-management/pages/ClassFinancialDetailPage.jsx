@@ -3,9 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import { toast } from 'react-toastify';
 import StudentPaymentTable from '../components/StudentPaymentTable';
-import TransactionHistoryModal from '../components/TransactionHistoryModal';
+
 import ConfirmModal from '../../../components/ui/ConfirmModal';
 import PromptModal from '../../../components/ui/PromptModal';
+import TuitionFeeModal from '../components/TuitionFeeModal';
 import { tuitionService } from '../api/tuitionService';
 import useAuthStore from '../../../store/authStore';
 
@@ -22,11 +23,12 @@ const ClassFinancialDetailPage = () => {
     const [classInfo, setClassInfo] = useState({ name: 'Đang tải...', students: 0, billingMethod: 'Prepaid' });
     const [allClasses, setAllClasses] = useState([]);
     const [studentsData, setStudentsData] = useState([]);
+    const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isGenerating, setIsGenerating] = useState(false);
+    const [invoiceStats, setInvoiceStats] = useState({ expectedRevenue: 0, actualRevenue: 0, debtAmount: 0 });
 
-    const [selectedStudent, setSelectedStudent] = useState(null);
-    const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+    const [feeModal, setFeeModal] = useState({ isOpen: false, editData: null });
 
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, action: null, title: '', message: '' });
     const [promptModal, setPromptModal] = useState({ isOpen: false, action: null, title: '', message: '', defaultValue: '' });
@@ -60,37 +62,88 @@ const ClassFinancialDetailPage = () => {
         if (!user?.token || !classId) return;
         try {
             setIsLoading(true);
-            const [resDetail, resSummaries] = await Promise.all([
-                tuitionService.getClassFinancialDetail(classId, selectedMonth, selectedYear, user.token),
-                tuitionService.getClassFinancialSummaries(user.token) // Gọi thêm để lấy sĩ số gốc
+            
+            // Hàm xử lý an toàn, nếu API lỗi mạng nó sẽ trả về response giả lập
+            const safeFetch = p => p.catch(error => ({ ok: false }));
+
+            const [resDetail, resSummaries, configRes, summaryRes] = await Promise.all([
+                safeFetch(tuitionService.getClassInvoicesReport(classId, selectedMonth, selectedYear, user.token)),
+                safeFetch(tuitionService.getClassFinancialSummaries(user.token)),
+                safeFetch(tuitionService.getTuitionFeeConfig(classId, user.token)),
+                safeFetch(tuitionService.getClassInvoiceSummary(classId, selectedMonth, selectedYear, user.token))
             ]);
 
-            if (resDetail.ok) {
-                const data = await resDetail.json();
-                
-                // Lấy sĩ số thực từ summary
-                let realStudentCount = data.students?.length || 0;
-                if (resSummaries.ok) {
+            // Process Invoice Summary
+            try {
+                if (summaryRes && summaryRes.ok) {
+                    const summaryData = await summaryRes.json();
+                    setInvoiceStats({
+                        expectedRevenue: Number(summaryData?.expectedRevenue) || 0,
+                        actualRevenue: Number(summaryData?.actualRevenue) || 0,
+                        debtAmount: Number(summaryData?.debtAmount) || 0
+                    });
+                } else {
+                    setInvoiceStats({ expectedRevenue: 0, actualRevenue: 0, debtAmount: 0 });
+                }
+            } catch (err) {
+                 console.error("Lỗi parse JSON API Tóm tắt:", err);
+                 setInvoiceStats({ expectedRevenue: 0, actualRevenue: 0, debtAmount: 0 });
+            }
+
+            // Process Config first
+            let classConfig = {};
+            if (configRes && configRes.ok) {
+                try {
+                    classConfig = await configRes.json();
+                } catch(e) {}
+            }
+
+            // Process Summaries for real student count
+            let realStudentCount = 0;
+            if (resSummaries && resSummaries.ok) {
+                try {
                     const summariesData = await resSummaries.json();
                     setAllClasses(summariesData || []);
                     const currentClassSummary = summariesData.find(c => c.classId === classId || c.id === classId);
                     if (currentClassSummary) {
-                        realStudentCount = currentClassSummary.studentCount || currentClassSummary.studentsCount || realStudentCount;
+                        realStudentCount = currentClassSummary.studentCount || currentClassSummary.studentsCount || 0;
                     }
-                }
+                } catch(e) {}
+            }
 
-                setClassInfo({
-                    name: data.className || `Lớp ${classId}`,
-                    students: realStudentCount,
-                    billingMethod: data.billingMethod || 'Prepaid'
-                });
-                setStudentsData(data.students || []);
+            // Process Invoices / Financial Details
+            if (resDetail && resDetail.ok) {
+                try {
+                    const data = await resDetail.json();
+                    const invoiceList = Array.isArray(data) ? data : (data.students || []);
+                    realStudentCount = invoiceList.length || realStudentCount;
+                    
+                    setClassInfo({
+                        classId: classId,
+                        name: classConfig.className || `Lớp ${classId}`,
+                        students: realStudentCount,
+                        billingMethod: classConfig.billingMethod || 'Prepaid',
+                        tuitionFee: classConfig.tuitionFee,
+                        paymentDeadlineDays: classConfig.paymentDeadlineDays
+                    });
+                    setStudentsData(invoiceList);
+                } catch(e) {}
             } else {
-                toast.error("Không thể tải chi tiết lớp học");
+                // Render with at least config info even if detail fails
+                setClassInfo({
+                    classId: classId,
+                    name: classConfig.className || `Lớp ${classId}`,
+                    students: realStudentCount,
+                    billingMethod: classConfig.billingMethod || 'Prepaid',
+                    tuitionFee: classConfig.tuitionFee,
+                    paymentDeadlineDays: classConfig.paymentDeadlineDays || 5
+                });
+                setStudentsData([]);
+                toast.error("Hệ thống chưa có bảng chi tiết cho lớp này hoặc cấu trúc API lỗi!");
             }
         } catch (error) {
             console.error(error);
-            toast.error("Vui lòng kiểm tra lại kết nối");
+            toast.error("Lỗi khi tải dữ liệu. Vui lòng thử lại!");
         } finally {
             setIsLoading(false);
         }
@@ -100,22 +153,91 @@ const ClassFinancialDetailPage = () => {
         fetchData();
     }, [classId, selectedMonth, selectedYear, user?.token]);
 
+    const extractApiError = (errorData, defaultMessage) => {
+        if (errorData?.errors && typeof errorData.errors === 'object') {
+            const firstErrorField = Object.keys(errorData.errors)[0];
+            if (firstErrorField && errorData.errors[firstErrorField].length > 0) {
+                return errorData.errors[firstErrorField][0];
+            }
+        }
+        return errorData?.title || errorData?.message || defaultMessage;
+    };
+
+    const handleSaveFeeConfig = async (data) => {
+        try {
+            const payload = {
+                tuitionFee: data.tuitionFee,
+                billingMethod: data.billingMethod,
+                paymentDeadlineDays: data.paymentDeadlineDays
+            };
+            
+            const response = await tuitionService.updateTuitionFee(classId, payload, user.token);
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => null);
+                throw errorData || new Error("Failed to update");
+            }
+            
+            toast.success('Cập nhật luật học phí thành công!');
+            setFeeModal({ isOpen: false, editData: null });
+            fetchData(); // Reload class info
+        } catch (error) {
+            const errorMessage = extractApiError(error, 'Lỗi khi cập nhật học phí');
+            toast.error(errorMessage);
+        }
+    };
+
     const handleGenerateInvoice = () => {
-        setConfirmModal({
+        const next7Days = new Date();
+        next7Days.setDate(next7Days.getDate() + 7);
+        const dd = String(next7Days.getDate()).padStart(2, '0');
+        const mm = String(next7Days.getMonth() + 1).padStart(2, '0');
+        const yyyy = next7Days.getFullYear();
+        const defaultDueDate = `${dd}-${mm}-${yyyy}`;
+
+        setPromptModal({
             isOpen: true,
-            title: 'Xác nhận phát hành',
-            message: `Bạn có chắc chắn muốn phát hành hóa đơn tháng ${selectedMonth}/${selectedYear} cho lớp này?`,
-            action: async () => {
-                setConfirmModal({ isOpen: false });
+            title: 'Phát hành hóa đơn',
+            message: `Nhập ngày hạn nộp cho các hóa đơn tháng ${selectedMonth}/${selectedYear} (Định dạng: DD-MM-YYYY):`,
+            defaultValue: defaultDueDate,
+            confirmText: 'Phát hành',
+            action: async (dueDate) => {
+                setPromptModal({ isOpen: false });
+                if (!dueDate) return;
+
+                // Validate DD-MM-YYYY format
+                const regex = /^\d{2}-\d{2}-\d{4}$/;
+                if (!regex.test(dueDate.trim())) {
+                    toast.error('Định dạng ngày không hợp lệ. Vui lòng nhập theo định dạng DD-MM-YYYY (ví dụ: 22-04-2026).');
+                    return;
+                }
+
+                const [day, month, year] = dueDate.trim().split('-').map(Number);
+                const dateObj = new Date(year, month - 1, day);
+
+                // Verify date is mathematically valid
+                if (
+                    dateObj.getFullYear() !== year ||
+                    dateObj.getMonth() + 1 !== month ||
+                    dateObj.getDate() !== day
+                ) {
+                    toast.error('Ngày không hợp lệ. Vui lòng kiểm tra lại (ví dụ: ngày 30-02 không tồn tại).');
+                    return;
+                }
+
                 setIsGenerating(true);
                 try {
-                    const res = await tuitionService.reconcilePrepaidClass(classId, selectedMonth, selectedYear, user.token);
+                    const payload = {
+                        periodMonth: selectedMonth,
+                        periodYear: selectedYear,
+                        dueDate: dateObj.toISOString()
+                    };
+                    const res = await tuitionService.generateInvoices(classId, payload, user.token);
                     if (res.ok) {
                         toast.success("Phát hành hóa đơn thành công!");
                         fetchData();
                     } else {
-                        const err = await res.json();
-                        toast.error(err?.title || "Phát hành thất bại. Lớp đã được chốt sổ tháng này hoặc thiếu dữ liệu điểm danh.");
+                        const err = await res.json().catch(() => ({}));
+                        toast.error(err?.title || err?.message || "Phát hành thất bại.");
                     }
                 } catch (error) {
                     toast.error("Lỗi khi phát hành hóa đơn.");
@@ -129,50 +251,36 @@ const ClassFinancialDetailPage = () => {
     const handleBulkExtend = () => {
         setPromptModal({
             isOpen: true,
-            title: 'Gia hạn hàng loạt',
-            message: 'Nhập số ngày muốn gia hạn hàng loạt cho các hóa đơn chưa đóng trong lớp này:',
+            title: 'Gia hạn hạn nộp',
+            message: `Nhập số ngày muốn gia hạn cho tất cả hóa đơn chưa đóng trong tháng ${selectedMonth}/${selectedYear}:`,
             defaultValue: '7',
+            confirmText: 'Gia hạn',
             action: async (days) => {
                 setPromptModal({ isOpen: false });
                 if (days && !isNaN(days) && parseInt(days) > 0) {
                     try {
-                        const res = await tuitionService.extendClassDueDates(classId, selectedMonth, selectedYear, parseInt(days), user.token);
+                        const payload = {
+                            periodMonth: selectedMonth,
+                            periodYear: selectedYear,
+                            additionalDays: parseInt(days)
+                        };
+                        const res = await tuitionService.extendClassDueDate(classId, payload, user.token);
                         if (res.ok) {
-                            toast.success("Gia hạn hàng loạt thành công!");
+                            toast.success("Gia hạn hạn nộp thành công!");
                             fetchData();
                         } else {
-                            toast.error("Gia hạn thất bại.");
+                            const err = await res.json().catch(() => ({}));
+                            toast.error(err?.title || err?.message || "Gia hạn thất bại.");
                         }
                     } catch (error) {
-                        toast.error("Lỗi khi gia hạn hàng loạt.");
+                        toast.error("Lỗi khi gia hạn.");
                     }
                 }
             }
         });
     };
 
-    // Derived stats
-    const stats = useMemo(() => {
-        let expected = 0;
-        let collected = 0;
-        let debt = 0;
-        studentsData.forEach(s => {
-            const exp = s.expectedAmount || s.due || 0;
-            const pd = s.paidAmount || s.paid || 0;
-            const bal = s.remainingAmount || Math.max(0, exp - pd - (s.creditBalance || 0));
-            expected += exp;
-            collected += pd;
-            debt += bal;
-        });
-        return { expected, collected, debt };
-    }, [studentsData]);
-
     const formatVND = (amount) => amount?.toLocaleString('vi-VN') + ' ₫';
-
-    const handleStudentClick = (student) => {
-        setSelectedStudent(student);
-        setIsHistoryModalOpen(true);
-    };
 
     // Tạo range tháng và năm cho dropdown
     const months = Array.from({ length: 12 }, (_, i) => i + 1);
@@ -183,16 +291,64 @@ const ClassFinancialDetailPage = () => {
             {/* Breadcrumbs & Navigation */}
             <div className="!flex !items-center !justify-between !gap-2">
                 <button 
-                    onClick={() => navigate('/tuition/reports')}
+                    onClick={() => navigate('/tuition')}
                     className="!flex !items-center !gap-2 !text-sm !font-bold !text-text-muted hover:!text-primary !transition-colors"
                 >
                     <Icon icon="solar:round-arrow-left-bold" className="!text-xl" />
-                    Quay lại danh sách báo cáo
+                    Quay lại bảng điều khiển
                 </button>
+            </div>
 
-                {/* Date Picker */}
-                <div className="!flex !items-center !gap-2 !bg-white !px-3 !py-1.5 !rounded-lg !border !border-border !shadow-sm">
-                    <Icon icon="solar:calendar-bold-duotone" className="!text-primary" />
+            {/* Header section with Class Info & Actions */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center !gap-6 bg-surface !p-8 rounded-[2.5rem] border border-border shadow-sm">
+                <div className="!flex !items-center !gap-6">
+                    <div className="!w-20 !h-20 !bg-white !rounded-3xl !border !border-border !shadow-sm !flex !items-center !justify-center !text-primary">
+                        <Icon icon="solar:square-academic-cap-bold-duotone" className="!text-4xl" />
+                    </div>
+                    <div>
+                        <div className="!flex !items-center !gap-2 !mb-1">
+                            <h1 className="!text-2xl sm:!text-3xl !font-black !text-text-main !tracking-tight">{classInfo.name}</h1>
+                        </div>
+                        <div className="!flex !flex-wrap !items-center !gap-4 !mt-2">
+                             <div className="!flex !items-center !gap-1.5 !text-sm !font-bold !text-text-muted">
+                                <Icon icon="solar:users-group-rounded-bold" className="!text-primary" />
+                                {classInfo.students} học sinh
+                            </div>
+                            <div className="!w-1 !h-1 !rounded-full !bg-border" />
+                            <div className="!flex !items-center !gap-1.5 !text-sm !font-bold !text-text-muted">
+                                <Icon icon="solar:wallet-money-bold" className="!text-primary" />
+                                Hình thức: {classInfo.billingMethod === 'Prepaid' ? 'Trả trước' : 'Trả sau'}
+                            </div>
+                            <div className="!w-1 !h-1 !rounded-full !bg-border" />
+                            <div className="!flex !items-center !gap-1.5 !text-sm !font-bold !text-text-muted">
+                                <Icon icon="solar:tag-price-bold" className="!text-primary" />
+                                Đơn giá: {classInfo.tuitionFee || classInfo.pricePerSession ? formatVND(classInfo.tuitionFee || classInfo.pricePerSession) : '--'}
+                            </div>
+                            <div className="!w-1 !h-1 !rounded-full !bg-border" />
+                            <div className="!flex !items-center !gap-1.5 !text-sm !font-bold !text-text-muted">
+                                <Icon icon="solar:alarm-bold" className="!text-primary" />
+                                Hạn nộp: {classInfo.paymentDeadlineDays || 5} ngày
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div className="!flex !items-center !gap-3">
+                    <button
+                        onClick={() => setFeeModal({ isOpen: true, editData: classInfo })}
+                        className="!bg-background !text-text-muted !p-3.5 !rounded-2xl !flex !items-center !justify-center !border !border-border hover:!text-primary hover:!bg-primary/10 !transition-all"
+                        title="Cấu hình học phí"
+                    >
+                        <Icon icon="solar:settings-bold-duotone" className="!text-xl" />
+                    </button>
+                </div>
+            </div>
+
+            {/* Actions & Filters Row */}
+            <div className="!flex !flex-col sm:!flex-row sm:!items-center !justify-between !gap-4 !bg-transparent">
+                <div className="!flex !items-center !gap-2 !bg-white !px-4 !py-3 !rounded-2xl !border !border-border !shadow-sm">
+                    <Icon icon="solar:calendar-bold-duotone" className="!text-primary !text-lg" />
+                    <span className="!text-sm !font-bold !text-text-muted">Kỳ thu:</span>
                     <select 
                         value={selectedMonth} 
                         onChange={e => setSelectedMonth(Number(e.target.value))}
@@ -209,61 +365,42 @@ const ClassFinancialDetailPage = () => {
                         {years.map(y => <option key={y} value={y}>{y}</option>)}
                     </select>
                 </div>
-            </div>
 
-            {/* Header section with Class Info & Actions */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center !gap-6 bg-surface !p-8 rounded-[2.5rem] border border-border shadow-sm">
-                <div className="!flex !items-center !gap-6">
-                    <div className="!w-20 !h-20 !bg-white !rounded-3xl !border !border-border !shadow-sm !flex !items-center !justify-center !text-primary">
-                        <Icon icon="solar:square-academic-cap-bold-duotone" className="!text-4xl" />
-                    </div>
-                    <div>
-                        <div className="!flex !items-center !gap-2 !mb-1">
-                            <h1 className="!text-2xl sm:!text-3xl !font-black !text-text-main !tracking-tight">{classInfo.name}</h1>
-                            {allClasses.length > 0 && (
-                                <div className="!relative !flex !items-center !group">
-                                    <Icon icon="solar:alt-arrow-down-bold-duotone" className="!text-text-muted !text-xl !cursor-pointer hover:!text-primary" />
-                                    <select 
-                                        value={classId}
-                                        onChange={(e) => navigate(`/tuition/reports/${e.target.value}`)}
-                                        className="!absolute !inset-0 !opacity-0 !w-full !h-full !cursor-pointer"
-                                    >
-                                        {allClasses.map(c => (
-                                            <option key={c.classId || c.id} value={c.classId || c.id}>{c.className || c.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                            )}
-                        </div>
-                        <div className="!flex !flex-wrap !items-center !gap-4 !mt-2">
-                             <div className="!flex !items-center !gap-1.5 !text-sm !font-bold !text-text-muted">
-                                <Icon icon="solar:users-group-rounded-bold" className="!text-primary" />
-                                {classInfo.students} học sinh
-                            </div>
-                            <div className="!w-1 !h-1 !rounded-full !bg-border" />
-                            <div className="!flex !items-center !gap-1.5 !text-sm !font-bold !text-text-muted">
-                                <Icon icon="solar:wallet-money-bold" className="!text-primary" />
-                                Hình thức: {classInfo.billingMethod === 'Prepaid' ? 'Trả trước' : 'Trả sau'}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div className="!flex !flex-col sm:!flex-row !items-center !gap-3 !w-full sm:!w-auto">
-                    <button 
-                        onClick={handleBulkExtend}
-                        className="!w-full sm:!w-auto !bg-background !text-text-main !px-6 !py-3.5 !rounded-2xl !font-black !flex !items-center !justify-center !gap-2 !border !border-border hover:!bg-white !transition-all"
+                <div className="!flex !items-center !gap-3 !flex-wrap">
+                    {/* Xem giao dịch - same style as dashboard */}
+                    <button
+                        onClick={() => navigate(`/tuition/reports/${classId}/transactions`)}
+                        className="!flex !items-center !gap-2.5 !px-4 !py-3 !rounded-2xl !shadow-sm !border !transition-all !group !bg-blue-50 !border-blue-200 !text-blue-800 hover:!bg-blue-100"
                     >
-                        <Icon icon="solar:calendar-date-bold-duotone" className="!text-xl" />
-                        Gia hạn loạt
+                        <div className="!w-8 !h-8 !rounded-full !bg-blue-100 !border !border-blue-300 !flex !items-center !justify-center">
+                            <Icon icon="solar:history-bold-duotone" className="!text-blue-600 !text-lg" />
+                        </div>
+                        <div className="!text-left">
+                            <p className="!text-[10px] !font-black !uppercase !tracking-wider !text-blue-600">Giao dịch</p>
+                            <p className="!text-sm !font-black !text-blue-900 !leading-tight">Xem lịch sử giao dịch</p>
+                        </div>
+                        <Icon icon="solar:alt-arrow-right-bold" className="!text-blue-500 !text-base !ml-1 group-hover:!translate-x-1 !transition-transform" />
                     </button>
-                    <button 
-                        onClick={handleGenerateInvoice}
-                        disabled={isGenerating || isLoading}
-                        className="!w-full sm:!w-auto !bg-primary !text-white !px-6 !py-3.5 !rounded-2xl !font-black !flex !items-center !justify-center !gap-2 hover:!bg-primary-hover hover:!shadow-lg !transition-all disabled:!opacity-50"
+
+                    <button
+                        onClick={handleBulkExtend}
+                        className="!bg-background !text-text-main !px-5 !py-3 !rounded-2xl !flex !items-center !justify-center !gap-2 !font-black !border !border-border hover:!bg-amber-50 hover:!text-amber-700 hover:!border-amber-200 !transition-all"
                     >
-                        <Icon icon={isGenerating ? "line-md:loading-loop" : "solar:rocket-bold-duotone"} className="!text-xl" />
-                        {isGenerating ? "Đang xử lý..." : "Chốt sổ & Đòi nợ"}
+                        <Icon icon="solar:clock-circle-bold-duotone" className="!text-lg" />
+                        <span className="!text-sm">Gia hạn hạn nộp</span>
+                    </button>
+
+                    <button
+                        onClick={handleGenerateInvoice}
+                        disabled={isGenerating}
+                        className="!bg-primary !text-white !px-5 !py-3 !rounded-2xl !flex !items-center !justify-center !gap-2 !font-black !shadow-lg !shadow-primary/20 hover:!scale-[1.02] active:!scale-[0.98] !transition-all disabled:!opacity-50 disabled:!cursor-not-allowed"
+                    >
+                        {isGenerating ? (
+                            <Icon icon="solar:spinner-bold-duotone" className="!text-lg !animate-spin" />
+                        ) : (
+                            <Icon icon="solar:document-add-bold-duotone" className="!text-lg" />
+                        )}
+                        <span className="!text-sm">Phát hành hóa đơn</span>
                     </button>
                 </div>
             </div>
@@ -277,7 +414,7 @@ const ClassFinancialDetailPage = () => {
                         </div>
                         <span className="!text-[10px] !font-black !text-text-muted !uppercase !tracking-widest">Dự kiến thu</span>
                     </div>
-                    {isLoading ? <div className="!h-8 !w-32 !bg-border !animate-pulse !rounded-md"></div> : <h3 className="!text-2xl !font-black !text-text-main !tracking-tight">{formatVND(stats.expected)}</h3>}
+                    {isLoading ? <div className="!h-8 !w-32 !bg-border !animate-pulse !rounded-md"></div> : <h3 className="!text-2xl !font-black !text-text-main !tracking-tight">{formatVND(invoiceStats.expectedRevenue)}</h3>}
                     <p className="!text-xs !font-bold !text-text-muted !mt-2">Tổng doanh thu lý thuyết kỳ này</p>
                 </div>
 
@@ -288,12 +425,12 @@ const ClassFinancialDetailPage = () => {
                         </div>
                         <span className="!text-[10px] !font-black !text-emerald-600 !uppercase !tracking-widest">Thực thu</span>
                     </div>
-                    {isLoading ? <div className="!h-8 !w-32 !bg-border !animate-pulse !rounded-md"></div> : <h3 className="!text-2xl !font-black !text-emerald-600 !tracking-tight">{formatVND(stats.collected)}</h3>}
+                    {isLoading ? <div className="!h-8 !w-32 !bg-border !animate-pulse !rounded-md"></div> : <h3 className="!text-2xl !font-black !text-emerald-600 !tracking-tight">{formatVND(invoiceStats.actualRevenue)}</h3>}
                     <div className="!mt-2 !flex !items-center !gap-2">
                         <div className="!flex-1 !h-1.5 !bg-emerald-50 !rounded-full !overflow-hidden">
-                            <div className="!h-full !bg-emerald-500" style={{ width: `${stats.expected ? Math.round((stats.collected/stats.expected)*100) : 0}%` }}></div>
+                            <div className="!h-full !bg-emerald-500" style={{ width: `${invoiceStats.expectedRevenue ? Math.round((invoiceStats.actualRevenue/invoiceStats.expectedRevenue)*100) : 0}%` }}></div>
                         </div>
-                        <span className="!text-[10px] !font-black !text-emerald-600">{stats.expected ? Math.round((stats.collected/stats.expected)*100) : 0}%</span>
+                        <span className="!text-[10px] !font-black !text-emerald-600">{invoiceStats.expectedRevenue ? Math.round((invoiceStats.actualRevenue/invoiceStats.expectedRevenue)*100) : 0}%</span>
                     </div>
                 </div>
 
@@ -304,18 +441,16 @@ const ClassFinancialDetailPage = () => {
                         </div>
                         <span className="!text-[10px] !font-black !text-red-600 !uppercase !tracking-widest">Công nợ</span>
                     </div>
-                    {isLoading ? <div className="!h-8 !w-32 !bg-border !animate-pulse !rounded-md"></div> : <h3 className="!text-2xl !font-black !text-red-600 !tracking-tight">{formatVND(stats.debt)}</h3>}
+                    {isLoading ? <div className="!h-8 !w-32 !bg-border !animate-pulse !rounded-md"></div> : <h3 className="!text-2xl !font-black !text-red-600 !tracking-tight">{formatVND(invoiceStats.debtAmount)}</h3>}
                     <p className="!text-xs !font-bold !text-text-muted !mt-2">Học phí chưa thanh toán</p>
                 </div>
             </div>
 
             {/* Detailed Student Table */}
             <div className="!space-y-6">
-                <div className="!flex !items-center !justify-between">
-                    <div>
-                        <h2 className="!text-2xl !font-black !text-text-main !tracking-tight">Danh sách chi tiết</h2>
-                        <p className="!text-sm !font-medium !text-text-muted !mt-1">Theo dõi trạng thái thanh toán của từng học sinh trong lớp.</p>
-                    </div>
+                <div>
+                    <h2 className="!text-2xl !font-black !text-text-main !tracking-tight">Danh sách chi tiết</h2>
+                    <p className="!text-sm !font-medium !text-text-muted !mt-1">Theo dõi trạng thái thanh toán của từng học sinh trong lớp.</p>
                 </div>
 
                 {isLoading ? (
@@ -323,17 +458,12 @@ const ClassFinancialDetailPage = () => {
                 ) : (
                     <StudentPaymentTable 
                         students={studentsData} 
-                        onHistoryClick={handleStudentClick} 
                         onExtendClick={handleExtendClick}
                     />
                 )}
             </div>
 
-            <TransactionHistoryModal 
-                isOpen={isHistoryModalOpen}
-                onClose={() => setIsHistoryModalOpen(false)}
-                student={selectedStudent}
-            />
+
 
             <ConfirmModal 
                 isOpen={confirmModal.isOpen}
@@ -352,7 +482,15 @@ const ClassFinancialDetailPage = () => {
                 title={promptModal.title}
                 message={promptModal.message}
                 defaultValue={promptModal.defaultValue}
-                confirmText="Gia hạn"
+                confirmText={promptModal.confirmText || 'Xác nhận'}
+            />
+            
+            <TuitionFeeModal
+                isOpen={feeModal.isOpen}
+                onClose={() => setFeeModal({ isOpen: false, editData: null })}
+                onSave={handleSaveFeeConfig}
+                editData={feeModal.editData}
+                classes={allClasses.length > 0 ? allClasses : [classInfo]}
             />
         </div>
     );

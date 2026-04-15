@@ -1,37 +1,42 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Icon } from '@iconify/react';
 import { toast } from 'react-toastify';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { tuitionService } from '../api/tuitionService';
 import useAuthStore from '../../../store/authStore';
 
-const TransactionReviewHubPage = () => {
+const ClassTransactionsPage = () => {
     const navigate = useNavigate();
+    const { classId } = useParams();
     const { user } = useAuthStore();
-    
-    // Status tabs: pending, completed, rejected
+
     const [activeTab, setActiveTab] = useState('pending');
     const [transactions, setTransactions] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [className, setClassName] = useState('');
 
     // Pagination
     const ITEMS_PER_PAGE = 5;
     const [currentPage, setCurrentPage] = useState(1);
-    
-    // Popup Review State
+
+    // Review state
     const [selectedTx, setSelectedTx] = useState(null);
     const [reviewNote, setReviewNote] = useState('');
     const [isReviewing, setIsReviewing] = useState(false);
 
     const fetchTransactions = async () => {
-        if (!user?.token) return;
+        if (!user?.token || !classId) return;
         try {
             setIsLoading(true);
-            const res = await tuitionService.getFullTransactionHistory(user.token);
+            const res = await tuitionService.getClassTransactions(classId, user.token);
             if (res.ok) {
                 const data = await res.json();
                 setTransactions(data || []);
+                // Lấy tên lớp từ response đầu tiên
+                if (data && data.length > 0 && data[0].className) {
+                    setClassName(data[0].className);
+                }
             } else {
                 toast.error("Không thể lấy danh sách giao dịch.");
             }
@@ -45,7 +50,7 @@ const TransactionReviewHubPage = () => {
 
     useEffect(() => {
         fetchTransactions();
-    }, [user?.token]);
+    }, [user?.token, classId]);
 
     const handleAction = async (isApproved) => {
         if (!selectedTx) return;
@@ -53,7 +58,7 @@ const TransactionReviewHubPage = () => {
             toast.warning("Vui lòng nhập ghi chú lý do từ chối!");
             return;
         }
-        
+
         setIsReviewing(true);
         try {
             const payload = {
@@ -66,7 +71,7 @@ const TransactionReviewHubPage = () => {
                 toast.success(isApproved ? "Đã duyệt giao dịch thành công!" : "Đã từ chối giao dịch!");
                 setSelectedTx(null);
                 setReviewNote('');
-                fetchTransactions(); // Reload list
+                fetchTransactions();
             } else {
                 toast.error("Xử lý thất bại, vui lòng thử lại.");
             }
@@ -78,14 +83,14 @@ const TransactionReviewHubPage = () => {
     };
 
     const formatVND = (amount) => amount?.toLocaleString('vi-VN') + ' ₫';
-    
+
     const formatDate = (dateStr) => {
         if (!dateStr) return 'N/A';
         const d = new Date(dateStr);
-        return d.toLocaleDateString('vi-VN', { 
-            hour: '2-digit', 
-            minute: '2-digit', 
-            day: '2-digit', 
+        return d.toLocaleDateString('vi-VN', {
+            hour: '2-digit',
+            minute: '2-digit',
+            day: '2-digit',
             month: '2-digit',
             year: 'numeric'
         });
@@ -100,8 +105,7 @@ const TransactionReviewHubPage = () => {
             else if (activeTab === 'rejected') matchesTab = (s === 'rejected' || s === 'failed');
 
             const matchesSearch = !searchTerm.trim() ||
-                tx.studentName?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                tx.className?.toLowerCase().includes(searchTerm.toLowerCase());
+                tx.studentName?.toLowerCase().includes(searchTerm.toLowerCase());
             return matchesTab && matchesSearch;
         });
     }, [transactions, activeTab, searchTerm]);
@@ -137,39 +141,40 @@ const TransactionReviewHubPage = () => {
         <div className="!h-full !min-h-screen sm:!p-4 md:!p-8 !animate-fade-in !flex !flex-col !space-y-4">
             {/* Header */}
             <div className="!flex !items-center !gap-2 !mb-2 !px-2">
-                <button 
-                    onClick={() => navigate('/tuition')}
+                <button
+                    onClick={() => navigate(`/tuition/reports/${classId}`)}
                     className="!flex !items-center !gap-2 !text-sm !font-bold !text-text-muted hover:!text-primary !transition-colors"
                 >
                     <Icon icon="solar:round-arrow-left-bold" className="!text-xl" />
-                    Quay lại Dashboard
+                    Quay lại chi tiết lớp
                 </button>
             </div>
 
             <div className="!flex !flex-col md:!flex-row !items-start md:!items-center !justify-between !bg-surface !p-6 !rounded-[2.5rem] !border !border-border !shadow-sm !gap-4">
                 <div>
                     <h1 className="!text-3xl !font-black !text-text-main !tracking-tight !flex !items-center !gap-3 font-['Outfit']">
-                        Các thanh toán cần phải duyệt
+                        {className ? `Giao dịch – ${className}` : 'Giao dịch lớp học'}
                         <div className="!w-2 !h-2 !rounded-full !bg-amber-500 !animate-pulse"></div>
                     </h1>
+                    <p className="!text-sm !font-bold !text-text-muted !mt-1">Xem và duyệt các giao dịch thanh toán học phí của lớp này.</p>
                 </div>
-                
+
                 <div className="!flex !items-center !gap-2 !bg-background !p-1.5 !rounded-2xl !border !border-border">
-                    <button 
+                    <button
                         onClick={() => { setActiveTab('pending'); setSelectedTx(null); }}
                         className={`!px-5 !py-2.5 !rounded-xl !text-sm !font-black !transition-all !flex !items-center !gap-2 ${activeTab === 'pending' ? '!bg-white !text-amber-500 !shadow-sm' : '!text-text-muted hover:!text-text-main'}`}
                     >
                         <Icon icon="solar:hourglass-line-bold-duotone" className="!text-lg" />
                         Chờ Duyệt ({transactions.filter(t => t.status?.toLowerCase() === 'pending').length})
                     </button>
-                    <button 
+                    <button
                         onClick={() => { setActiveTab('completed'); setSelectedTx(null); }}
                         className={`!px-5 !py-2.5 !rounded-xl !text-sm !font-black !transition-all !flex !items-center !gap-2 ${activeTab === 'completed' ? '!bg-white !text-emerald-500 !shadow-sm' : '!text-text-muted hover:!text-text-main'}`}
                     >
                         <Icon icon="solar:check-circle-bold-duotone" className="!text-lg" />
                         Thành Công
                     </button>
-                    <button 
+                    <button
                         onClick={() => { setActiveTab('rejected'); setSelectedTx(null); }}
                         className={`!px-5 !py-2.5 !rounded-xl !text-sm !font-black !transition-all !flex !items-center !gap-2 ${activeTab === 'rejected' ? '!bg-white !text-red-500 !shadow-sm' : '!text-text-muted hover:!text-text-main'}`}
                     >
@@ -181,18 +186,18 @@ const TransactionReviewHubPage = () => {
 
             {/* Split Screen Container */}
             <div className="!flex-1 !flex !flex-col lg:!flex-row !gap-4 !min-h-[600px]">
-                
+
                 {/* Left Panel: Transaction List */}
                 <div className="!w-full lg:!w-1/3 !bg-white !rounded-[2.5rem] !border !border-border !shadow-sm !flex !flex-col !overflow-hidden">
                     <div className="!p-5 !border-b !border-border !bg-[#F8FAFC]">
                         <div className="!relative">
                             <Icon icon="solar:magnifer-linear" className="!absolute !left-3 !top-1/2 !-translate-y-1/2 !text-text-muted" />
-                            <input 
-                                type="text" 
-                                placeholder="Tìm tên học sinh, lớp..." 
+                            <input
+                                type="text"
+                                placeholder="Tìm tên học sinh..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="!w-full !bg-white !border !border-border !rounded-xl !pl-9 !pr-10 !py-2.5 !text-sm !font-medium focus:!outline-none focus:!border-primary" 
+                                className="!w-full !bg-white !border !border-border !rounded-xl !pl-9 !pr-10 !py-2.5 !text-sm !font-medium focus:!outline-none focus:!border-primary"
                             />
                             {searchTerm && (
                                 <button
@@ -223,32 +228,32 @@ const TransactionReviewHubPage = () => {
                                 const isSelected = selectedTx && selectedTx.transactionId === tx.transactionId;
 
                                 return (
-                                <div 
-                                    key={tx.transactionId} 
-                                    onClick={() => { setSelectedTx(tx); setReviewNote(''); }}
-                                    className={`!p-4 !cursor-pointer !transition-all hover:!bg-[#F8FAFC] ${isSelected ? '!bg-blue-50 !border-l-4 !border-l-blue-500' : '!border-l-4 !border-l-transparent'}`}
-                                >
-                                    <div className="!flex !justify-between !items-start !mb-2">
-                                        <p className={`!text-sm !font-black tracking-tight ${isSelected ? '!text-blue-700' : '!text-text-main'}`}>
-                                            {tx.studentName}
-                                        </p>
-                                        <span className="!text-[10px] !font-bold !text-text-muted">{formatDate(tx.paidDate)}</span>
-                                    </div>
-                                    <div className="!flex !justify-between !items-end">
-                                        <div>
-                                            <p className="!text-[10px] !font-bold !text-text-muted !uppercase !truncate !max-w-[120px]">{tx.className}</p>
-                                            <div className={`!mt-1 !px-2 !py-0.5 !rounded-lg !text-[10px] !font-black !inline-block ${getStatusStyle(tx.status)}`}>
-                                                {getStatusLabel(tx.status)}
+                                    <div
+                                        key={tx.transactionId}
+                                        onClick={() => { setSelectedTx(tx); setReviewNote(''); }}
+                                        className={`!p-4 !cursor-pointer !transition-all hover:!bg-[#F8FAFC] ${isSelected ? '!bg-blue-50 !border-l-4 !border-l-blue-500' : '!border-l-4 !border-l-transparent'}`}
+                                    >
+                                        <div className="!flex !justify-between !items-start !mb-2">
+                                            <p className={`!text-sm !font-black tracking-tight ${isSelected ? '!text-blue-700' : '!text-text-main'}`}>
+                                                {tx.studentName}
+                                            </p>
+                                            <span className="!text-[10px] !font-bold !text-text-muted">{formatDate(tx.paidDate)}</span>
+                                        </div>
+                                        <div className="!flex !justify-between !items-end">
+                                            <div>
+                                                <p className="!text-[10px] !font-bold !text-text-muted !uppercase !truncate !max-w-[120px]">{tx.className}</p>
+                                                <div className={`!mt-1 !px-2 !py-0.5 !rounded-lg !text-[10px] !font-black !inline-block ${getStatusStyle(tx.status)}`}>
+                                                    {getStatusLabel(tx.status)}
+                                                </div>
+                                            </div>
+                                            <div className="!text-right">
+                                                <p className="!text-[10px] !font-bold !text-text-muted">{tx.paymentMethod}</p>
+                                                <span className={`!text-sm !font-black ${isSelected ? '!text-blue-600' : '!text-emerald-600'}`}>
+                                                    {formatVND(tx.amountPaid)}
+                                                </span>
                                             </div>
                                         </div>
-                                        <div className="!text-right">
-                                            <p className="!text-[10px] !font-bold !text-text-muted">{tx.paymentMethod}</p>
-                                            <span className={`!text-sm !font-black ${isSelected ? '!text-blue-600' : '!text-emerald-600'}`}>
-                                                {formatVND(tx.amountPaid)}
-                                            </span>
-                                        </div>
                                     </div>
-                                </div>
                                 );
                             })
                         )}
@@ -310,10 +315,10 @@ const TransactionReviewHubPage = () => {
                                     <Icon icon="solar:maximize-square-minimalistic-bold-duotone" className="!text-zinc-400 !cursor-pointer hover:!text-zinc-600" title="Phóng to ảnh" />
                                 </div>
                                 <div className="!flex-1 !overflow-hidden !flex !items-center !justify-center !p-4 !min-h-[400px] !bg-zinc-50">
-                                     {selectedTx.proofImageUrl ? (
-                                        <img 
-                                            src={selectedTx.proofImageUrl} 
-                                            alt="Receipt Proof" 
+                                    {selectedTx.proofImageUrl ? (
+                                        <img
+                                            src={selectedTx.proofImageUrl}
+                                            alt="Receipt Proof"
                                             className="!w-full !h-full !object-contain hover:!scale-[1.1] !transition-transform !duration-300 !cursor-zoom-in"
                                         />
                                     ) : (
@@ -334,7 +339,7 @@ const TransactionReviewHubPage = () => {
                                         {getStatusLabel(selectedTx.status)}
                                     </div>
                                 </div>
-                                
+
                                 <div className="!flex-1 !p-6 !overflow-y-auto custom-scrollbar !space-y-6">
                                     {/* Student & Class Info */}
                                     <div className="!grid !grid-cols-2 !gap-4">
@@ -354,7 +359,7 @@ const TransactionReviewHubPage = () => {
                                             <span className="!text-[11px] !font-black !text-text-muted !uppercase tracking-wider">Hóa đơn chi tiết</span>
                                             <span className="!text-xs !font-bold !text-primary">Tháng {selectedTx.periodMonth}/{selectedTx.periodYear}</span>
                                         </div>
-                                        
+
                                         <div className="!space-y-2 !bg-white !p-3 !rounded-xl !border !border-dashed !border-border">
                                             <div className="!flex !justify-between !text-xs !font-medium">
                                                 <span className="!text-text-muted">Nội dung:</span>
@@ -385,7 +390,7 @@ const TransactionReviewHubPage = () => {
                                                 <span className={`!text-2xl !font-black ${selectedTx.amountPaid !== selectedTx.invoiceTotalAmount && selectedTx.invoiceTotalAmount > 0 ? '!text-amber-600' : '!text-emerald-600'}`}>
                                                     {formatVND(selectedTx.amountPaid)}
                                                 </span>
-                                                {selectedTx.amountPaid !== selectedTx.invoiceTotalAmount && selectedTx.invoiceTotalAmount > 0 && 
+                                                {selectedTx.amountPaid !== selectedTx.invoiceTotalAmount && selectedTx.invoiceTotalAmount > 0 &&
                                                     <p className="!text-[10px] !font-bold !text-amber-700 !flex !items-center !justify-end !gap-1">
                                                         <Icon icon="solar:danger-bold" /> Lệch so với hóa đơn
                                                     </p>
@@ -404,7 +409,7 @@ const TransactionReviewHubPage = () => {
                                             <label className="!text-[11px] !font-black !text-text-muted !uppercase !tracking-wider">
                                                 Ghi chú nội bộ (Bắt buộc nếu từ chối)
                                             </label>
-                                            <textarea 
+                                            <textarea
                                                 value={reviewNote}
                                                 onChange={(e) => setReviewNote(e.target.value)}
                                                 placeholder="Lý do từ chối hoặc ghi chú duyệt..."
@@ -417,7 +422,7 @@ const TransactionReviewHubPage = () => {
                                 {/* Action Buttons Fixed Bottom */}
                                 {activeTab === 'pending' && (
                                     <div className="!p-6 !border-t !border-border !bg-white !flex !items-center !gap-4">
-                                        <button 
+                                        <button
                                             disabled={isReviewing}
                                             onClick={() => handleAction(false)}
                                             className="!flex-1 !py-4 !rounded-2xl !font-black !bg-red-50 !text-red-600 hover:!bg-red-100 !border !border-red-100 !transition-all disabled:!opacity-50 !flex !items-center !justify-center !gap-2"
@@ -425,10 +430,10 @@ const TransactionReviewHubPage = () => {
                                             <Icon icon="solar:close-square-bold-duotone" className="!text-xl" />
                                             Từ Chối
                                         </button>
-                                        <button 
+                                        <button
                                             disabled={isReviewing}
                                             onClick={() => handleAction(true)}
-                                            className="!flex-1 !py-4 !rounded-2xl !font-black !bg-emerald-500 !text-white hover:!bg-emerald-600 !hover:shadow-lg !hover:shadow-emerald-500/20 !transition-all disabled:!opacity-50 !flex !items-center !justify-center !gap-2"
+                                            className="!flex-1 !py-4 !rounded-2xl !font-black !bg-emerald-500 !text-white hover:!bg-emerald-600 !transition-all disabled:!opacity-50 !flex !items-center !justify-center !gap-2"
                                         >
                                             <Icon icon="solar:check-square-bold-duotone" className="!text-xl" />
                                             Duyệt
@@ -445,4 +450,4 @@ const TransactionReviewHubPage = () => {
     );
 };
 
-export default TransactionReviewHubPage;
+export default ClassTransactionsPage;
