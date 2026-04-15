@@ -1,9 +1,18 @@
 import { getApiUrl } from '../../../config/api';
 
 const postService = {
-    // Lấy tất cả bài đăng theo lớp học
+    // Lấy tất cả bài đăng theo lớp học (dành cho Giáo viên/TA)
     getPostsByClassId: async (classId, token) => {
         return fetch(getApiUrl(`/api/Post/class/${classId}`), {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+    },
+
+    // Lấy tất cả bài đăng theo lớp học (dành cho Học sinh)
+    getStudentPostsByClassId: async (classId, token) => {
+        return fetch(getApiUrl(`/api/Post/student/${classId}/posts`), {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -54,9 +63,7 @@ const postService = {
 
     // Bình luận bài đăng
     commentOnPost: async (postId, content, token) => {
-        const url = getApiUrl(`/api/Post/${postId}/comments`);
-        console.log('Fetching comment API:', url);
-        return fetch(url, {
+        return fetch(getApiUrl(`/api/Post/${postId}/comments`), {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,

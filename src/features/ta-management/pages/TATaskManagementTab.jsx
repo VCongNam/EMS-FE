@@ -3,6 +3,7 @@ import { Icon } from '@iconify/react';
 import { toast } from 'react-toastify';
 import Button from '../../../components/ui/Button';
 import CreateTaskModal from '../components/CreateTaskModal';
+import TaskDetailModal from '../components/TaskDetailModal';
 import useAuthStore from '../../../store/authStore';
 import { taService } from '../api/taService';
 
@@ -13,6 +14,8 @@ const TATaskManagementTab = ({ classId }) => {
     const [tas, setTas] = useState([]);
     const [tasks, setTasks] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [selectedTask, setSelectedTask] = useState(null);
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
     const loadData = async () => {
         if (!classId || !user?.token) return;
@@ -46,19 +49,17 @@ const TATaskManagementTab = ({ classId }) => {
                         
                         // Append and attach TA info
                         const formattedTasks = taTasksList.map(t => {
-                            let mappedStatus = 'todo';
-                            const beStatus = (t.status || '').toLowerCase();
-                            if (beStatus === 'pending' || beStatus === 'todo') mappedStatus = 'todo';
-                            else if (beStatus === 'in progress' || beStatus === 'in_progress') mappedStatus = 'in_progress';
-                            else if (beStatus === 'completed' || beStatus === 'done' || beStatus === 'finished') mappedStatus = 'done';
+                            const status = t.status || 'Todo';
 
                             return {
                                 ...t,
                                 assignedTo: ta.taid,
                                 assignedToName: ta.fullName || ta.name,
                                 id: t.taTaskID || t.id,
-                                status: mappedStatus,
-                                deadline: t.dueDate || t.deadline
+                                classId: classId,
+                                status: status,
+                                deadline: t.dueDate || t.deadline,
+                                feedback: t.feedback || ''
                             };
                         });
                         allTasks = [...allTasks, ...formattedTasks];
@@ -89,24 +90,18 @@ const TATaskManagementTab = ({ classId }) => {
         loadData();
     }, [classId, user?.token]);
 
-    const handleAssignTask = async (taskData) => {
+    const handleReviewTask = async (taskId, isApproved, feedback) => {
+        if (!user?.token) return;
         try {
-            // map frontend data to API payload
-            const payload = {
-                classTAID: taskData.classTAId || taskData.assignedTo, // Đổi thành classTAID (Big D) theo BE
-                title: taskData.title,
-                dueDate: taskData.deadline,
-                type: taskData.type || 'Grade' // Đổi thành Grade/Attendance... theo BE
-            };
-            
-            const res = await taService.createTask(payload, user.token);
+            const payload = { isApproved, feedback };
+            const res = await taService.reviewTask(taskId, payload, user.token);
             if (res.ok) {
-                toast.success('Giao việc thành công!');
-                setIsCreateModalOpen(false);
-                loadData(); // Re-fetch all tasks
+                toast.success(isApproved ? 'Đã duyệt công việc thành công!' : 'Đã gửi yêu cầu làm lại cho trợ giảng.');
+                setIsDetailModalOpen(false);
+                loadData(); // Re-fetch to get new status and feedback
             } else {
-                const error = await res.json();
-                toast.error(error.message || 'Lỗi khi giao việc');
+                const err = await res.json();
+                toast.error(err.message || 'Lỗi khi xử lý yêu cầu');
             }
         } catch (e) {
             console.error(e);
@@ -118,27 +113,43 @@ const TATaskManagementTab = ({ classId }) => {
     const TaskCard = ({ task }) => {
         const taName = task.assignedToName || 'Không rõ';
         
-        const getStatusStyles = (status) => {
+        const getStatusStyles = (s) => {
+            const status = (s || '').toLowerCase();
             switch(status) {
+                case 'inprogress':
                 case 'in_progress':
                     return "bg-amber-500/10 text-amber-600 border-amber-200/50";
+                case 'review':
+                    return "bg-purple-500/10 text-purple-600 border-purple-200/50";
                 case 'done':
                     return "bg-green-500/10 text-green-600 border-green-200/50";
+                case 'overdue':
+                    return "bg-red-500/10 text-red-600 border-red-200/50";
                 default:
                     return "bg-slate-500/10 text-slate-600 border-slate-200/50";
             }
         };
 
-        const getStatusLabel = (status) => {
+        const getStatusLabel = (s) => {
+            const status = (s || '').toLowerCase();
             switch(status) {
+                case 'inprogress':
                 case 'in_progress': return "Đang làm";
+                case 'review': return "Chờ duyệt";
                 case 'done': return "Đã xong";
+                case 'overdue': return "Quá hạn";
                 default: return "Cần làm";
             }
         };
 
         return (
-            <div className="bg-surface rounded-2xl border border-border shadow-sm hover:shadow-md hover:border-primary/30 transition-all !p-4 sm:!p-5 flex flex-col sm:flex-row sm:items-center justify-between !gap-4 group">
+            <div 
+                onClick={() => {
+                    setSelectedTask(task);
+                    setIsDetailModalOpen(true);
+                }}
+                className="bg-surface rounded-2xl border border-border shadow-sm hover:shadow-md hover:border-primary/30 transition-all !p-4 sm:!p-5 flex flex-col sm:flex-row sm:items-center justify-between !gap-4 group cursor-pointer"
+            >
                 <div className="flex items-start !gap-4 flex-1">
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
                         task.type === 'Grade' ? 'bg-blue-500/10 text-blue-500' : 'bg-purple-500/10 text-purple-500'
@@ -246,9 +257,40 @@ const TATaskManagementTab = ({ classId }) => {
                 <CreateTaskModal 
                     isOpen={isCreateModalOpen} 
                     onClose={() => setIsCreateModalOpen(false)} 
-                    onAssign={handleAssignTask}
+                    onAssign={async (taskData) => {
+                        try {
+                            const payload = {
+                                classTAID: taskData.classTAId || taskData.assignedTo,
+                                title: taskData.title,
+                                dueDate: taskData.deadline,
+                                type: taskData.type || 'Grade'
+                            };
+                            const res = await taService.createTask(payload, user.token);
+                            if (res.ok) {
+                                toast.success('Giao việc thành công!');
+                                setIsCreateModalOpen(false);
+                                loadData();
+                            } else {
+                                const error = await res.json();
+                                toast.error(error.message || 'Lỗi khi giao việc');
+                            }
+                        } catch (e) {
+                            console.error(e);
+                            toast.error('Lỗi kết nối máy chủ');
+                        }
+                    }}
                     tas={tas}
                     classes={[]} 
+                />
+            )}
+
+            {isDetailModalOpen && (
+                <TaskDetailModal
+                    isOpen={isDetailModalOpen}
+                    onClose={() => setIsDetailModalOpen(false)}
+                    task={selectedTask}
+                    userRole="TEACHER"
+                    onReviewTask={handleReviewTask}
                 />
             )}
         </div>

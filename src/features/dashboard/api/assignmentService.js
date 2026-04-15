@@ -48,5 +48,34 @@ export const assignmentService = {
         'Content-Type': 'application/json'
       }
     });
+  },
+  getSubmissions: async (assignmentId, token) => {
+    return fetch(getApiUrl(`/api/Assignment/${assignmentId}/submissions`), {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+  },
+  gradeSubmission: async (submissionId, grade, token) => {
+    return fetch(getApiUrl(`/api/Assignment/submissions/${submissionId}/grade`), {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ grade: parseFloat(grade) })
+    });
+  },
+  giveFeedback: async (submissionId, content, token) => {
+    return fetch(getApiUrl(`/api/Assignment/submissions/${submissionId}/feedback`), {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ content })
+    });
   }
 };

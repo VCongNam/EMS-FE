@@ -16,10 +16,13 @@ const DAYS_OF_WEEK = [
 ];
 
 const STATUS_CONFIG = {
-    scheduled: { label: 'Sắp diễn ra', className: 'bg-blue-100 text-blue-700 border-blue-200', dot: 'bg-blue-500' },
-    completed: { label: 'Đã hoàn thành', className: 'bg-green-100 text-green-700 border-green-200', dot: 'bg-green-500' },
-    canceled: { label: 'Đã hủy', className: 'bg-red-100 text-red-700 border-red-200', dot: 'bg-red-400' },
-    cancelled: { label: 'Đã hủy', className: 'bg-red-100 text-red-700 border-red-200', dot: 'bg-red-400' },
+    scheduled: { label: 'Sắp diễn ra', className: '!bg-blue-100 text-blue-700 border-blue-200', dot: '!bg-blue-500' },
+    'sắp diễn ra': { label: 'Sắp diễn ra', className: '!bg-blue-100 text-blue-700 border-blue-200', dot: '!bg-blue-500' },
+    completed: { label: 'Đã hoàn thành', className: '!bg-green-100 text-green-700 border-green-200', dot: '!bg-green-500' },
+    'đã kết thúc': { label: 'Đã kết thúc', className: '!bg-green-100 text-green-700 border-green-200', dot: '!bg-green-500' },
+    canceled: { label: 'Đã hủy', className: '!bg-red-100 text-red-700 border-red-200', dot: '!bg-red-400' },
+    cancelled: { label: 'Đã hủy', className: '!bg-red-100 text-red-700 border-red-200', dot: '!bg-red-400' },
+    'đã hủy': { label: 'Đã hủy', className: '!bg-red-100 text-red-700 border-red-200', dot: '!bg-red-400' },
 };
 
 const MOCK_SCHEDULE_CONFIG = {
@@ -81,6 +84,10 @@ const ClassSchedulePage = () => {
                     const dayIdx = dateObj.getDay();
                     const dayLabels = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
 
+                    // Normalize status: handle both English keys and Vietnamese strings
+                    const rawStatus = item.status || '';
+                    const normalizedStatus = rawStatus.toLowerCase();
+
                     return {
                         id: item.sessionId || item.sessionID,
                         session: index + 1,
@@ -88,7 +95,8 @@ const ClassSchedulePage = () => {
                         date: item.date ? item.date.split('T')[0] : '',
                         startTime: item.startTime?.substring(0, 5) || '--:--',
                         endTime: item.endTime?.substring(0, 5) || '--:--',
-                        status: item.status ? item.status.toLowerCase() : 'scheduled',
+                        status: normalizedStatus || 'scheduled',
+                        attendanceStatus: item.attendanceStatus || null,
                         title: item.title || item.className,
                         raw: item
                     };
@@ -118,7 +126,22 @@ const ClassSchedulePage = () => {
         fetchSessions();
     }, [fetchSessions]);
 
-    const filteredLessons = filterStatus === 'all' ? lessons : lessons.filter(l => l.status === filterStatus || (l.status === 'canceled' && filterStatus === 'cancelled'));
+    const itemsPerPage = 8;
+    const [currentPage, setCurrentPage] = useState(1);
+
+    const filteredLessons = filterStatus === 'all' ? lessons : lessons.filter(l => {
+        if (filterStatus === 'scheduled') return l.status === 'scheduled' || l.status === 'sắp diễn ra';
+        if (filterStatus === 'completed') return l.status === 'completed' || l.status === 'đã kết thúc';
+        if (filterStatus === 'cancelled') return l.status === 'cancelled' || l.status === 'canceled' || l.status === 'đã hủy';
+        return l.status === filterStatus;
+    });
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [filterStatus, lessons]);
+
+    const totalPages = Math.ceil(filteredLessons.length / itemsPerPage);
+    const paginatedLessons = filteredLessons.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     const handleSaveSche = (data) => {
         setScheduleConfig(data);
@@ -210,17 +233,17 @@ const ClassSchedulePage = () => {
     return (
         <div className="!space-y-6 animate-fade-in relative min-h-[400px]">
             {isLoading && (
-                <div className="absolute z-10 inset-0 bg-background/50 backdrop-blur-[2px] rounded-[2rem] flex items-center justify-center">
+                <div className="absolute z-10 inset-0 !bg-background/50 backdrop-blur-[2px] rounded-[2rem] flex items-center justify-center">
                     <Icon icon="line-md:loading-loop" className="text-4xl text-primary" />
                 </div>
             )}
 
             {/* ── Config Summary Card ── */}
             {scheduleConfig ? (
-                <div className="bg-surface !p-6 rounded-[2rem] border border-border shadow-sm">
+                <div className="!bg-surface !p-6 rounded-[2rem] border border-border shadow-sm">
                     <div className="flex items-start justify-between !mb-5">
                         <div className="flex items-center !gap-3">
-                            <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                            <div className="w-10 h-10 rounded-2xl !bg-primary/10 flex items-center justify-center text-primary shrink-0">
                                 <Icon icon="solar:settings-bold-duotone" className="text-xl" />
                             </div>
                             <div>
@@ -230,10 +253,10 @@ const ClassSchedulePage = () => {
                         </div>
                         {isTeacherOrTA && (
                             <div className="flex items-center !gap-2">
-                                <button onClick={() => setIsModalOpen(true)} className="flex items-center !gap-1.5 text-xs font-semibold text-primary !px-3 !py-2 border border-primary/30 rounded-xl hover:bg-primary/5 transition-colors">
+                                <button onClick={() => setIsModalOpen(true)} className="flex items-center !gap-1.5 text-xs font-semibold text-primary !px-3 !py-2 border border-primary/30 rounded-xl hover:!bg-primary/5 transition-colors">
                                     <Icon icon="solar:pen-bold-duotone" className="text-sm" /> Chỉnh sửa
                                 </button>
-                                <button onClick={handleDeleteSchedule} className="flex items-center !gap-1.5 text-xs font-semibold text-red-500 !px-3 !py-2 border border-red-200 rounded-xl hover:bg-red-50 transition-colors">
+                                <button onClick={handleDeleteSchedule} className="flex items-center !gap-1.5 text-xs font-semibold text-red-500 !px-3 !py-2 border border-red-200 rounded-xl hover:!bg-red-50 transition-colors">
                                     <Icon icon="solar:trash-bin-2-bold-duotone" className="text-sm" /> Xóa cấu hình
                                 </button>
                             </div>
@@ -242,14 +265,14 @@ const ClassSchedulePage = () => {
 
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 !gap-3">
                         {[
-                            { icon: 'solar:calendar-date-bold-duotone', color: 'text-blue-500 bg-blue-500/10', label: 'Ngày khai giảng', value: new Date(scheduleConfig.openingDate + 'T00:00:00').toLocaleDateString('vi-VN') },
-                            { icon: 'solar:calendar-mark-bold-duotone', color: 'text-violet-500 bg-violet-500/10', label: 'Ngày học', value: scheduleConfig.selectedDays.map(id => DAYS_OF_WEEK.find(d => d.id === id)?.label).join(', ') },
-                            { icon: 'solar:clock-circle-bold-duotone', color: 'text-orange-500 bg-orange-500/10', label: 'Ca học', value: `${scheduleConfig.startTime} – ${scheduleConfig.endTime}` },
-                            { icon: 'solar:document-text-bold-duotone', color: 'text-indigo-500 bg-indigo-500/10', label: 'Bảng điểm', value: templateLabels[scheduleConfig.transcriptTemplateId] || '-' },
-                            { icon: 'solar:tag-price-bold-duotone', color: 'text-emerald-500 bg-emerald-500/10', label: 'Học phí/buổi', value: Number(scheduleConfig.pricePerLesson).toLocaleString('vi-VN') + ' ₫' },
-                            { icon: 'solar:card-transfer-bold-duotone', color: 'text-pink-500 bg-pink-500/10', label: 'Thanh toán', value: paymentLabels[scheduleConfig.paymentMethod] || '-' },
+                            { icon: 'solar:calendar-date-bold-duotone', color: 'text-blue-500 !bg-blue-500/10', label: 'Ngày khai giảng', value: new Date(scheduleConfig.openingDate + 'T00:00:00').toLocaleDateString('vi-VN') },
+                            { icon: 'solar:calendar-mark-bold-duotone', color: 'text-violet-500 !bg-violet-500/10', label: 'Ngày học', value: scheduleConfig.selectedDays.map(id => DAYS_OF_WEEK.find(d => d.id === id)?.label).join(', ') },
+                            { icon: 'solar:clock-circle-bold-duotone', color: 'text-orange-500 !bg-orange-500/10', label: 'Ca học', value: `${scheduleConfig.startTime} – ${scheduleConfig.endTime}` },
+                            { icon: 'solar:document-text-bold-duotone', color: 'text-indigo-500 !bg-indigo-500/10', label: 'Bảng điểm', value: templateLabels[scheduleConfig.transcriptTemplateId] || '-' },
+                            { icon: 'solar:tag-price-bold-duotone', color: 'text-emerald-500 !bg-emerald-500/10', label: 'Học phí/buổi', value: Number(scheduleConfig.pricePerLesson).toLocaleString('vi-VN') + ' ₫' },
+                            { icon: 'solar:card-transfer-bold-duotone', color: 'text-pink-500 !bg-pink-500/10', label: 'Thanh toán', value: paymentLabels[scheduleConfig.paymentMethod] || '-' },
                         ].map((item, i) => (
-                            <div key={i} className="flex flex-col !gap-2 !p-4 bg-background rounded-2xl border border-border">
+                            <div key={i} className="flex flex-col !gap-2 !p-4 !bg-background rounded-2xl border border-border">
                                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${item.color}`}>
                                     <Icon icon={item.icon} className="text-base" />
                                 </div>
@@ -260,8 +283,8 @@ const ClassSchedulePage = () => {
                     </div>
                 </div>
             ) : (
-                <div className="flex flex-col items-center text-center !gap-4 !py-8 bg-surface rounded-[2rem] border border-dashed border-border">
-                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <div className="flex flex-col items-center text-center !gap-4 !py-8 !bg-surface rounded-[2rem] border border-dashed border-border">
+                    <div className="w-16 h-16 rounded-full !bg-primary/10 flex items-center justify-center">
                         <Icon icon="solar:calendar-add-bold-duotone" className="text-3xl text-primary" />
                     </div>
                     <div>
@@ -269,7 +292,7 @@ const ClassSchedulePage = () => {
                         <p className="text-text-muted mt-1 text-sm">Cấu hình luật tự động đẻ lịch học hàng tuần</p>
                     </div>
                     {isTeacherOrTA && (
-                        <button onClick={() => setIsModalOpen(true)} className="!bg-primary text-white font-bold !py-2 !px-6 rounded-xl hover:bg-primary/90 text-sm">
+                        <button onClick={() => setIsModalOpen(true)} className="!bg-primary text-white font-bold !py-2 !px-6 rounded-xl hover:!bg-primary/90 text-sm">
                             Thiết lập ngay
                         </button>
                     )}
@@ -277,10 +300,10 @@ const ClassSchedulePage = () => {
             )}
 
             {/* ── Lesson List ── */}
-            <div className="bg-surface !p-6 rounded-[2rem] border border-border shadow-sm min-h-[400px]">
+            <div className="!bg-surface !p-6 rounded-[2rem] border border-border shadow-sm min-h-[400px]">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between !gap-4 !mb-6">
                     <div className="flex items-center !gap-3">
-                        <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                        <div className="w-10 h-10 rounded-2xl !bg-primary/10 flex items-center justify-center text-primary shrink-0">
                             <Icon icon="solar:list-check-minimalistic-bold-duotone" className="text-xl" />
                         </div>
                         <div>
@@ -294,15 +317,15 @@ const ClassSchedulePage = () => {
                         <div className="flex flex-1 items-center !gap-1 !bg-background border border-border rounded-xl !p-1 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
                             {[
                                 { id: 'all', label: 'Tất cả', count: lessons.length },
-                                { id: 'scheduled', label: 'Sắp tới', count: lessons.filter(l => l.status === 'scheduled').length },
-                                { id: 'completed', label: 'Hoàn thành', count: lessons.filter(l => l.status === 'completed').length },
-                                { id: 'cancelled', label: 'Đã hủy', count: lessons.filter(l => l.status === 'cancelled' || l.status === 'canceled').length },
+                                { id: 'scheduled', label: 'Sắp tới', count: lessons.filter(l => l.status === 'scheduled' || l.status === 'sắp diễn ra').length },
+                                { id: 'completed', label: 'Hoàn thành', count: lessons.filter(l => l.status === 'completed' || l.status === 'đã kết thúc').length },
+                                { id: 'cancelled', label: 'Đã hủy', count: lessons.filter(l => l.status === 'cancelled' || l.status === 'canceled' || l.status === 'đã hủy').length },
                             ].map(tab => (
                                 <button key={tab.id} onClick={() => setFilterStatus(tab.id)}
                                     className={`flex whitespace-nowrap items-center !gap-1.5 !px-3 !py-2 rounded-lg text-xs font-semibold transition-all ${filterStatus === tab.id ? '!bg-primary text-white shadow-sm' : 'text-text-muted hover:text-text-main'
                                         }`}>
                                     {tab.label}
-                                    <span className={`text-[10px] font-bold !px-1.5 !py-0.5 rounded-md ${filterStatus === tab.id ? 'bg-white/20' : 'bg-border'}`}>
+                                    <span className={`text-[10px] font-bold !px-1.5 !py-0.5 rounded-md ${filterStatus === tab.id ? '!bg-white/20' : '!bg-border'}`}>
                                         {tab.count}
                                     </span>
                                 </button>
@@ -313,7 +336,7 @@ const ClassSchedulePage = () => {
                         {isTeacherOrTA && (
                             <button
                                 onClick={() => setSessionModalState({ isOpen: true, initialData: null })}
-                                className="flex shrink-0 items-center justify-center !w-10 !h-10 sm:!w-auto sm:!px-4 !bg-primary text-white rounded-xl shadow-md shadow-primary/30 hover:bg-primary/90 hover:scale-105 transition-all"
+                                className="flex shrink-0 items-center justify-center !w-10 !h-10 sm:!w-auto sm:!px-4 !bg-primary text-white rounded-xl shadow-md shadow-primary/30 hover:!bg-primary/90 hover:scale-105 transition-all"
                                 title="Thêm buổi học thủ công"
                             >
                                 <Icon icon="solar:medical-kit-bold" className="text-lg sm:!mr-2" />
@@ -330,16 +353,16 @@ const ClassSchedulePage = () => {
                     </div>
                 ) : (
                     <div className="!space-y-3">
-                        {filteredLessons.map((lesson, idx) => {
+                        {paginatedLessons.map((lesson, idx) => {
                             const cfg = STATUS_CONFIG[lesson.status] || STATUS_CONFIG.scheduled;
                             const isDeleting = deletingId === lesson.id;
                             return (
                                 <div key={lesson.id || idx}
-                                    className={`flex flex-col sm:flex-row items-start sm:items-center justify-between !gap-4 !p-4 rounded-2xl border transition-all group ${isDeleting ? 'opacity-0 scale-95 border-red-200 bg-red-50' :
-                                            'border-border hover:border-primary/30 hover:shadow-sm bg-background'
+                                    className={`flex flex-col sm:flex-row items-start sm:items-center justify-between !gap-4 !p-4 rounded-2xl border transition-all group ${isDeleting ? 'opacity-0 scale-95 border-red-200 !bg-red-50' :
+                                        'border-border hover:border-primary/30 hover:shadow-sm !bg-background'
                                         }`}>
                                     <div className="flex items-center !gap-4 w-full sm:w-auto">
-                                        <div className="flex flex-col items-center justify-center min-w-[56px] !px-3 !py-2.5 bg-primary/10 rounded-xl text-primary border border-primary/20 shrink-0">
+                                        <div className="flex flex-col items-center justify-center min-w-[56px] !px-3 !py-2.5 !bg-primary/10 rounded-xl text-primary border border-primary/20 shrink-0">
                                             <span className="text-[9px] font-bold uppercase tracking-wide opacity-70">Buổi</span>
                                             <span className="text-xl font-extrabold leading-none">{lesson.session}</span>
                                         </div>
@@ -371,7 +394,7 @@ const ClassSchedulePage = () => {
                                             <div className="flex items-center !gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                                                 <button
                                                     onClick={() => handleOpenAttendance(lesson)}
-                                                    className={`flex items-center !gap-1.5 !px-3 !py-1.5 text-xs font-bold rounded-xl shadow-sm transition-all whitespace-nowrap ${lesson.status === 'scheduled' ? '!bg-primary text-white hover:bg-primary/90' : 'bg-background border border-border text-text-main hover:border-primary'}`}
+                                                    className={`flex items-center !gap-1.5 !px-3 !py-1.5 text-xs font-bold rounded-xl shadow-sm transition-all whitespace-nowrap ${lesson.status === 'scheduled' ? '!bg-primary text-white hover:!bg-primary/90' : '!bg-background border border-border text-text-main hover:border-primary'}`}
                                                 >
                                                     <Icon icon={lesson.status === 'scheduled' ? "material-symbols:fact-check-rounded" : "material-symbols:visibility-rounded"} className="text-sm" />
                                                     Điểm danh
@@ -379,14 +402,14 @@ const ClassSchedulePage = () => {
                                                 <button
                                                     title="Sửa thông tin"
                                                     onClick={() => setSessionModalState({ isOpen: true, initialData: lesson.raw })}
-                                                    className="!p-2 text-text-muted hover:text-primary hover:bg-primary/10 rounded-xl transition-colors border border-transparent hover:border-primary/20 bg-background"
+                                                    className="!p-2 text-text-muted hover:text-primary hover:!bg-primary/10 rounded-xl transition-colors border border-transparent hover:border-primary/20 !bg-background"
                                                 >
                                                     <Icon icon="solar:pen-bold-duotone" className="text-lg" />
                                                 </button>
                                                 <button
                                                     title="Xóa kết quả buổi học"
                                                     onClick={() => handleDeleteLessonAPI(lesson.id)}
-                                                    className="!p-2 text-text-muted hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors border border-transparent hover:border-red-200 bg-background"
+                                                    className="!p-2 text-text-muted hover:text-red-500 hover:!bg-red-50 rounded-xl transition-colors border border-transparent hover:border-red-200 !bg-background"
                                                 >
                                                     <Icon icon="material-symbols:delete-outline-rounded" className="text-lg" />
                                                 </button>
@@ -396,6 +419,48 @@ const ClassSchedulePage = () => {
                                 </div>
                             );
                         })}
+                    </div>
+                )}
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                    <div className="flex justify-center items-center gap-2 mt-6">
+                        <button
+                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            disabled={currentPage === 1}
+                            className={`p-2 rounded-xl border transition-colors ${currentPage === 1
+                                ? 'border-border text-border !bg-background cursor-not-allowed'
+                                : 'border-border text-text-main hover:!bg-primary/5 hover:border-primary/30 !bg-background'
+                                }`}
+                        >
+                            <Icon icon="solar:alt-arrow-left-linear" className="text-lg" />
+                        </button>
+
+                        <div className="flex items-center gap-1">
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                <button
+                                    key={page}
+                                    onClick={() => setCurrentPage(page)}
+                                    className={`w-9 h-9 rounded-xl text-sm font-bold transition-all ${currentPage === page
+                                        ? '!bg-primary text-white shadow-md shadow-primary/30'
+                                        : 'text-text-muted hover:!bg-primary/5 hover:text-text-main'
+                                        }`}
+                                >
+                                    {page}
+                                </button>
+                            ))}
+                        </div>
+
+                        <button
+                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                            disabled={currentPage === totalPages}
+                            className={`p-2 rounded-xl border transition-colors ${currentPage === totalPages
+                                ? 'border-border text-border !bg-background cursor-not-allowed'
+                                : 'border-border text-text-main hover:!bg-primary/5 hover:border-primary/30 !bg-background'
+                                }`}
+                        >
+                            <Icon icon="solar:alt-arrow-right-linear" className="text-lg" />
+                        </button>
                     </div>
                 )}
             </div>

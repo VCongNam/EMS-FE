@@ -28,6 +28,7 @@ const SideMenu = ({ isOpen, onClose }) => {
             { name: 'Quản lý Lịch học', path: '/schedule-management', icon: 'solar:calendar-add-bold-duotone' },
             { name: 'Quản lý Học phí', path: '/tuition', icon: 'solar:wallet-money-bold-duotone' },
             { name: 'Thông báo', path: '/notifications', icon: 'material-symbols:circle-notifications-sharp', badge: unreadCount },
+            { name: 'Hỗ trợ & Góp ý', path: '/teacher/feedback', icon: 'material-symbols:feedback-rounded' },
             { name: 'Trang cá nhân', path: '/profile', icon: 'material-symbols:person-rounded' },
         ],
         TA: [
@@ -42,7 +43,7 @@ const SideMenu = ({ isOpen, onClose }) => {
         admin: [
             { name: 'Tổng quan Hệ thống', path: '/admin/dashboard', icon: 'material-symbols:dashboard-rounded' },
             { name: 'Quản lý Tài khoản', path: '/admin/accounts', icon: 'material-symbols:manage-accounts-rounded' },
-            { name: 'Phân quyền Cán bộ', path: '/admin/authorization', icon: 'material-symbols:admin-panel-settings-rounded' },
+            { name: 'Quản lý Phản hồi', path: '/admin/feedback', icon: 'material-symbols:feedback-rounded' },
             { name: 'Thông báo', path: '/notifications', icon: 'material-symbols:circle-notifications-sharp', badge: unreadCount }
         ],
     };
@@ -89,7 +90,7 @@ const SideMenu = ({ isOpen, onClose }) => {
                                 to={item.path}
                                 onClick={() => {
                                     //Reset badge noti
-                                    if (item.path === '/notifications') {}
+                                    if (item.path === '/notifications') { }
                                     if (window.innerWidth < 1024) onClose();
                                 }}
                                 className={`flex items-center gap-3 !p-4 rounded-2xl transition-all duration-300 font-medium ${isActive

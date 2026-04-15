@@ -17,10 +17,10 @@ const ClassDetailLayout = () => {
     const isStudentPortal = location.pathname.startsWith('/student/classes');
     const isAssistantPortal = location.pathname.startsWith('/assisted-classes');
 
-    const basePath = isStudentPortal 
-        ? '/student/classes' 
-        : isAssistantPortal 
-            ? '/assisted-classes' 
+    const basePath = isStudentPortal
+        ? '/student/classes'
+        : isAssistantPortal
+            ? '/assisted-classes'
             : '/teacher/classes';
 
     const [classInfo, setClassInfo] = useState({
@@ -139,10 +139,9 @@ const ClassDetailLayout = () => {
                             key={tab.path}
                             to={`${basePath}/${classId}/${tab.path}`}
                             className={({ isActive }) =>
-                                `flex items-center gap-2 !px-6 !py-4 text-sm font-bold border-b-2 transition-all hover:bg-surface-hover whitespace-nowrap ${
-                                    isActive
-                                        ? 'border-primary text-primary bg-primary/5'
-                                        : 'border-transparent text-text-muted hover:text-text-main'
+                                `flex items-center gap-2 !px-6 !py-4 text-sm font-bold border-b-2 transition-all hover:bg-surface-hover whitespace-nowrap ${isActive
+                                    ? 'border-primary text-primary bg-primary/5'
+                                    : 'border-transparent text-text-muted hover:text-text-main'
                                 }`
                             }
                         >
@@ -182,17 +181,16 @@ const ClassDetailLayout = () => {
                                         navigate(`${basePath}/${classId}/${tab.path}`);
                                         setDropdownOpen(false);
                                     }}
-                                    className={`w-full flex items-center gap-3 !px-4 !py-3 text-sm font-semibold transition-colors ${
-                                        isActive
-                                            ? 'bg-primary/10 text-primary'
-                                            : 'text-text-muted hover:bg-surface-hover hover:text-text-main'
-                                    }`}
+                                    className={`w-full flex items-center gap-3 !px-4 !py-3 text-sm font-semibold transition-colors ${isActive
+                                        ? 'bg-primary/10 text-primary'
+                                        : 'text-text-muted hover:bg-surface-hover hover:text-text-main'
+                                        }`}
                                 >
                                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isActive ? 'bg-primary/10' : 'bg-background'}`}>
                                         <Icon icon={tab.icon} className="text-lg" />
                                     </div>
                                     {tab.label}
-                                   
+
                                 </button>
                             );
                         })}

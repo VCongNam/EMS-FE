@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Icon } from '@iconify/react';
 import { adminService } from '../api/adminService';
 import { toast } from 'react-toastify';
@@ -21,7 +22,7 @@ const AccountDetailDrawer = ({ accountId, isOpen, onClose, onUpdateSuccess }) =>
         try {
             const data = await adminService.getAccountById(accountId);
             setAccount(data);
-            setNewStatus(data.status);
+            setNewStatus(data.status || 'Active');
             setReason('');
         } catch (error) {
             toast.error(error.message);
@@ -56,11 +57,11 @@ const AccountDetailDrawer = ({ accountId, isOpen, onClose, onUpdateSuccess }) =>
 
     if (!isOpen) return null;
 
-    return (
-        <div className="fixed inset-0 z-50 overflow-hidden">
+    return createPortal(
+        <div className="fixed inset-0 z-[9999] overflow-hidden">
             {/* Backdrop */}
             <div 
-                className={`absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}
+                className={`absolute inset-0 bg-black/60 backdrop-blur-md transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}
                 onClick={onClose}
             ></div>
 
@@ -96,13 +97,8 @@ const AccountDetailDrawer = ({ accountId, isOpen, onClose, onUpdateSuccess }) =>
                         <div className="flex-1 overflow-y-auto !p-6 !space-y-8 custom-scrollbar">
                             {/* Role & Status Badges */}
                             <div className="flex items-center gap-3">
-                                <span className={`!px-3 !py-1.5 rounded-xl text-xs font-black uppercase tracking-wider ${
-                                    account.roleName === 'Admin' ? '!bg-purple-100 text-purple-700' :
-                                    account.roleName === 'Teacher' ? '!bg-emerald-100 text-emerald-700' :
-                                    account.roleName === 'TA' ? '!bg-amber-100 text-amber-700' :
-                                    '!bg-blue-100 text-blue-700'
-                                }`}>
-                                    {account.roleName}
+                                <span className="!px-3 !py-1.5 rounded-xl text-xs font-black uppercase tracking-wider !bg-emerald-100 text-emerald-700">
+                                    Giáo viên
                                 </span>
                                 <span className={`!px-3 !py-1.5 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-2 ${
                                     account.status === 'Active' ? '!bg-green-100 text-green-700' :
@@ -126,54 +122,50 @@ const AccountDetailDrawer = ({ accountId, isOpen, onClose, onUpdateSuccess }) =>
                                 </div>
                                 <div>
                                     <p className="text-[10px] font-black uppercase text-text-secondary tracking-widest !mb-1">Ngày tạo</p>
-                                    <p className="text-sm font-bold text-text-main">{new Date(account.createdAt).toLocaleDateString('vi-VN')}</p>
+                                    <p className="text-sm font-bold text-text-main">
+                                        {account.createdAt ? new Date(account.createdAt).toLocaleDateString('vi-VN') : 'Không có'}
+                                    </p>
                                 </div>
                             </div>
 
-                            {/* Role-Specific Details */}
-                            {account.roleName === 'Student' ? (
-                                <div className="!space-y-6 animate-slide-up">
-                                    <h3 className="text-sm font-black text-text-primary uppercase tracking-widest flex items-center gap-2">
-                                        <Icon icon="solar:user-speak-bold-duotone" className="text-primary" /> Thông tin phụ huynh
-                                    </h3>
-                                    <div className="grid grid-cols-2 gap-6">
-                                        <div>
-                                            <p className="text-[10px] font-black uppercase text-text-secondary tracking-widest !mb-1">Tên phụ huynh</p>
-                                            <p className="text-sm font-bold text-text-main">Chưa cập nhật</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-black uppercase text-text-secondary tracking-widest !mb-1">SĐT phụ huynh</p>
-                                            <p className="text-sm font-bold text-text-main">Chưa cập nhật</p>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] font-black uppercase text-text-secondary tracking-widest !mb-1">Địa chỉ</p>
-                                        <p className="text-sm font-bold text-text-main truncate" title="Dữ liệu mẫu">Quận Cam, TP. Hồ Chí Minh</p>
-                                    </div>
+                            {/* Teacher Specific Details */}
+                            <div className="!space-y-6 animate-slide-up">
+                                <h3 className="text-sm font-black text-text-primary uppercase tracking-widest flex items-center gap-2">
+                                    <Icon icon="solar:book-bookmark-bold-duotone" className="text-primary" /> Thông tin Chuyên môn
+                                </h3>
+                                <div>
+                                    <p className="text-[10px] font-black uppercase text-text-secondary tracking-widest !mb-1">Chuyên môn</p>
+                                    <p className="text-sm font-bold text-text-main leading-relaxed italic text-text-secondary">
+                                        {account.specialization || "Chưa cập nhật chuyên môn."}
+                                    </p>
                                 </div>
-                            ) : (
-                                <div className="!space-y-6 animate-slide-up">
-                                    <h3 className="text-sm font-black text-text-primary uppercase tracking-widest flex items-center gap-2">
-                                        <Icon icon="solar:bank-bold-duotone" className="text-primary" /> Thông tin Công việc & Tài chính
-                                    </h3>
-                                    <div className="grid grid-cols-2 gap-6">
-                                        <div>
-                                            <p className="text-[10px] font-black uppercase text-text-secondary tracking-widest !mb-1">Tài khoản Ngân hàng</p>
-                                            <p className="text-sm font-bold text-text-main tracking-widest">MB BANK - 0123456789</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-black uppercase text-text-secondary tracking-widest !mb-1">Số lớp phụ trách</p>
-                                            <p className="text-sm font-bold text-text-main">3 lớp</p>
-                                        </div>
+                                
+                                <h3 className="text-sm font-black text-text-primary uppercase tracking-widest flex items-center gap-2 !mt-8">
+                                    <Icon icon="solar:users-group-rounded-bold-duotone" className="text-primary" /> Danh sách Lớp học ({account.currentClasses?.length || 0})
+                                </h3>
+                                {account.currentClasses && account.currentClasses.length > 0 ? (
+                                    <div className="!space-y-3">
+                                        {account.currentClasses.map(cls => (
+                                            <div key={cls.classId} className="!bg-slate-50 !p-4 rounded-xl border border-slate-100 flex items-center justify-between">
+                                                <div>
+                                                    <p className="font-bold text-sm text-text-main">{cls.className}</p>
+                                                    <p className="text-xs text-text-secondary !mt-1 flex items-center gap-2">
+                                                        <span><Icon icon="solar:calendar-bold-duotone" className="inline text-primary mr-1" />{new Date(cls.createdAt).toLocaleDateString('vi-VN')}</span>
+                                                    </p>
+                                                </div>
+                                                <div className="!bg-blue-50 text-blue-600 px-3 py-1 rounded-xl flex items-center gap-1.5 focus:outline-none">
+                                                    <Icon icon="solar:users-group-two-rounded-bold-duotone" />
+                                                    <span className="text-xs font-black">{cls.studentCount} HS</span>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
-                                    <div>
-                                        <p className="text-[10px] font-black uppercase text-text-secondary tracking-widest !mb-1">Giới thiệu ngắn</p>
-                                        <p className="text-sm font-bold text-text-main leading-relaxed italic text-text-secondary">
-                                            "Chuyên gia với hơn 5 năm kinh nghiệm trong lĩnh vực giảng dạy tiếng Anh IELTS."
-                                        </p>
-                                    </div>
-                                </div>
-                            )}
+                                ) : (
+                                    <p className="text-sm font-medium text-text-secondary flex items-center gap-2 bg-slate-50 px-4 py-3 rounded-xl">
+                                        <Icon icon="solar:info-circle-bold-duotone" /> Giáo viên này hiện chưa được phân công lớp nào.
+                                    </p>
+                                )}
+                            </div>
 
                             {/* Status Update Form */}
                             <div className="!mt-10 !pt-8 border-t border-border !space-y-6 bg-background/30 rounded-3xl !p-6 border-dashed">
@@ -232,7 +224,8 @@ const AccountDetailDrawer = ({ accountId, isOpen, onClose, onUpdateSuccess }) =>
                     </div>
                 )}
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
 

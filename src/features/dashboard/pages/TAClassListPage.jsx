@@ -1,19 +1,66 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Icon } from '@iconify/react';
 import Button from '../../../components/ui/Button';
 import ClassCard from '../components/classes/ClassCard';
 import ClassListFilter from '../components/classes/ClassListFilter';
-import CreateClassModal from '../components/classes/CreateClassModal';
 import ClassDetailsModal from '../components/classes/ClassDetailsModal';
-import ConfirmModal from '../../../components/ui/ConfirmModal';
-import { mockClasses } from '../data/mockClasses';
+import useAuthStore from '../../../store/authStore';
+import taService from '../../ta-management/api/taService';
 
 const TAClassListPage = () => {
-    // Note: TA might not have 'create' permissions in reality, but keeping it as requested "copy everything"
-    const [mockClassesData, setMockClassesData] = useState(mockClasses);
+    const { user } = useAuthStore();
+    const [classes, setClasses] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
     const [viewClass, setViewClass] = useState(null);
+
+    const fetchClasses = async () => {
+        const effectiveTaId = user?.taId || user?.id;
+        if (!effectiveTaId || !user?.token) return;
+
+        try {
+            setIsLoading(true);
+            console.log("Testing taService object:", taService);
+            if (typeof taService.getAssignedClasses !== 'function') {
+                console.error("Critical: getAssignedClasses is still NOT a function in this bundle!", Object.keys(taService));
+            }
+            const res = await taService.getAssignedClasses(effectiveTaId, user.token);
+            if (res.ok) {
+                const json = await res.json();
+                const rawData = json.data || (Array.isArray(json) ? json : []);
+                
+                // Map backend response specifically for TA view
+                const mappedData = rawData.map(item => {
+                    const status = (item.status || 'Active').toLowerCase();
+                    // For TAs, treat Archived as Completed
+                    const finalStatus = status === 'archived' ? 'completed' : status;
+                    
+                    return {
+                        id: item.classID,
+                        name: item.className,
+                        code: item.subjectName || 'Chưa phân loại',
+                        teacher: item.teacherName,
+                        status: finalStatus,
+                        studentCount: item.studentCount || 0,
+                        schedule: Array.isArray(item.schedules) ? item.schedules.join(', ') : 'Chưa có lịch',
+                        salary: item.salaryPerSession,
+                        permission: item.permission,
+                        createdAt: item.createdAt ? new Date(item.createdAt).toLocaleDateString('vi-VN') : 'Unknown'
+                    };
+                });
+                setClasses(mappedData);
+            }
+        } catch (error) {
+            console.error('Lỗi khi tải danh sách lớp hỗ trợ:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchClasses();
+    }, [user?.taId, user?.id, user?.token]);
 
     const handleOpenViewModal = (classData) => {
         setViewClass(classData);
@@ -21,15 +68,24 @@ const TAClassListPage = () => {
 
     // Filter logic
     const filteredClasses = useMemo(() => {
-        return mockClassesData.filter(cls => {
-            const matchesSearch = cls.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                cls.code.toLowerCase().includes(searchQuery.toLowerCase());
+        return classes.filter(cls => {
+            const matchesSearch = 
+                cls.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                cls.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (cls.teacher || '').toLowerCase().includes(searchQuery.toLowerCase());
 
-            const matchesFilter = filterStatus === 'all' ? cls.status !== 'archived' : cls.status === filterStatus;
+            // Handle status filtering
+            let matchesFilter = true;
+            if (filterStatus === 'all') {
+                // TAs see everything in "All" tab
+                matchesFilter = true;
+            } else {
+                matchesFilter = cls.status === filterStatus;
+            }
 
             return matchesSearch && matchesFilter;
         });
-    }, [searchQuery, filterStatus, mockClassesData]);
+    }, [searchQuery, filterStatus, classes]);
 
     return (
         <>
@@ -54,12 +110,17 @@ const TAClassListPage = () => {
                     onSearchChange={setSearchQuery}
                     filterStatus={filterStatus}
                     onFilterChange={setFilterStatus}
-                    showUpcoming={false}
+                    showUpcoming={true}
                 />
             </div>
 
             {/* Class Grid */}
-            {filteredClasses.length > 0 ? (
+            {isLoading ? (
+                <div className="flex flex-col items-center justify-center !p-20 text-primary">
+                    <Icon icon="solar:spinner-linear" className="animate-spin text-5xl mb-4" />
+                    <span className="font-medium text-text-muted">Đang tải danh sách lớp học...</span>
+                </div>
+            ) : filteredClasses.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-fade-in-up">
                     {filteredClasses.map((cls) => (
                         <ClassCard 
@@ -67,6 +128,9 @@ const TAClassListPage = () => {
                             classData={cls} 
                             onViewDetails={() => handleOpenViewModal(cls)}
                             basePath="/assisted-classes"
+                            showProgress={false}
+                            salary={cls.salary}
+                            permission={cls.permission}
                         />
                     ))}
                 </div>

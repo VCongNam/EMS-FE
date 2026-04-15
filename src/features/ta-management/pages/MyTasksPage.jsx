@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
 import useAuthStore from '../../../store/authStore';
 import TaskDetailModal from '../components/TaskDetailModal';
+import { taService } from '../api/taService';
 
 const MyTasksPage = () => {
     const { user } = useAuthStore();
@@ -12,40 +13,39 @@ const MyTasksPage = () => {
     const [isLoading, setIsLoading] = useState(true);
 
     const fetchTasks = async () => {
-        if (!user?.taId || !user?.token) {
+        console.log("Fetching tasks for user:", user);
+        
+        // Use taId if available, otherwise fallback to id (for TA roles where they are the same)
+        const effectiveTaId = user?.taId || user?.id;
+        
+        if (!effectiveTaId || !user?.token) {
+            console.warn("Missing taId/id or token, cannot fetch tasks.");
             setIsLoading(false);
             return;
         }
         
         try {
             setIsLoading(true);
-            const res = await taService.getMyTasks(user.taId, user.token);
+            console.log(`Calling getMyTasks with effectiveTaId: ${effectiveTaId}`);
+            const res = await taService.getMyTasks(effectiveTaId, user.token);
             if (res.ok) {
                 const json = await res.json();
+                console.log("API Success Response:", json);
                 const rawTasks = json.data || (Array.isArray(json) ? json : []);
                 
                 // Map backend tasks to frontend structure
                 const mappedTasks = rawTasks.map(t => {
-                    let mappedStatus = 'todo';
-                    const beStatus = (t.status || '').toLowerCase();
-                    if (beStatus === 'pending' || beStatus === 'todo' || beStatus === 'open') {
-                        mappedStatus = 'todo';
-                    } else if (beStatus === 'in progress' || beStatus === 'in_progress' || beStatus === 'processing') {
-                        mappedStatus = 'in_progress';
-                    } else if (beStatus === 'done' || beStatus === 'completed' || beStatus === 'finished') {
-                        mappedStatus = 'done';
-                    }
-
+                    const status = t.status || 'Todo';
+                    
                     return {
                         id: t.taTaskID || t.id,
                         title: t.title,
-                        description: t.description || '', // Fallback if missing
                         assignedTo: user.taId,
-                        classId: t.className || t.classId || 'N/A', // Display class info if available
-                        deadline: t.dueDate || t.deadline,
-                        priority: t.priority?.toLowerCase() || 'medium', // Use backend priority if exists
-                        status: mappedStatus,
-                        type: t.type
+                        classId: t.className,
+                        deadline: t.dueDate,
+                        status: status, // Keep raw status from BE (Todo, InProgress, Review, Done, Overdue)
+                        type: t.type,
+                        feedback: t.feedback || ''
                     };
                 });
                 
@@ -63,9 +63,22 @@ const MyTasksPage = () => {
     }, [user?.taId]);
 
     const handleUpdateStatus = async (taskId, newStatus) => {
-        // Optimistic update
-        setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
-        // TODO: Call API to update status if backend supports it
+        if (!user?.token) return;
+        try {
+            const res = await taService.updateTaskStatus(taskId, newStatus, user.token);
+            if (res.ok) {
+                // Update local state or re-fetch
+                setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
+                if (selectedTask?.id === taskId) {
+                    setSelectedTask(prev => ({ ...prev, status: newStatus }));
+                }
+            } else {
+                const err = await res.json();
+                console.error("Lỗi cập nhật trạng thái:", err);
+            }
+        } catch (error) {
+            console.error("Lỗi cập nhật trạng thái:", error);
+        }
     };
 
     const handleViewDetail = (task) => {
@@ -73,17 +86,27 @@ const MyTasksPage = () => {
         setIsDetailModalOpen(true);
     };
 
-    const getPriorityBadge = (priority) => {
-        switch(priority) {
-            case 'high': return <span className="text-[10px] font-bold !bg-red-500/10 text-red-600 !px-2 !py-0.5 rounded border border-red-500/20">CAO</span>;
-            case 'medium': return <span className="text-[10px] font-bold !bg-amber-500/10 text-amber-600 !px-2 !py-0.5 rounded border border-amber-500/20">TRUNG BÌNH</span>;
-            case 'low': return <span className="text-[10px] font-bold !bg-slate-500/10 text-slate-600 !px-2 !py-0.5 rounded border border-slate-500/20">THẤP</span>;
-            default: return null;
+    const getStatusLabel = (s) => {
+        const status = (s || '').toLowerCase();
+        switch(status) {
+            case 'todo': return 'Cần làm';
+            case 'inprogress': 
+            case 'in_progress':
+                return 'Đang làm';
+            case 'review': return 'Chờ duyệt';
+            case 'done': return 'Hoàn thành';
+            case 'overdue': return 'Quá hạn';
+            default: return 'Khác';
         }
     };
 
-    const Column = ({ title, status, icon, colorClass }) => {
-        const filteredTasks = tasks.filter(t => t.status === status && (t.title || '').toLowerCase().includes(searchQuery.toLowerCase()));
+    const Column = ({ title, statusGroup, icon, colorClass }) => {
+        const filteredTasks = tasks.filter(t => {
+            const status = (t.status || '').toLowerCase();
+            const matchesStatus = statusGroup.includes(status);
+            const matchesSearch = (t.title || '').toLowerCase().includes(searchQuery.toLowerCase());
+            return matchesStatus && matchesSearch;
+        });
         
         return (
             <div className="flex flex-col !bg-background/50 rounded-[2rem] border border-border/50 min-h-[400px]">
@@ -111,7 +134,11 @@ const MyTasksPage = () => {
                                     <h4 className="font-bold text-sm text-text-main group-hover:text-primary transition-colors leading-snug">
                                         {task.title}
                                     </h4>
-                                    {getPriorityBadge(task.priority)}
+                                    <span className={`text-[9px] font-bold !px-1.5 !py-0.5 rounded uppercase border ${
+                                        task.status === 'Overdue' ? 'bg-red-50 border-red-200 text-red-600' : 'bg-background border-border text-text-muted'
+                                    }`}>
+                                        {getStatusLabel(task.status)}
+                                    </span>
                                 </div>
                                 
                                 <div className="flex flex-col !gap-2">
@@ -185,19 +212,19 @@ const MyTasksPage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 !gap-6">
                     <Column 
                         title="Cần làm" 
-                        status="todo" 
+                        statusGroup={['todo']} 
                         icon="material-symbols:format-list-bulleted-rounded" 
                         colorClass="!bg-slate-500/10 text-slate-500" 
                     />
                     <Column 
                         title="Đang làm" 
-                        status="in_progress" 
+                        statusGroup={['inprogress', 'in_progress', 'review']} 
                         icon="material-symbols:calendar-clock" 
                         colorClass="!bg-amber-500/10 text-amber-500" 
                     />
                     <Column 
                         title="Hoàn thành" 
-                        status="done" 
+                        statusGroup={['done', 'overdue']} 
                         icon="material-symbols:check-circle-outline-rounded" 
                         colorClass="!bg-green-500/10 text-green-500" 
                     />
@@ -209,6 +236,7 @@ const MyTasksPage = () => {
                 onClose={() => setIsDetailModalOpen(false)}
                 task={selectedTask}
                 onUpdateStatus={handleUpdateStatus}
+                userRole="TA"
             />
         </div>
     );
