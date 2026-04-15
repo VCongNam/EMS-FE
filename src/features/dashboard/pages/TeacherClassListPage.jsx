@@ -7,10 +7,12 @@ import ClassListFilter from '../components/classes/ClassListFilter';
 import CreateClassModal from '../components/classes/CreateClassModal';
 import ClassDetailsModal from '../components/classes/ClassDetailsModal';
 import ConfirmModal from '../../../components/ui/ConfirmModal';
+import Pagination from '../../../components/ui/Pagination';
 import { mockClasses } from '../data/mockClasses';
 import { getApiUrl } from '../../../config/api';
 import useAuthStore from '../../../store/authStore';
 import { classService } from '../api/classService';
+import { sessionService } from '../api/sessionService';
 
 // Helper functions for formatting Data to API shapes
 const parseDate = (dateStr) => {
@@ -39,6 +41,10 @@ const TeacherClassListPage = () => {
     const [selectedClass, setSelectedClass] = useState(null);
     const [viewClass, setViewClass] = useState(null);
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, type: '', classId: null });
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8; // 2 rows of 4 (on XL screens) or 4 rows of 2 (on MD)
 
     // 2. Định nghĩa hàm Tải danh sách lớp thực tế từ Database thông qua Backend
     const fetchClasses = async () => {
@@ -73,13 +79,32 @@ const TeacherClassListPage = () => {
             const data = [...(Array.isArray(activeData) ? activeData : []), ...(Array.isArray(archivedData) ? archivedData : [])];
 
             // 3. Mapping cấu trúc Data thực tế về cấu trúc thẻ ClassCard hiển thị
-            const mappedData = data.map(apiClass => {
+            // Đồng thời lấy thông tin progress từ sessionService cho từng lớp
+            const mappedData = await Promise.all(data.map(async (apiClass) => {
                 let mappedStatus = 'upcoming';
                 const st = apiClass.status?.toLowerCase() || '';
                 if (st.includes('scheduled')) mappedStatus = 'upcoming';
                 if (st.includes('ongoing')) mappedStatus = 'ongoing';
                 if (st.includes('completed')) mappedStatus = 'completed';
                 if (st.includes('archived')) mappedStatus = 'archived';
+
+                // Fetch sessions to calculate progress
+                let currentSession = 0;
+                let totalSessions = 0;
+                try {
+                    const sessionRes = await sessionService.getClassSessions(apiClass.classId, token);
+                    if (sessionRes.ok) {
+                        const sessions = await sessionRes.json();
+                        const sessionList = Array.isArray(sessions) ? sessions : (sessions.data || []);
+                        totalSessions = sessionList.length;
+                        currentSession = sessionList.filter(s => 
+                            (s.status || '').toLowerCase().includes('completed') || 
+                            (s.status || '').toLowerCase().includes('đã kết thúc')
+                        ).length;
+                    }
+                } catch (e) {
+                    console.warn(`Failed to fetch sessions for class ${apiClass.classId}`, e);
+                }
 
                 return {
                     id: apiClass.classId,
@@ -91,15 +116,15 @@ const TeacherClassListPage = () => {
                     createdAt: apiClass.startDate || 'N/A',
                     schedule: 'Xem lịch chi tiết', // Backend chưa đổ detail schedules ra
                     students: {
-                        count: 0, // Backend array ko chứa count người dùng
+                        count: apiClass.currentStudents || 0, 
                         max: apiClass.maxStudents || 30
                     },
                     progress: {
-                        currentSession: 0,
-                        totalSessions: 10 // Mock progress tạm thời cho đẹp ui
+                        currentSession: currentSession,
+                        totalSessions: totalSessions || 10 // Fallback to 10 if no sessions found yet
                     }
                 };
-            });
+            }));
 
             setMockClassesData(mappedData);
         } catch (error) {
@@ -219,6 +244,18 @@ const TeacherClassListPage = () => {
         });
     }, [searchQuery, filterStatus, mockClassesData]);
 
+    // Reset to page 1 when search or filter changes
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, filterStatus]);
+
+    // Get current items
+    const paginatedClasses = useMemo(() => {
+        const indexOfLastItem = currentPage * itemsPerPage;
+        const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+        return filteredClasses.slice(indexOfFirstItem, indexOfLastItem);
+    }, [filteredClasses, currentPage, itemsPerPage]);
+
     // Statistics
     const stats = {
         total: mockClassesData.filter(c => c.status !== 'archived').length,
@@ -265,19 +302,28 @@ const TeacherClassListPage = () => {
                         <Icon icon="material-symbols:sync-rounded" className="animate-spin text-5xl text-primary opacity-50 !mb-4" />
                         <p className="text-text-muted font-medium">Đang đồng bộ dữ liệu lớp học từ máy chủ...</p>
                     </div>
-                ) : filteredClasses.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-fade-in-up">
-                        {filteredClasses.map((cls) => (
-                            <ClassCard
-                                key={cls.id}
-                                classData={cls}
-                                onEdit={() => handleOpenEditModal(cls)}
-                                onViewDetails={() => handleOpenViewModal(cls)}
-                                onArchive={() => openConfirmArchive(cls.id)}
-                                onUnarchive={() => openConfirmUnarchive(cls.id)}
-                            />
-                        ))}
-                    </div>
+                ) : paginatedClasses.length > 0 ? (
+                    <>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-fade-in-up">
+                            {paginatedClasses.map((cls) => (
+                                <ClassCard
+                                    key={cls.id}
+                                    classData={cls}
+                                    onEdit={() => handleOpenEditModal(cls)}
+                                    onViewDetails={() => handleOpenViewModal(cls)}
+                                    onArchive={() => openConfirmArchive(cls.id)}
+                                    onUnarchive={() => openConfirmUnarchive(cls.id)}
+                                />
+                            ))}
+                        </div>
+
+                        <Pagination
+                            totalItems={filteredClasses.length}
+                            itemsPerPage={itemsPerPage}
+                            currentPage={currentPage}
+                            onPageChange={setCurrentPage}
+                        />
+                    </>
                 ) : (
                     <div className="bg-surface rounded-2xl border border-border !p-12 flex flex-col items-center justify-center text-center shadow-sm min-h-[300px]">
                         <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center !mb-6">
