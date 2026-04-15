@@ -14,7 +14,7 @@ const SideMenu = ({ isOpen, onClose }) => {
     const menuConfigs = {
         student: [
             { name: 'Bảng điều khiển', path: '/dashboard', icon: 'material-symbols:dashboard-rounded' },
-            { name: 'Lớp học của tôi', path: '/student/classes', icon: 'material-symbols:class-rounded' },
+            { name: 'Lớp học của tôi', path: '/student/classes', icon: 'material-symbols:school-rounded' },
             { name: 'Thời khóa biểu', path: '/schedule', icon: 'material-symbols:calendar-month-rounded' },
             { name: 'Thông báo', path: '/notifications', icon: 'material-symbols:circle-notifications-sharp', badge: unreadCount },
             { name: 'Học phí', path: '/tuition-payment', icon: 'solar:wallet-money-bold-duotone' },
@@ -35,8 +35,6 @@ const SideMenu = ({ isOpen, onClose }) => {
             { name: 'Tổng quan', path: '/dashboard', icon: 'material-symbols:dashboard-rounded' },
             { name: 'Nhiệm vụ của tôi', path: '/ta/tasks', icon: 'material-symbols:task-rounded' },
             { name: 'Lớp hỗ trợ', path: '/assisted-classes', icon: 'material-symbols:handshake-rounded' },
-            { name: 'Danh sách học sinh', path: '/students', icon: 'material-symbols:group-rounded' },
-            { name: 'Báo cáo tiến độ', path: '/reports', icon: 'material-symbols:analytics-rounded' },
             { name: 'Thông báo', path: '/notifications', icon: 'material-symbols:circle-notifications-sharp', badge: unreadCount },
             { name: 'Trang cá nhân', path: '/profile', icon: 'material-symbols:person-rounded' },
         ],

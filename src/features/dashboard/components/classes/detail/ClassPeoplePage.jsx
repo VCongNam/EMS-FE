@@ -9,6 +9,7 @@ import ImportStudentModal from './components/ImportStudentModal';
 import useAuthStore from '../../../../../store/authStore';
 import TAPermissionsModal from './components/TAPermissionsModal';
 import { classService } from '../../../api/classService';
+import Pagination from '../../../../../components/ui/Pagination';
 
 const ClassPeoplePage = () => {
     const { classId } = useParams();
@@ -20,6 +21,10 @@ const ClassPeoplePage = () => {
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isPermissionsModalOpen, setIsPermissionsModalOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
     // Confirm Modal State
     const [confirmConfig, setConfirmConfig] = useState({
@@ -92,6 +97,11 @@ const ClassPeoplePage = () => {
         fetchMembers();
     }, [classId, user?.token]);
 
+    // Reset to page 1 when search or filter changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, statusFilter]);
+
     const handleRemoveStudent = (studentId) => {
         setConfirmConfig({
             isOpen: true,
@@ -150,6 +160,13 @@ const ClassPeoplePage = () => {
         const matchesStatus = statusFilter === 'all' || member.status === statusFilter;
         return matchesSearch && matchesStatus;
     });
+
+    // Pagination logic
+    const paginatedMembers = React.useMemo(() => {
+        const indexOfLastItem = currentPage * itemsPerPage;
+        const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+        return filteredMembers.slice(indexOfFirstItem, indexOfLastItem);
+    }, [filteredMembers, currentPage, itemsPerPage]);
 
     const handleAddStudent = () => {
         fetchMembers();
@@ -345,7 +362,7 @@ const ClassPeoplePage = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border/50">
-                                {filteredMembers.map((member) => (
+                                {paginatedMembers.map((member) => (
                                     <tr 
                                         key={member.id} 
                                         className={`transition-all duration-300 group ${
@@ -430,7 +447,7 @@ const ClassPeoplePage = () => {
                 </div>
 
                 <div className="lg:hidden space-y-3">
-                    {filteredMembers.map((member) => (
+                    {paginatedMembers.map((member) => (
                         <div 
                             key={member.id} 
                             className={`bg-surface rounded-2xl border border-border shadow-sm !p-4 flex flex-col gap-3 transition-all duration-300 ${
@@ -482,6 +499,16 @@ const ClassPeoplePage = () => {
                         </div>
                     ))}
                 </div>
+
+                {/* Pagination component for both mobile/desktop */}
+                {filteredMembers.length > itemsPerPage && (
+                    <Pagination
+                        totalItems={filteredMembers.length}
+                        itemsPerPage={itemsPerPage}
+                        currentPage={currentPage}
+                        onPageChange={setCurrentPage}
+                    />
+                )}
             </div>
 
             <AddStudentModal
