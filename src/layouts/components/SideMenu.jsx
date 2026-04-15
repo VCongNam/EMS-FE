@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Icon } from '@iconify/react';
+import { useNotifications } from '../../contexts/NotificationContext';
 
 import useAuthStore from '../../store/authStore';
 
@@ -8,12 +9,14 @@ const SideMenu = ({ isOpen, onClose }) => {
     const { user, logout } = useAuthStore();
     const role = user?.role || 'student';
 
+    const { unreadCount } = useNotifications();
+
     const menuConfigs = {
         student: [
             { name: 'Bảng điều khiển', path: '/dashboard', icon: 'material-symbols:dashboard-rounded' },
             { name: 'Lớp học của tôi', path: '/student/classes', icon: 'material-symbols:class-rounded' },
             { name: 'Thời khóa biểu', path: '/schedule', icon: 'material-symbols:calendar-month-rounded' },
-            { name: 'Thông báo', path: '/notifications', icon: 'material-symbols:circle-notifications-sharp', badge: 3 },
+            { name: 'Thông báo', path: '/notifications', icon: 'material-symbols:circle-notifications-sharp', badge: unreadCount },
             { name: 'Học phí', path: '/tuition-payment', icon: 'solar:wallet-money-bold-duotone' },
             { name: 'Trang cá nhân', path: '/profile', icon: 'material-symbols:person-rounded' },
         ],
@@ -24,7 +27,7 @@ const SideMenu = ({ isOpen, onClose }) => {
             { name: 'Quản lý Trợ giảng', path: '/assistants', icon: 'material-symbols:handshake-rounded' },
             { name: 'Quản lý Lịch học', path: '/schedule-management', icon: 'solar:calendar-add-bold-duotone' },
             { name: 'Quản lý Học phí', path: '/tuition', icon: 'solar:wallet-money-bold-duotone' },
-            { name: 'Thông báo', path: '/notifications', icon: 'material-symbols:circle-notifications-sharp' },
+            { name: 'Thông báo', path: '/notifications', icon: 'material-symbols:circle-notifications-sharp', badge: unreadCount },
             { name: 'Hỗ trợ & Góp ý', path: '/teacher/feedback', icon: 'material-symbols:feedback-rounded' },
             { name: 'Trang cá nhân', path: '/profile', icon: 'material-symbols:person-rounded' },
         ],
@@ -34,14 +37,14 @@ const SideMenu = ({ isOpen, onClose }) => {
             { name: 'Lớp hỗ trợ', path: '/assisted-classes', icon: 'material-symbols:handshake-rounded' },
             { name: 'Danh sách học sinh', path: '/students', icon: 'material-symbols:group-rounded' },
             { name: 'Báo cáo tiến độ', path: '/reports', icon: 'material-symbols:analytics-rounded' },
-            { name: 'Thông báo', path: '/notifications', icon: 'material-symbols:circle-notifications-sharp' },
+            { name: 'Thông báo', path: '/notifications', icon: 'material-symbols:circle-notifications-sharp', badge: unreadCount },
             { name: 'Trang cá nhân', path: '/profile', icon: 'material-symbols:person-rounded' },
         ],
         admin: [
             { name: 'Tổng quan Hệ thống', path: '/admin/dashboard', icon: 'material-symbols:dashboard-rounded' },
             { name: 'Quản lý Tài khoản', path: '/admin/accounts', icon: 'material-symbols:manage-accounts-rounded' },
             { name: 'Quản lý Phản hồi', path: '/admin/feedback', icon: 'material-symbols:feedback-rounded' },
-            { name: 'Thông báo', path: '/notifications', icon: 'material-symbols:circle-notifications-sharp' }
+            { name: 'Thông báo', path: '/notifications', icon: 'material-symbols:circle-notifications-sharp', badge: unreadCount }
         ],
     };
 
@@ -86,6 +89,8 @@ const SideMenu = ({ isOpen, onClose }) => {
                                 key={item.path}
                                 to={item.path}
                                 onClick={() => {
+                                    //Reset badge noti
+                                    if (item.path === '/notifications') { }
                                     if (window.innerWidth < 1024) onClose();
                                 }}
                                 className={`flex items-center gap-3 !p-4 rounded-2xl transition-all duration-300 font-medium ${isActive

@@ -40,5 +40,14 @@ export const notificationService = {
       }
     });
     return response;
-  }
+  },
+
+  getUnreadCount: async (token) => {
+        return await fetch(getApiUrl('/api/Notification/unread-count'), {
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+    }
 };
