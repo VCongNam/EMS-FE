@@ -1,7 +1,7 @@
 import { getApiUrl } from '../../../config/api';
 
 export const tuitionService = {
-    // Lấy danh sách học phí
+    // Lấy danh sách học phí của sinh viên
     getStudentTuitions: async (token, params = {}) => {
         // params: Page, Size, ClassID, Status, Period
         const queryParams = new URLSearchParams();
@@ -11,7 +11,7 @@ export const tuitionService = {
         if (params.status) queryParams.append('Status', params.status);
         if (params.period) queryParams.append('Period', params.period);
 
-        const response = await fetch(getApiUrl(`/api/StudentTuition/tuitions?${queryParams.toString()}`), {
+        const response = await fetch(getApiUrl(`/api/TuitionFee/student/myTuitions?${queryParams.toString()}`), {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -23,7 +23,7 @@ export const tuitionService = {
 
     // Lấy chi tiết hóa đơn
     getInvoiceDetail: async (invoiceId, token) => {
-        const response = await fetch(getApiUrl(`/api/StudentTuition/${invoiceId}`), {
+        const response = await fetch(getApiUrl(`/api/TuitionFee/student/${invoiceId}/detail`), {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -35,7 +35,7 @@ export const tuitionService = {
 
     // Lấy QR thanh toán
     getPaymentQr: async (invoiceId, token) => {
-        const response = await fetch(getApiUrl(`/api/StudentTuition/${invoiceId}/paymentQr`), {
+        const response = await fetch(getApiUrl(`/api/TuitionFee/${invoiceId}/paymentQr`), {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -45,12 +45,12 @@ export const tuitionService = {
         return response;
     },
 
-    // Submi ảnh minh chứng
+    // Submit ảnh minh chứng thanh toán
     uploadTransactionProof: async (invoiceId, file, token) => {
         const formData = new FormData();
-        formData.append('ProofImage', file); // Đổi từ TransactionImage sang ProofImage theo BE
+        formData.append('ProofImage', file);
 
-        const response = await fetch(getApiUrl(`/api/StudentTuition/${invoiceId}/proof`), { // Đổi path sang /proof
+        const response = await fetch(getApiUrl(`/api/TuitionFee/${invoiceId}/proof`), {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -62,9 +62,9 @@ export const tuitionService = {
 
     // Lấy danh sách giao dịch của tôi
     getMyTransactions: async (token, classId = null) => {
-        const url = classId 
-            ? getApiUrl(`/api/StudentTuition/myTransactions?classId=${classId}`) 
-            : getApiUrl(`/api/StudentTuition/myTransactions`);
+        const url = classId
+            ? getApiUrl(`/api/TuitionFee/student/myTransactions?classId=${classId}`)
+            : getApiUrl(`/api/TuitionFee/student/myTransactions`);
             
         const response = await fetch(url, {
             method: 'GET',
@@ -78,7 +78,7 @@ export const tuitionService = {
 
     // Lấy chi tiết giao dịch
     getTransactionDetail: async (transactionId, token) => {
-        const response = await fetch(getApiUrl(`/api/StudentTuition/myTransactions/${transactionId}`), {
+        const response = await fetch(getApiUrl(`/api/TuitionFee/student/myTransactions/${transactionId}`), {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,

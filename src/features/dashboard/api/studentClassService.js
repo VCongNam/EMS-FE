@@ -8,7 +8,7 @@ const studentClassService = {
         if (params.size) queryParams.append('Size', params.size);
         if (params.status && params.status !== 'all') queryParams.append('Status', params.status);
 
-        const url = getApiUrl(`/api/StudentClass/MyClasses?${queryParams.toString()}`);
+        const url = getApiUrl(`/api/Class/student/myClasses?${queryParams.toString()}`);
         
         return fetch(url, {
             headers: {
@@ -19,7 +19,7 @@ const studentClassService = {
 
     // Lấy chi tiết lớp học (Portal Sinh viên)
     getClassDetail: async (classId, token) => {
-        const url = getApiUrl(`/api/StudentClass/${classId}/Detail`);
+        const url = getApiUrl(`/api/Class/student/${classId}/detail`);
         return fetch(url, {
             headers: {
                 'Authorization': `Bearer ${token}`

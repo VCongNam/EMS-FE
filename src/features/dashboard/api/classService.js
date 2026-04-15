@@ -90,5 +90,43 @@ export const classService = {
     return fetch(getApiUrl(`/api/Class/${id}/staff`), {
       headers: { 'Authorization': `Bearer ${token}` }
     });
+  },
+
+  importStudentsExcel: async (classId, file, token) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (classId) formData.append('classId', classId);
+    
+    return fetch(getApiUrl(`/api/Account/student/import-excel`), {
+      method: 'POST',
+      headers: { 
+        'Authorization': `Bearer ${token}`
+        // Content-Type is determined automatically for FormData
+      },
+      body: formData
+    });
+  },
+
+  createStudentAccount: async (payload, token) => {
+    return fetch(getApiUrl('/api/Account/student/create'), {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+  },
+
+  assignMultipleStudents: async (classId, studentIds, token) => {
+    return fetch(getApiUrl(`/api/Class/${classId}/assignMultipleStudent`), {
+      method: 'POST',
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json' 
+      },
+      body: JSON.stringify({ studentIds })
+    });
   }
 };
+

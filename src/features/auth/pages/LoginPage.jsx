@@ -5,6 +5,7 @@ import AuthLayout from '../components/AuthLayout';
 import useAuthStore from '../../../store/authStore';
 import { authService } from '../api/authService';
 import { Icon } from '@iconify/react';
+import { toast } from 'react-toastify';
 
 const ROLES = [
     { id: 'student', label: 'Học viên', icon: 'ph:student-bold', color: 'blue', apiRole: 'Student' },
@@ -45,6 +46,15 @@ const LoginPage = () => {
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
+                
+                // Check if account needs onboarding (verification)
+                // Assuming status 403 or specific message suggests account activation is needed
+                if (response.status === 403 || errorData.message?.includes("xác thực") || errorData.message?.includes("kích hoạt")) {
+                    toast.info("Tài khoản của bạn cần được kích hoạt trước khi sử dụng.");
+                    navigate('/verify-onboarding');
+                    return;
+                }
+
                 throw new Error(errorData.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại!');
             }
 

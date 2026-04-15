@@ -41,7 +41,7 @@ const ClassStreamPage = () => {
         try {
             formData.append('ClassId', classId);
             const res = await postService.createPost(formData, token);
-            
+
             if (res.ok) {
                 toast.success('Đã đăng bài mới');
                 fetchPosts();
@@ -59,7 +59,7 @@ const ClassStreamPage = () => {
         const formData = new FormData();
         formData.append('Title', data.title);
         formData.append('Content', data.content);
-        
+
         if (data.newFiles && data.newFiles.length > 0) {
             data.newFiles.forEach(file => {
                 formData.append('NewAttachments', file);
@@ -147,11 +147,11 @@ const ClassStreamPage = () => {
                 ) : posts.length > 0 ? (
                     <div className="space-y-6">
                         {posts.map(post => (
-                            <PostCard 
-                                key={post.postId} 
-                                post={post} 
-                                onUpdate={handleUpdatePost} 
-                                onDelete={handleDeletePost} 
+                            <PostCard
+                                key={post.postId}
+                                post={post}
+                                onUpdate={handleUpdatePost}
+                                onDelete={handleDeletePost}
                                 onComment={handleComment}
                                 onDeleteComment={handleDeleteComment}
                             />

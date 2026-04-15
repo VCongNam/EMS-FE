@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import Button from '../../../components/ui/Button';
 import AuthLayout from '../components/AuthLayout';
 import { authService } from '../api/authService';
+
 const VerifyEmailPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
@@ -12,7 +14,22 @@ const VerifyEmailPage = () => {
     
     const [otpCode, setOtpCode] = useState('');
     const [loading, setLoading] = useState(false);
+    const [resending, setResending] = useState(false);
+    const [resendTimer, setResendTimer] = useState(60);
     const [error, setError] = useState(null);
+
+    // Countdown effect for Resend button
+    useEffect(() => {
+        let interval = null;
+        if (resendTimer > 0) {
+            interval = setInterval(() => {
+                setResendTimer((prev) => prev - 1);
+            }, 1000);
+        } else {
+            clearInterval(interval);
+        }
+        return () => clearInterval(interval);
+    }, [resendTimer]);
 
     // If no email is provided, they shouldn't be here
     if (!email) {
@@ -33,12 +50,34 @@ const VerifyEmailPage = () => {
                 throw new Error(errorData.message || 'Xác thực email thất bại. Mã xác nhận không hợp lệ!');
             }
 
+            toast.success("Xác thực email thành công! Chào mừng bạn.");
             // Đăng ký và xác thực thành công, chuyển hướng về Login
             navigate('/login');
         } catch (err) {
             setError(err.message);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleResendOtp = async () => {
+        if (resendTimer > 0 || resending) return;
+
+        setResending(true);
+        setError(null);
+        try {
+            const response = await authService.resendOtp(email);
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Không thể gửi lại mã OTP.');
+            }
+            toast.success("Mã OTP mới đã được gửi tới email của bạn!");
+            setResendTimer(60); // Reset timer
+        } catch (err) {
+            toast.error(err.message);
+            setError(err.message);
+        } finally {
+            setResending(false);
         }
     };
 
@@ -70,6 +109,24 @@ const VerifyEmailPage = () => {
                             className="w-full !px-4 !py-3.5 rounded-xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all text-text-main font-medium placeholder:text-text-muted/50 tracking-widest text-center"
                         />
                     </div>
+                </div>
+
+                {/* Resend OTP Link */}
+                <div className="text-center !mt-4">
+                    {resendTimer > 0 ? (
+                        <p className="text-sm text-text-muted font-medium">
+                            Gửi lại mã sau <span className="text-primary font-bold">{resendTimer}s</span>
+                        </p>
+                    ) : (
+                        <button
+                            type="button"
+                            onClick={handleResendOtp}
+                            disabled={resending}
+                            className="text-sm text-primary font-bold hover:underline disabled:opacity-50"
+                        >
+                            {resending ? 'Đang gửi...' : 'Chưa nhận được mã? Gửi lại ngay'}
+                        </button>
+                    )}
                 </div>
 
                 <div className="!pt-2 !space-y-4">

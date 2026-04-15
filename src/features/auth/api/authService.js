@@ -66,5 +66,27 @@ export const authService = {
       body: JSON.stringify(payload),
     });
     return response;
+  },
+
+  verifyOnboarding: async (payload) => {
+    const response = await fetch(getApiUrl('/api/Auth/verify-onboarding'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+    return response;
+  },
+
+  resendOtp: async (email) => {
+    const response = await fetch(getApiUrl('/api/Auth/resend-otp'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email }),
+    });
+    return response;
   }
 };

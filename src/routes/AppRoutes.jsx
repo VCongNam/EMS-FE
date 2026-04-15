@@ -37,12 +37,13 @@ import useAuthStore from '../store/authStore';
 import StudentManagementPage from '../features/student-management/pages/StudentManagementPage';
 import TAManagementPage from '../features/ta-management/pages/TAManagementPage';
 import GlobalTAManagementPage from '../features/ta-management/pages/GlobalTAManagementPage';
-import ViewSchedulePage from '../features/schedule-attendance/pages/ViewSchedulePage';
+// ViewSchedulePage replaced by ScheduleManagementPage which handles all roles
 import TakeAttendancePage from '../features/schedule-attendance/pages/TakeAttendancePage';
 import UpdateAttendanceRecordPage from '../features/schedule-attendance/pages/UpdateAttendanceRecordPage';
 import ScheduleManagementPage from '../features/schedule-management/pages/ScheduleManagementPage';
 import ForgotPasswordPage from '../features/auth/pages/ForgotPasswordPage';
 import VerifyEmailPage from '../features/auth/pages/VerifyEmailPage';
+import VerifyOnboardingPage from '../features/auth/pages/VerifyOnboardingPage';
 import UserAuthorizationPage from '../features/dashboard/pages/UserAuthorizationPage';
 import TuitionManagementPage from '../features/tuition-management/pages/TuitionManagementPage';
 import TotalRevenuePage from '../features/tuition-management/pages/TotalRevenuePage';
@@ -60,6 +61,10 @@ import StudentTuitionPage from '../features/tuition-management/pages/StudentTuit
 import SystemDashboardPage from '../features/admin/pages/SystemDashboardPage';
 import AccountListPage from '../features/admin/pages/AccountListPage';
 import AccountDetailPage from '../features/admin/pages/AccountDetailPage';
+import FeedbackCenterPage from '../features/admin/pages/FeedbackCenterPage';
+
+// Teacher Features
+import TeacherFeedbackPage from '../features/dashboard/pages/TeacherFeedbackPage';
 
 export const AppRoutes = () => {
      const { isAuthenticated } = useAuthStore();
@@ -86,13 +91,13 @@ export const AppRoutes = () => {
                          <Route path="contact" element={<ContactUs />} />
                     </Route>
 
-                    {/* Auth Layout (No Header/Footer, specialized UI) */}
                     <Route element={<BlankLayout />}>
                          <Route path="login" element={<LoginPage />} />
                          <Route path="register" element={<RegisterPage />} />
                          <Route path="admin/login" element={<AdminLoginPage />} />
                          <Route path="forgot-password" element={<ForgotPasswordPage />} />
                          <Route path="verify-email" element={<VerifyEmailPage />} />
+                         <Route path="verify-onboarding" element={<VerifyOnboardingPage />} />
                     </Route>
 
                     {/* Protected Dashboard Layout (SideMenu) */}
@@ -101,6 +106,7 @@ export const AppRoutes = () => {
                               <Route path="dashboard" element={<DashboardPage />} />
                               <Route path="profile" element={<ProfilePage />} />
                               <Route path="teacher/classes" element={<TeacherClassListPage />} />
+                              <Route path="teacher/feedback" element={<TeacherFeedbackPage />} />
                               <Route path="teacher/classes/:classId" element={<ClassDetailLayout />}>
                                    <Route index element={<Navigate to="stream" replace />} />
                                    <Route path="stream" element={<ClassStreamPage />} />
@@ -163,7 +169,7 @@ export const AppRoutes = () => {
                               <Route path="assistants" element={<GlobalTAManagementPage />} />
 
                               {/* Schedule & Attendance */}
-                              <Route path="schedule" element={<ViewSchedulePage />} />
+                              <Route path="schedule" element={<ScheduleManagementPage />} />
                               <Route path="attendance/take" element={<TakeAttendancePage />} />
                               <Route path="attendance/update" element={<UpdateAttendanceRecordPage />} />
 
@@ -185,6 +191,7 @@ export const AppRoutes = () => {
                               <Route path="admin/dashboard" element={<SystemDashboardPage />} />
                               <Route path="admin/accounts" element={<AccountListPage />} />
                               <Route path="admin/accounts/:id" element={<AccountDetailPage />} />
+                              <Route path="admin/feedback" element={<FeedbackCenterPage />} />
                          </Route>
                     </Route>
 

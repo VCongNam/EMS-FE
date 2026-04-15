@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { assignmentService } from '../../../../api/assignmentService';
+import { gradebookService } from '../../../../api/gradebookService';
 import useAuthStore from '../../../../../../store/authStore';
 import { toast } from 'react-toastify';
 
@@ -13,7 +14,9 @@ const CreateAssignmentPage = () => {
 
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
-    const [gradeCategoryId, setGradeCategoryId] = useState('1234aaaa-1234-1234-1234-1234567890ab'); // Mặc định là Bài tập về nhà
+    const [gradeCategoryId, setGradeCategoryId] = useState(''); 
+    const [categories, setCategories] = useState([]);
+    const [isLoadingCategories, setIsLoadingCategories] = useState(false);
     const [dueDate, setDueDate] = useState('');
     const [dueTime, setDueTime] = useState('');
     const [allowLateSubmission, setAllowLateSubmission] = useState(true);
@@ -21,6 +24,30 @@ const CreateAssignmentPage = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const fileInputRef = useRef(null);
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            if (!classId) return;
+            try {
+                setIsLoadingCategories(true);
+                const res = await gradebookService.getGradeCategories(classId, user?.token);
+                if (res.ok) {
+                    const data = await res.json();
+                    setCategories(data);
+                    // Nếu không phải chế độ edit, mặc định lấy hạng mục đầu tiên
+                    if (!isEditMode && data.length > 0 && !gradeCategoryId) {
+                        setGradeCategoryId(data[0].id || data[0].gradeCategoryId);
+                    }
+                }
+            } catch (error) {
+                console.error("Lỗi lấy danh mục điểm:", error);
+            } finally {
+                setIsLoadingCategories(false);
+            }
+        };
+        
+        fetchCategories();
+    }, [classId, user?.token, isEditMode]);
 
     useEffect(() => {
         const fetchAssignmentInfo = async () => {
@@ -247,11 +274,26 @@ const CreateAssignmentPage = () => {
                             <select
                                 value={gradeCategoryId}
                                 onChange={(e) => setGradeCategoryId(e.target.value)}
-                                className="w-full bg-background border border-border rounded-xl !p-3 focus:outline-none focus:border-primary text-text-main"
+                                disabled={isLoadingCategories}
+                                className="w-full bg-background border border-border rounded-xl !p-3 focus:outline-none focus:border-primary text-text-main disabled:opacity-50"
                             >
-                                <option value="1234aaaa-1234-1234-1234-1234567890ab">Bài tập về nhà</option>
-                                <option value="5678bbbb-5678-5678-5678-1234567890cd">Thi Giữa kỳ</option>
+                                {isLoadingCategories ? (
+                                    <option>Đang tải hạng mục...</option>
+                                ) : categories.length === 0 ? (
+                                    <option value="">Không có hạng mục điểm</option>
+                                ) : (
+                                    categories.map(cat => (
+                                        <option key={cat.id || cat.gradeCategoryId} value={cat.id || cat.gradeCategoryId}>
+                                            {cat.name} ({cat.weight}%)
+                                        </option>
+                                    ))
+                                )}
                             </select>
+                            {categories.length === 0 && !isLoadingCategories && (
+                                <p className="text-[10px] text-destructive mt-1 italic">
+                                    Lưu ý: Lớp học chưa có hạng mục điểm nào. Hãy vào tab Cài đặt để cấu hình.
+                                </p>
+                            )}
                         </div>
 
                         <div>

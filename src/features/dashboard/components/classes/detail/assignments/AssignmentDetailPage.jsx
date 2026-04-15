@@ -7,12 +7,6 @@ import { assignmentService } from '../../../../api/assignmentService';
 import { studentAssignmentService } from '../../../../api/studentAssignmentService';
 import { Icon } from '@iconify/react';
 
-// Giữ lại Mock Submissions vì chưa có API Submissions
-const mockSubmissions = [
-    { id: 's1', studentId: 'stu1', studentName: 'Vũ Đức Nam', status: 'Đã nộp', submittedAt: '10:30 - 25/03/2026', score: null, files: [{ id: 'f1', name: 'Sample Word.docx', type: 'doc', url: 'https://calibre-ebook.com/downloads/demos/demo.docx' }] },
-    { id: 's2', studentId: 'stu2', studentName: 'Lê Hữu Nghĩa', status: 'Nộp muộn', submittedAt: '08:15 - 26/03/2026', score: 85, files: [{ id: 'f2', name: 'Sample PDF.pdf', type: 'pdf', url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf' }] },
-    { id: 's3', studentId: 'stu3', studentName: 'Nguyễn Thị C', status: 'Chưa nộp', submittedAt: null, score: null, files: [] }
-];
 
 const AssignmentDetailPage = () => {
     const { user } = useAuthStore();
@@ -26,23 +20,33 @@ const AssignmentDetailPage = () => {
     const fetchDetail = async () => {
         try {
             setIsLoading(true);
-            let res;
-            if (isTeacherOrTA) {
-                res = await assignmentService.getAssignmentById(assignmentId, user?.token);
-            } else {
-                res = await studentAssignmentService.getAssignmentDetail(assignmentId, user?.token);
-            }
+            const [assignmentRes, submissionsRes] = await Promise.all([
+                isTeacherOrTA 
+                    ? assignmentService.getAssignmentById(assignmentId, user?.token)
+                    : studentAssignmentService.getAssignmentDetail(assignmentId, user?.token),
+                isTeacherOrTA
+                    ? assignmentService.getSubmissions(assignmentId, user?.token)
+                    : Promise.resolve(null)
+            ]);
 
-            if (res.ok) {
-                const result = await res.json();
+            if (assignmentRes.ok) {
+                const result = await assignmentRes.json();
                 const data = result.data || result;
+                
+                let fetchedSubmissions = [];
+                if (submissionsRes && submissionsRes.ok) {
+                    const subResult = await submissionsRes.json();
+                    // Based on provided format: { students: [...] }
+                    fetchedSubmissions = subResult.data?.students || subResult.students || [];
+                }
+
                 setAssignment({
                     ...data,
-                    submissions: isTeacherOrTA ? mockSubmissions : [], // Teacher still uses mock for now
-                    maxScore: data.maxScore || 100
+                    submissions: fetchedSubmissions,
+                    maxScore: data.maxScore || 10
                 });
             } else {
-                console.error("Lỗi lấy chi tiết bài tập:", res.status);
+                console.error("Lỗi lấy chi tiết bài tập:", assignmentRes.status);
             }
         } catch (error) {
             console.error("Lỗi mạng:", error);

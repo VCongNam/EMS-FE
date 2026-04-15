@@ -1,60 +1,15 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { useParams } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import useAuthStore from '../../../../../store/authStore';
-
-// ── Mock Data ────────────────────────────────────────────────────────────────
-const STUDENTS = [
-    { id: 'STU001', name: 'Nguyễn Văn A' },
-    { id: 'STU002', name: 'Trần Thị B' },
-    { id: 'STU003', name: 'Lê Văn C' },
-    { id: 'STU004', name: 'Phạm Văn D' },
-    { id: 'STU005', name: 'Hoàng Thị E' },
-];
-
-const SESSIONS = [
-    { id: 1, session: 1, date: '2026-04-07', day: 'Thứ 3', startTime: '17:30', endTime: '19:00' },
-    { id: 2, session: 2, date: '2026-04-09', day: 'Thứ 5', startTime: '17:30', endTime: '19:00' },
-    { id: 3, session: 3, date: '2026-04-14', day: 'Thứ 3', startTime: '17:30', endTime: '19:00' },
-    { id: 4, session: 4, date: '2026-04-16', day: 'Thứ 5', startTime: '17:30', endTime: '19:00' },
-];
-
-// Mock attendance records — pre-filled for 4 sessions
-const MOCK_RECORDS = {
-    1: [
-        { id: 'STU001', name: 'Nguyễn Văn A', status: 'present' },
-        { id: 'STU002', name: 'Trần Thị B',   status: 'late' },
-        { id: 'STU003', name: 'Lê Văn C',      status: 'present' },
-        { id: 'STU004', name: 'Phạm Văn D',    status: 'absent' },
-        { id: 'STU005', name: 'Hoàng Thị E',   status: 'present' },
-    ],
-    2: [
-        { id: 'STU001', name: 'Nguyễn Văn A', status: 'present' },
-        { id: 'STU002', name: 'Trần Thị B',   status: 'present' },
-        { id: 'STU003', name: 'Lê Văn C',      status: 'absent' },
-        { id: 'STU004', name: 'Phạm Văn D',    status: 'late' },
-        { id: 'STU005', name: 'Hoàng Thị E',   status: 'present' },
-    ],
-    3: [
-        { id: 'STU001', name: 'Nguyễn Văn A', status: 'present' },
-        { id: 'STU002', name: 'Trần Thị B',   status: 'absent' },
-        { id: 'STU003', name: 'Lê Văn C',      status: 'present' },
-        { id: 'STU004', name: 'Phạm Văn D',    status: 'absent' },
-        { id: 'STU005', name: 'Hoàng Thị E',   status: 'late' },
-    ],
-    4: [
-        { id: 'STU001', name: 'Nguyễn Văn A', status: 'present' },
-        { id: 'STU002', name: 'Trần Thị B',   status: 'present' },
-        { id: 'STU003', name: 'Lê Văn C',      status: 'present' },
-        { id: 'STU004', name: 'Phạm Văn D',    status: 'present' },
-        { id: 'STU005', name: 'Hoàng Thị E',   status: 'present' },
-    ],
-};
+import { sessionService } from '../../../api/sessionService';
+import studentScheduleService from '../../../api/studentScheduleService';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const STATUS_CFG = {
-    present: { label: 'Hiện diện', badge: 'bg-green-500/10 text-green-600 border-green-500/20',  dot: 'bg-green-500'  },
-    late:    { label: 'Đi muộn',   badge: 'bg-orange-500/10 text-orange-600 border-orange-500/20', dot: 'bg-orange-500' },
-    absent:  { label: 'Vắng mặt', badge: 'bg-red-500/10 text-red-600 border-red-500/20',          dot: 'bg-red-500'    },
+    present: { label: 'Hiện diện', badge: '!bg-green-500/10 text-green-600 border-green-500/20',  dot: '!bg-green-500'  },
+    late:    { label: 'Đi muộn',   badge: '!bg-orange-500/10 text-orange-600 border-orange-500/20', dot: '!bg-orange-500' },
+    absent:  { label: 'Vắng mặt', badge: '!bg-red-500/10 text-red-600 border-red-500/20',          dot: '!bg-red-500'    },
 };
 
 const fmtDate = (dateStr) =>
@@ -67,6 +22,7 @@ const fmtDate = (dateStr) =>
 // "by-student"  → rows = students, columns show each session
 
 const ClassAttendancePage = () => {
+    const { classId } = useParams();
     const { user } = useAuthStore();
     const isTeacherOrTA = ['TEACHER', 'TA'].includes(user?.role?.toUpperCase());
 
@@ -75,6 +31,102 @@ const ClassAttendancePage = () => {
     const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'present' | 'late' | 'absent'
     const [expandedSession, setExpandedSession] = useState(null);
 
+    const [sessionsData, setSessionsData] = useState([]);
+    const [recordsData, setRecordsData] = useState({});
+    const [studentsData, setStudentsData] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    const fetchAttendanceData = useCallback(async () => {
+        if (!classId) return;
+        const token = useAuthStore.getState().user?.token;
+        const role = user?.role?.toUpperCase();
+
+        try {
+            setIsLoading(true);
+            let res;
+            let sessionData = [];
+
+            // 1. Fetch Sessions
+            if (role === 'STUDENT') {
+                const params = { FromDate: '01/01/2025', ToDate: '01/01/2027', ClassId: classId };
+                res = await studentScheduleService.getSchedule(params, token);
+            } else {
+                res = await sessionService.getClassSessions(classId, token);
+            }
+
+            if (res?.ok) {
+                const response = await res.json();
+                sessionData = Array.isArray(response) ? response : response.data || [];
+            } else {
+                console.error('Failed to fetch sessions');
+                setIsLoading(false);
+                return;
+            }
+
+            // mappedSessions
+            const mappedSessions = sessionData.map((item, index) => {
+                const dateObj = new Date(item.date);
+                const dayLabels = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+                return {
+                    id: item.sessionId || item.sessionID,
+                    session: index + 1,
+                    day: dayLabels[dateObj.getDay()],
+                    date: item.date ? item.date.split('T')[0] : '',
+                    startTime: item.startTime?.substring(0, 5) || '--:--',
+                    endTime: item.endTime?.substring(0, 5) || '--:--',
+                    status: item.status ? item.status.toLowerCase() : 'scheduled',
+                    title: item.title || item.className,
+                };
+            }).sort((a, b) => {
+                const dateDesc = new Date(a.date) - new Date(b.date);
+                if (dateDesc === 0) return a.startTime.localeCompare(b.startTime);
+                return dateDesc;
+            });
+
+            setSessionsData(mappedSessions);
+
+            // 2. Fetch Attendance for each session
+            const newRecords = {};
+            const stMap = {};
+
+            await Promise.all(mappedSessions.map(async (s) => {
+                try {
+                    const attRes = await sessionService.getAttendance(s.id, token);
+                    if (attRes.ok) {
+                        const attData = await attRes.json();
+                        const mappedAtt = attData.map(a => {
+                            if (!stMap[a.studentId]) {
+                                stMap[a.studentId] = { id: a.studentId, name: a.fullName };
+                            }
+                            return { 
+                                id: a.studentId, 
+                                name: a.fullName, 
+                                status: a.status ? a.status.toLowerCase() : 'absent', 
+                                note: a.note 
+                            };
+                        });
+                        newRecords[s.id] = mappedAtt;
+                    }
+                } catch (e) {
+                    console.error("Failed to fetch attendance for session:", s.id, e);
+                }
+            }));
+            
+            setRecordsData(newRecords);
+            setStudentsData(Object.values(stMap));
+
+        } catch(error) {
+            console.error('Error fetching data:', error);
+        } finally {
+            setIsLoading(false);
+        }
+
+    }, [classId, user]);
+    
+    useEffect(() => {
+        fetchAttendanceData();
+    }, [fetchAttendanceData]);
+
     // Make sure student view is enforced for non-teachers
     useEffect(() => {
         if (!isTeacherOrTA) {
@@ -82,31 +134,38 @@ const ClassAttendancePage = () => {
         }
     }, [isTeacherOrTA]);
 
-    const recordedSessions = SESSIONS.filter(s => MOCK_RECORDS[s.id]);
+    // Only show sessions that actually have attendance records loaded 
+    // or you can just show all recorded sessions. We'll show all sessions where we fetched something, even if empty array? 
+    // Wait, the API returns [] if no attendance is taken. Maybe we should show all sessions.
+    const recordedSessions = sessionsData.filter(s => recordsData[s.id] && recordsData[s.id].length > 0);
 
     // ── By-session view data ─────────────────────────────────────
     const sessionRows = useMemo(() => {
         return recordedSessions.map(session => {
-            const rec = MOCK_RECORDS[session.id] || [];
+            const rec = recordsData[session.id] || [];
             const present = rec.filter(r => r.status === 'present').length;
             const late    = rec.filter(r => r.status === 'late').length;
             const absent  = rec.filter(r => r.status === 'absent').length;
             const total   = rec.length;
             return { ...session, rec, present, late, absent, total };
         });
-    }, []);
+    }, [recordedSessions, recordsData]);
+
+
 
     // ── By-student view data ─────────────────────────────────────
     const studentRows = useMemo(() => {
-        let activeStudents = STUDENTS;
+        let activeStudents = studentsData;
         // If not teacher/TA, mock the student view by ONLY showing their own record (STU001)
         if (!isTeacherOrTA) {
-            activeStudents = STUDENTS.filter(s => s.id === 'STU001');
+            // For real application, you would filter by user.id or user.studentId
+            // Using a simple fallback if user object doesn't have an id directly matching the student mapping
+            activeStudents = studentsData.filter(s => s.id === user?.userId || s.id === user?.id || true); 
         }
 
         return activeStudents.map(student => {
             const entries = recordedSessions.map(session => {
-                const rec = MOCK_RECORDS[session.id] || [];
+                const rec = recordsData[session.id] || [];
                 const entry = rec.find(r => r.id === student.id);
                 return { session, status: entry?.status || null };
             });
@@ -124,7 +183,7 @@ const ClassAttendancePage = () => {
             // filter: student has at least one entry of that status
             return s.entries.some(e => e.status === statusFilter);
         });
-    }, [searchQuery, statusFilter]);
+    }, [studentsData, isTeacherOrTA, user, recordedSessions, recordsData, searchQuery, statusFilter]);
 
     // ── Session filter (for by-session) ──────────────────────────
     const filteredSessionRows = useMemo(() => {
@@ -149,17 +208,22 @@ const ClassAttendancePage = () => {
     const overallRate  = totalEntries > 0 ? Math.round(((totalPresent + totalLate) / totalEntries) * 100) : 0;
 
     return (
-        <div className="space-y-6 animate-fade-in-up">
+        <div className="space-y-6 animate-fade-in-up relative min-h-[400px]">
+            {isLoading && (
+                <div className="absolute z-10 inset-0 !bg-background/50 backdrop-blur-[2px] rounded-[2rem] flex items-center justify-center">
+                    <Icon icon="line-md:loading-loop" className="text-4xl text-primary" />
+                </div>
+            )}
 
             {/* ── Summary Stats ─────────────────────────────────────── */}
             <div className="grid grid-cols-2  sm:grid-cols-4 gap-3">
                 {[
-                    { label: 'Tỷ lệ đi học', value: `${overallRate}%`, icon: 'solar:chart-bold-duotone', color: 'text-primary bg-primary/10' },
-                    { label: 'Hiện diện', value: totalPresent, icon: 'material-symbols:check-circle-rounded', color: 'text-green-600 bg-green-500/10' },
-                    { label: 'Đi muộn', value: totalLate, icon: 'material-symbols:schedule-rounded', color: 'text-orange-500 bg-orange-500/10' },
-                    { label: 'Vắng mặt', value: totalAbsent, icon: 'material-symbols:cancel-rounded', color: 'text-red-500 bg-red-500/10' },
+                    { label: 'Tỷ lệ đi học', value: `${overallRate}%`, icon: 'solar:chart-bold-duotone', color: 'text-primary !bg-primary/10' },
+                    { label: 'Hiện diện', value: totalPresent, icon: 'material-symbols:check-circle-rounded', color: 'text-green-600 !bg-green-500/10' },
+                    { label: 'Đi muộn', value: totalLate, icon: 'material-symbols:schedule-rounded', color: 'text-orange-500 !bg-orange-500/10' },
+                    { label: 'Vắng mặt', value: totalAbsent, icon: 'material-symbols:cancel-rounded', color: 'text-red-500 !bg-red-500/10' },
                 ].map((stat, i) => (
-                    <div key={i} className="bg-surface border border-border rounded-2xl !p-4 flex items-center !gap-3">
+                    <div key={i} className="!bg-surface border border-border rounded-2xl !p-4 flex items-center !gap-3">
                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${stat.color}`}>
                             <Icon icon={stat.icon} className="text-xl" />
                         </div>
@@ -172,7 +236,7 @@ const ClassAttendancePage = () => {
             </div>
 
             {/* ── Toolbar ───────────────────────────────────────────── */}
-            <div className="bg-surface !my-2 border border-border rounded-2xl !p-4 flex flex-col sm:flex-row items-stretch sm:items-center !gap-3">
+            <div className="!bg-surface !my-2 border border-border rounded-2xl !p-4 flex flex-col sm:flex-row items-stretch sm:items-center !gap-3">
                 {/* Search */}
                 <div className="relative flex-1">
                     <Icon icon="solar:magnifer-linear" className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
@@ -181,7 +245,7 @@ const ClassAttendancePage = () => {
                         placeholder={viewMode === 'by-student' ? 'Tìm theo tên, mã học sinh...' : 'Tìm theo buổi, ngày, học sinh...'}
                         value={searchQuery}
                         onChange={e => setSearchQuery(e.target.value)}
-                        className="w-full !pl-9 !pr-8 !py-2.5 bg-background border border-border rounded-xl text-sm text-text-main placeholder:text-text-muted/60 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                        className="w-full !pl-9 !pr-8 !py-2.5 !bg-background border border-border rounded-xl text-sm text-text-main placeholder:text-text-muted/60 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                     />
                     {searchQuery && (
                         <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-main">
@@ -191,7 +255,7 @@ const ClassAttendancePage = () => {
                 </div>
 
                 {/* Status filter */}
-                <div className="flex items-center !gap-1 bg-background border border-border rounded-xl !p-1 shrink-0">
+                <div className="flex items-center !gap-1 !bg-background border border-border rounded-xl !p-1 shrink-0">
                     {['all', 'present', 'late', 'absent'].map(s => (
                         <button
                             key={s}
@@ -207,7 +271,7 @@ const ClassAttendancePage = () => {
 
                 {/* View mode toggle */}
                 {isTeacherOrTA && (
-                <div className="flex items-center !gap-1 bg-background border border-border rounded-xl !p-1 shrink-0">
+                <div className="flex items-center !gap-1 !bg-background border border-border rounded-xl !p-1 shrink-0">
                     <button
                         onClick={() => setViewMode('by-session')}
                         title="Xem theo buổi"
@@ -218,16 +282,7 @@ const ClassAttendancePage = () => {
                         <Icon icon="solar:calendar-bold-duotone" className="text-base" />
                         <span className="hidden sm:inline">Theo buổi</span>
                     </button>
-                    <button
-                        onClick={() => setViewMode('by-student')}
-                        title="Xem theo học sinh"
-                        className={`flex items-center !gap-1.5 !px-3 !py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                            viewMode === 'by-student' ? '!bg-primary text-white shadow-sm' : 'text-text-muted hover:text-text-main'
-                        }`}
-                    >
-                        <Icon icon="solar:users-group-two-rounded-bold-duotone" className="text-base" />
-                        <span className="hidden sm:inline">Theo học sinh</span>
-                    </button>
+                    
                 </div>
                 )}
             </div>
@@ -249,26 +304,37 @@ const ClassAttendancePage = () => {
 
 // ── Sub-view: By Session ──────────────────────────────────────────────────────
 const BySessionView = ({ rows, expandedSession, setExpandedSession, statusFilter }) => {
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 5;
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [rows]);
+
     if (rows.length === 0) return <EmptyState />;
 
+    const totalPages = Math.ceil(rows.length / itemsPerPage);
+    const paginatedRows = rows.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
     return (
-        <div className="space-y-3">
-            {rows.map(session => {
+        <div className="space-y-4">
+            <div className="space-y-3">
+                {paginatedRows.map(session => {
                 const isExpanded = expandedSession === session.id;
                 const filteredRec = statusFilter === 'all'
                     ? session.rec
                     : session.rec.filter(r => r.status === statusFilter);
 
                 return (
-                    <div key={session.id} className="bg-surface border border-border rounded-2xl overflow-hidden">
+                    <div key={session.id} className="!bg-surface border border-border rounded-2xl overflow-hidden">
                         {/* Session header row */}
                         <button
                             onClick={() => setExpandedSession(isExpanded ? null : session.id)}
-                            className="w-full flex flex-col sm:flex-row items-start sm:items-center !gap-4 !p-4 hover:bg-primary/5 transition-colors text-left"
+                            className="w-full flex flex-col sm:flex-row items-start sm:items-center !gap-4 !p-4 hover:!bg-primary/5 transition-colors text-left"
                         >
                             {/* Session badge */}
                             <div className="flex items-center !gap-3 flex-1 min-w-0">
-                                <div className="flex flex-col items-center justify-center min-w-[52px] !px-2 !py-2 bg-primary/10 rounded-xl text-primary border border-primary/20 shrink-0">
+                                <div className="flex flex-col items-center justify-center min-w-[52px] !px-2 !py-2 !bg-primary/10 rounded-xl text-primary border border-primary/20 shrink-0">
                                     <span className="text-[9px] font-bold uppercase tracking-wide opacity-70">Buổi</span>
                                     <span className="text-lg font-extrabold leading-none">{session.session}</span>
                                 </div>
@@ -283,9 +349,9 @@ const BySessionView = ({ rows, expandedSession, setExpandedSession, statusFilter
 
                             {/* Mini stats */}
                             <div className="flex items-center !gap-2 flex-wrap">
-                                <StatPill value={session.present} label="Hiện diện" color="text-green-600 bg-green-500/10 border-green-500/20" />
-                                <StatPill value={session.late}    label="Đi muộn"   color="text-orange-500 bg-orange-500/10 border-orange-500/20" />
-                                <StatPill value={session.absent}  label="Vắng mặt"  color="text-red-500 bg-red-500/10 border-red-500/20" />
+                                <StatPill value={session.present} label="Hiện diện" color="text-green-600 !bg-green-500/10 border-green-500/20" />
+                                <StatPill value={session.late}    label="Đi muộn"   color="text-orange-500 !bg-orange-500/10 border-orange-500/20" />
+                                <StatPill value={session.absent}  label="Vắng mặt"  color="text-red-500 !bg-red-500/10 border-red-500/20" />
                                 <Icon
                                     icon="material-symbols:keyboard-arrow-down-rounded"
                                     className={`text-xl text-text-muted transition-transform duration-200 ml-1 ${isExpanded ? 'rotate-180' : ''}`}
@@ -295,7 +361,7 @@ const BySessionView = ({ rows, expandedSession, setExpandedSession, statusFilter
 
                         {/* Expanded student detail */}
                         {isExpanded && (
-                            <div className="border-t border-border bg-background/50">
+                            <div className="border-t border-border !bg-background/50">
                                 {/* Desktop table */}
                                 <table className="hidden sm:table w-full text-left">
                                     <thead>
@@ -307,11 +373,11 @@ const BySessionView = ({ rows, expandedSession, setExpandedSession, statusFilter
                                     </thead>
                                     <tbody className="divide-y divide-border/30">
                                         {filteredRec.map(student => (
-                                            <tr key={student.id} className="hover:bg-primary/5 transition-colors">
+                                            <tr key={student.id} className="hover:!bg-primary/5 transition-colors">
                                                 <td className="!px-5 !py-3 font-mono text-xs text-text-muted">{student.id}</td>
                                                 <td className="!px-5 !py-3">
                                                     <div className="flex items-center !gap-2">
-                                                        <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold uppercase shrink-0">
+                                                        <div className="w-7 h-7 rounded-full !bg-primary/10 text-primary flex items-center justify-center text-xs font-bold uppercase shrink-0">
                                                             {student.name.charAt(0)}
                                                         </div>
                                                         <span className="font-semibold text-sm text-text-main">{student.name}</span>
@@ -330,7 +396,7 @@ const BySessionView = ({ rows, expandedSession, setExpandedSession, statusFilter
                                     {filteredRec.map(student => (
                                         <div key={student.id} className="flex items-center justify-between !px-4 !py-3">
                                             <div className="flex items-center !gap-2.5">
-                                                <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold uppercase shrink-0">
+                                                <div className="w-8 h-8 rounded-full !bg-primary/10 text-primary flex items-center justify-center text-xs font-bold uppercase shrink-0">
                                                     {student.name.charAt(0)}
                                                 </div>
                                                 <div>
@@ -347,22 +413,79 @@ const BySessionView = ({ rows, expandedSession, setExpandedSession, statusFilter
                     </div>
                 );
             })}
+            </div>
+            
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+                <div className="flex justify-center items-center gap-2 mt-6">
+                    <button
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className={`p-2 rounded-xl border transition-colors ${
+                            currentPage === 1 
+                                ? 'border-border text-border !bg-background cursor-not-allowed' 
+                                : 'border-border text-text-main hover:!bg-primary/5 hover:border-primary/30 !bg-background'
+                        }`}
+                    >
+                        <Icon icon="solar:alt-arrow-left-linear" className="text-lg" />
+                    </button>
+                    
+                    <div className="flex items-center gap-1">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                            <button
+                                key={page}
+                                onClick={() => setCurrentPage(page)}
+                                className={`w-9 h-9 rounded-xl text-sm font-bold transition-all ${
+                                    currentPage === page
+                                        ? '!bg-primary text-white shadow-md shadow-primary/30'
+                                        : 'text-text-muted hover:!bg-primary/5 hover:text-text-main'
+                                }`}
+                            >
+                                {page}
+                            </button>
+                        ))}
+                    </div>
+
+                    <button
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                        className={`p-2 rounded-xl border transition-colors ${
+                            currentPage === totalPages 
+                                ? 'border-border text-border !bg-background cursor-not-allowed' 
+                                : 'border-border text-text-main hover:!bg-primary/5 hover:border-primary/30 !bg-background'
+                        }`}
+                    >
+                        <Icon icon="solar:alt-arrow-right-linear" className="text-lg" />
+                    </button>
+                </div>
+            )}
         </div>
     );
 };
 
 // ── Sub-view: By Student ──────────────────────────────────────────────────────
 const ByStudentView = ({ rows, sessions }) => {
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8;
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [rows]);
+
     if (rows.length === 0) return <EmptyState />;
 
+    const totalPages = Math.ceil(rows.length / itemsPerPage);
+    const paginatedRows = rows.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
     return (
-        <div className="bg-surface border border-border rounded-2xl overflow-hidden">
+        <div className="space-y-4">
+        <div className="!bg-surface border border-border rounded-2xl overflow-hidden">
             {/* Desktop cross-table */}
             <div className="hidden sm:block overflow-x-auto">
                 <table className="w-full text-left border-collapse min-w-[600px]">
                     <thead>
-                        <tr className="bg-background/80 border-b border-border">
-                            <th className="!px-5 !py-3 text-[11px] font-semibold text-text-muted uppercase tracking-wider sticky left-0 bg-background/80">Học sinh</th>
+                        <tr className="!bg-background/80 border-b border-border">
+                            <th className="!px-5 !py-3 text-[11px] font-semibold text-text-muted uppercase tracking-wider sticky left-0 !bg-background/80">Học sinh</th>
                             {sessions.map(s => (
                                 <th key={s.id} className="!px-3 !py-3 text-[11px] font-semibold text-text-muted uppercase tracking-wider text-center whitespace-nowrap">
                                     Buổi {s.session}
@@ -373,11 +496,11 @@ const ByStudentView = ({ rows, sessions }) => {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-border/40">
-                        {rows.map(student => (
-                            <tr key={student.id} className="hover:bg-primary/5 transition-colors group">
-                                <td className="!px-5 !py-3 sticky left-0 bg-surface group-hover:bg-primary/5 transition-colors">
+                        {paginatedRows.map(student => (
+                            <tr key={student.id} className="hover:!bg-primary/5 transition-colors group">
+                                <td className="!px-5 !py-3 sticky left-0 !bg-surface group-hover:!bg-primary/5 transition-colors">
                                     <div className="flex items-center !gap-2.5">
-                                        <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold uppercase shrink-0">
+                                        <div className="w-8 h-8 rounded-full !bg-primary/10 text-primary flex items-center justify-center text-xs font-bold uppercase shrink-0">
                                             {student.name.charAt(0)}
                                         </div>
                                         <div>
@@ -400,9 +523,9 @@ const ByStudentView = ({ rows, sessions }) => {
                                         <span className={`text-sm font-bold ${student.rate >= 80 ? 'text-green-600' : student.rate >= 60 ? 'text-orange-500' : 'text-red-500'}`}>
                                             {student.rate}%
                                         </span>
-                                        <div className="w-12 h-1 bg-background rounded-full overflow-hidden border border-border/50">
+                                        <div className="w-12 h-1 !bg-background rounded-full overflow-hidden border border-border/50">
                                             <div
-                                                className={`h-full rounded-full ${student.rate >= 80 ? 'bg-green-500' : student.rate >= 60 ? 'bg-orange-500' : 'bg-red-500'}`}
+                                                className={`h-full rounded-full ${student.rate >= 80 ? '!bg-green-500' : student.rate >= 60 ? '!bg-orange-500' : '!bg-red-500'}`}
                                                 style={{ width: `${student.rate}%` }}
                                             />
                                         </div>
@@ -416,11 +539,11 @@ const ByStudentView = ({ rows, sessions }) => {
 
             {/* Mobile: student cards with session pills */}
             <div className="sm:hidden divide-y divide-border/40">
-                {rows.map(student => (
+                {paginatedRows.map(student => (
                     <div key={student.id} className="!p-4">
                         <div className="flex items-center justify-between !mb-3">
                             <div className="flex items-center !gap-2.5">
-                                <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-bold uppercase shrink-0">
+                                <div className="w-9 h-9 rounded-full !bg-primary/10 text-primary flex items-center justify-center text-sm font-bold uppercase shrink-0">
                                     {student.name.charAt(0)}
                                 </div>
                                 <div>
@@ -437,7 +560,7 @@ const ByStudentView = ({ rows, sessions }) => {
                                 <div
                                     key={i}
                                     className={`flex items-center !gap-1.5 !px-2.5 !py-1 rounded-xl border text-xs font-semibold ${
-                                        entry.status ? STATUS_CFG[entry.status].badge : 'bg-background border-border text-text-muted/40'
+                                        entry.status ? STATUS_CFG[entry.status].badge : '!bg-background border-border text-text-muted/40'
                                     }`}
                                 >
                                     {entry.status && <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${STATUS_CFG[entry.status].dot}`} />}
@@ -448,6 +571,52 @@ const ByStudentView = ({ rows, sessions }) => {
                     </div>
                 ))}
             </div>
+        </div>
+        
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-2 mt-2">
+                <button
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className={`p-2 rounded-xl border transition-colors ${
+                        currentPage === 1 
+                            ? 'border-border text-border !bg-background cursor-not-allowed' 
+                            : 'border-border text-text-main hover:!bg-primary/5 hover:border-primary/30 !bg-background'
+                    }`}
+                >
+                    <Icon icon="solar:alt-arrow-left-linear" className="text-lg" />
+                </button>
+                
+                <div className="flex items-center gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                        <button
+                            key={page}
+                            onClick={() => setCurrentPage(page)}
+                            className={`w-9 h-9 rounded-xl text-sm font-bold transition-all ${
+                                currentPage === page
+                                    ? '!bg-primary text-white shadow-md shadow-primary/30'
+                                    : 'text-text-muted hover:!bg-primary/5 hover:text-text-main'
+                            }`}
+                        >
+                            {page}
+                        </button>
+                    ))}
+                </div>
+
+                <button
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className={`p-2 rounded-xl border transition-colors ${
+                        currentPage === totalPages 
+                            ? 'border-border text-border !bg-background cursor-not-allowed' 
+                            : 'border-border text-text-main hover:!bg-primary/5 hover:border-primary/30 !bg-background'
+                    }`}
+                >
+                    <Icon icon="solar:alt-arrow-right-linear" className="text-lg" />
+                </button>
+            </div>
+        )}
         </div>
     );
 };
@@ -483,8 +652,8 @@ const StatPill = ({ value, label, color }) => (
 );
 
 const EmptyState = () => (
-    <div className="bg-surface border border-border rounded-2xl !py-16 flex flex-col items-center text-center !gap-3">
-        <div className="w-16 h-16 bg-background rounded-full flex items-center justify-center border border-border">
+    <div className="!bg-surface border border-border rounded-2xl !py-16 flex flex-col items-center text-center !gap-3">
+        <div className="w-16 h-16 !bg-background rounded-full flex items-center justify-center border border-border">
             <Icon icon="solar:ghost-smile-bold-duotone" className="text-3xl text-text-muted" />
         </div>
         <p className="font-bold text-text-main">Không tìm thấy dữ liệu</p>
