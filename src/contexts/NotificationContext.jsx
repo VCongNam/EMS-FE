@@ -1,71 +1,111 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import connection from '../services/signalRService';
 import { notificationService } from '../features/notifications/api/notificationService'; 
 import useAuthStore from '../store/authStore'; 
 import { toast } from 'react-toastify';
+import { pushService } from '../services/pushService';
 
 const NotificationContext = createContext();
 
 export const NotificationProvider = ({ children }) => {
     const [unreadCount, setUnreadCount] = useState(0);
+    const [isPushSupported, setIsPushSupported] = useState(false);
+    const [isPushSubscribed, setIsPushSubscribed] = useState(false);
     
-    // 1. Lấy thông tin user (chứa token) từ Zustand
     const { user } = useAuthStore(); 
+
+    // Hàm đăng ký Push Notification
+    const subscribeToPush = useCallback(async (token) => {
+        if (!pushService.isSupported()) return;
+
+        try {
+            // 1. Kiểm tra quyền
+            if (Notification.permission !== 'granted') return;
+
+            // 2. Lấy Public Key từ Backend
+            const keyResponse = await notificationService.getVapidPublicKey(token);
+            if (!keyResponse.ok) return;
+            const { publicKey } = await keyResponse.json();
+
+            // 3. Đăng ký với Push Service (Google/Apple...)
+            const subscription = await pushService.subscribeUser(publicKey);
+
+            // 4. Lưu subscription vào Backend
+            await notificationService.saveSubscription(subscription, token);
+            setIsPushSubscribed(true);
+            console.log("Web Push đã được kích hoạt.");
+        } catch (error) {
+            console.error("Lỗi khi khởi tạo Web Push:", error);
+        }
+    }, []);
 
     useEffect(() => {
         const token = user?.token;
-        
-        // Nếu không có token (chưa đăng nhập), thì không làm gì cả
         if (!token) return; 
 
-        // 2. Lấy số lượng Badge
+        setIsPushSupported(pushService.isSupported());
+
         const loadInitialBadge = async () => {
             try {
-                // Truyền thẳng cái token lấy từ store vào đây
                 const response = await notificationService.getUnreadCount(token); 
                 if (response.ok) {
                     const data = await response.json();
                     setUnreadCount(data.count);
-                    console.log("Dữ liệu Badge cũ đã load xong:", data.count);
                 }
             } catch (error) {
                 console.error("Lỗi khi lấy số thông báo chưa đọc:", error);
             }
         };
 
-        // 3. Khởi tạo SignalR
         const startSignalR = async () => {
             try {
                 if (connection.state === "Disconnected") {
                     await connection.start();
-                    console.log("SignalR đã sẵn sàng nhận tin mới!");
+                    console.log("SignalR sẵn sàng!");
                 }
             } catch (err) {
                 console.error("SignalR Connection Error: ", err);
             }
         };
 
-        // 4. Chạy theo thứ tự: API Load -> SignalR Start
-        loadInitialBadge().then(() => {
-            startSignalR();
-        });
+        // Chạy lần lượt
+        loadInitialBadge()
+            .then(() => startSignalR())
+            .then(() => {
+                // Tự động thử đăng ký Push nếu đã có quyền
+                if (Notification.permission === 'granted') {
+                    subscribeToPush(token);
+                }
+            });
 
-        // 5. Đăng ký lắng nghe
         connection.on("ReceiveNotification", (data) => {
             setUnreadCount(prev => prev + 1);
             toast.info(`${data.title}: ${data.content}`);
         });
 
-        // Cleanup
         return () => {
             connection.off("ReceiveNotification");
         };
         
-    // Chú ý: Đưa user?.token vào array dependency để nó tự động chạy khi bạn đổi tài khoản
-    }, [user?.token]); 
+    }, [user?.token, subscribeToPush]); 
+
+    // Hàm yêu cầu quyền từ UI
+    const requestPushPermission = async () => {
+        const permission = await pushService.requestPermission();
+        if (permission === 'granted' && user?.token) {
+            await subscribeToPush(user.token);
+        }
+        return permission;
+    };
 
     return (
-        <NotificationContext.Provider value={{ unreadCount, setUnreadCount }}>
+        <NotificationContext.Provider value={{ 
+            unreadCount, 
+            setUnreadCount, 
+            isPushSupported, 
+            isPushSubscribed,
+            requestPushPermission 
+        }}>
             {children}
         </NotificationContext.Provider>
     );

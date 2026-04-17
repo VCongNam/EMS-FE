@@ -3,14 +3,15 @@ import { Icon } from '@iconify/react';
 import { useNotifications } from '../../contexts/NotificationContext';
 
 import useAuthStore from '../../store/authStore';
+import { usePWA } from '../../contexts/PWAContext';
 
 const SideMenu = ({ isOpen, onClose }) => {
     const location = useLocation();
     const { user, logout } = useAuthStore();
     const role = user?.role || 'student';
+    const { isInstallable, installApp } = usePWA();
 
     const { unreadCount } = useNotifications();
-
     const menuConfigs = {
         student: [
             { name: 'Bảng điều khiển', path: '/dashboard', icon: 'material-symbols:dashboard-rounded' },
@@ -122,6 +123,14 @@ const SideMenu = ({ isOpen, onClose }) => {
                             </p>
                         </div>
                     </div>
+
+                    <button
+                        onClick={installApp}
+                        className="w-full flex items-center gap-3 p-4 rounded-2xl !bg-white/10 hover:bg-white/20 text-white transition-all font-medium cursor-pointer border border-white/20 shadow-lg"
+                    >
+                        <Icon icon="material-symbols:download-for-offline-rounded" className="text-2xl" />
+                        Tải ứng dụng
+                    </button>
 
                     <button
                         onClick={() => {

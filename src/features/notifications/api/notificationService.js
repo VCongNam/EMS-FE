@@ -49,5 +49,44 @@ export const notificationService = {
                 'Content-Type': 'application/json'
             }
         });
+    },
+
+    /**
+     * Lấy VAPID Public Key từ Backend (để đăng ký Push)
+     */
+    getVapidPublicKey: async (token) => {
+        return await fetch(getApiUrl('/api/Push/vapid-public-key'), {
+            headers: { 
+                'Authorization': `Bearer ${token}` 
+            }
+        });
+    },
+
+    /**
+     * Lưu Subscription Object lên Server
+     */
+    saveSubscription: async (subscription, token) => {
+        return await fetch(getApiUrl('/api/Push/subscribe'), {
+            method: 'POST',
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(subscription)
+        });
+    },
+
+    /**
+     * Hủy đăng ký trên Server
+     */
+    unsubscribe: async (endpoint, token) => {
+        return await fetch(getApiUrl('/api/Push/unsubscribe'), {
+            method: 'POST',
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ endpoint })
+        });
     }
 };
