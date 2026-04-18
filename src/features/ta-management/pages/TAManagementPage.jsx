@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import ViewTAListPage from './ViewTAListPage';
 import SetTAPermissionsPage from './SetTAPermissionsPage';
 import TATaskManagementTab from './TATaskManagementTab';
+import { Icon } from '@iconify/react';
 
 const TAManagementPage = () => {
     const { classId } = useParams();
@@ -11,6 +12,17 @@ const TAManagementPage = () => {
     return (
         <div className="w-full !space-y-6 animate-fade-in !pb-8 !p-6 bg-surface rounded-2xl shadow-sm border border-border mt-2">
             
+            {/* Header */}
+            <div className="flex items-center !gap-4 !mb-6">
+                <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-inner shrink-0">
+                    <Icon icon="solar:users-group-rounded-bold-duotone" className="text-3xl" />
+                </div>
+                <div>
+                    <h1 className="text-2xl font-bold text-text-main font-['Outfit']">Quản lý trợ giảng</h1>
+                    <p className="text-sm text-text-muted mt-0.5">Điều chỉnh danh sách, phân quyền cấu hình và giao việc cho trợ giảng</p>
+                </div>
+            </div>
+
             {/* Tabs Section */}
             <div className="flex flex-wrap !gap-2 border-b border-border/50">
                 <button

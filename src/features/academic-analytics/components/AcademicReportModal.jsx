@@ -190,7 +190,6 @@ const AcademicReportModal = ({ isOpen, onClose, onSave, defaultClass, editData, 
                                         <p className="!text-base !font-bold !text-text-main !mt-1">
                                             {isEdit || editData?.studentName ? editData.studentName : (selectedStudent === 'SV001' ? 'Nguyễn Văn A' : 'Trần Thị B')}
                                         </p>
-                                        <p className="!text-xs !text-text-muted !font-medium">ID: {isEdit ? editData.studentId : selectedStudent}</p>
                                     </div>
                                     <div>
                                         <p className="!text-[10px] !font-black !text-text-muted !uppercase !tracking-widest">Lớp học / Kỳ học</p>

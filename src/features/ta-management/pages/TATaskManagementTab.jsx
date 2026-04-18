@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import Button from '../../../components/ui/Button';
 import CreateTaskModal from '../components/CreateTaskModal';
 import TaskDetailModal from '../components/TaskDetailModal';
+import Pagination from '../../../components/ui/Pagination';
 import useAuthStore from '../../../store/authStore';
 import { taService } from '../api/taService';
 
@@ -16,6 +17,10 @@ const TATaskManagementTab = ({ classId }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [selectedTask, setSelectedTask] = useState(null);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+    
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 5;
 
     const loadData = async () => {
         if (!classId || !user?.token) return;
@@ -89,6 +94,11 @@ const TATaskManagementTab = ({ classId }) => {
     useEffect(() => {
         loadData();
     }, [classId, user?.token]);
+    
+    // Reset to page 1 when search changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery]);
 
     const handleReviewTask = async (taskId, isApproved, feedback) => {
         if (!user?.token) return;
@@ -194,6 +204,13 @@ const TATaskManagementTab = ({ classId }) => {
 
     const filteredTasks = tasks.filter(t => (t.title || '').toLowerCase().includes(searchQuery.toLowerCase()));
 
+    // Pagination logic
+    const paginatedTasks = React.useMemo(() => {
+        const indexOfLastItem = currentPage * itemsPerPage;
+        const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+        return filteredTasks.slice(indexOfFirstItem, indexOfLastItem);
+    }, [filteredTasks, currentPage, itemsPerPage]);
+
     return (
         <div className="animate-fade-in !space-y-6">
             {/* Control Bar */}
@@ -239,8 +256,8 @@ const TATaskManagementTab = ({ classId }) => {
                             <Icon icon="solar:spinner-linear" className="animate-spin text-4xl" />
                             <span className="font-medium text-text-muted">Đang tải danh sách công việc...</span>
                         </div>
-                    ) : filteredTasks.length > 0 ? (
-                        filteredTasks.map(task => <TaskCard key={task.id} task={task} />)
+                    ) : paginatedTasks.length > 0 ? (
+                        paginatedTasks.map(task => <TaskCard key={task.id} task={task} />)
                     ) : (
                         <div className="flex-1 flex flex-col items-center justify-center text-center !py-20 opacity-60">
                             <div className="w-20 h-20 rounded-3xl border-2 border-dashed border-border flex items-center justify-center !mb-4">
@@ -251,6 +268,17 @@ const TATaskManagementTab = ({ classId }) => {
                         </div>
                     )}
                 </div>
+
+                {filteredTasks.length > itemsPerPage && (
+                    <div className="!mt-4">
+                        <Pagination 
+                            totalItems={filteredTasks.length}
+                            itemsPerPage={itemsPerPage}
+                            currentPage={currentPage}
+                            onPageChange={setCurrentPage}
+                        />
+                    </div>
+                )}
             </div>
 
             {isCreateModalOpen && (
