@@ -3,18 +3,41 @@ import { Icon } from '@iconify/react';
 
 const TransactionHistory = ({ transactions, onViewInvoice }) => {
     const getStatusConfig = (status) => {
-        switch (status?.toLowerCase()) {
-            case 'pending':
-                return { label: 'Đang chờ', color: 'text-amber-600', bg: 'bg-amber-50', dot: 'bg-amber-500' };
-            case 'approved':
-            case 'success':
-                return { label: 'Thành công', color: 'text-emerald-600', bg: 'bg-emerald-50', dot: 'bg-emerald-500' };
-            case 'failed':
-            case 'rejected':
-                return { label: 'Thất bại', color: 'text-red-600', bg: 'bg-red-50', dot: 'bg-red-500' };
-            default:
-                return { label: status || 'N/A', color: 'text-text-muted', bg: 'bg-background', dot: 'bg-gray-400' };
+        const s = status?.toLowerCase();
+        if (s === 'pending' || s === 'checking') {
+            return { 
+                label: 'Đang chờ', 
+                color: 'text-amber-700', 
+                bg: 'bg-amber-100/50', 
+                dot: 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]',
+                border: 'border-amber-200'
+            };
         }
+        if (s === 'approved' || s === 'success' || s === 'paid') {
+            return { 
+                label: 'Thành công', 
+                color: 'text-emerald-700', 
+                bg: 'bg-emerald-100/50', 
+                dot: 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]',
+                border: 'border-emerald-200'
+            };
+        }
+        if (s === 'failed' || s === 'rejected' || s === 'cancelled') {
+            return { 
+                label: 'Thất bại', 
+                color: 'text-red-700', 
+                bg: 'bg-red-100/50', 
+                dot: 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]',
+                border: 'border-red-200'
+            };
+        }
+        return { 
+            label: status || 'N/A', 
+            color: 'text-gray-700', 
+            bg: 'bg-gray-100/50', 
+            dot: 'bg-gray-400',
+            border: 'border-gray-200'
+        };
     };
 
     return (
@@ -27,11 +50,11 @@ const TransactionHistory = ({ transactions, onViewInvoice }) => {
                         <div key={idx} className="!bg-white !p-6 !rounded-[2rem] !border !border-border !shadow-sm !relative">
                             <div className="!flex !items-center !justify-between !mb-4">
                                 <div className="!flex !items-center !gap-3">
-                                    <div className="!w-10 !h-10 !rounded-xl !bg-emerald-50 !text-emerald-600 !flex !items-center !justify-center">
-                                        <Icon icon="solar:bank-bold-duotone" />
+                                    <div className="!w-10 !h-10 !rounded-xl !bg-primary/5 !text-primary !flex !items-center !justify-center">
+                                        <Icon icon="solar:history-bold-duotone" className="!text-xl" />
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                        <h4 className="!text-sm !font-black !text-text-main truncate">#{tx.transactionId?.substring(0, 8)}</h4>
+                                        <p className="!text-xs !font-black !text-text-main line-clamp-1">{tx.content || 'Thanh toán học phí'}</p>
                                         <p className="!text-[10px] !font-bold !text-text-muted">{tx.date}</p>
                                     </div>
                                 </div>
@@ -61,7 +84,7 @@ const TransactionHistory = ({ transactions, onViewInvoice }) => {
                 <table className="!w-full !text-left">
                     <thead>
                         <tr className="!bg-background/50 !border-b !border-border">
-                            <th className="!p-6 !text-[10px] !font-black !text-text-muted !uppercase !tracking-widest">Mã Giao dịch</th>
+                            <th className="!p-6 !text-[10px] !font-black !text-text-muted !uppercase !tracking-widest">Thời gian</th>
                             <th className="!p-6 !text-[10px] !font-black !text-text-muted !uppercase !tracking-widest">Thời gian</th>
                             <th className="!p-6 !text-[10px] !font-black !text-text-muted !uppercase !tracking-widest">Số tiền</th>
                             <th className="!p-6 !text-[10px] !font-black !text-text-muted !uppercase !tracking-widest">Nội dung</th>
@@ -73,10 +96,7 @@ const TransactionHistory = ({ transactions, onViewInvoice }) => {
                         {transactions.map((tx, idx) => {
                             const statusConfig = getStatusConfig(tx.status);
                             return (
-                                <tr key={idx} className="hover:!bg-background/30 !transition-colors">
-                                    <td className="!p-6">
-                                        <span className="!text-sm !font-black !text-text-main">#{tx.transactionId?.substring(0, 8)}</span>
-                                    </td>
+<tr key={idx} className="hover:!bg-background/30 !transition-colors">
                                     <td className="!p-6">
                                         <span className="!text-sm !font-medium !text-text-muted">{tx.date}</span>
                                     </td>
@@ -87,8 +107,8 @@ const TransactionHistory = ({ transactions, onViewInvoice }) => {
                                         <span className="!text-sm !font-medium !text-text-muted truncate max-w-[200px] block">{tx.content || 'N/A'}</span>
                                     </td>
                                     <td className="!p-6">
-                                        <span className={`!inline-flex !items-center !gap-1.5 !px-2.5 !py-1 !rounded-lg !text-[11px] !font-bold ${statusConfig.bg} ${statusConfig.color}`}>
-                                            <div className={`!w-1.5 !h-1.5 !rounded-full ${statusConfig.dot}`} />
+                                        <span className={`!inline-flex !items-center !gap-2 !px-3 !py-1.5 !rounded-xl !text-[11px] !font-black !border ${statusConfig.bg} ${statusConfig.color} ${statusConfig.border} !shadow-sm`}>
+                                            <div className={`!w-2 !h-2 !rounded-full ${statusConfig.dot}`} />
                                             {statusConfig.label}
                                         </span>
                                     </td>

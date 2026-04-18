@@ -5,6 +5,7 @@ import { assignmentService } from '../../../../api/assignmentService';
 import { gradebookService } from '../../../../api/gradebookService';
 import useAuthStore from '../../../../../../store/authStore';
 import { toast } from 'react-toastify';
+import AddGradeCategoryModal from '../components/AddGradeCategoryModal';
 
 const CreateAssignmentPage = () => {
     const navigate = useNavigate();
@@ -22,32 +23,41 @@ const CreateAssignmentPage = () => {
     const [allowLateSubmission, setAllowLateSubmission] = useState(true);
     const [attachments, setAttachments] = useState([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
 
     const fileInputRef = useRef(null);
 
-    useEffect(() => {
-        const fetchCategories = async () => {
-            if (!classId) return;
-            try {
-                setIsLoadingCategories(true);
-                const res = await gradebookService.getGradeCategories(classId, user?.token);
-                if (res.ok) {
-                    const data = await res.json();
-                    setCategories(data);
-                    // Nếu không phải chế độ edit, mặc định lấy hạng mục đầu tiên
-                    if (!isEditMode && data.length > 0 && !gradeCategoryId) {
-                        setGradeCategoryId(data[0].id || data[0].gradeCategoryId);
-                    }
+    const fetchCategories = async () => {
+        if (!classId) return;
+        try {
+            setIsLoadingCategories(true);
+            const res = await gradebookService.getGradeCategories(classId, user?.token);
+            if (res.ok) {
+                const data = await res.json();
+                setCategories(data);
+                // Nếu không phải chế độ edit, mặc định lấy hạng mục đầu tiên
+                if (!isEditMode && data.length > 0 && !gradeCategoryId) {
+                    setGradeCategoryId(data[0].id || data[0].gradeCategoryId);
                 }
-            } catch (error) {
-                console.error("Lỗi lấy danh mục điểm:", error);
-            } finally {
-                setIsLoadingCategories(false);
             }
-        };
-        
+        } catch (error) {
+            console.error("Lỗi lấy danh mục điểm:", error);
+        } finally {
+            setIsLoadingCategories(false);
+        }
+    };
+
+    useEffect(() => {
         fetchCategories();
     }, [classId, user?.token, isEditMode]);
+
+    const onAddCategorySuccess = (newCategory) => {
+        fetchCategories();
+        // Tự động chọn hạng mục vừa tạo
+        if (newCategory) {
+            setGradeCategoryId(newCategory.id || newCategory.gradeCategoryId);
+        }
+    };
 
     useEffect(() => {
         const fetchAssignmentInfo = async () => {
@@ -270,7 +280,17 @@ const CreateAssignmentPage = () => {
 
                         {/* Thay "Thang Điểm" đi, thay bằng GradeCategoryId loại điểm */}
                         <div>
-                            <label className="block text-sm font-semibold text-text-main !mb-2">Loại điểm (Grade Category)</label>
+                            <div className="flex items-center justify-between !mb-2">
+                                <label className="block text-sm font-semibold text-text-main">Loại điểm (Grade Category)</label>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsAddCategoryOpen(true)}
+                                    className="p-1 hover:bg-primary/10 text-primary rounded-lg transition-colors border border-primary/20"
+                                    title="Thêm hạng mục điểm mới"
+                                >
+                                    <Icon icon="material-symbols:add-rounded" />
+                                </button>
+                            </div>
                             <select
                                 value={gradeCategoryId}
                                 onChange={(e) => setGradeCategoryId(e.target.value)}
@@ -291,7 +311,7 @@ const CreateAssignmentPage = () => {
                             </select>
                             {categories.length === 0 && !isLoadingCategories && (
                                 <p className="text-[10px] text-destructive mt-1 italic">
-                                    Lưu ý: Lớp học chưa có hạng mục điểm nào. Hãy vào tab Cài đặt để cấu hình.
+                                    Lưu ý: Lớp học chưa có hạng mục điểm nào. Hãy bấm dấu (+) để thêm.
                                 </p>
                             )}
                         </div>
@@ -348,7 +368,7 @@ const CreateAssignmentPage = () => {
                 <button
                     onClick={handleCreate}
                     disabled={!title.trim() || !dueDate || isSubmitting}
-                    className="w-full sm:w-auto flex items-center justify-center gap-2 !bg-primary text-white font-bold !px-8 !py-2.5 rounded-xl hover:bg-primary/90 transition-colors shadow-sm shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed min-w-[150px]"
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 !bg-primary text-white font-black !px-8 !py-2.5 rounded-xl hover:bg-primary/90 transition-colors shadow-sm shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed min-w-[150px]"
                 >
                     {isSubmitting ? (
                         <Icon icon="solar:spinner-linear" className="animate-spin text-xl text-white mr-2" />
@@ -358,6 +378,15 @@ const CreateAssignmentPage = () => {
                     {isEditMode ? 'Lưu thay đổi' : 'Giao bài'}
                 </button>
             </div>
+
+            {/* Modal thêm hạng mục điểm */}
+            <AddGradeCategoryModal 
+                isOpen={isAddCategoryOpen}
+                onClose={() => setIsAddCategoryOpen(false)}
+                classId={classId}
+                onSuccess={onAddCategorySuccess}
+            />
+
         </div>
     );
 };

@@ -79,7 +79,6 @@ const TeacherClassListPage = () => {
             const data = [...(Array.isArray(activeData) ? activeData : []), ...(Array.isArray(archivedData) ? archivedData : [])];
 
             // 3. Mapping cấu trúc Data thực tế về cấu trúc thẻ ClassCard hiển thị
-            // Đồng thời lấy thông tin progress từ sessionService cho từng lớp
             const mappedData = await Promise.all(data.map(async (apiClass) => {
                 let mappedStatus = 'upcoming';
                 const st = apiClass.status?.toLowerCase() || '';
@@ -87,6 +86,16 @@ const TeacherClassListPage = () => {
                 if (st.includes('ongoing')) mappedStatus = 'ongoing';
                 if (st.includes('completed')) mappedStatus = 'completed';
                 if (st.includes('archived')) mappedStatus = 'archived';
+
+                // Format schedule string from API schedules array if available
+                let scheduleDisplay = 'Chưa có lịch';
+                if (apiClass.schedules && apiClass.schedules.length > 0) {
+                    const dayMap = { 1: 'CN', 2: 'T2', 3: 'T3', 4: 'T4', 5: 'T5', 6: 'T6', 7: 'T7' };
+                    scheduleDisplay = apiClass.schedules
+                        .sort((a, b) => (a.dayOfWeek === 1 ? 8 : a.dayOfWeek) - (b.dayOfWeek === 1 ? 8 : b.dayOfWeek))
+                        .map(s => dayMap[s.dayOfWeek])
+                        .join(', ');
+                }
 
                 // Fetch sessions to calculate progress
                 let currentSession = 0;
@@ -111,17 +120,17 @@ const TeacherClassListPage = () => {
                     name: apiClass.className,
                     subjectName: apiClass.subjectName || 'N/A',
                     gradeLevel: apiClass.gradeLevel || 'N/A',
-                    code: apiClass.room || 'N/A', // Lấy tạm room làm mã phụ
+                    code: apiClass.room || 'N/A',
                     status: mappedStatus,
                     createdAt: apiClass.startDate || 'N/A',
-                    schedule: 'Xem lịch chi tiết', // Backend chưa đổ detail schedules ra
+                    schedule: scheduleDisplay,
                     students: {
                         count: apiClass.currentStudents || 0, 
                         max: apiClass.maxStudents || 30
                     },
                     progress: {
                         currentSession: currentSession,
-                        totalSessions: totalSessions || 10 // Fallback to 10 if no sessions found yet
+                        totalSessions: totalSessions || 10
                     }
                 };
             }));
@@ -134,7 +143,7 @@ const TeacherClassListPage = () => {
         }
     };
 
-    // 4. Cho phép tự động fetch lần đầu khi tải màn hình
+    // ... (keep useEffect and handlers same) ...
     React.useEffect(() => {
         fetchClasses();
     }, []);
@@ -159,34 +168,18 @@ const TeacherClassListPage = () => {
             if (!token) return toast.error('Vui lòng đăng nhập lại!');
 
             if (selectedClass) {
-                // Đang Edit lớp -> Gọi PUT API với biến URL {id}
                 const response = await classService.updateClass(selectedClass.id, payload, token);
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('Update Class Error:', errorText);
-                    throw new Error('Lỗi khi cập nhật lớp học. Backend có thể trả về lỗi 400 Bad Request!');
-                }
-
+                if (!response.ok) throw new Error('Lỗi khi cập nhật lớp học.');
                 toast.success('Cập nhật thông tin lớp học thành công!');
             } else {
-                // Cờ đang rỗng -> Gọi POST API tạo lớp mới tinh
                 const response = await classService.createClass(payload, token);
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('Create Class Error:', errorText);
-                    throw new Error(`Lỗi khi cắm Lớp Mới: ${errorText || response.statusText}`);
-                }
-
+                if (!response.ok) throw new Error('Lỗi khi cắm Lớp Mới');
                 toast.success('Tạo lớp học thành công!');
             }
-
             setIsModalOpen(false);
-            fetchClasses(); // Cập nhật lại danh sách màn hình ngay lập tức 
+            fetchClasses();
         } catch (error) {
             toast.error(error.message);
-            console.error('Save Class Error:', error);
         }
     };
 
@@ -208,23 +201,17 @@ const TeacherClassListPage = () => {
 
             if (type === 'archive') {
                 const res = await classService.archiveClass(classId, token);
-                if (!res.ok) throw new Error('Không thể chuyển lớp học này sang trạng thái Lưu trữ!');
-                toast.success('Đã đưa lớp học vào mục Lưu trữ thành công.');
+                if (!res.ok) throw new Error('Không thể lưu trữ lớp học!');
+                toast.success('Đã đưa lớp học vào mục Lưu trữ.');
             } else if (type === 'unarchive') {
-                // Sửa thành API đường dẫn thực thế là /restore theo Swagger
                 const res = await classService.restoreClass(classId, token);
-                if (!res.ok) throw new Error('Cầu nối API khôi phục lớp học hiện Backend báo lỗi hoặc chưa hỗ trợ!');
+                if (!res.ok) throw new Error('Không thể khôi phục lớp học!');
                 toast.success('Đã khôi phục lớp học thành công.');
             }
-
-            // Xử lý UI sau khi thành công
             setConfirmModal({ isOpen: false, type: '', classId: null });
-            fetchClasses(); // Gọi cục DB load lại List lớp mới ròi đổ ra màng hình
-
+            fetchClasses();
         } catch (error) {
-            console.error('Lỗi khi thao tác lớp học:', error);
             toast.error(error.message);
-            setConfirmModal({ isOpen: false, type: '', classId: null });
         }
     };
 
@@ -238,9 +225,9 @@ const TeacherClassListPage = () => {
             const matchesSearch = cls.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 cls.code.toLowerCase().includes(searchQuery.toLowerCase());
 
-            const matchesFilter = filterStatus === 'all' ? cls.status !== 'archived' : cls.status === filterStatus;
-
-            return matchesSearch && matchesFilter;
+            // If filter is 'archived', only show archived. If 'all', show all EXCEPT archived.
+            if (filterStatus === 'all') return matchesSearch && cls.status !== 'archived';
+            return matchesSearch && cls.status === filterStatus;
         });
     }, [searchQuery, filterStatus, mockClassesData]);
 

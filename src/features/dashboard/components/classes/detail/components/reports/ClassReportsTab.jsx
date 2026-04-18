@@ -11,6 +11,7 @@ import studentClassService from '../../../../../api/studentClassService';
 import AcademicReportModal from '../../../../../../academic-analytics/components/AcademicReportModal';
 import ConfirmModal from '../../../../../../../components/ui/ConfirmModal';
 import ReportSendConfirmModal from './ReportSendConfirmModal';
+import Pagination from '../../../../../../../components/ui/Pagination';
 
 const ClassReportsTab = () => {
     const { classId } = useParams();
@@ -30,6 +31,10 @@ const ClassReportsTab = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingReport, setEditingReport] = useState(null);
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, report: null, type: 'delete' });
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8;
 
     // Fetch periods (last 6 to next 6 months)
     const periods = React.useMemo(() => {
@@ -96,6 +101,7 @@ const ClassReportsTab = () => {
 
     useEffect(() => {
         fetchData();
+        setCurrentPage(1); // Reset page when filters change
     }, [classId, selectedMonth, selectedYear]);
 
     const handleOpenModal = (reportData) => {
@@ -188,6 +194,13 @@ const ClassReportsTab = () => {
     const sentCount = reports.filter(s => s.status === 'Sent' || s.status === 'Published').length;
     const progressRate = reports.length > 0 ? Math.round((sentCount / reports.length) * 100) : 0;
 
+    // Pagination logic
+    const paginatedReports = React.useMemo(() => {
+        const indexOfLastItem = currentPage * itemsPerPage;
+        const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+        return reports.slice(indexOfFirstItem, indexOfLastItem);
+    }, [reports, currentPage, itemsPerPage]);
+
     return (
         <div className="animate-fade-in-up space-y-6">
             {/* Header / Stats */}
@@ -253,7 +266,7 @@ const ClassReportsTab = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border/50">
-                                {reports.map(report => (
+                                {paginatedReports.map(report => (
                                     <tr key={report.studentId} className="hover:bg-primary/5 transition-colors group">
                                         <td className="!p-4 text-text-main">
                                             <div className="flex items-center !gap-3 w-max">
@@ -331,15 +344,7 @@ const ClassReportsTab = () => {
                                                                 </button>
                                                             </>
                                                         )}
-                                                        {report.status !== 'Published' && report.status !== 'Sent' && (
-                                                            <button 
-                                                                title="Xóa báo cáo" 
-                                                                onClick={() => setConfirmModal({ isOpen: true, reportId: report.reportId, type: 'delete' })} 
-                                                                className="!p-2.5 !rounded-xl !bg-red-50 !text-red-600 hover:!bg-red-500 hover:!text-white transition-all shadow-sm border border-red-100"
-                                                            >
-                                                                <Icon icon="material-symbols:delete-rounded" className="text-xl" />
-                                                            </button>
-                                                        )}
+                                                      
                                                     </>
                                                 )}
                                             </div>
@@ -356,6 +361,17 @@ const ClassReportsTab = () => {
                         </div>
                         <h3 className="text-base font-bold text-text-main !mb-1">Không có học sinh</h3>
                         <p className="text-text-muted text-sm font-medium">Chưa có dữ liệu báo cáo cho kỳ này.</p>
+                    </div>
+                )}
+
+                {reports.length > itemsPerPage && !isLoading && (
+                    <div className="!px-6 !py-4 border-t border-border">
+                        <Pagination 
+                            totalItems={reports.length}
+                            itemsPerPage={itemsPerPage}
+                            currentPage={currentPage}
+                            onPageChange={setCurrentPage}
+                        />
                     </div>
                 )}
             </div>

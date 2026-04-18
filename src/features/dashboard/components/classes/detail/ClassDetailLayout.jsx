@@ -77,7 +77,7 @@ const ClassDetailLayout = () => {
         tabs.push({ path: 'attendance', label: 'Điểm danh', icon: 'material-symbols:fact-check-rounded' });
     }
 
-    tabs.push({ path: 'reports', label: 'Tiến độ', icon: 'material-symbols:analytics-rounded' });
+    tabs.push({ path: 'reports', label: 'Tiến độ học tập', icon: 'material-symbols:analytics-rounded' });
 
     if (!isStudentPortal && !isAssistantPortal) {
         tabs.push({ path: 'assistants', label: 'Trợ giảng', icon: 'material-symbols:support-agent-rounded' });

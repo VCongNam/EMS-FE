@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import useAuthStore from '../../../store/authStore';
 import { taService } from '../api/taService';
 import AddTAModal from '../components/AddTAModal';
+import EditTAPermissionModal from '../components/EditTAPermissionModal';
 import ConfirmModal from '../../../components/ui/ConfirmModal';
 
 const ViewTAListPage = ({ classId }) => {
@@ -12,6 +13,8 @@ const ViewTAListPage = ({ classId }) => {
     const [assistants, setAssistants] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [selectedAssistant, setSelectedAssistant] = useState(null);
 
     // Confirm Modal State
     const [confirmConfig, setConfirmConfig] = useState({
@@ -120,6 +123,7 @@ const ViewTAListPage = ({ classId }) => {
 
             {/* Header / Actions */}
             <div className="bg-surface !p-4 sm:!p-6 rounded-[2rem] border border-border shadow-sm !space-y-4">
+                
                 <div className="flex flex-col sm:flex-row items-center !gap-4">
                     <div className="relative w-full sm:flex-1">
                         <Icon icon="solar:magnifer-linear" className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted text-lg" />
@@ -188,9 +192,7 @@ const ViewTAListPage = ({ classId }) => {
                                             </div>
                                             <div className="flex flex-col">
                                                 <span className="font-semibold text-[15px]">{assistant.fullName}</span>
-                                                <div className="flex items-center !gap-2 !mt-0.5 text-xs text-text-muted">
-                                                    <span className="flex items-center !gap-1"><Icon icon="solar:letter-linear" /> {assistant.email || 'Chưa cập nhật'}</span>
-                                                </div>
+                                                
                                             </div>
                                         </div>
                                     </td>
@@ -215,6 +217,18 @@ const ViewTAListPage = ({ classId }) => {
                                     </td>
                                     <td className="!p-5 text-right">
                                         <div className={`flex items-center justify-end gap-1 transition-opacity ${assistant.status === 'Active' ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`}>
+                                            {assistant.status === 'Active' && (
+                                                <button 
+                                                    onClick={() => {
+                                                        setSelectedAssistant({...assistant, classId});
+                                                        setIsEditModalOpen(true);
+                                                    }}
+                                                    className="!p-1.5 text-text-muted hover:text-primary transition-colors rounded-lg hover:bg-primary/10" 
+                                                    title="Chỉnh sửa quyền & lương"
+                                                >
+                                                    <Icon icon="solar:pen-bold-duotone" className="text-lg" />
+                                                </button>
+                                            )}
                                             {assistant.status === 'Active' ? (
                                                 <button 
                                                     onClick={() => handleRemoveTA(assistant)}
@@ -289,6 +303,17 @@ const ViewTAListPage = ({ classId }) => {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
+                                    {assistant.status === 'Active' && (
+                                        <button 
+                                            onClick={() => {
+                                                setSelectedAssistant({...assistant, classId});
+                                                setIsEditModalOpen(true);
+                                            }}
+                                            className="!p-2 text-primary bg-primary/10 hover:bg-primary/20 rounded-xl transition-colors"
+                                        >
+                                            <Icon icon="solar:pen-bold-duotone" className="text-lg" />
+                                        </button>
+                                    )}
                                     {assistant.status === 'Active' ? (
                                         <button 
                                             onClick={() => handleRemoveTA(assistant)}
@@ -326,6 +351,13 @@ const ViewTAListPage = ({ classId }) => {
                 onClose={() => setIsAddModalOpen(false)}
                 onAdd={fetchAssistants}
                 classId={classId}
+            />
+
+            <EditTAPermissionModal 
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                assistant={selectedAssistant}
+                onUpdate={fetchAssistants}
             />
 
             <ConfirmModal

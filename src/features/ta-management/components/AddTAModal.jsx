@@ -226,7 +226,7 @@ const AddTAModal = ({ isOpen, onClose, onAdd, classId }) => {
                             ) : (
                                 <Icon icon="solar:user-check-bold-duotone" className="text-xl text-white !mr-2 group-hover:scale-110 transition-transform" />
                             )}
-                            Xác nhận phân công
+                            Xác nhận thêm
                         </Button>
                     </div>
                 </div>

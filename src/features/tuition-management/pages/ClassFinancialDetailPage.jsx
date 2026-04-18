@@ -382,13 +382,7 @@ const ClassFinancialDetailPage = () => {
                         <Icon icon="solar:alt-arrow-right-bold" className="!text-blue-500 !text-base !ml-1 group-hover:!translate-x-1 !transition-transform" />
                     </button>
 
-                    <button
-                        onClick={handleBulkExtend}
-                        className="!bg-background !text-text-main !px-5 !py-3 !rounded-2xl !flex !items-center !justify-center !gap-2 !font-black !border !border-border hover:!bg-amber-50 hover:!text-amber-700 hover:!border-amber-200 !transition-all"
-                    >
-                        <Icon icon="solar:clock-circle-bold-duotone" className="!text-lg" />
-                        <span className="!text-sm">Gia hạn hạn nộp</span>
-                    </button>
+                        
 
                     <button
                         onClick={handleGenerateInvoice}
@@ -400,7 +394,7 @@ const ClassFinancialDetailPage = () => {
                         ) : (
                             <Icon icon="solar:document-add-bold-duotone" className="!text-lg" />
                         )}
-                        <span className="!text-sm">Phát hành hóa đơn</span>
+                        <span className="!text-sm">Phát hành phiếu thu học phí</span>
                     </button>
                 </div>
             </div>

@@ -27,6 +27,7 @@ const ClassCard = ({
     onViewDetails, 
     basePath = '/teacher/classes',
     showProgress = true,
+    showStudentCount = true,
     salary = null,
     permission = null
 }) => {
@@ -159,10 +160,12 @@ const ClassCard = ({
                             <span>{classData.schedule}</span>
                         </div>
                     )}
-                    <div className="flex items-center text-sm text-text-muted gap-2">
-                        <Icon icon="material-symbols:group-outline-rounded" className="text-primary text-base" />
-                        <span>{classData.students?.count || classData.studentCount || 0} / {classData.students?.max || '--'} học viên</span>
-                    </div>
+                    {showStudentCount && (
+                        <div className="flex items-center text-sm text-text-muted gap-2">
+                            <Icon icon="material-symbols:group-outline-rounded" className="text-primary text-base" />
+                            <span>{classData.students?.count || classData.studentCount || 0} / {classData.students?.max || '--'} học viên</span>
+                        </div>
+                    )}
                 </div>
 
                 {/* Additional Info for TAs */}

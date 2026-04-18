@@ -85,15 +85,27 @@ const StudentTuitionPage = () => {
             if (res.ok) {
                 const data = await res.json();
                 // Map Backend to Frontend format
-                const mappedTransactions = data.map(tx => ({
-                    id: tx.transactionId,
-                    transactionId: tx.transactionId,
-                    amount: tx.amountPaid,
-                    date: new Date(tx.paidDate).toLocaleString('vi-VN'),
-                    method: tx.paymentMethod || 'Chuyển khoản',
-                    status: tx.status,
-                    content: tx.invoiceContent
-                }));
+                const mappedTransactions = data.map(tx => {
+                    const dateObj = new Date(tx.paidDate);
+                    const formattedDate = dateObj.toLocaleDateString('vi-VN', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric'
+                    }) + ' ' + dateObj.toLocaleTimeString('vi-VN', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                    });
+
+                    return {
+                        id: tx.transactionId,
+                        transactionId: tx.transactionId,
+                        amount: tx.amountPaid,
+                        date: formattedDate,
+                        method: tx.paymentMethod || 'Chuyển khoản',
+                        status: tx.status,
+                        content: tx.invoiceContent
+                    };
+                });
                 setTransactions(mappedTransactions);
             } else {
                 toast.error('Không thể tải lịch sử giao dịch');

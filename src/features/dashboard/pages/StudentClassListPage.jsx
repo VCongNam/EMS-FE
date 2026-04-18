@@ -152,6 +152,7 @@ const StudentClassListPage = () => {
                             key={cls.id} 
                             classData={cls} 
                             basePath="/student/classes"
+                            showStudentCount={false}
                         />
                     ))}
                 </div>
