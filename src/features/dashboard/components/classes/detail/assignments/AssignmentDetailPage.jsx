@@ -41,11 +41,21 @@ const AssignmentDetailPage = () => {
                     fetchedSubmissions = subResult.data?.students || subResult.students || [];
                 }
 
-                setAssignment({
-                    ...data,
-                    submissions: fetchedSubmissions,
-                    maxScore: data.maxScore || 10
-                });
+                if (isTeacherOrTA) {
+                    setAssignment({
+                        ...data,
+                        submissions: fetchedSubmissions,
+                        maxScore: data.maxScore || 10
+                    });
+                } else {
+                    setAssignment({
+                        ...data,
+                        submission: data.mySubmission ?? null,
+                        maxScore: data.maxScore || 10
+                    });
+                }
+                console.log("Data:", data);
+   
             } else {
                 console.error("Lỗi lấy chi tiết bài tập:", assignmentRes.status);
             }
@@ -68,7 +78,10 @@ const AssignmentDetailPage = () => {
             </div>
         );
     }
-
+    if (assignment) {
+        console.log("submission (student):", assignment.submission);
+        console.log("submissions (teacher):", assignment.submissions);
+    }
     if (!assignment) {
         return (
             <div className="text-center !py-20 flex flex-col items-center gap-4">

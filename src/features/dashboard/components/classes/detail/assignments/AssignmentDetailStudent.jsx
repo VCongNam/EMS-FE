@@ -18,10 +18,15 @@ const AssignmentDetailStudent = ({ assignment, onRefresh }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const fileInputRef = useRef(null);
 
-    const mySubmission = assignment.mySubmission || null;
-    const isSubmitted = mySubmission?.status === 'Submitted';
-    const statusText = isSubmitted ? 'Đã nộp' : 'Chưa nộp';
-
+    const mySubmission = assignment.submission || null;
+    const isSubmitted = ["Submitted", "Graded"].includes(mySubmission?.status);
+    const statusText =
+    mySubmission?.status === "Graded"
+        ? "Đã chấm"
+        : isSubmitted
+        ? "Đã nộp"
+        : "Chưa nộp";
+    const isGraded = mySubmission?.status === "Graded";
     const handleFileChange = (e) => {
         const files = Array.from(e.target.files);
         if (files.length > 0) {
@@ -221,25 +226,50 @@ const AssignmentDetailStudent = ({ assignment, onRefresh }) => {
                     </div>
 
                     {/* Files Area */}
-                    <div className="space-y-3 min-h-[100px] flex flex-col justify-center">
-                        {/* Submitted Files */}
-                        {isSubmitted && mySubmission?.attachments?.map((file, idx) => (
-                            <a
-                                key={idx}
-                                href={file.fileURL || file.fileUrl || file.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center justify-between border border-green-200 rounded-2xl !p-3 bg-green-50/30 group hover:border-green-400 transition-all hover:bg-white hover:shadow-md"
-                            >
-                                <div className="flex items-center gap-3 overflow-hidden">
-                                    <div className="shrink-0">
-                                        {getFileIcon(file.fileType || file.fileName || file.name)}
-                                    </div>
-                                    <span className="font-bold text-sm text-text-main truncate">{file.fileName || file.name}</span>
-                                </div>
-                                <Icon icon="material-symbols:check-circle-rounded" className="text-green-500 text-xl" />
-                            </a>
-                        ))}
+                    <div className="space-y-4 min-h-[100px] flex flex-col justify-center">
+
+                        {/* ===== FILE ĐÃ NỘP ===== */}
+                        {isSubmitted && (
+                            <div className="space-y-3">
+                                {mySubmission?.attachments?.map((file, idx) => (
+                                    <a
+                                        key={idx}
+                                        href={file.fileURL || file.fileUrl || file.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center justify-between border border-green-200 rounded-2xl !p-3 bg-green-50/30 group hover:border-green-400 transition-all hover:bg-white hover:shadow-md"
+                                    >
+                                        <div className="flex items-center gap-3 overflow-hidden">
+                                            <div className="shrink-0">
+                                                {getFileIcon(file.fileType || file.fileName || file.name)}
+                                            </div>
+                                            <span className="font-bold text-sm text-text-main truncate">
+                                                {file.fileName || file.name}
+                                            </span>
+                                        </div>
+                                        <Icon icon="material-symbols:check-circle-rounded" className="text-green-500 text-xl" />
+                                    </a>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* ===== NHẬN XÉT ===== */}
+                        {mySubmission?.status === "Graded" && (
+                            <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5 space-y-3">
+
+                                <p className="font-bold text-green-700 space-10px">
+                                    Điểm: {mySubmission.grade}
+                                </p>
+
+                                {mySubmission.feedbacks?.length > 0 && (
+                                    <ul className="list-disc pl-5 text-sm text-gray-700 space-y-2 leading-relaxed">
+                                        {mySubmission.feedbacks.map((f, i) => (
+                                            <li key={i}>{f}</li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </div>
+                        )}
 
                         {/* Local Files (Pending upload) */}
                         {localFiles.map((file, idx) => (
@@ -281,7 +311,7 @@ const AssignmentDetailStudent = ({ assignment, onRefresh }) => {
                         <button
                             onClick={() => fileInputRef.current?.click()}
                             className="w-full flex items-center justify-center gap-2 border-2 border-primary/20 bg-white text-primary font-black rounded-2xl !p-4 hover:bg-primary hover:text-white hover:border-primary transition-all group shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || isGraded}
                         >
                             <Icon icon="material-symbols:add-rounded" className="text-2xl group-hover:rotate-90 transition-transform" />
                             <span>Thêm hoặc tạo</span>
@@ -293,7 +323,7 @@ const AssignmentDetailStudent = ({ assignment, onRefresh }) => {
                                 ? '!bg-primary text-white hover:bg-primary-hover shadow-primary/20'
                                 : 'bg-border text-text-muted cursor-not-allowed'
                                 }`}
-                            disabled={(localFiles.length === 0 && !isSubmitted) || isSubmitting}
+                            disabled={(localFiles.length === 0 && !isSubmitted) || isSubmitting || isGraded}
                         >
                             {isSubmitting ? (
                                 <Icon icon="solar:spinner-linear" className="animate-spin text-xl" />
@@ -304,7 +334,7 @@ const AssignmentDetailStudent = ({ assignment, onRefresh }) => {
                             )}
                         </button>
 
-                        {isSubmitted && (
+                        {isSubmitted && !isGraded &&(
                             <button
                                 onClick={handleCancelSubmit}
                                 className="w-full bg-white border-2 border-border text-text-main font-black rounded-2xl !p-4 hover:border-red-500 hover:text-red-500 transition-all shadow-sm"

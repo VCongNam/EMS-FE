@@ -79,7 +79,8 @@ export const assignmentService = {
     });
   },
   getSubmissionDetail: async (assignmentId, studentId, token) => {
-    return fetch(getApiUrl(`/api/Assignment/${assignmentId}/submissions/${studentId}`), {
+    // return fetch(getApiUrl(`/api/Assignment/${assignmentId}/submissions/${studentId}`), {
+      return fetch(getApiUrl(`/api/Assignment/student/${assignmentId}/detail`), {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
