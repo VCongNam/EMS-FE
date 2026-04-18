@@ -55,7 +55,9 @@ export const notificationService = {
      * Lấy VAPID Public Key từ Backend (để đăng ký Push)
      */
     getVapidPublicKey: async (token) => {
-        return await fetch(getApiUrl('/api/Push/vapid-public-key'), {
+        // Giả sử npoint là /api/Notification/vapid-public-key
+        // Bạn có thể đổi lại nếu BE dùng path khác
+        return await fetch(getApiUrl('/api/Notification/vapid-key'), {
             headers: { 
                 'Authorization': `Bearer ${token}` 
             }
@@ -63,16 +65,27 @@ export const notificationService = {
     },
 
     /**
-     * Lưu Subscription Object lên Server
+     * Lưu Subscription Object lên Server (Cấu trúc phẳng theo BE yêu cầu)
      */
     saveSubscription: async (subscription, token) => {
-        return await fetch(getApiUrl('/api/Push/subscribe'), {
+        const subJson = subscription.toJSON();
+        
+        // Chuyển cấu trúc từ { endpoint, keys: {p256dh, auth} } 
+        // thành cấu trúc phẳng { endpoint, p256dh, auth, deviceName }
+        const payload = {
+            endpoint: subJson.endpoint,
+            p256dh: subJson.keys.p256dh,
+            auth: subJson.keys.auth,
+            deviceName: `${navigator.platform} - ${navigator.userAgent.split(' ')[0]}` // Tự tạo tên thiết bị
+        };
+
+        return await fetch(getApiUrl('/api/Notification/subscribe'), {
             method: 'POST',
             headers: { 
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(subscription)
+            body: JSON.stringify(payload)
         });
     },
 
@@ -80,7 +93,7 @@ export const notificationService = {
      * Hủy đăng ký trên Server
      */
     unsubscribe: async (endpoint, token) => {
-        return await fetch(getApiUrl('/api/Push/unsubscribe'), {
+        return await fetch(getApiUrl('/api/Notification/unsubscribe'), {
             method: 'POST',
             headers: { 
                 'Authorization': `Bearer ${token}`,
