@@ -19,23 +19,46 @@ export const NotificationProvider = ({ children }) => {
         if (!pushService.isSupported()) return;
 
         try {
-            // 1. Kiểm tra quyền
-            if (Notification.permission !== 'granted') return;
+            console.log("1. [DEBUG-PUSH] Bắt đầu luồng Subscribe...");
+            
+            if (Notification.permission !== 'granted') {
+                console.log("2. [DEBUG-PUSH] Quyền Notification chưa được cấp.");
+                return;
+            }
 
-            // 2. Lấy Public Key từ Backend
+            console.log("3. [DEBUG-PUSH] Đang lấy Public Key từ Backend...");
             const keyResponse = await notificationService.getVapidPublicKey(token);
-            if (!keyResponse.ok) return;
-            const { publicKey } = await keyResponse.json();
+            
+            if (!keyResponse.ok) {
+                console.log("4. [DEBUG-PUSH] API lấy key thất bại:", keyResponse.status);
+                return;
+            }
+            
+            const data = await keyResponse.json();
+            console.log("5. [DEBUG-PUSH] Dữ liệu Key từ BE:", data);
+            const publicKey = data.publicKey;
 
-            // 3. Đăng ký với Push Service (Google/Apple...)
+            if (!publicKey) {
+                console.error("6. [DEBUG-PUSH] Không tìm thấy trường publicKey trong JSON!");
+                return;
+            }
+
+            console.log("7. [DEBUG-PUSH] Đang gọi Push Service (Chờ Service Worker ready)...");
             const subscription = await pushService.subscribeUser(publicKey);
+            console.log("8. [DEBUG-PUSH] Đăng ký Push Service thành công:", subscription);
 
-            // 4. Lưu subscription vào Backend
-            await notificationService.saveSubscription(subscription, token);
-            setIsPushSubscribed(true);
-            console.log("Web Push đã được kích hoạt.");
+            console.log("9. [DEBUG-PUSH] Đang lưu subscription vào Backend...");
+            const saveRes = await notificationService.saveSubscription(subscription, token);
+            console.log("10. [DEBUG-PUSH] Kết quả lưu Backend:", saveRes.status);
+            
+            if (saveRes.ok) {
+                setIsPushSubscribed(true);
+                console.log("11. [DEBUG-PUSH] Web Push hoàn tất!");
+            } else {
+                console.error("11. [DEBUG-PUSH] Backend từ chối lưu subscription.");
+            }
         } catch (error) {
-            console.error("Lỗi khi khởi tạo Web Push:", error);
+            console.error("Lỗi [DEBUG-PUSH]:", error);
         }
     }, []);
 

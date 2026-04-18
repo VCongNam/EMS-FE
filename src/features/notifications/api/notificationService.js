@@ -57,7 +57,7 @@ export const notificationService = {
     getVapidPublicKey: async (token) => {
         // Giả sử npoint là /api/Notification/vapid-public-key
         // Bạn có thể đổi lại nếu BE dùng path khác
-        return await fetch(getApiUrl('/api/Notification/vapid-key'), {
+        return await fetch(getApiUrl('/api/Notification/public-key'), {
             headers: { 
                 'Authorization': `Bearer ${token}` 
             }
