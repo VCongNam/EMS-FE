@@ -9,10 +9,10 @@ const ReportSendConfirmModal = ({ isOpen, onClose, onConfirm, report, className 
     return createPortal(
         <>
             <div 
-                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[1000] animate-fade-in" 
+                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[10001] animate-fade-in" 
                 onClick={onClose} 
             />
-            <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 pointer-events-none">
+            <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4 pointer-events-none">
                 <div className="bg-surface rounded-[2.5rem] shadow-2xl w-full max-w-2xl overflow-hidden animate-fade-in-up pointer-events-auto flex flex-col border border-border">
                     
                     {/* Header */}

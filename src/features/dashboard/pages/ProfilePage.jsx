@@ -44,6 +44,7 @@ const ProfilePage = () => {
     const [saving, setSaving] = useState(false);
     const [banks, setBanks] = useState([]);
     const [showBankDropdown, setShowBankDropdown] = useState(false);
+    const [bankSearch, setBankSearch] = useState('');
 
     useEffect(() => {
         const fetchBanks = async () => {
@@ -60,6 +61,12 @@ const ProfilePage = () => {
         fetchBanks();
     }, []);
 
+    useEffect(() => {
+        if (formData.roleSpecificData?.bankName && banks.length > 0) {
+            setBankSearch(getBankDisplay(formData.roleSpecificData.bankName));
+        }
+    }, [formData.roleSpecificData?.bankName, banks]);
+
     const getBankDisplay = (val) => {
         if (!val) return '';
         const bank = banks.find(b => b.bin === val);
@@ -67,9 +74,9 @@ const ProfilePage = () => {
     };
 
     const filteredBanks = banks.filter(bank =>
-        (bank.shortName || '').toLowerCase().includes((formData.roleSpecificData?.bankName || '').toLowerCase()) ||
-        (bank.name || '').toLowerCase().includes((formData.roleSpecificData?.bankName || '').toLowerCase()) ||
-        (bank.bin || '').includes(formData.roleSpecificData?.bankName || '')
+        (bank.shortName || '').toLowerCase().includes(bankSearch.toLowerCase()) ||
+        (bank.name || '').toLowerCase().includes(bankSearch.toLowerCase()) ||
+        (bank.bin || '').includes(bankSearch)
     );
 
     const handleSave = async () => {
@@ -397,9 +404,9 @@ const ProfilePage = () => {
                                         <input
                                             type="text"
                                             disabled={!isEditing}
-                                            value={getBankDisplay(formData.roleSpecificData?.bankName || '')}
+                                            value={isEditing ? bankSearch : getBankDisplay(formData.roleSpecificData?.bankName || '')}
                                             onChange={(e) => {
-                                                setFormData(prev => ({ ...prev, roleSpecificData: { ...prev.roleSpecificData, bankName: e.target.value } }));
+                                                setBankSearch(e.target.value);
                                                 setShowBankDropdown(true);
                                             }}
                                             onFocus={() => isEditing && setShowBankDropdown(true)}
@@ -415,6 +422,7 @@ const ProfilePage = () => {
                                                         type="button"
                                                         onClick={() => {
                                                             setFormData(prev => ({ ...prev, roleSpecificData: { ...prev.roleSpecificData, bankName: bank.bin } }));
+                                                            setBankSearch(bank.shortName);
                                                             setShowBankDropdown(false);
                                                         }}
                                                         className="w-full !px-4 !py-3 flex items-center gap-3 hover:bg-primary/5 transition-colors border-b border-border/50 last:border-0"

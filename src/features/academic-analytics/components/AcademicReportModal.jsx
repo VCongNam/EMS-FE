@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Icon } from '@iconify/react';
 import { toast } from 'react-toastify';
 import useAuthStore from '../../../store/authStore';
@@ -35,33 +36,30 @@ const AcademicReportModal = ({ isOpen, onClose, onSave, defaultClass, editData, 
     if (!isOpen) return null;
 
     const handleAction = (status) => {
-        // Validation: Content must be at least 10 characters
         if (!evaluation || evaluation.trim().length < 10) {
             toast.warning('Nội dung nhận xét phải ít nhất 10 ký tự.');
             return;
         }
 
-        const reportTitle = `Báo cáo học tập Tháng ${month?.toString().padStart(2, '0')}/${year}`;
-
         onSave({
             reportId: isEdit ? editData.reportId : null,
-            title: reportTitle,
+            title: `Báo cáo học tập Tháng ${month?.toString().padStart(2, '0')}/${year}`,
             studentId: isEdit ? editData.studentId : selectedStudent,
             studentName: isEdit || editData?.studentName ? editData.studentName : (selectedStudent === 'SV001' ? 'Nguyễn Văn A' : 'Trần Thị B'),
             classId: selectedClass,
             periodMonth: month,
             periodYear: year,
             content: evaluation,
-            status: status || (isEdit ? editData.status : 'Draft'),
+            status: status || 'Draft',
             gpa: Number(isEdit || editData ? editData.gpa : 0),
             attendanceRate: Number(isEdit || editData ? editData.attendanceRate : 0)
         });
     };
 
-    return (
-        <div className="!fixed !inset-0 !z-[100] !flex !items-center !justify-center !p-4">
+    return createPortal(
+        <div className="!fixed !inset-0 !z-[9999] !flex !items-center !justify-center !p-4">
             {/* Backdrop */}
-            <div className="!absolute !inset-0 !bg-black/60 !backdrop-blur-sm" onClick={onClose}></div>
+            <div className="!absolute !inset-0 !bg-black/60 !backdrop-blur-sm !animate-fade-in" onClick={onClose}></div>
             
             {/* Modal Content */}
             <div className="!relative !bg-[#F8FAFC] !w-full !max-w-7xl !max-h-[90vh] !rounded-[2.5rem] !shadow-2xl !overflow-hidden !flex !flex-col !animate-zoom-in">
@@ -267,7 +265,8 @@ const AcademicReportModal = ({ isOpen, onClose, onSave, defaultClass, editData, 
                     )}
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
 
