@@ -1,4 +1,6 @@
 import React from 'react';
+import { usePWA } from '../../../contexts/PWAContext';
+import { Icon } from '@iconify/react';
 import Button from '../../../components/ui/Button';
 import heroImg from '../../../assets/images/heroPic1.png';
 import heroImg2 from '../../../assets/images/heroPic2.png';
@@ -17,6 +19,7 @@ import CTASection from '../../../components/common/CTASection';
 import ImageCarousel from '../../../components/common/ImageCarousel';
 
 const LandingPage = () => {
+    const { isInstallable, installApp } = usePWA();
     const features = [
         {
             icon: <img src={feature1} alt="feature1" />,
@@ -108,6 +111,14 @@ const LandingPage = () => {
                         <Button size="lg" className="!bg-gradient-to-r !p-3 !from-[#355872] !to-[#7AAACE] !text-white border-none shadow-[0_10px_20px_-5px_rgba(53,88,114,0.4)] hover:shadow-[0_15px_30px_-5px_rgba(53,88,114,0.5)] hover:scale-105 transition-all duration-300 animate-shine"
                         >Bắt đầu miễn phí</Button>
                         <Button variant="outline" size="lg">Tìm hiểu thêm về EMS</Button>
+                        <Button
+                            size="lg"
+                            className="!bg-green-600 !text-white border-none shadow-lg hover:bg-green-700 transition-all flex items-center gap-2"
+                            onClick={installApp}
+                        >
+                            <Icon icon="material-symbols:download-for-offline-rounded" className="text-2xl" />
+                            Tải ứng dụng
+                        </Button>
                     </div>
                 </div>
 

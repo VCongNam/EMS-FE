@@ -12,9 +12,12 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({ 
-      registerType: 'autoUpdate', // Tự động cập nhật app ngầm khi có bản build mới
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.js',
+      registerType: 'autoUpdate', 
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png'], 
-      workbox: {
+      injectManifest: {
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10MB
       },
       manifest: {
