@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import SideMenu from './components/SideMenu';
+import PushPermissionModal from '../features/notifications/components/PushPermissionModal';
 
 const DashboardLayout = () => {
     const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
@@ -9,6 +10,8 @@ const DashboardLayout = () => {
 
     return (
         <div className="flex min-h-screen bg-background">
+            <PushPermissionModal />
+            
             {/* Sidebar */}
             <SideMenu 
                 isOpen={isSidebarOpen} 

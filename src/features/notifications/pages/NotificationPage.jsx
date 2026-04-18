@@ -8,11 +8,13 @@ import NotificationItem from '../components/NotificationItem';
 import { showNotification } from '../utils/toastUtils';
 import { toast } from 'react-toastify';
 import Pagination from '../../../components/ui/Pagination';
+import { useNotifications } from '../../../contexts/NotificationContext';
 
 const NotificationPage = () => {
     const navigate = useNavigate();
     const { user } = useAuthStore();
     const token = user?.token;
+    const { isPushSupported, isPushSubscribed, requestPushPermission } = useNotifications();
 
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -123,6 +125,28 @@ const NotificationPage = () => {
                 </div>
 
                 <div className="!flex !flex-col sm:!flex-row !items-start md:!items-center !gap-4 !w-full md:!w-auto">
+                    {isPushSupported && (
+                        <button 
+                            onClick={async () => {
+                                const perm = await requestPushPermission();
+                                if (perm === 'granted') {
+                                    toast.success('Đã bật thông báo trên thiết bị này!');
+                                } else if (perm === 'denied') {
+                                    toast.error('Bạn đã chặn quyền! Vui lòng mở cài đặt trình duyệt.');
+                                }
+                            }}
+                            disabled={isPushSubscribed}
+                            title={isPushSubscribed ? "Thiết bị này đã được phép nhận thông báo" : "Bật thông báo đẩy"}
+                            className={`!w-full sm:!w-auto !px-6 !py-3 !rounded-2xl !text-sm !font-black !transition-all !flex !items-center !justify-center !gap-2 !border
+                                ${isPushSubscribed 
+                                    ? '!bg-green-50 !text-green-600 !border-green-200 cursor-default' 
+                                    : '!bg-primary !text-white !border-transparent hover:!bg-primary/90 shadow-md shadow-primary/20 hover:-translate-y-0.5'
+                                }`}
+                        >
+                            <Icon icon={isPushSubscribed ? "solar:bell-bing-bold-duotone" : "solar:bell-bold-duotone"} className="!text-lg" />
+                            {isPushSubscribed ? 'Đã bật thông báo' : 'Bật nhận thông báo'}
+                        </button>
+                    )}
                     <button 
                         onClick={fetchNotifications}
                         disabled={loading}
