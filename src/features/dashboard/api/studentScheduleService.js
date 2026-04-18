@@ -9,7 +9,7 @@ const studentScheduleService = {
         if (params.ToDate) queryParams.append('ToDate', params.ToDate);
         if (params.ClassId) queryParams.append('ClassID', params.ClassId);
 
-        const url = getApiUrl(`/api/student/schedule?${queryParams.toString()}`);
+        const url = getApiUrl(`/api/Session/student/schedule?${queryParams.toString()}`);
         
         return fetch(url, {
             headers: {

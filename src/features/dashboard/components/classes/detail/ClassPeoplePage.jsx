@@ -21,7 +21,7 @@ const ClassPeoplePage = () => {
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isPermissionsModalOpen, setIsPermissionsModalOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    
+
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
@@ -256,7 +256,7 @@ const ClassPeoplePage = () => {
                             <h2 className="text-lg font-bold text-text-main">Giáo viên & Trợ giảng</h2>
                         </div>
                         {assistants.length > 1 && (
-                            <button 
+                            <button
                                 onClick={() => setIsStaffExpanded(!isStaffExpanded)}
                                 className="text-sm font-bold text-primary flex items-center gap-1.5 hover:underline"
                             >
@@ -324,7 +324,7 @@ const ClassPeoplePage = () => {
 
                         {/* Show more indicator card inside the grid if not expanded and there are hidden TAs */}
                         {!isStaffExpanded && hiddenTAsCount > 0 && (
-                            <button 
+                            <button
                                 onClick={() => setIsStaffExpanded(true)}
                                 className="border-2 border-dashed border-primary/20 rounded-xl !p-4 flex items-center justify-center gap-3 hover:bg-primary/5 hover:border-primary/40 transition-all bg-background group"
                             >
@@ -363,13 +363,12 @@ const ClassPeoplePage = () => {
                             </thead>
                             <tbody className="divide-y divide-border/50">
                                 {paginatedMembers.map((member) => (
-                                    <tr 
-                                        key={member.id} 
-                                        className={`transition-all duration-300 group ${
-                                            member.status === 'Active' 
-                                            ? 'hover:bg-primary/5' 
-                                            : 'opacity-60 grayscale-[0.6] bg-gray-50/50 grayscale'
-                                        }`}
+                                    <tr
+                                        key={member.id}
+                                        className={`transition-all duration-300 group ${member.status === 'Active'
+                                                ? 'hover:bg-primary/5'
+                                                : 'opacity-60 grayscale-[0.6] bg-gray-50/50 grayscale'
+                                            }`}
                                     >
                                         <td className="!p-4 text-text-main">
                                             <div className="flex items-center !gap-3 w-max">
@@ -385,11 +384,11 @@ const ClassPeoplePage = () => {
                                             <td className="!p-4">
                                                 <div className="flex flex-col !gap-1 text-xs">
                                                     <span className="flex items-center !gap-1.5 text-text-main">
-                                                        <Icon icon="solar:letter-linear" className="text-primary" /> 
+                                                        <Icon icon="solar:letter-linear" className="text-primary" />
                                                         <span className="truncate max-w-[150px]">{member.email}</span>
                                                     </span>
                                                     <span className="flex items-center !gap-1.5 text-text-muted">
-                                                        <Icon icon="solar:phone-linear" className="text-primary" /> 
+                                                        <Icon icon="solar:phone-linear" className="text-primary" />
                                                         {member.phone}
                                                     </span>
                                                 </div>
@@ -416,21 +415,19 @@ const ClassPeoplePage = () => {
                                         {isTeacherOrTA && (
                                             <td className="!p-4 text-right">
                                                 <div className={`flex items-center justify-end gap-1 transition-opacity ${member.status === 'Active' ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`}>
-                                                    <button className="!p-1.5 text-text-muted hover:text-blue-500 transition-colors rounded-lg hover:bg-blue-500/10" title="Chi tiết học tập">
-                                                        <Icon icon="solar:chart-2-bold-duotone" className="text-lg" />
-                                                    </button>
+
                                                     {member.status === 'Active' ? (
-                                                        <button 
+                                                        <button
                                                             onClick={() => handleRemoveStudent(member.id)}
-                                                            className="!p-1.5 text-text-muted hover:text-red-500 transition-colors rounded-lg hover:bg-red-500/10" 
+                                                            className="!p-1.5 text-text-muted hover:text-red-500 transition-colors rounded-lg hover:bg-red-500/10"
                                                             title="Xóa khỏi lớp"
                                                         >
                                                             <Icon icon="solar:trash-bin-trash-bold-duotone" className="text-lg" />
                                                         </button>
                                                     ) : (
-                                                        <button 
+                                                        <button
                                                             onClick={() => handleRestoreStudent(member.id)}
-                                                            className="!p-1.5 text-green-600 hover:text-green-700 transition-colors rounded-lg bg-green-500/10" 
+                                                            className="!p-1.5 text-green-600 hover:text-green-700 transition-colors rounded-lg bg-green-500/10"
                                                             title="Khôi phục trạng thái"
                                                         >
                                                             <Icon icon="solar:refresh-bold-duotone" className="text-lg" />
@@ -448,11 +445,10 @@ const ClassPeoplePage = () => {
 
                 <div className="lg:hidden space-y-3">
                     {paginatedMembers.map((member) => (
-                        <div 
-                            key={member.id} 
-                            className={`bg-surface rounded-2xl border border-border shadow-sm !p-4 flex flex-col gap-3 transition-all duration-300 ${
-                                member.status === 'Active' ? '' : 'opacity-60 grayscale-[0.6] bg-gray-50/50'
-                            }`}
+                        <div
+                            key={member.id}
+                            className={`bg-surface rounded-2xl border border-border shadow-sm !p-4 flex flex-col gap-3 transition-all duration-300 ${member.status === 'Active' ? '' : 'opacity-60 grayscale-[0.6] bg-gray-50/50'
+                                }`}
                         >
                             <div className="flex items-center justify-between gap-3">
                                 <div className="flex items-center gap-3">

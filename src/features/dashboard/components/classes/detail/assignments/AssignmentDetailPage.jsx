@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import useAuthStore from '../../../../../../store/authStore';
 import AssignmentDetailStudent from './AssignmentDetailStudent';
 import AssignmentGradingTeacher from './AssignmentGradingTeacher';
@@ -11,6 +11,7 @@ import { Icon } from '@iconify/react';
 const AssignmentDetailPage = () => {
     const { user } = useAuthStore();
     const { assignmentId } = useParams();
+    const navigate = useNavigate();
     const [assignment, setAssignment] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -69,14 +70,45 @@ const AssignmentDetailPage = () => {
     }
 
     if (!assignment) {
-        return <div className="text-center !py-20 text-text-muted">Không tìm thấy bài tập này.</div>;
+        return (
+            <div className="text-center !py-20 flex flex-col items-center gap-4">
+                <div className="text-text-muted">Không tìm thấy bài tập này.</div>
+                <button 
+                    onClick={() => navigate(-1)}
+                    className="flex items-center gap-2 text-primary font-bold hover:underline"
+                >
+                    <Icon icon="material-symbols:arrow-back-rounded" />
+                    Quay lại danh sách
+                </button>
+            </div>
+        );
     }
+
+    const BackButton = (
+        <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 !mb-4 text-text-muted hover:text-primary transition-colors font-bold text-sm"
+        >
+            <Icon icon="material-symbols:arrow-back-rounded" className="text-lg" />
+            Quay lại danh sách bài tập
+        </button>
+    );
 
     if (isTeacherOrTA) {
-        return <AssignmentGradingTeacher assignment={assignment} onRefresh={fetchDetail} />;
+        return (
+            <div className="h-full flex flex-col">
+                {BackButton}
+                <AssignmentGradingTeacher assignment={assignment} onRefresh={fetchDetail} />
+            </div>
+        );
     }
 
-    return <AssignmentDetailStudent assignment={assignment} onRefresh={fetchDetail} />;
+    return (
+        <div className="h-full flex flex-col">
+            {BackButton}
+            <AssignmentDetailStudent assignment={assignment} onRefresh={fetchDetail} />
+        </div>
+    );
 };
 
 export default AssignmentDetailPage;

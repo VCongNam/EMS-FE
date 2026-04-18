@@ -7,6 +7,8 @@ import DashboardDeadlines from './DashboardDeadlines';
 import DashboardRecentNotifications from './DashboardRecentNotifications';
 import useAuthStore from '../../../store/authStore';
 import { notificationService } from '../../notifications/api/notificationService';
+import studentClassService from '../api/studentClassService';
+import { studentAssignmentService } from '../api/studentAssignmentService';
 
 const StudentDashboard = () => {
     const { user } = useAuthStore();
@@ -15,6 +17,8 @@ const StudentDashboard = () => {
     const navigate = useNavigate();
 
     const [notifications, setNotifications] = useState([]);
+    const [deadlines, setDeadlines] = useState([]);
+    const [isLoadingDeadlines, setIsLoadingDeadlines] = useState(true);
 
     useEffect(() => {
         const fetchRecentNotifications = async () => {
@@ -30,6 +34,80 @@ const StudentDashboard = () => {
             }
         };
         fetchRecentNotifications();
+    }, [token]);
+
+    useEffect(() => {
+        const fetchDeadlines = async () => {
+            if (!token) return;
+            try {
+                setIsLoadingDeadlines(true);
+                // 1. Get classes
+                const classRes = await studentClassService.getMyClasses({ page: 1, size: 10 }, token);
+                if (classRes.ok) {
+                    const classData = await classRes.json();
+                    const classes = classData.data || classData || [];
+                    
+                    // 2. Get assignments for each class
+                    let allAssignments = [];
+                    const classList = Array.isArray(classes) ? classes : [];
+
+                    for (const cls of classList) {
+                        const classId = cls.classId || cls.id;
+                        const className = cls.className || cls.name;
+                        
+                        const assRes = await studentAssignmentService.getAssignments(classId, token);
+                        if (assRes.ok) {
+                            const assData = await assRes.json();
+                            const assignmentsList = assData.data || (Array.isArray(assData) ? assData : []);
+                            
+                            const assignments = assignmentsList.map(a => ({
+                                id: a.assignmentId || a.id,
+                                title: a.title,
+                                subtitle: className,
+                                dueDate: new Date(a.dueDate),
+                                status: a.status,
+                                isSubmitted: a.submittedAt || a.isSubmitted,
+                                classId: classId
+                            }));
+                            allAssignments = [...allAssignments, ...assignments];
+                        }
+                    }
+                    
+                    // 3. Filter and Sort
+                    const now = new Date();
+                    const next7Days = new Date();
+                    next7Days.setDate(now.getDate() + 7);
+
+                    const upcoming = allAssignments
+                        .filter(a => !a.isSubmitted && a.dueDate > now)
+                        .sort((a, b) => a.dueDate - b.dueDate)
+                        .slice(0, 4)
+                        .map(a => {
+                            const diffHours = (a.dueDate - now) / (1000 * 60 * 60);
+                            let status = 'Normal';
+                            if (diffHours < 24) status = 'Urgent';
+                            else if (diffHours < 72) status = 'Soon';
+
+                            return {
+                                id: a.id,
+                                title: a.title,
+                                subtitle: a.subtitle,
+                                rightText: a.dueDate.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }) + ', ' + a.dueDate.toTimeString().slice(0, 5),
+                                status: status,
+                                path: `/student/classes/${a.classId}/assignment/${a.id}`,
+                                actionIcon: 'solar:pen-new-square-bold-duotone'
+                            };
+                        });
+                        
+                    setDeadlines(upcoming);
+                }
+            } catch (error) {
+                console.error("Error fetching deadlines:", error);
+            } finally {
+                setIsLoadingDeadlines(false);
+            }
+        };
+        fetchDeadlines();
     }, [token]);
 
     const handleNotificationClick = async (notif) => {
@@ -62,7 +140,7 @@ const StudentDashboard = () => {
             <div className="!flex !flex-col md:!flex-row !justify-between !items-start md:!items-center !gap-6">
                 <div className="!space-y-1">
                     <h1 className="!text-3xl !font-black !text-text-main !tracking-tight">Chào quay lại, {userName}!</h1>
-                    <p className="!text-sm !font-bold !text-text-muted">Hôm nay bạn có 3 tiết học và 2 bài tập cần hoàn thành.</p>
+                    <p className="!text-sm !font-bold !text-text-muted">Hôm nay bạn có các tiết học và bài tập cần hoàn thành.</p>
                 </div>
                 <div className="!flex !items-center !gap-3 !bg-white !p-2 !rounded-2xl !border !border-border !shadow-sm">
                     <div className="!w-10 !h-10 !rounded-xl !bg-primary/10 !text-primary !flex !items-center !justify-center">
@@ -115,7 +193,12 @@ const StudentDashboard = () => {
             {/* Content Grid */}
             <div className="!grid !grid-cols-1 lg:!grid-cols-2 !gap-8">
                 {/* Upcoming Deadlines */}
-                <DashboardDeadlines />
+                <DashboardDeadlines 
+                    items={deadlines}
+                    isLoading={isLoadingDeadlines}
+                    viewAllLink="/student/classes"
+                    viewAllLabel="Xem lớp học"
+                />
 
                 {/* Recent Notifications Feed */}
                 <DashboardRecentNotifications 

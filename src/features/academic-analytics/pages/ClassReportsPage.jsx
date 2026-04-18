@@ -3,6 +3,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import AcademicReportModal from '../components/AcademicReportModal';
 import ConfirmModal from '../../../components/ui/ConfirmModal';
+import ReportSendConfirmModal from '../../dashboard/components/classes/detail/components/reports/ReportSendConfirmModal';
 import { toast } from 'react-toastify';
 import { progressReportService } from '../../dashboard/api/progressReportService';
 import useAuthStore from '../../../store/authStore';
@@ -27,6 +28,7 @@ const ClassReportsPage = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingReport, setEditingReport] = useState(null);
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, reportId: null, type: 'delete' });
+    const [sendConfirmModal, setSendConfirmModal] = useState({ isOpen: false, report: null });
     const [selectedReports, setSelectedReports] = useState([]);
 
     const fetchReports = async () => {
@@ -82,7 +84,6 @@ const ClassReportsPage = () => {
             prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
         );
     };
-
     const handleConfirmAction = async () => {
         const id = confirmModal.reportId;
         if (confirmModal.type === 'delete') {
@@ -96,18 +97,6 @@ const ClassReportsPage = () => {
                 }
             } catch (err) {
                 toast.error('Có lỗi xảy ra khi xóa báo cáo.');
-            }
-        } else if (confirmModal.type === 'send') {
-            try {
-                const res = await progressReportService.sendReport(id, token);
-                if (res.ok) {
-                    toast.success('Báo cáo đã được gửi đến Phụ huynh!');
-                    fetchReports();
-                } else {
-                    toast.error('Gửi báo cáo thất bại.');
-                }
-            } catch (err) {
-                toast.error('Có lỗi xảy ra khi gửi báo cáo.');
             }
         } else if (confirmModal.type === 'batch-send') {
             let successCount = 0;
@@ -132,12 +121,51 @@ const ClassReportsPage = () => {
         setConfirmModal({ isOpen: false, reportId: null, type: 'delete' });
     };
 
+    const handleSendConfirm = async () => {
+        const reportData = sendConfirmModal.report;
+        if (!reportData) return;
+
+        try {
+            // 1. Call Save Draft first (Upsert) to ensure latest content is saved
+            const saveRes = await progressReportService.upsertReport({
+                ...reportData,
+                status: 'Draft',
+                classId: classId
+            }, token);
+
+            if (!saveRes.ok) {
+                const err = await saveRes.json().catch(() => ({}));
+                toast.error(err.message || 'Lỗi khi lưu bản nháp trước khi gửi.');
+                return;
+            }
+
+            const saveResult = await saveRes.json().catch(() => ({}));
+            const reportId = reportData.reportId || saveResult.reportId || saveResult.id;
+
+            // 2. Call Send API
+            const sendRes = await progressReportService.sendReport(reportId, token);
+            if (sendRes.ok) {
+                toast.success('Báo cáo đã được gửi thành công!');
+                fetchReports();
+            } else {
+                toast.error('Gửi báo cáo thất bại.');
+            }
+        } catch (err) {
+            console.error('Error in sequence Save & Send:', err);
+            toast.error('Có lỗi xảy ra trong quá trình gửi báo cáo.');
+        } finally {
+            setSendConfirmModal({ isOpen: false, report: null });
+        }
+    };
+
     const handleSendClick = (report) => {
-        setConfirmModal({ 
+        // Prepare the report data for the confirm modal
+        setSendConfirmModal({ 
             isOpen: true, 
-            reportId: report.reportId, 
-            studentName: report.studentName,
-            type: 'send' 
+            report: {
+                ...report,
+                reportId: report.reportId
+            }
         });
     };
 
@@ -157,43 +185,42 @@ const ClassReportsPage = () => {
 
     const handleSaveReport = async (data) => {
         try {
-            // If it's a "Send" action from the modal, we still save as "Draft" first 
-            // to ensure content is stored before confirmation.
-            const payload = {
-                ...data,
-                status: 'Draft' // Always save as Draft first if coming from Modal Send
-            };
-
+            // First, save the content as Draft (to ensure it exists and satisfies BE)
             const res = await progressReportService.upsertReport({
-                ...payload,
+                ...data,
+                status: 'Draft', 
                 classId: classId
             }, token);
 
             if (res.ok) {
                 const result = await res.json().catch(() => ({}));
-                const finalReportId = data.reportId || result.reportId;
+                const finalReportId = data.reportId || result.reportId || result.id;
                 
-                fetchReports();
+                await fetchReports();
+                
+                // CLOSE the edit modal first
                 setIsModalOpen(false);
                 setEditingReport(null);
 
                 if (data.status === 'Sent') {
-                    // Open the confirm modal for this student
-                    setConfirmModal({
+                    // NOW OPEN the specialized send confirm modal
+                    // We pass the updated data so the user can preview what they just saved
+                    setSendConfirmModal({
                         isOpen: true,
-                        reportId: finalReportId,
-                        studentName: data.studentName,
-                        type: 'send'
+                        report: {
+                            ...data,
+                            reportId: finalReportId
+                        }
                     });
                 } else {
-                    toast.success(data.reportId ? 'Cập nhật thành công!' : 'Tạo mới thành công!');
+                    toast.success(data.reportId ? 'Cập nhật bản nháp thành công!' : 'Tạo mới bản nháp thành công!');
                 }
             } else {
                 const err = await res.json().catch(() => ({}));
                 toast.error(err.message || 'Lỗi khi lưu báo cáo.');
             }
         } catch (err) {
-            toast.error('Có lỗi xảy ra khi kết nối server.');
+            toast.error(err.message || 'Có lỗi xảy ra khi xử lý dữ liệu.');
         }
     };
 
@@ -547,23 +574,27 @@ const ClassReportsPage = () => {
                 onSave={handleSaveReport}
             />
 
+            <ReportSendConfirmModal
+                isOpen={sendConfirmModal.isOpen}
+                onClose={() => setSendConfirmModal({ isOpen: false, report: null })}
+                onConfirm={handleSendConfirm}
+                report={sendConfirmModal.report}
+                className={className}
+            />
+
             <ConfirmModal 
                 isOpen={confirmModal.isOpen}
                 onClose={() => setConfirmModal({ isOpen: false, reportId: null, type: 'delete' })}
                 onConfirm={handleConfirmAction}
-                title={confirmModal.type === 'send' 
-                    ? "Xác nhận gửi báo cáo" 
-                    : confirmModal.type === 'batch-send'
+                title={confirmModal.type === 'batch-send'
                         ? "Xác nhận gửi hàng loạt"
                         : "Xác nhận xóa báo cáo"}
-                message={confirmModal.type === 'send' 
-                    ? `Bạn có chắc chắn muốn gửi báo cáo học tập Tháng ${month}/${year} của học sinh ${confirmModal.studentName} cho phụ huynh không? Báo cáo sau khi gửi sẽ không thể chỉnh sửa.`
-                    : confirmModal.type === 'batch-send'
+                message={confirmModal.type === 'batch-send'
                         ? `Bạn có chắc chắn muốn gửi ${selectedReports.length} báo cáo đã chọn cho phụ huynh không?`
                         : "Bạn có chắc chắn muốn xóa báo cáo này? Thao tác này không thể hoàn tác và dữ liệu sẽ bị mất vĩnh viễn."}
-                confirmText={confirmModal.type === 'send' || confirmModal.type === 'batch-send' ? "Xác nhận Gửi" : "Xóa ngay"}
+                confirmText={confirmModal.type === 'batch-send' ? "Xác nhận Gửi" : "Xóa ngay"}
                 cancelText="Quay lại"
-                type={confirmModal.type === 'send' || confirmModal.type === 'batch-send' ? "primary" : "danger"}
+                type={confirmModal.type === 'batch-send' ? "primary" : "danger"}
             />
         </div>
     );

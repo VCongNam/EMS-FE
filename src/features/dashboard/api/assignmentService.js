@@ -77,5 +77,14 @@ export const assignmentService = {
       },
       body: JSON.stringify({ content })
     });
+  },
+  getSubmissionDetail: async (assignmentId, studentId, token) => {
+    return fetch(getApiUrl(`/api/Assignment/${assignmentId}/submissions/${studentId}`), {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
   }
 };

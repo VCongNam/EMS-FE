@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Icon } from '@iconify/react';
+import { toast } from 'react-toastify';
 import Button from '../../../components/ui/Button';
 
 const CreateTaskModal = ({ isOpen, onClose, onAssign, tas = [], classes = [] }) => {
@@ -15,6 +16,17 @@ const CreateTaskModal = ({ isOpen, onClose, onAssign, tas = [], classes = [] }) 
 
     const handleSubmit = (e) => {
         e.preventDefault();
+
+        // Validate deadline: must be after today
+        const selectedDate = new Date(taskData.deadline);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (selectedDate <= today) {
+            toast.error('Hạn chót phải sau ngày hôm nay!');
+            return;
+        }
+
         onAssign({
             ...taskData,
             id: `TASK-${Date.now()}`,
@@ -87,6 +99,7 @@ const CreateTaskModal = ({ isOpen, onClose, onAssign, tas = [], classes = [] }) 
                                 <input
                                     type="date"
                                     required
+                                    min={new Date().toISOString().split('T')[0]}
                                     value={taskData.deadline}
                                     onChange={e => setTaskData({...taskData, deadline: e.target.value})}
                                     className="w-full !px-4 !py-3 rounded-xl bg-background border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium text-text-main outline-none"
@@ -101,10 +114,8 @@ const CreateTaskModal = ({ isOpen, onClose, onAssign, tas = [], classes = [] }) 
                                     onChange={e => setTaskData({...taskData, type: e.target.value})}
                                     className="w-full !px-4 !py-3 rounded-xl bg-background border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium text-text-main outline-none appearance-none"
                                 >
-                                    <option value="Attendance">Điểm danh (Attendance)</option>
-                                    <option value="Grade">Chấm điểm (Grade)</option>
-                                    <option value="Report">Báo cáo (Report)</option>
-                                    <option value="Assignment">Bài tập (Assignment)</option>
+                                    <option value="Grade">Chấm điểm </option>
+                                    <option value="Report">Báo cáo </option>
                                 </select>
                             </div>
                         </div>
