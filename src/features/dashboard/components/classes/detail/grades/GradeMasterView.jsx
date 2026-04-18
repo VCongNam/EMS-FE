@@ -128,21 +128,30 @@ const GradeMasterView = ({ classId, gradeTableData, onRefresh }) => {
                                     </div>
                                 </td>
                                 {gradeTableData.columns.map((col) => {
+                                    const gradeObj = student.grades.find(g => g.assignmentId === col.assignmentId);
+                                    const hasSubmission = gradeObj && gradeObj.submissionId !== null;
                                     const score = getScore(student, col.assignmentId);
                                     const isEdited = localGrades[student.studentId]?.[col.assignmentId] !== undefined;
+                                    
                                     return (
                                         <td key={col.assignmentId} className="!p-2 !text-center !border-r !border-border">
-                                            <input 
-                                                type="number"
-                                                step="0.1"
-                                                min="0"
-                                                max="10"
-                                                value={score}
-                                                onChange={(e) => handleScoreChange(student.studentId, col.assignmentId, e.target.value)}
-                                                className={`!w-full !bg-transparent !border-none !text-center !py-2 !font-bold !focus:outline-none !rounded-lg !transition-all ${
-                                                    isEdited ? '!bg-amber-100/50 !text-amber-700' : '!text-text-main group-hover:!bg-white/50'
-                                                }`}
-                                            />
+                                            {hasSubmission ? (
+                                                <input 
+                                                    type="number"
+                                                    step="0.1"
+                                                    min="0"
+                                                    max="10"
+                                                    value={score}
+                                                    onChange={(e) => handleScoreChange(student.studentId, col.assignmentId, e.target.value)}
+                                                    className={`!w-full !bg-transparent !border-none !text-center !py-2 !font-bold !focus:outline-none !rounded-lg !transition-all ${
+                                                        isEdited ? '!bg-amber-100/50 !text-amber-700' : '!text-text-main group-hover:!bg-white/50'
+                                                    }`}
+                                                />
+                                            ) : (
+                                                <div className="!py-2 !text-[11px] !font-black !text-text-muted/40 !uppercase !tracking-tight !italic">
+                                                    Chưa nộp
+                                                </div>
+                                            )}
                                         </td>
                                     );
                                 })}

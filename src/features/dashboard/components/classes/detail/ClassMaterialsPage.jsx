@@ -32,6 +32,7 @@ const ClassMaterialsPage = () => {
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
     const [selectedMaterialId, setSelectedMaterialId] = useState(null);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+    const [materialToEdit, setMaterialToEdit] = useState(null);
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, materialId: null });
     
     // RBAC check
@@ -62,6 +63,16 @@ const ClassMaterialsPage = () => {
 
     const handleDeleteClick = (id) => {
         setConfirmModal({ isOpen: true, materialId: id });
+    };
+
+    const handleEditClick = (material) => {
+        setMaterialToEdit(material);
+        setIsUploadModalOpen(true);
+    };
+
+    const handleCloseUploadModal = () => {
+        setIsUploadModalOpen(false);
+        setMaterialToEdit(null);
     };
 
     const handleConfirmDelete = async () => {
@@ -216,13 +227,22 @@ const ClassMaterialsPage = () => {
                                                     <Icon icon="material-symbols:download-rounded" className="text-xl" />
                                                 </button>
                                                 {isTeacherOrTA && (
-                                                    <button 
-                                                        onClick={() => handleDeleteClick(material.materialId)}
-                                                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-background text-text-muted hover:text-red-500 hover:bg-red-50 transition-all border border-border hover:border-red-500/30" 
-                                                        title="Xóa"
-                                                    >
-                                                        <Icon icon="material-symbols:delete-outline-rounded" className="text-xl" />
-                                                    </button>
+                                                    <>
+                                                        <button 
+                                                            onClick={() => handleEditClick(material)}
+                                                            className="w-10 h-10 flex items-center justify-center rounded-xl bg-background text-text-muted hover:text-primary hover:bg-primary/10 transition-all border border-border hover:border-primary/30" 
+                                                            title="Chỉnh sửa"
+                                                        >
+                                                            <Icon icon="material-symbols:edit-outline-rounded" className="text-xl" />
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => handleDeleteClick(material.materialId)}
+                                                            className="w-10 h-10 flex items-center justify-center rounded-xl bg-background text-text-muted hover:text-red-500 hover:bg-red-50 transition-all border border-border hover:border-red-500/30" 
+                                                            title="Xóa"
+                                                        >
+                                                            <Icon icon="material-symbols:delete-outline-rounded" className="text-xl" />
+                                                        </button>
+                                                    </>
                                                 )}
                                             </div>
                                         </td>
@@ -246,12 +266,13 @@ const ClassMaterialsPage = () => {
                 </div>
             </div>
 
-            {/* Upload Modal */}
+            {/* Upload/Edit Modal */}
             <AddMaterialModal 
                 isOpen={isUploadModalOpen}
-                onClose={() => setIsUploadModalOpen(false)}
+                onClose={handleCloseUploadModal}
                 classId={classId}
                 onSuccess={fetchMaterials}
+                materialToEdit={materialToEdit}
             />
 
             {/* Detail Modal */}

@@ -34,7 +34,7 @@ const Pagination = ({ totalItems, itemsPerPage, currentPage, onPageChange }) => 
     return (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 !mt-12 !mb-6 px-2">
             <div className="text-sm text-text-muted font-medium order-2 sm:order-1">
-                Hiển thị <span className="text-text-main font-bold">{(currentPage - 1) * itemsPerPage + 1}</span> - <span className="text-text-main font-bold">{Math.min(currentPage * itemsPerPage, totalItems)}</span> trong tổng số <span className="text-text-main font-bold">{totalItems}</span> lớp học
+                Hiển thị <span className="text-text-main font-bold">{(currentPage - 1) * itemsPerPage + 1}</span> - <span className="text-text-main font-bold">{Math.min(currentPage * itemsPerPage, totalItems)}</span> trong tổng số <span className="text-text-main font-bold">{totalItems}</span> 
             </div>
 
             <div className="flex items-center gap-2 order-1 sm:order-2">

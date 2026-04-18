@@ -1,26 +1,50 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { toast } from 'react-toastify';
 import useAuthStore from '../../../../../../store/authStore';
 import learningMaterialService from '../../../../api/learningMaterialService';
 
-const AddMaterialModal = ({ isOpen, onClose, classId, onSuccess }) => {
+const AddMaterialModal = ({ isOpen, onClose, classId, onSuccess, materialToEdit = null }) => {
     const { user } = useAuthStore();
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [selectedFiles, setSelectedFiles] = useState([]);
+    const [existingAttachments, setExistingAttachments] = useState([]);
+    const [removedAttachmentIds, setRemovedAttachmentIds] = useState([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const fileInputRef = useRef(null);
+
+    const isEditMode = !!materialToEdit;
+
+    useEffect(() => {
+        if (materialToEdit && isOpen) {
+            setTitle(materialToEdit.title || '');
+            setDescription(materialToEdit.description || '');
+            setExistingAttachments(materialToEdit.attachments || []);
+            setSelectedFiles([]);
+            setRemovedAttachmentIds([]);
+        } else if (!isEditMode && isOpen) {
+            setTitle('');
+            setDescription('');
+            setSelectedFiles([]);
+            setExistingAttachments([]);
+            setRemovedAttachmentIds([]);
+        }
+    }, [materialToEdit, isOpen, isEditMode]);
 
     const handleFileChange = (e) => {
         const files = Array.from(e.target.files);
         setSelectedFiles(prev => [...prev, ...files]);
-        // Reset value to allow selecting same file again
         e.target.value = '';
     };
 
     const removeFile = (index) => {
         setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const removeExistingAttachment = (attachmentId) => {
+        setRemovedAttachmentIds(prev => [...prev, attachmentId]);
+        setExistingAttachments(prev => prev.filter(att => att.attachmentId !== attachmentId));
     };
 
     const handleSubmit = async (e) => {
@@ -29,7 +53,8 @@ const AddMaterialModal = ({ isOpen, onClose, classId, onSuccess }) => {
             toast.error('Vui lòng nhập tiêu đề tài liệu');
             return;
         }
-        if (selectedFiles.length === 0) {
+        
+        if (!isEditMode && selectedFiles.length === 0) {
             toast.error('Vui lòng chọn ít nhất một tệp tin');
             return;
         }
@@ -37,31 +62,39 @@ const AddMaterialModal = ({ isOpen, onClose, classId, onSuccess }) => {
         setIsSubmitting(true);
         try {
             const formData = new FormData();
-            formData.append('ClassId', classId);
             formData.append('Title', title);
             formData.append('Description', description);
             
-            selectedFiles.forEach(file => {
-                formData.append('Attachments', file);
-            });
+            if (!isEditMode) {
+                formData.append('ClassId', classId);
+                selectedFiles.forEach(file => {
+                    formData.append('Attachments', file);
+                });
+            } else {
+                selectedFiles.forEach(file => {
+                    formData.append('NewAttachments', file);
+                });
+                
+                removedAttachmentIds.forEach(id => {
+                    formData.append('RemoveAttachmentIds', id);
+                });
+            }
 
-            const res = await learningMaterialService.createMaterial(formData, user?.token);
+            const res = isEditMode 
+                ? await learningMaterialService.updateMaterial(materialToEdit.materialId, formData, user?.token)
+                : await learningMaterialService.createMaterial(formData, user?.token);
             
             if (!res.ok) {
                 const errorData = await res.json().catch(() => ({}));
-                throw new Error(errorData.message || 'Không thể tải lên tài liệu');
+                throw new Error(errorData.message || `Không thể ${isEditMode ? 'cập nhật' : 'tải lên'} tài liệu`);
             }
 
-            toast.success('Tải lên tài liệu thành công!');
+            toast.success(`${isEditMode ? 'Cập nhật' : 'Tải lên'} tài liệu thành công!`);
             onSuccess();
             onClose();
-            // Reset form
-            setTitle('');
-            setDescription('');
-            setSelectedFiles([]);
         } catch (error) {
-            console.error('Error uploading material:', error);
-            toast.error(error.message || 'Có lỗi xảy ra khi tải lên tài liệu');
+            console.error('Error handling material:', error);
+            toast.error(error.message || 'Có lỗi xảy ra');
         } finally {
             setIsSubmitting(false);
         }
@@ -78,9 +111,11 @@ const AddMaterialModal = ({ isOpen, onClose, classId, onSuccess }) => {
                 <div className="!p-6 border-b border-border bg-background/50 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                            <Icon icon="material-symbols:upload-rounded" className="text-2xl" />
+                            <Icon icon={isEditMode ? "material-symbols:edit-document-rounded" : "material-symbols:upload-rounded"} className="text-2xl" />
                         </div>
-                        <h2 className="text-xl font-black text-text-main tracking-tight">Tải lên tài liệu</h2>
+                        <h2 className="text-xl font-black text-text-main tracking-tight">
+                            {isEditMode ? 'Chỉnh sửa tài liệu' : 'Tải lên tài liệu'}
+                        </h2>
                     </div>
                     <button 
                         onClick={onClose}
@@ -92,7 +127,7 @@ const AddMaterialModal = ({ isOpen, onClose, classId, onSuccess }) => {
 
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="!p-6 space-y-6">
-                    <div className="space-y-4">
+                    <div className="space-y-4 max-h-[60vh] overflow-y-auto px-1 custom-scrollbar">
                         {/* Title */}
                         <div>
                             <label className="block text-xs font-black text-text-muted uppercase tracking-widest !mb-2 ml-1">
@@ -122,15 +157,42 @@ const AddMaterialModal = ({ isOpen, onClose, classId, onSuccess }) => {
                             ></textarea>
                         </div>
 
+                        {/* Existing Attachments (Edit Mode) */}
+                        {isEditMode && existingAttachments.length > 0 && (
+                            <div>
+                                <label className="block text-xs font-black text-text-muted uppercase tracking-widest !mb-2 ml-1">
+                                    Tệp tin hiện có
+                                </label>
+                                <div className="space-y-2">
+                                    {existingAttachments.map((file) => (
+                                        <div key={file.attachmentId} className="flex items-center justify-between !p-2 bg-indigo-50/30 border border-indigo-100 rounded-xl text-sm group">
+                                            <div className="flex items-center gap-2 overflow-hidden">
+                                                <Icon icon="material-symbols:check-circle-rounded" className="text-green-500 text-lg flex-shrink-0" />
+                                                <span className="truncate font-medium text-text-main">{file.fileName || file.name}</span>
+                                            </div>
+                                            <button 
+                                                type="button"
+                                                onClick={() => removeExistingAttachment(file.attachmentId)}
+                                                className="p-1.5 hover:bg-red-50 text-text-muted hover:text-red-500 rounded-lg transition-colors"
+                                                title="Xóa tệp này"
+                                            >
+                                                <Icon icon="material-symbols:delete-outline-rounded" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         {/* File Upload */}
                         <div>
                             <label className="block text-xs font-black text-text-muted uppercase tracking-widest !mb-2 ml-1">
-                                Tệp tin đính kèm <span className="text-red-500">*</span>
+                                {isEditMode ? 'Thêm tài liệu mới' : 'Tệp tin đính kèm'} {!isEditMode && <span className="text-red-500">*</span>}
                             </label>
                             
                             <div className="space-y-3">
                                 {selectedFiles.length > 0 && (
-                                    <div className="max-h-40 overflow-y-auto space-y-2 !mb-4 custom-scrollbar">
+                                    <div className="space-y-2 !mb-4">
                                         {selectedFiles.map((file, idx) => (
                                             <div key={idx} className="flex items-center justify-between !p-2 bg-background border border-border rounded-xl text-sm group hover:border-primary/30 transition-all">
                                                 <div className="flex items-center gap-2 overflow-hidden">
@@ -186,11 +248,11 @@ const AddMaterialModal = ({ isOpen, onClose, classId, onSuccess }) => {
                             {isSubmitting ? (
                                 <>
                                     <Icon icon="line-md:loading-twotone-loop" className="text-xl" />
-                                    Đang tải lên...
+                                    Đang xử lý...
                                 </>
                             ) : (
                                 <>
-                                    Tải lên ngay
+                                    {isEditMode ? 'Lưu thay đổi' : 'Tải lên ngay'}
                                     <Icon icon="material-symbols:send-rounded" className="text-xl" />
                                 </>
                             )}

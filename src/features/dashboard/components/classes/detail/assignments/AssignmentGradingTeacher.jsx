@@ -142,11 +142,32 @@ const AssignmentGradingTeacher = ({ assignment, onRefresh }) => {
     const countTurnedIn  = submissions.filter((s) => s.status === 'In Time' || s.status === 'Late' || s.status === 'Đã nộp' || s.status === 'Nộp muộn').length;
     const countMissing   = submissions.length - countTurnedIn;
 
-    const handleSelectStudent = (sub) => {
+    const handleSelectStudent = async (sub) => {
+        // Hiển thị thông tin cơ bản trước để UI phản hồi nhanh
         setSelectedStudent(sub);
         setScoreInput(sub.grade ?? sub.score ?? '');
         setCommentInput('');
         setPreviewFile(null);
+
+        // Gọi API lấy chi tiết bài làm
+        try {
+            const res = await assignmentService.getSubmissionDetail(assignment.assignmentId, sub.studentId, user?.token);
+            if (res.ok) {
+                const result = await res.json();
+                const detailedData = result.data || result;
+                
+                setSelectedStudent(prev => ({
+                    ...prev,
+                    ...detailedData,
+                    // Giữ lại các trường thông tin cơ bản nếu API không trả về đầy đủ
+                    fullName: prev.fullName || detailedData.fullName,
+                    studentName: prev.studentName || detailedData.studentName,
+                    status: detailedData.status || prev.status
+                }));
+            }
+        } catch (error) {
+            console.error("Lỗi khi lấy chi tiết bài làm:", error);
+        }
     };
 
     const handleBack = () => setSelectedStudent(null);

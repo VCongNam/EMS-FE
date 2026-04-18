@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Icon } from '@iconify/react';
 import useAuthStore from '../../../store/authStore';
 import TaskDetailModal from '../components/TaskDetailModal';
 import { taService } from '../api/taService';
+import Pagination from '../../../components/ui/Pagination';
 
 const MyTasksPage = () => {
     const { user } = useAuthStore();
@@ -12,43 +13,37 @@ const MyTasksPage = () => {
     const [tasks, setTasks] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8;
+
     const fetchTasks = async () => {
-        console.log("Fetching tasks for user:", user);
-        
-        // Use taId if available, otherwise fallback to id (for TA roles where they are the same)
         const effectiveTaId = user?.taId || user?.id;
-        
         if (!effectiveTaId || !user?.token) {
-            console.warn("Missing taId/id or token, cannot fetch tasks.");
             setIsLoading(false);
             return;
         }
         
         try {
             setIsLoading(true);
-            console.log(`Calling getMyTasks with effectiveTaId: ${effectiveTaId}`);
             const res = await taService.getMyTasks(effectiveTaId, user.token);
             if (res.ok) {
                 const json = await res.json();
-                console.log("API Success Response:", json);
                 const rawTasks = json.data || (Array.isArray(json) ? json : []);
                 
-                // Map backend tasks to frontend structure
                 const mappedTasks = rawTasks.map(t => {
                     const status = t.status || 'Todo';
-                    
                     return {
                         id: t.taTaskID || t.id,
                         title: t.title,
                         assignedTo: user.taId,
                         classId: t.className,
                         deadline: t.dueDate,
-                        status: status, // Keep raw status from BE (Todo, InProgress, Review, Done, Overdue)
+                        status: status,
                         type: t.type,
                         feedback: t.feedback || ''
                     };
                 });
-                
                 setTasks(mappedTasks);
             }
         } catch (error) {
@@ -58,7 +53,7 @@ const MyTasksPage = () => {
         }
     };
 
-    React.useEffect(() => {
+    useEffect(() => {
         fetchTasks();
     }, [user?.taId]);
 
@@ -67,14 +62,10 @@ const MyTasksPage = () => {
         try {
             const res = await taService.updateTaskStatus(taskId, newStatus, user.token);
             if (res.ok) {
-                // Update local state or re-fetch
                 setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
                 if (selectedTask?.id === taskId) {
                     setSelectedTask(prev => ({ ...prev, status: newStatus }));
                 }
-            } else {
-                const err = await res.json();
-                console.error("Lỗi cập nhật trạng thái:", err);
             }
         } catch (error) {
             console.error("Lỗi cập nhật trạng thái:", error);
@@ -91,21 +82,34 @@ const MyTasksPage = () => {
         switch(status) {
             case 'todo': return 'Cần làm';
             case 'inprogress': 
-            case 'in_progress':
-                return 'Đang làm';
+            case 'in_progress': return 'Đang làm';
             case 'review': return 'Chờ duyệt';
             case 'done': return 'Hoàn thành';
             case 'overdue': return 'Quá hạn';
-            default: return 'Khác';
+            case 'rejected': return 'Làm lại';
+            default: return status;
         }
     };
 
+    const filteredTasks = useMemo(() => {
+        return tasks.filter(t => 
+            (t.title || '').toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }, [tasks, searchQuery]);
+
+    const paginatedTasks = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return filteredTasks.slice(startIndex, startIndex + itemsPerPage);
+    }, [filteredTasks, currentPage, itemsPerPage]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery]);
+
     const Column = ({ title, statusGroup, icon, colorClass }) => {
-        const filteredTasks = tasks.filter(t => {
+        const columnTasks = paginatedTasks.filter(t => {
             const status = (t.status || '').toLowerCase();
-            const matchesStatus = statusGroup.includes(status);
-            const matchesSearch = (t.title || '').toLowerCase().includes(searchQuery.toLowerCase());
-            return matchesStatus && matchesSearch;
+            return statusGroup.includes(status);
         });
         
         return (
@@ -117,14 +121,11 @@ const MyTasksPage = () => {
                         </div>
                         <h3 className="font-bold text-text-main shrink-0">{title}</h3>
                     </div>
-                    <span className="!bg-surface border border-border !px-2 !py-0.5 rounded-full text-xs font-bold text-text-muted">
-                        {filteredTasks.length}
-                    </span>
                 </div>
                 
                 <div className="!p-4 space-y-4 flex-1 overflow-y-auto custom-scrollbar">
-                    {filteredTasks.length > 0 ? (
-                        filteredTasks.map(task => (
+                    {columnTasks.length > 0 ? (
+                        columnTasks.map(task => (
                             <div 
                                 key={task.id}
                                 onClick={() => handleViewDetail(task)}
@@ -135,7 +136,9 @@ const MyTasksPage = () => {
                                         {task.title}
                                     </h4>
                                     <span className={`text-[9px] font-bold !px-1.5 !py-0.5 rounded uppercase border ${
-                                        task.status === 'Overdue' ? 'bg-red-50 border-red-200 text-red-600' : 'bg-background border-border text-text-muted'
+                                        task.status === 'Overdue' ? 'bg-red-50 border-red-200 text-red-600' : 
+                                        task.status === 'Rejected' ? 'bg-orange-50 border-orange-200 text-orange-600' :
+                                        'bg-background border-border text-text-muted'
                                     }`}>
                                         {getStatusLabel(task.status)}
                                     </span>
@@ -202,14 +205,20 @@ const MyTasksPage = () => {
                 </div>
             </div>
 
-            {/* Kanban Board */}
+            {/* Board */}
             {isLoading ? (
                 <div className="flex flex-col items-center justify-center !py-40 !gap-4">
                     <Icon icon="solar:spinner-linear" className="animate-spin text-5xl text-primary" />
                     <p className="text-text-muted font-bold">Đang tải nhiệm vụ...</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-3 !gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 !gap-6">
+                    <Column 
+                        title="Làm lại" 
+                        statusGroup={['rejected']} 
+                        icon="material-symbols:history-rounded" 
+                        colorClass="!bg-orange-500/10 text-orange-500" 
+                    />
                     <Column 
                         title="Cần làm" 
                         statusGroup={['todo']} 
@@ -227,6 +236,18 @@ const MyTasksPage = () => {
                         statusGroup={['done', 'overdue']} 
                         icon="material-symbols:check-circle-outline-rounded" 
                         colorClass="!bg-green-500/10 text-green-500" 
+                    />
+                </div>
+            )}
+
+            {/* Pagination Controls */}
+            {!isLoading && filteredTasks.length > itemsPerPage && (
+                <div className="!mt-8 flex justify-center">
+                    <Pagination 
+                        currentPage={currentPage}
+                        totalItems={filteredTasks.length}
+                        itemsPerPage={itemsPerPage}
+                        onPageChange={setCurrentPage}
                     />
                 </div>
             )}

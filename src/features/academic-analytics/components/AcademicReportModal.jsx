@@ -86,82 +86,84 @@ const AcademicReportModal = ({ isOpen, onClose, onSave, defaultClass, editData, 
                     </button>
                 </div>
 
-                {/* Main Body - 2 Columns */}
-                <div className="!flex-1 !overflow-hidden !grid !grid-cols-1 lg:!grid-cols-2">
+                {/* Main Body - 2 Columns or 1 Column for Student */}
+                <div className={`!flex-1 !overflow-hidden !grid !grid-cols-1 ${!isStudent ? 'lg:!grid-cols-2' : ''}`}>
                     
-                    {/* Left Column: Form Inputs */}
-                    <div className="!p-5 sm:!p-8 !space-y-6 sm:!space-y-8 !overflow-y-auto !max-h-[60vh] sm:!max-h-[75vh] custom-scrollbar !border-r !border-border !bg-white">
-                        {/* Mode Toggle Removed */}
+                    {!isStudent && (
+                        /* Left Column: Form Inputs - Hidden for Student */
+                        <div className="!p-5 sm:!p-8 !space-y-6 sm:!space-y-8 !overflow-y-auto !max-h-[60vh] sm:!max-h-[75vh] custom-scrollbar !border-r !border-border !bg-white">
+                            {/* Mode Toggle Removed */}
 
-                        <div className="!grid !grid-cols-1 sm:!grid-cols-2 !gap-6">
-                            <div className="!space-y-2">
-                                <label className="!text-[11px] !font-black !text-text-muted !uppercase !tracking-widest !ml-1">Lớp học</label>
-                                <div className="!relative">
-                                    <select 
-                                        value={selectedClass}
-                                        disabled={true}
-                                        className="!w-full !px-4 !py-4 !bg-background !border !border-border !rounded-2xl !font-bold !text-text-main !outline-none !appearance-none disabled:!opacity-60"
-                                    >
-                                        <option value={selectedClass}>{className || selectedClass}</option>
-                                    </select>
-                                    <Icon icon="material-symbols:lock-outline-rounded" className="!absolute !right-4 !top-1/2 !-translate-y-1/2 !text-text-muted !text-xl" />
+                            <div className="!grid !grid-cols-1 sm:!grid-cols-2 !gap-6">
+                                <div className="!space-y-2">
+                                    <label className="!text-[11px] !font-black !text-text-muted !uppercase !tracking-widest !ml-1">Lớp học</label>
+                                    <div className="!relative">
+                                        <select 
+                                            value={selectedClass}
+                                            disabled={true}
+                                            className="!w-full !px-4 !py-4 !bg-background !border !border-border !rounded-2xl !font-bold !text-text-main !outline-none !appearance-none disabled:!opacity-60"
+                                        >
+                                            <option value={selectedClass}>{className || selectedClass}</option>
+                                        </select>
+                                        <Icon icon="material-symbols:lock-outline-rounded" className="!absolute !right-4 !top-1/2 !-translate-y-1/2 !text-text-muted !text-xl" />
+                                    </div>
+                                </div>
+                                <div className="!space-y-2">
+                                    <label className="!text-[11px] !font-black !text-text-muted !uppercase !tracking-widest !ml-1">Kỳ báo cáo</label>
+                                    <div className="!relative">
+                                        <select 
+                                            value={selectedPeriod}
+                                            disabled={true}
+                                            className="!w-full !px-4 !py-4 !bg-background !border !border-border !rounded-2xl !font-bold !text-text-main !outline-none !appearance-none disabled:!opacity-60"
+                                        >
+                                            <option value={selectedPeriod}>{selectedPeriod}</option>
+                                        </select>
+                                        <Icon icon="material-symbols:lock-outline-rounded" className="!absolute !right-4 !top-1/2 !-translate-y-1/2 !text-text-muted !text-xl" />
+                                    </div>
                                 </div>
                             </div>
-                            <div className="!space-y-2">
-                                <label className="!text-[11px] !font-black !text-text-muted !uppercase !tracking-widest !ml-1">Kỳ báo cáo</label>
-                                <div className="!relative">
-                                    <select 
-                                        value={selectedPeriod}
-                                        disabled={true}
-                                        className="!w-full !px-4 !py-4 !bg-background !border !border-border !rounded-2xl !font-bold !text-text-main !outline-none !appearance-none disabled:!opacity-60"
-                                    >
-                                        <option value={selectedPeriod}>{selectedPeriod}</option>
-                                    </select>
-                                    <Icon icon="material-symbols:lock-outline-rounded" className="!absolute !right-4 !top-1/2 !-translate-y-1/2 !text-text-muted !text-xl" />
+
+                            <div className="!space-y-4">
+                                <div className="!space-y-2">
+                                    <label className="!text-[11px] !font-black !text-text-muted !uppercase !tracking-widest !ml-1">Học sinh</label>
+                                    <div className="!relative">
+                                        <select 
+                                            value={selectedStudent}
+                                            disabled={true}
+                                            className="!w-full !px-4 !py-4 !bg-background !border !border-border !rounded-2xl !font-bold !text-text-main !outline-none disabled:!opacity-60 !appearance-none"
+                                        >
+                                            <option value={selectedStudent}>{isEdit || editData?.studentName ? (editData.studentName) : selectedStudent}</option>
+                                        </select>
+                                        <Icon icon="material-symbols:lock-outline-rounded" className="!absolute !right-4 !top-1/2 !-translate-y-1/2 !text-text-muted !text-xl" />
+                                    </div>
                                 </div>
+                                <div className="!p-5 !bg-emerald-50 !border !border-emerald-100 !rounded-2xl !flex !items-start !gap-4">
+                                    <div className="!w-10 !h-10 !bg-emerald-500/10 !text-emerald-600 !rounded-xl !flex !items-center !justify-center !shrink-0">
+                                        <Icon icon="material-symbols:check-circle-rounded" className="!text-2xl" />
+                                    </div>
+                                    <div className="!text-sm !text-emerald-800 !font-medium !mt-1">
+                                        Dữ liệu chuyên cần <span className="!font-black">{isEdit || editData ? editData.attendanceRate : '0'}%</span> và Điểm GPA <span className="!font-black">{isEdit || editData ? editData.gpa : '0'}</span> đã được hệ thống tổng hợp sẵn.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="!space-y-2">
+                                <label className="!text-[11px] !font-black !text-text-muted !uppercase !tracking-widest !ml-1">
+                                    Nhận xét & Đánh giá cá nhân
+                                </label>
+                                <textarea 
+                                    value={evaluation}
+                                    onChange={(e) => setEvaluation(e.target.value)}
+                                    disabled={isStudent}
+                                    placeholder={isStudent ? "" : "Nhập nội dung đánh giá dành cho học sinh... (Nội dung sẽ hiển thị ngay ở phần xem trước bên phải)"}
+                                    className="!w-full !px-5 !py-4 !bg-background !border !border-border !rounded-2xl !text-base !font-medium !focus:border-primary !outline-none !h-48 !resize-none custom-scrollbar shadow-inner disabled:!bg-white disabled:!italic"
+                                />
                             </div>
                         </div>
+                    )}
 
-                        <div className="!space-y-4">
-                            <div className="!space-y-2">
-                                <label className="!text-[11px] !font-black !text-text-muted !uppercase !tracking-widest !ml-1">Học sinh</label>
-                                <div className="!relative">
-                                    <select 
-                                        value={selectedStudent}
-                                        disabled={true}
-                                        className="!w-full !px-4 !py-4 !bg-background !border !border-border !rounded-2xl !font-bold !text-text-main !outline-none disabled:!opacity-60 !appearance-none"
-                                    >
-                                        <option value={selectedStudent}>{isEdit || editData?.studentName ? (editData.studentName) : selectedStudent}</option>
-                                    </select>
-                                    <Icon icon="material-symbols:lock-outline-rounded" className="!absolute !right-4 !top-1/2 !-translate-y-1/2 !text-text-muted !text-xl" />
-                                </div>
-                            </div>
-                            <div className="!p-5 !bg-emerald-50 !border !border-emerald-100 !rounded-2xl !flex !items-start !gap-4">
-                                <div className="!w-10 !h-10 !bg-emerald-500/10 !text-emerald-600 !rounded-xl !flex !items-center !justify-center !shrink-0">
-                                    <Icon icon="material-symbols:check-circle-rounded" className="!text-2xl" />
-                                </div>
-                                <div className="!text-sm !text-emerald-800 !font-medium !mt-1">
-                                    Dữ liệu chuyên cần <span className="!font-black">{isEdit || editData ? editData.attendanceRate : '0'}%</span> và Điểm GPA <span className="!font-black">{isEdit || editData ? editData.gpa : '0'}</span> đã được hệ thống tổng hợp sẵn.
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="!space-y-2">
-                            <label className="!text-[11px] !font-black !text-text-muted !uppercase !tracking-widest !ml-1">
-                                Nhận xét & Đánh giá cá nhân
-                            </label>
-                            <textarea 
-                                value={evaluation}
-                                onChange={(e) => setEvaluation(e.target.value)}
-                                disabled={isStudent}
-                                placeholder={isStudent ? "" : "Nhập nội dung đánh giá dành cho học sinh... (Nội dung sẽ hiển thị ngay ở phần xem trước bên phải)"}
-                                className="!w-full !px-5 !py-4 !bg-background !border !border-border !rounded-2xl !text-base !font-medium !focus:border-primary !outline-none !h-48 !resize-none custom-scrollbar shadow-inner disabled:!bg-white disabled:!italic"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Right Column: Live Preview - Hidden on Mobile */}
-                    <div className="!hidden lg:!flex !p-8 lg:!p-12 !bg-[#F1F5F9] !flex-col !items-center !overflow-y-auto custom-scrollbar">
+                    {/* Preview Column: Show for everyone, full width for Student */}
+                    <div className={`!flex !p-4 lg:!p-12 !bg-[#F1F5F9] !flex-col !items-center !overflow-y-auto custom-scrollbar ${isStudent ? '!w-full' : ''}`}>
                         
                         
                         {/* The "Paper" */}
