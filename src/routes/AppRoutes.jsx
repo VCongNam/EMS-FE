@@ -50,6 +50,10 @@ import TotalRevenuePage from '../features/tuition-management/pages/TotalRevenueP
 import ClassFinancialReportsPage from '../features/tuition-management/pages/ClassFinancialReportsPage';
 import ClassFinancialDetailPage from '../features/tuition-management/pages/ClassFinancialDetailPage';
 
+// Academic Analytics Page
+import AcademicReportPage from '../features/academic-analytics/pages/AcademicReportPage';
+import ClassReportDetailPage from '../features/academic-analytics/pages/ClassReportDetailPage';
+
 // Class Detail Components
 import ClassReportsTab from '../features/dashboard/components/classes/detail/components/reports/ClassReportsTab';
 import TransactionReviewHubPage from '../features/tuition-management/pages/TransactionReviewHubPage';
@@ -105,6 +109,8 @@ export const AppRoutes = () => {
                          <Route element={<DashboardLayout />}>
                               <Route path="dashboard" element={<DashboardPage />} />
                               <Route path="profile" element={<ProfilePage />} />
+                              <Route path="teacher/academic-report" element={<AcademicReportPage />} />
+                              <Route path="teacher/academic-report/:classId" element={<ClassReportDetailPage />} />
                               <Route path="teacher/classes" element={<TeacherClassListPage />} />
                               <Route path="teacher/feedback" element={<TeacherFeedbackPage />} />
                               <Route path="teacher/classes/:classId" element={<ClassDetailLayout />}>
