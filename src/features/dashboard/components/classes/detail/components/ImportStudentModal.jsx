@@ -163,8 +163,8 @@ const ImportStudentModal = ({ isOpen, onClose, onImportSuccess, classId }) => {
                         <div>
                             <h2 className="text-xl font-bold text-text-main">
                                 {currentStep === 0 && "Thêm học sinh bằng danh sách"}
-                                {currentStep === 1 && "Danh sách tài khoản khởi tạo"}
-                                {currentStep === 2 && "Kết quả gán vào lớp học"}
+                                {currentStep === 1 && "Kết quả khởi tạo tài khoản"}
+                                {currentStep === 2 && "Kết quả thêm vào lớp học"}
                             </h2>
                             <p className="text-sm text-text-muted font-medium">
                                 {currentStep === 0 && "Sử dụng file Excel để thêm nhanh nhiều học sinh"}
@@ -245,19 +245,29 @@ const ImportStudentModal = ({ isOpen, onClose, onImportSuccess, classId }) => {
                             </div>
 
                             <div className="space-y-4">
-                                <h4 className="font-bold text-text-main text-sm">Chi tiết tài khoản Import</h4>
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <h4 className="font-bold text-text-main text-sm">Chi tiết tài khoản Import</h4>
+                                    {results.base64ExcelReport && (
+                                        <button onClick={downloadReport} className="text-[11px] font-bold text-primary flex items-center gap-1 hover:underline">
+                                            <Icon icon="solar:download-square-linear" /> Tải báo cáo Excel
+                                        </button>
+                                    )}
+                                </div>
                                 <div className="max-h-[300px] overflow-y-auto custom-scrollbar border border-border rounded-2xl">
                                     {[...(results.newAccounts || []), ...(results.existedAccounts || [])].map((acc, idx) => (
                                         <div key={idx} className="!p-4 border-b border-border last:border-0 flex items-center justify-between hover:bg-background transition-colors">
                                             <div className="flex items-center !gap-3">
-                                                <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">{acc.fullName?.charAt(0)}</div>
-                                                <div>
-                                                    <p className="text-[14px] font-bold">{acc.fullName}</p>
-                                                    <p className="text-xs text-text-muted">{acc.phoneNumber}</p>
+                                                <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
+                                                    {acc.fullName?.charAt(0) || "S"}
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="text-[14px] font-bold truncate">{acc.fullName}</p>
+                                                    <p className="text-xs text-text-muted truncate">{acc.phoneNumber}</p>
                                                 </div>
                                             </div>
-                                            <div className="text-right">
-                                                {results.newAccounts.some(n => n.studentId === acc.studentId) ? 
+                                            <div className="text-right shrink-0">
+                                                {results.newAccounts?.some(n => n.studentId === acc.studentId) ? 
                                                     <span className="text-[10px] font-bold bg-blue-100 text-blue-700 !px-2 !py-0.5 rounded">Mới</span> :
                                                     <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 !px-2 !py-0.5 rounded">Tồn tại</span>
                                                 }
@@ -265,6 +275,7 @@ const ImportStudentModal = ({ isOpen, onClose, onImportSuccess, classId }) => {
                                         </div>
                                     ))}
                                 </div>
+                            </div>
                             </div>
                         </div>
                     )}
@@ -277,8 +288,8 @@ const ImportStudentModal = ({ isOpen, onClose, onImportSuccess, classId }) => {
                                     <Icon icon="solar:check-circle-bold" className="text-2xl" />
                                 </div>
                                 <div>
-                                    <p className="font-bold">Gán vào lớp hoàn tất!</p>
-                                    <p className="text-xs opacity-80">Thành công: {assignmentResults.successCount} | Đã có: {assignmentResults.existedCount}</p>
+                                    <p className="font-bold">Đã xử lý gán học sinh vào lớp!</p>
+                                    <p className="text-xs opacity-80">Thành công: {assignmentResults.successCount} | Đã có trong lớp: {assignmentResults.existedCount}</p>
                                 </div>
                             </div>
 
@@ -310,7 +321,7 @@ const ImportStudentModal = ({ isOpen, onClose, onImportSuccess, classId }) => {
                 <div className="!px-8 !py-6 border-t border-border/50 bg-background/50 flex items-center justify-end !gap-4">
                     {currentStep === 1 && (
                         <>
-                            <Button variant="outline" onClick={resetModal} className="!px-8 !rounded-xl">Nhập file mới</Button>
+                            <Button variant="outline" onClick={resetModal} className="!px-8 !rounded-xl">Thêm học sinh</Button>
                             <Button onClick={handleAssign} isLoading={isLoading} className="!px-8 !rounded-xl font-bold bg-primary shadow-premium-primary">
                                 Thêm vào lớp
                             </Button>

@@ -18,9 +18,10 @@ const AssignmentDetailStudent = ({ assignment, onRefresh }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const fileInputRef = useRef(null);
 
-    const mySubmission = assignment.mySubmission || null;
-    const isSubmitted = mySubmission?.status === 'Submitted';
-    const statusText = isSubmitted ? 'Đã nộp' : 'Chưa nộp';
+    const mySubmission = assignment.submission || null;
+    const isSubmitted = mySubmission?.status === 'Submitted' || mySubmission?.status === 'Graded';
+    const isGraded = mySubmission?.status === 'Graded';
+    const statusText = isGraded ? 'Đã chấm điểm' : isSubmitted ? 'Đã nộp' : 'Chưa nộp';
 
     const handleFileChange = (e) => {
         const files = Array.from(e.target.files);
@@ -212,10 +213,13 @@ const AssignmentDetailStudent = ({ assignment, onRefresh }) => {
 
                     <div className="flex items-center justify-between relative">
                         <h3 className="text-xl font-black text-text-main tracking-tight">Bài làm</h3>
-                        <div className={`!px-3 !py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm border ${isSubmitted
-                            ? 'bg-green-50 text-green-600 border-green-200'
-                            : 'bg-orange-50 text-orange-600 border-orange-200 animate-pulse'
-                            }`}>
+                        <div className={`!px-3 !py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm border ${
+                            isGraded
+                                ? 'bg-blue-50 text-blue-600 border-blue-200'
+                                : isSubmitted
+                                ? 'bg-green-50 text-green-600 border-green-200'
+                                : 'bg-orange-50 text-orange-600 border-orange-200 animate-pulse'
+                        }`}>
                             {statusText}
                         </div>
                     </div>
@@ -269,6 +273,39 @@ const AssignmentDetailStudent = ({ assignment, onRefresh }) => {
                         )}
                     </div>
 
+                    {/* Grade & Feedback Section - shown when Graded */}
+                    {isGraded && (
+                        <div className="space-y-4 !pt-4 border-t border-border">
+                            {/* Grade */}
+                            <div className="flex items-center justify-between bg-blue-50 border border-blue-100 rounded-2xl !px-5 !py-4">
+                                <div className="flex items-center gap-2 text-blue-700">
+                                    <Icon icon="material-symbols:grade-rounded" className="text-2xl" />
+                                    <span className="text-sm font-black uppercase tracking-widest">Điểm số</span>
+                                </div>
+                                <span className="text-3xl font-black text-blue-700">
+                                    {mySubmission?.grade ?? '—'}
+                                    <span className="text-base font-bold text-blue-400">/{assignment.maxScore || 10}</span>
+                                </span>
+                            </div>
+
+                            {/* Feedbacks */}
+                            {mySubmission?.feedbacks && mySubmission.feedbacks.length > 0 && (
+                                <div className="space-y-2">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-text-muted flex items-center gap-1">
+                                        <Icon icon="material-symbols:comment-outline-rounded" className="text-sm" />
+                                        Nhận xét của giáo viên
+                                    </p>
+                                    {mySubmission.feedbacks.map((fb, idx) => (
+                                        <div key={idx} className="bg-white border border-blue-100 rounded-xl !px-4 !py-3 text-sm text-text-main font-medium flex items-start gap-2 shadow-sm">
+                                            <Icon icon="material-symbols:format-quote-rounded" className="text-blue-400 text-lg shrink-0 mt-0.5" />
+                                            <span>{fb}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     <input
                         type="file"
                         multiple
@@ -277,7 +314,8 @@ const AssignmentDetailStudent = ({ assignment, onRefresh }) => {
                         onChange={handleFileChange}
                     />
 
-                    <div className="space-y-3 pt-4">
+                    {/* Action Buttons - hidden when graded */}
+                    {!isGraded && <div className="space-y-3 pt-4">
                         <button
                             onClick={() => fileInputRef.current?.click()}
                             className="w-full flex items-center justify-center gap-2 border-2 border-primary/20 bg-white text-primary font-black rounded-2xl !p-4 hover:bg-primary hover:text-white hover:border-primary transition-all group shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
@@ -312,7 +350,15 @@ const AssignmentDetailStudent = ({ assignment, onRefresh }) => {
                                 Hủy nộp bài
                             </button>
                         )}
-                    </div>
+                    </div>}
+
+                    {/* Locked notice when graded */}
+                    {isGraded && (
+                        <div className="flex items-center gap-2 !pt-4 border-t border-border text-text-muted text-xs font-bold">
+                            <Icon icon="material-symbols:lock-rounded" className="text-base shrink-0" />
+                            <span>Bài đã được chấm điểm. Không thể chỉnh sửa.</span>
+                        </div>
+                    )}
 
                 </div>
             </div>
