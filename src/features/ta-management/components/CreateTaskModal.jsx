@@ -115,7 +115,6 @@ const CreateTaskModal = ({ isOpen, onClose, onAssign, tas = [], classes = [] }) 
                                     className="w-full !px-4 !py-3 rounded-xl bg-background border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium text-text-main outline-none appearance-none"
                                 >
                                     <option value="Grade">Chấm điểm </option>
-                                    <option value="Report">Báo cáo </option>
                                 </select>
                             </div>
                         </div>
