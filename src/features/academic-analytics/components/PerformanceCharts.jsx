@@ -53,43 +53,65 @@ export const GradingDonutChart = ({ data, totalGraded }) => {
 };
 
 // 2. Biến động sĩ số (Line Chart)
-export const GrowthTrendsChart = ({ data, startDate, endDate }) => {
-    // Helper formats date for display
+export const GrowthTrendsChart = ({ data, startDate, endDate, isTrendArray }) => {
     const formatDate = (date) => {
         const d = new Date(date);
         return `${d.getDate()}/${d.getMonth() + 1}`;
     };
 
-    // Calculate 8 real dates between startDate and endDate
-    const getDates = () => {
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-        const diff = end - start;
-        const interval = diff / 7; // 7 intervals for 8 points
-        
-        return Array.from({ length: 8 }, (_, i) => new Date(start.getTime() + i * interval));
-    };
+    let chartData = [];
 
-    const dates = getDates();
-    const newTotal = data?.newEnrollments || 0;
-    const dropTotal = data?.dropouts || 0;
-
-    // Distribute data points realistically (Bell curve-ish)
-    const weights = [0.05, 0.15, 0.25, 0.1, 0.15, 0.2, 0.05, 0.05];
-    
-    let cumulativeNet = 0;
-    const chartData = dates.map((date, i) => {
-        const pointNew = Math.round(newTotal * weights[i]);
-        const pointDrop = Math.round(dropTotal * weights[i]);
-        cumulativeNet += (pointNew - pointDrop);
+    if (isTrendArray && Array.isArray(data) && data.length > 0) {
+        // Aggregate/Sample data if too many points
+        const targetPoints = 10;
+        const step = Math.max(1, Math.floor(data.length / targetPoints));
         
-        return {
-            name: formatDate(date),
-            new: pointNew,
-            drop: pointDrop,
-            net: cumulativeNet
+        let cumulativeNet = 0;
+        for (let i = 0; i < data.length; i += step) {
+            const chunk = data.slice(i, i + step);
+            const chunkNew = chunk.reduce((sum, item) => sum + (item.count || 0), 0);
+            // We don't have daily dropout in the current response, so we'll assume it's 0 or use the total if applicable
+            // For now, let's just show 'new' and 'net'
+            cumulativeNet += chunkNew;
+            
+            chartData.push({
+                name: formatDate(data[i].date),
+                new: chunkNew,
+                drop: 0,
+                net: cumulativeNet
+            });
+            
+            if (chartData.length >= targetPoints) break;
+        }
+    } else {
+        // Original logic for weighted distribution (fake data)
+        const getDates = () => {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            const diff = end - start;
+            const interval = diff / 7;
+            return Array.from({ length: 8 }, (_, i) => new Date(start.getTime() + i * interval));
         };
-    });
+
+        const dates = getDates();
+        const newTotal = data?.newEnrollments || 0;
+        const dropTotal = data?.dropouts || 0;
+        const weights = [0.05, 0.15, 0.25, 0.1, 0.15, 0.2, 0.05, 0.05];
+        
+        let cumulativeNet = 0;
+        chartData = dates.map((date, i) => {
+            const pointNew = Math.round(newTotal * (weights[i] || 0));
+            const pointDrop = Math.round(dropTotal * (weights[i] || 0));
+            cumulativeNet += (pointNew - pointDrop);
+            
+            return {
+                name: formatDate(date),
+                new: pointNew,
+                drop: pointDrop,
+                net: cumulativeNet
+            };
+        });
+    }
 
     return (
         <div className="h-[300px] w-full">

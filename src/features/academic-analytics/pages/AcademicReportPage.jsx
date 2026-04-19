@@ -14,11 +14,15 @@ const AcademicReportPage = () => {
     const [reportData, setReportData] = useState(null);
 
     // Filters state
-    const currentYear = new Date().getFullYear();
-    const [startDate, setStartDate] = useState(`${currentYear}-01-01`);
     const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    const [endDate, setEndDate] = useState(todayStr);
+    const firstDayOfMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`;
+    
+    // Calculate last day of current month
+    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    const lastDayOfMonth = `${lastDay.getFullYear()}-${String(lastDay.getMonth() + 1).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`;
+    
+    const [startDate, setStartDate] = useState(firstDayOfMonth);
+    const [endDate, setEndDate] = useState(lastDayOfMonth);
     const [subject, setSubject] = useState('All');
     const [status, setStatus] = useState('All');
 
@@ -32,7 +36,51 @@ const AcademicReportPage = () => {
             const response = await growthReportService.getTeacherGrowthReport(startDate, endDate, token);
             const result = await response.json();
             if (response.ok) {
-                 setReportData(result.data || result);
+                const rawData = result.data || result;
+
+                // Xử lý dữ liệu để tính toán các field còn thiếu (netGrowth, aboveAveragePercent)
+                const processedData = {
+                    ...rawData,
+                    totalStudentGrowth: {
+                        ...rawData.totalStudentGrowth,
+                        netGrowth: (rawData.totalStudentGrowth?.newEnrollments || 0) - (rawData.totalStudentGrowth?.dropouts || 0)
+                    },
+                    totalAcademicPerformance: {
+                        ...rawData.totalAcademicPerformance,
+                        grading: {
+                            ...rawData.totalAcademicPerformance?.grading,
+                            totalGraded: (() => {
+                                const g = rawData.totalAcademicPerformance?.grading || {};
+                                return (g.excellentCount || 0) + (g.goodCount || 0) + (g.averageCount || 0) + (g.weakCount || 0);
+                            })(),
+                            aboveAveragePercent: (() => {
+                                const g = rawData.totalAcademicPerformance?.grading || {};
+                                const total = (g.excellentCount || 0) + (g.goodCount || 0) + (g.averageCount || 0) + (g.weakCount || 0);
+                                return total > 0 ? Math.round(((g.excellentCount || 0) + (g.goodCount || 0) + (g.averageCount || 0)) / total * 100) : 0;
+                            })()
+                        }
+                    },
+                    classBreakdowns: (rawData.classBreakdowns || []).map(cls => {
+                        const g = cls.academicPerformance?.grading || {};
+                        const total = (g.excellentCount || 0) + (g.goodCount || 0) + (g.averageCount || 0) + (g.weakCount || 0);
+                        return {
+                            ...cls,
+                            studentGrowth: {
+                                ...cls.studentGrowth,
+                                netGrowth: (cls.studentGrowth?.newEnrollments || 0) - (cls.studentGrowth?.dropouts || 0)
+                            },
+                            academicPerformance: {
+                                ...cls.academicPerformance,
+                                grading: {
+                                    ...g,
+                                    aboveAveragePercent: total > 0 ? Math.round(((g.excellentCount || 0) + (g.goodCount || 0) + (g.averageCount || 0)) / total * 100) : 0
+                                }
+                            }
+                        };
+                    })
+                };
+
+                setReportData(processedData);
             }
         } catch (error) {
             console.error('Lỗi lấy báo cáo:', error);
@@ -49,7 +97,7 @@ const AcademicReportPage = () => {
     // Filtered data for table
     const filteredClasses = (reportData?.classBreakdowns || []).filter(cls => {
         const matchSubject = subject === 'All' || cls.subjectName.toLowerCase().includes(subject.toLowerCase());
-        
+
         // Cụ thể: "Đang dạy" sẽ lấy tất cả lớp có trạng thái KHÁC "Archived"
         let matchStatus = true;
         if (status === 'Active') {
@@ -57,7 +105,7 @@ const AcademicReportPage = () => {
         } else if (status === 'Archived') {
             matchStatus = cls.status === 'Archived';
         }
-        
+
         return matchSubject && matchStatus;
     });
 
@@ -122,19 +170,19 @@ const AcademicReportPage = () => {
                 <>
                     {/* 2. KPI Cards (Grid 4 cột) */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        <StatCard 
-                            title="Sĩ số (Active)" 
-                            icon="material-symbols:group-rounded" 
-                            value={reportData?.totalOverview?.totalActiveStudents} 
+                        <StatCard
+                            title="Sĩ số (Active)"
+                            icon="material-symbols:group-rounded"
+                            value={reportData?.totalOverview?.totalActiveStudents}
                             subValue="Lấp đầy phòng"
                             progress={reportData?.totalOverview?.capacityUtilizationPercent}
                         />
-                        <StatCard 
-                            title="Tăng trưởng" 
-                            icon="material-symbols:trending-up-rounded" 
+                        <StatCard
+                            title="Tăng trưởng"
+                            icon="material-symbols:trending-up-rounded"
                             iconColor="text-green-600"
                             iconBg="!bg-green-50"
-                            value={`${reportData?.totalStudentGrowth?.netGrowth > 0 ? '+' : ''}${reportData?.totalStudentGrowth?.netGrowth}`} 
+                            value={`${reportData?.totalStudentGrowth?.netGrowth > 0 ? '+' : ''}${reportData?.totalStudentGrowth?.netGrowth}`}
                             subValue={
                                 <div className="flex gap-3 text-[10px] font-black uppercase tracking-widest text-[#64748B]">
                                     <span className="text-green-600">{reportData?.totalStudentGrowth?.newEnrollments} mới</span>
@@ -143,21 +191,21 @@ const AcademicReportPage = () => {
                                 </div>
                             }
                         />
-                        <StatCard 
-                            title="Chuyên cần" 
-                            icon="material-symbols:calendar-check-rounded" 
+                        <StatCard
+                            title="Chuyên cần"
+                            icon="material-symbols:calendar-check-rounded"
                             iconColor="text-purple-600"
                             iconBg="!bg-purple-50"
-                            value={`${reportData?.totalAcademicPerformance?.attendanceRatePercent}%`} 
+                            value={`${reportData?.totalAcademicPerformance?.attendanceRatePercent}%`}
                             warning={reportData?.totalAcademicPerformance?.attendanceRatePercent < 80}
                             subValue="Tỉ lệ đi học trung bình"
                         />
-                        <StatCard 
-                            title="Chất lượng học lực" 
-                            icon="material-symbols:school-rounded" 
+                        <StatCard
+                            title="Chất lượng học lực"
+                            icon="material-symbols:school-rounded"
                             iconColor="text-indigo-600"
                             iconBg="!bg-indigo-50"
-                            value={`${reportData?.totalAcademicPerformance?.grading?.aboveAveragePercent}%`} 
+                            value={`${reportData?.totalAcademicPerformance?.grading?.aboveAveragePercent}%`}
                             subValue="Tỉ lệ trên trung bình (>=5.0)"
                         />
                     </div>
@@ -169,14 +217,17 @@ const AcademicReportPage = () => {
                                 <Icon icon="material-symbols:pie-chart-rounded" className="text-blue-600" />
                                 Phân bổ học lực
                             </h3>
-                            <GradingDonutChart data={reportData?.totalAcademicPerformance?.grading} />
+                            <GradingDonutChart
+                                data={reportData?.totalAcademicPerformance?.grading}
+                                totalGraded={reportData?.totalAcademicPerformance?.grading?.totalGraded}
+                            />
                         </div>
                         <div className="!bg-white rounded-[var(--radius-xl)] !p-6 border border-slate-200 shadow-sm">
                             <h3 className="text-lg font-black text-slate-900 !mb-6 flex items-center gap-2">
                                 <Icon icon="material-symbols:bar-chart-rounded" className="text-green-600" />
                                 Biến động sĩ số
                             </h3>
-                            <GrowthTrendsChart data={reportData?.totalStudentGrowth} startDate={startDate} endDate={endDate} />
+                            <GrowthTrendsChart data={reportData?.globalEnrollmentTrend || []} isTrendArray={true} />
                         </div>
                     </div>
 

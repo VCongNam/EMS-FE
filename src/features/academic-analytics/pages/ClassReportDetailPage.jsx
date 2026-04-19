@@ -17,12 +17,14 @@ const ClassReportDetailPage = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [classData, setClassData] = useState(null);
     const [activeTab, setActiveTab] = useState('grades');
+    const today = new Date();
+    const firstDayOfMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`;
+    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    const lastDayOfMonth = `${lastDay.getFullYear()}-${String(lastDay.getMonth() + 1).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`;
 
     // Filters state - initialized from navigation state or defaults
-    const [startDate, setStartDate] = useState(location.state?.filters?.startDate || `${new Date().getFullYear()}-01-01`);
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    const [endDate, setEndDate] = useState(location.state?.filters?.endDate || todayStr);
+    const [startDate, setStartDate] = useState(location.state?.filters?.startDate || firstDayOfMonth);
+    const [endDate, setEndDate] = useState(location.state?.filters?.endDate || lastDayOfMonth);
 
     const fetchClassReport = async () => {
         try {
@@ -30,7 +32,26 @@ const ClassReportDetailPage = () => {
             const response = await growthReportService.getClassGrowthReport(classId, startDate, endDate, token);
             const result = await response.json();
             if (response.ok) {
-                setClassData(result.data || result);
+                const rawData = result.data || result;
+                const g = rawData.academicPerformance?.grading || {};
+                const total = (g.excellentCount || 0) + (g.goodCount || 0) + (g.averageCount || 0) + (g.weakCount || 0);
+
+                const processedData = {
+                    ...rawData,
+                    studentGrowth: {
+                        ...rawData.studentGrowth,
+                        netGrowth: (rawData.studentGrowth?.newEnrollments || 0) - (rawData.studentGrowth?.dropouts || 0)
+                    },
+                    academicPerformance: {
+                        ...rawData.academicPerformance,
+                        grading: {
+                            ...g,
+                            totalGraded: total,
+                            aboveAveragePercent: total > 0 ? Math.round(((g.excellentCount || 0) + (g.goodCount || 0) + (g.averageCount || 0)) / total * 100) : 0
+                        }
+                    }
+                };
+                setClassData(processedData);
             }
         } catch (error) {
             console.error('Lỗi lấy báo cáo chi tiết:', error);
@@ -67,12 +88,12 @@ const ClassReportDetailPage = () => {
     const { overview, studentGrowth, academicPerformance } = classData;
 
     return (
-        <div className="w-full mx-auto animate-fade-in space-y-6 !pb-12 h-screen overflow-y-auto pr-2 custom-scrollbar">
+        <div className="w-full !mx-auto animate-fade-in space-y-6 !pb-12 h-screen overflow-y-auto !px-6 !pt-4 !pr-2 custom-scrollbar">
             {/* 1. Sticky Header with Back Button & Title */}
             <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border border-slate-200 rounded-[var(--radius-xl)] p-6 shadow-sm mb-6">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="flex items-center gap-4">
-                        <button 
+                        <button
                             onClick={() => navigate('/teacher/academic-report')}
                             className="p-2.5 rounded-xl bg-slate-50 text-slate-500 hover:bg-blue-600 hover:text-white transition-all shadow-sm border border-slate-100 active:scale-95 group"
                             title="Quay lại"
@@ -81,7 +102,7 @@ const ClassReportDetailPage = () => {
                         </button>
                         <div>
                             <div className="flex items-center gap-3">
-                                <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+                                <h1 className="text-2xl font-black text-slate-900 tracking-tight truncate max-w-[300px] md:max-w-md lg:max-w-lg" title={classData.className}>
                                     {classData.className}
                                 </h1>
                                 <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${classData.status === 'Archived' ? 'bg-slate-100 text-slate-600' : 'bg-green-100 text-green-700'}`}>
@@ -96,25 +117,25 @@ const ClassReportDetailPage = () => {
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3 bg-slate-50 p-2 rounded-2xl border border-slate-100">
-                        <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm">
+                    <div className="flex flex-wrap items-center gap-3 bg-slate-50 !p-3 rounded-2xl border border-slate-100">
+                        <div className="flex flex-wrap items-center gap-2 bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm">
                             <Icon icon="material-symbols:date-range-rounded" className="text-slate-400" />
-                            <input 
-                                type="date" 
-                                value={startDate} 
-                                onChange={(e) => setStartDate(e.target.value)} 
-                                className="text-xs font-bold outline-none border-none p-0 w-28 bg-transparent" 
+                            <input
+                                type="date"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                                className="text-xs font-bold outline-none border-none p-0 w-28 bg-transparent"
                             />
                             <span className="text-slate-300">|</span>
-                            <input 
-                                type="date" 
-                                value={endDate} 
-                                onChange={(e) => setEndDate(e.target.value)} 
-                                className="text-xs font-bold outline-none border-none p-0 w-28 bg-transparent" 
+                            <input
+                                type="date"
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
+                                className="text-xs font-bold outline-none border-none p-0 w-28 bg-transparent"
                             />
                         </div>
-                        <button 
-                            onClick={fetchClassReport} 
+                        <button
+                            onClick={fetchClassReport}
                             className="bg-blue-600 text-white px-4 py-2 rounded-xl font-bold text-xs hover:bg-blue-700 transition-all shadow-md shadow-blue-100 active:scale-95"
                         >
                             Lọc
@@ -125,19 +146,19 @@ const ClassReportDetailPage = () => {
 
             {/* 2. KPI Cards (Scoped for 1 class) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard 
-                    title="Sĩ số Hiện tại" 
-                    icon="material-symbols:group-rounded" 
-                    value={overview?.totalActiveStudents} 
+                <StatCard
+                    title="Sĩ số Hiện tại"
+                    icon="material-symbols:group-rounded"
+                    value={overview?.totalActiveStudents}
                     subValue="Tỷ lệ lấp đầy"
                     progress={overview?.capacityUtilizationPercent}
                 />
-                <StatCard 
-                    title="Biến động lớp" 
-                    icon="material-symbols:trending-up-rounded" 
+                <StatCard
+                    title="Biến động lớp"
+                    icon="material-symbols:trending-up-rounded"
                     iconColor="text-green-600"
                     iconBg="bg-green-50"
-                    value={`${studentGrowth?.netGrowth > 0 ? '+' : ''}${studentGrowth?.netGrowth}`} 
+                    value={`${studentGrowth?.netGrowth > 0 ? '+' : ''}${studentGrowth?.netGrowth}`}
                     subValue={
                         <div className="flex gap-3 text-[10px] font-black uppercase tracking-widest text-[#64748B]">
                             <span className="text-green-600">{studentGrowth?.newEnrollments} mới</span>
@@ -146,21 +167,21 @@ const ClassReportDetailPage = () => {
                         </div>
                     }
                 />
-                <StatCard 
-                    title="Chuyên cần lớp" 
-                    icon="material-symbols:calendar-check-rounded" 
+                <StatCard
+                    title="Chuyên cần lớp"
+                    icon="material-symbols:calendar-check-rounded"
                     iconColor="text-purple-600"
                     iconBg="bg-purple-50"
-                    value={`${academicPerformance?.attendanceRatePercent}%`} 
+                    value={`${academicPerformance?.attendanceRatePercent}%`}
                     warning={academicPerformance?.attendanceRatePercent < 80}
                     subValue="Tỷ lệ đi học lớp"
                 />
-                <StatCard 
-                    title="Học lực lớp" 
-                    icon="material-symbols:school-rounded" 
+                <StatCard
+                    title="Học lực lớp"
+                    icon="material-symbols:school-rounded"
                     iconColor="text-indigo-600"
                     iconBg="bg-indigo-50"
-                    value={`${academicPerformance?.grading?.aboveAveragePercent}%`} 
+                    value={`${academicPerformance?.grading?.aboveAveragePercent}%`}
                     subValue="Trên trung bình (>=5.0)"
                 />
             </div>
@@ -172,9 +193,9 @@ const ClassReportDetailPage = () => {
                         <Icon icon="material-symbols:pie-chart-rounded" className="text-indigo-600" />
                         Phân bổ học lực riêng
                     </h3>
-                    <GradingDonutChart 
-                        data={academicPerformance?.grading} 
-                        totalGraded={academicPerformance?.grading?.totalGradedStudents} 
+                    <GradingDonutChart
+                        data={academicPerformance?.grading}
+                        totalGraded={academicPerformance?.grading?.totalGraded}
                     />
                 </div>
                 <div className="bg-white rounded-[var(--radius-xl)] p-6 border border-slate-200 shadow-sm">
@@ -182,20 +203,20 @@ const ClassReportDetailPage = () => {
                         <Icon icon="material-symbols:bar-chart-rounded" className="text-green-600" />
                         Xu hướng sĩ số lớp
                     </h3>
-                    <GrowthTrendsChart data={studentGrowth} startDate={startDate} endDate={endDate} />
+                    <GrowthTrendsChart data={classData.enrollmentTrend} isTrendArray={true} />
                 </div>
             </div>
 
             {/* 4. Lists & Tables Footer */}
             <div className="bg-white rounded-[var(--radius-xl)] border border-slate-200 shadow-sm overflow-hidden">
                 <div className="flex border-b border-slate-100">
-                    <button 
+                    <button
                         onClick={() => setActiveTab('grades')}
                         className={`px-8 py-4 text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'grades' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50' : 'text-slate-400 hover:text-slate-600'}`}
                     >
                         Bảng điểm (GPA)
                     </button>
-                    <button 
+                    <button
                         onClick={() => setActiveTab('history')}
                         className={`px-8 py-4 text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'history' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50' : 'text-slate-400 hover:text-slate-600'}`}
                     >
@@ -208,34 +229,35 @@ const ClassReportDetailPage = () => {
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse">
                                 <thead>
-                                    <tr className="bg-slate-50 border-b border-slate-100 text-[10px] uppercase tracking-[0.2em] text-slate-500 font-black">
-                                        <th className="px-8 py-4">Học sinh</th>
-                                        <th className="px-8 py-4 text-center">GPA</th>
-                                        <th className="px-8 py-4 text-center">Xếp loại</th>
+                                    <tr className="!bg-gray-50 border-b border-gray-100 text-[11px] uppercase tracking-wider text-gray-500 font-bold">
+                                        <th className="!px-6 !py-4 whitespace-nowrap">Học sinh</th>
+                                        <th className="!px-6 !py-4 text-center whitespace-nowrap">GPA / Điểm số</th>
+                                        <th className="!px-6 !py-4 text-center whitespace-nowrap">Xếp loại học lực</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
                                     {(classData.studentGrades || []).length > 0 ? (
                                         classData.studentGrades.map((student) => (
                                             <tr key={student.studentId} className="hover:bg-slate-50/50 transition-colors group">
-                                                <td className="px-8 py-5">
+                                                <td className="!px-6 !py-5">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">
+                                                        <div className="w-9 h-9 flex-shrink-0 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs border border-blue-200">
                                                             {student.studentName?.charAt(0)}
                                                         </div>
-                                                        <span className="text-sm font-bold text-slate-700">{student.studentName}</span>
+                                                        <span className="text-sm font-bold text-[#1E293B] truncate max-w-[150px] md:max-w-xs" title={student.studentName}>
+                                                            {student.studentName}
+                                                        </span>
                                                     </div>
                                                 </td>
-                                                <td className="px-8 py-5 text-center">
+                                                <td className="!px-6 !py-5 text-center">
                                                     <span className={`text-sm font-black ${student.gpa >= 8 ? 'text-green-600' : student.gpa >= 5 ? 'text-blue-600' : 'text-red-500'}`}>
-                                                        {student.gpa}
+                                                        {student.gpa?.toFixed(2)}
                                                     </span>
                                                 </td>
-                                                <td className="px-8 py-5 text-center">
-                                                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                                                        student.rank === 'Giỏi' || student.rank === 'Xuất sắc' ? 'bg-green-50 text-green-600' : 
-                                                        student.rank === 'Trung bình' ? 'bg-amber-50 text-amber-600' : 'bg-slate-50 text-slate-600'
-                                                    }`}>
+                                                <td className="!px-6 !py-5 text-center">
+                                                    <span className={`!px-3 !py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${student.rank === 'Giỏi' || student.rank === 'Xuất sắc' ? 'bg-green-100 text-green-700' :
+                                                            student.rank === 'Trung bình' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'
+                                                        }`}>
                                                         {student.rank}
                                                     </span>
                                                 </td>
