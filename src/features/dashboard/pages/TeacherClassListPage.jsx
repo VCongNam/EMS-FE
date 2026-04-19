@@ -153,9 +153,29 @@ const TeacherClassListPage = () => {
         setIsModalOpen(true);
     };
 
-    const handleOpenEditModal = (classData) => {
-        setSelectedClass(classData);
-        setIsModalOpen(true);
+    const handleOpenEditModal = async (classData) => {
+        try {
+            const token = useAuthStore.getState().user?.token;
+            if (!token) return toast.error('Vui lòng đăng nhập lại!');
+
+            const loadingToast = toast.loading("Đang lấy thông tin chi tiết...");
+            
+            const response = await classService.getClassById(classData.id, token);
+            
+            if (!response.ok) {
+                toast.dismiss(loadingToast);
+                throw new Error('Không thể lấy thông tin chi tiết lớp học.');
+            }
+
+            const fullDetail = await response.json();
+            toast.dismiss(loadingToast);
+
+            // fullDetail will have all actual API fields: className, schedules, startDate, etc.
+            setSelectedClass(fullDetail);
+            setIsModalOpen(true);
+        } catch (error) {
+            toast.error(error.message);
+        }
     };
 
     const handleOpenViewModal = (classData) => {

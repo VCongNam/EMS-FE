@@ -61,5 +61,11 @@ export const sessionService = {
       },
       body: JSON.stringify(payload)
     });
+  },
+
+  getClassAttendanceHistory: async (classId, token) => {
+    return fetch(getApiUrl(`/api/Session/class/${classId}/attendance-history`), {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
   }
 };

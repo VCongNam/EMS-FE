@@ -66,15 +66,19 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
         if (isOpen) {
             if (initialData) {
                 setForm({
-                    className: initialData.name || '',
+                    className: initialData.className || initialData.name || '',
                     subjectName: initialData.subjectName || initialData.subject || '', 
                     gradeLevel: initialData.gradeLevel || '', 
-                    startDate: '', // Cần parse từ mock nếu có
-                    endDate: '',
+                    startDate: initialData.startDate ? initialData.startDate.split('T')[0] : '',
+                    endDate: initialData.endDate ? initialData.endDate.split('T')[0] : '',
                     room: initialData.room || '',
                     tuitionFee: initialData.tuitionFee || '',
-                    maxCapacity: initialData.maxStudents || initialData.students?.max || '',
-                    schedules: initialData.schedules || [],
+                    maxCapacity: initialData.maxStudents || '',
+                    schedules: initialData.schedules ? initialData.schedules.map(s => ({
+                        day: mapNumberToDay(s.dayOfWeek),
+                        startTime: s.startTime?.substring(0, 5) || '',
+                        endTime: s.endTime?.substring(0, 5) || ''
+                    })) : [],
                 });
             } else {
                 setForm(initialForm);
@@ -87,6 +91,11 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
         // Mapping: Sunday=1, Monday=2, ..., Saturday=7 (Vietnamese convention)
         const map = { 'CN': 1, 'T2': 2, 'T3': 3, 'T4': 4, 'T5': 5, 'T6': 6, 'T7': 7 };
         return map[dayKey];
+    };
+
+    const mapNumberToDay = (num) => {
+        const map = { 1: 'CN', 2: 'T2', 3: 'T3', 4: 'T4', 5: 'T5', 6: 'T6', 7: 'T7' };
+        return map[num];
     };
 
     if (!isOpen) return null;

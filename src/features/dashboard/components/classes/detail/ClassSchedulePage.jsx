@@ -242,29 +242,9 @@ const ClassSchedulePage = () => {
             )}
 
             {/* ── Config Summary Card ── */}
-            {scheduleConfig ? (
+            {/* {scheduleConfig ? (
                 <div className="!bg-surface !p-6 rounded-[2rem] border border-border shadow-sm">
-                    <div className="flex items-start justify-between !mb-5">
-                        <div className="flex items-center !gap-3">
-                            <div className="w-10 h-10 rounded-2xl !bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                                <Icon icon="solar:settings-bold-duotone" className="text-xl" />
-                            </div>
-                            <div>
-                                <h2 className="text-base font-bold text-text-main">Cấu hình lịch định kỳ</h2>
-                                <p className="text-xs text-text-muted">Thông tin thiết lập hiện tại của lớp</p>
-                            </div>
-                        </div>
-                        {isTeacherOrTA && (
-                            <div className="flex items-center !gap-2">
-                                <button onClick={() => setIsModalOpen(true)} className="flex items-center !gap-1.5 text-xs font-semibold text-primary !px-3 !py-2 border border-primary/30 rounded-xl hover:!bg-primary/5 transition-colors">
-                                    <Icon icon="solar:pen-bold-duotone" className="text-sm" /> Chỉnh sửa
-                                </button>
-                                <button onClick={handleDeleteSchedule} className="flex items-center !gap-1.5 text-xs font-semibold text-red-500 !px-3 !py-2 border border-red-200 rounded-xl hover:!bg-red-50 transition-colors">
-                                    <Icon icon="solar:trash-bin-2-bold-duotone" className="text-sm" /> Xóa cấu hình
-                                </button>
-                            </div>
-                        )}
-                    </div>
+                    
 
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 !gap-3">
                         {[
@@ -300,7 +280,7 @@ const ClassSchedulePage = () => {
                         </button>
                     )}
                 </div>
-            )}
+            )} */}
 
             {/* ── Lesson List ── */}
             <div className="!bg-surface !p-6 rounded-[2rem] border border-border shadow-sm min-h-[400px]">
@@ -359,6 +339,15 @@ const ClassSchedulePage = () => {
                         {paginatedLessons.map((lesson, idx) => {
                             const cfg = STATUS_CONFIG[lesson.status] || STATUS_CONFIG.scheduled;
                             const isDeleting = deletingId === lesson.id;
+
+                            // Attendance rules logic
+                            const now = new Date();
+                            now.setHours(0,0,0,0);
+                            const lessonDate = new Date(lesson.date + 'T00:00:00');
+                            const isFuture = lessonDate > now;
+                            const diffDays = Math.floor((now - lessonDate) / (1000 * 60 * 60 * 24));
+                            const isLocked = diffDays > 7;
+
                             return (
                                 <div key={lesson.id || idx}
                                     className={`flex flex-col sm:flex-row items-start sm:items-center justify-between !gap-4 !p-4 rounded-2xl border transition-all group ${isDeleting ? 'opacity-0 scale-95 border-red-200 !bg-red-50' :
@@ -395,13 +384,18 @@ const ClassSchedulePage = () => {
 
                                         {isTeacherOrTA && (
                                             <div className="flex items-center !gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                                                {canAttend ? (
+                                                {isFuture ? (
+                                                    <div className="flex items-center !gap-1.5 !px-3 !py-1.5 text-xs font-semibold rounded-xl border border-border bg-background text-text-muted cursor-not-allowed" title="Chưa đến ngày điểm danh">
+                                                        <Icon icon="solar:calendar-linear" className="text-sm" />
+                                                        Sắp tới
+                                                    </div>
+                                                ) : canAttend ? (
                                                     <button
-                                                        onClick={() => handleOpenAttendance(lesson)}
-                                                        className={`flex items-center !gap-1.5 !px-3 !py-1.5 text-xs font-bold rounded-xl shadow-sm transition-all whitespace-nowrap ${lesson.status === 'scheduled' ? '!bg-primary text-white hover:!bg-primary/90' : '!bg-background border border-border text-text-main hover:border-primary'}`}
+                                                        onClick={() => handleOpenAttendance({ ...lesson, isLocked })}
+                                                        className={`flex items-center !gap-1.5 !px-3 !py-1.5 text-xs font-bold rounded-xl shadow-sm transition-all whitespace-nowrap ${!isLocked && lesson.status === 'scheduled' ? '!bg-primary text-white hover:!bg-primary/90' : '!bg-background border border-border text-text-main hover:border-primary'}`}
                                                     >
-                                                        <Icon icon={lesson.status === 'scheduled' ? "material-symbols:fact-check-rounded" : "material-symbols:visibility-rounded"} className="text-sm" />
-                                                        Điểm danh
+                                                        <Icon icon={isLocked ? "material-symbols:visibility-rounded" : (lesson.status === 'scheduled' ? "material-symbols:fact-check-rounded" : "material-symbols:edit-rounded")} className="text-sm" />
+                                                        {isLocked ? 'Xem điểm danh' : 'Điểm danh'}
                                                     </button>
                                                 ) : (
                                                     <div className="flex items-center !gap-1.5 !px-3 !py-1.5 text-xs font-semibold rounded-xl border border-amber-200 bg-amber-50 text-amber-600 cursor-not-allowed" title="Không có quyền điểm danh">
@@ -494,7 +488,7 @@ const ClassSchedulePage = () => {
                 lesson={attendanceTarget?.lesson}
                 onClose={() => setAttendanceTarget(null)}
                 onSave={handleSaveAttendance}
-                readOnly={!canAttend}
+                readOnly={!canAttend || attendanceTarget?.lesson?.isLocked}
             />
 
             <ConfirmModal
