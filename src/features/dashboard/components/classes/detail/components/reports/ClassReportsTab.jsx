@@ -17,7 +17,8 @@ const ClassReportsTab = () => {
     const { classId } = useParams();
     const { user } = useAuthStore();
     const token = user?.token;
-    const isStudent = user?.role === 'student';
+    const isStudent = user?.role?.toLowerCase() === 'student';
+    const isTA = user?.role?.toUpperCase() === 'TA';
 
     const [isLoading, setIsLoading] = useState(true);
     const [reports, setReports] = useState([]);
@@ -306,7 +307,8 @@ const ClassReportsTab = () => {
                                         )}
                                         <td className="!p-4 text-right">
                                             <div className="flex items-center justify-end gap-1.5">
-                                                {isStudent ? (
+                                                {(isStudent || isTA) ? (
+                                                    // Student & TA: view-only
                                                     <button 
                                                         title="Xem chi tiết" 
                                                         onClick={() => handleOpenModal(report)} 
@@ -315,6 +317,7 @@ const ClassReportsTab = () => {
                                                         <Icon icon="solar:eye-bold-duotone" className="text-xl" />
                                                     </button>
                                                 ) : (
+                                                    // Teacher: full actions
                                                     <>
                                                         {report.status === 'Ready' ? (
                                                             <button 
@@ -344,7 +347,6 @@ const ClassReportsTab = () => {
                                                                 </button>
                                                             </>
                                                         )}
-                                                      
                                                     </>
                                                 )}
                                             </div>

@@ -6,15 +6,18 @@ import { assignmentService } from '../../../api/assignmentService';
 import { studentAssignmentService } from '../../../api/studentAssignmentService';
 import { toast } from 'react-toastify';
 import ConfirmModal from '../../../../../components/ui/ConfirmModal';
+import { useTAPermission } from '../../../../dashboard/context/TAPermissionContext';
 
 const ClassworkPage = () => {
     const { user } = useAuthStore();
     const { classId } = useParams();
     const navigate = useNavigate();
-    
+    const { hasPermission, isTA } = useTAPermission();
+
     // RBAC check
     const userRole = user?.role?.toUpperCase();
     const isTeacherOrTA = userRole === 'TEACHER' || userRole === 'TA';
+    const canManageAssignment = !isTA || hasPermission('Assignment');
 
     const [assignments, setAssignments] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -113,11 +116,17 @@ const ClassworkPage = () => {
                     )}
 
                     {isTeacherOrTA && (
-                        <button 
-                            onClick={() => navigate(`../create-assignment`, { relative: 'path' })}
-                            className="w-full sm:w-auto flex items-center justify-center gap-2 !bg-primary text-white font-semibold !px-6 !py-2.5 rounded-xl hover:!bg-primary-hover transition-colors shadow-sm shadow-primary/20"
+                        <button
+                            onClick={() => canManageAssignment && navigate(`../create-assignment`, { relative: 'path' })}
+                            disabled={!canManageAssignment}
+                            title={!canManageAssignment ? 'Bạn không có quyền tạo bài tập' : ''}
+                            className={`w-full sm:w-auto flex items-center justify-center gap-2 font-semibold !px-6 !py-2.5 rounded-xl transition-colors shadow-sm ${
+                                canManageAssignment
+                                    ? '!bg-primary text-white hover:!bg-primary-hover shadow-primary/20'
+                                    : '!bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
+                            }`}
                         >
-                            <Icon icon="material-symbols:add-rounded" className="text-xl" />
+                            <Icon icon={canManageAssignment ? 'material-symbols:add-rounded' : 'material-symbols:lock-rounded'} className="text-xl" />
                             Tạo bài tập
                         </button>
                     )}
@@ -162,16 +171,16 @@ const ClassworkPage = () => {
                                         <p className={`text-sm ${assignment.isOverdue ? 'text-red-500 font-bold' : 'text-text-muted'}`}>{assignment.dueDateDisplay}</p>
                                     </div>
                                     <div className="flex items-center gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity mt-2 sm:mt-0">
-                                        {isTeacherOrTA && (
+                                        {isTeacherOrTA && canManageAssignment && (
                                             <>
-                                                <button 
+                                                <button
                                                     onClick={(e) => { e.stopPropagation(); navigate(`../edit-assignment/${assignment.id}`, { relative: 'path' }); }}
                                                     className="p-1.5 text-text-muted hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
                                                     title="Chỉnh sửa"
                                                 >
                                                     <Icon icon="material-symbols:edit-outline-rounded" className="text-xl" />
                                                 </button>
-                                                <button 
+                                                <button
                                                     onClick={(e) => handleDeleteClick(e, assignment.id)}
                                                     className="p-1.5 text-text-muted hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
                                                     title="Xóa"

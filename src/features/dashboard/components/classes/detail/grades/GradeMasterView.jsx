@@ -3,9 +3,12 @@ import { Icon } from '@iconify/react';
 import { gradebookService } from '../../../../api/gradebookService';
 import useAuthStore from '../../../../../../store/authStore';
 import { toast } from 'react-toastify';
+import { useTAPermission } from '../../../../../dashboard/context/TAPermissionContext';
 
 const GradeMasterView = ({ classId, gradeTableData, onRefresh }) => {
     const { user } = useAuthStore();
+    const { hasPermission, isTA } = useTAPermission();
+    const canGrade = !isTA || hasPermission('Grade');
     const [localGrades, setLocalGrades] = useState({}); // { studentId: { assignmentId: newScore } }
     const [isSaving, setIsSaving] = useState(false);
 
@@ -77,11 +80,19 @@ const GradeMasterView = ({ classId, gradeTableData, onRefresh }) => {
                 <div className="!flex !items-center !gap-4">
                     <div className="!flex !items-center !gap-2 !text-xs !text-text-muted">
                         <Icon icon="material-symbols:info-outline" className="!text-base" />
-                        Nhấp vào ô điểm để chỉnh sửa trực tiếp
+                        {canGrade
+                            ? 'Nhập vào ô điểm để chỉnh sửa trực tiếp'
+                            : 'Bạn chỉ có quyền xem bảng điểm (không được chỉnh sửa)'}
                     </div>
+                    {!canGrade && (
+                        <span className="!flex !items-center !gap-1 !text-xs !font-bold !text-amber-600 !bg-amber-50 !border !border-amber-200 !px-2 !py-1 !rounded-lg">
+                            <Icon icon="material-symbols:lock-rounded" className="!text-sm" />
+                            Chế độ xem
+                        </span>
+                    )}
                 </div>
-                {hasChanges && (
-                    <button 
+                {hasChanges && canGrade && (
+                    <button
                         onClick={handleSaveAll}
                         disabled={isSaving}
                         className="!px-4 !py-2 !bg-primary !text-white !rounded-xl !text-sm !font-bold !flex !items-center !gap-2 !shadow-lg !shadow-primary/20 hover:!bg-primary/90 !transition-all disabled:!opacity-50"
@@ -136,15 +147,20 @@ const GradeMasterView = ({ classId, gradeTableData, onRefresh }) => {
                                     return (
                                         <td key={col.assignmentId} className="!p-2 !text-center !border-r !border-border">
                                             {hasSubmission ? (
-                                                <input 
+                                                <input
                                                     type="number"
                                                     step="0.1"
                                                     min="0"
                                                     max="10"
                                                     value={score}
-                                                    onChange={(e) => handleScoreChange(student.studentId, col.assignmentId, e.target.value)}
-                                                    className={`!w-full !bg-transparent !border-none !text-center !py-2 !font-bold !focus:outline-none !rounded-lg !transition-all ${
-                                                        isEdited ? '!bg-amber-100/50 !text-amber-700' : '!text-text-main group-hover:!bg-white/50'
+                                                    readOnly={!canGrade}
+                                                    onChange={(e) => canGrade && handleScoreChange(student.studentId, col.assignmentId, e.target.value)}
+                                                    className={`!w-full !border-none !text-center !py-2 !font-bold !focus:outline-none !rounded-lg !transition-all ${
+                                                        !canGrade
+                                                            ? '!bg-transparent !text-text-main !cursor-default'
+                                                            : isEdited
+                                                                ? '!bg-amber-100/50 !text-amber-700'
+                                                                : '!bg-transparent !text-text-main group-hover:!bg-white/50'
                                                     }`}
                                                 />
                                             ) : (

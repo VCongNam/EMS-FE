@@ -9,6 +9,7 @@ import useAuthStore from '../../../../../store/authStore';
 import { sessionService } from '../../../api/sessionService';
 import studentScheduleService from '../../../api/studentScheduleService';
 import ConfirmModal from '../../../../../components/ui/ConfirmModal';
+import { useTAPermission } from '../../../../dashboard/context/TAPermissionContext';
 
 const DAYS_OF_WEEK = [
     { id: 'MON', label: 'T2' }, { id: 'TUE', label: 'T3' }, { id: 'WED', label: 'T4' },
@@ -39,6 +40,8 @@ const ClassSchedulePage = () => {
     const { classId } = useParams();
     const { user } = useAuthStore();
     const isTeacherOrTA = ['TEACHER', 'TA'].includes(user?.role?.toUpperCase());
+    const { hasPermission, isTA } = useTAPermission();
+    const canAttend = !isTA || hasPermission('Attendance');
 
     const [scheduleConfig, setScheduleConfig] = useState(MOCK_SCHEDULE_CONFIG);
     const [lessons, setLessons] = useState([]);
@@ -392,13 +395,20 @@ const ClassSchedulePage = () => {
 
                                         {isTeacherOrTA && (
                                             <div className="flex items-center !gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                                                <button
-                                                    onClick={() => handleOpenAttendance(lesson)}
-                                                    className={`flex items-center !gap-1.5 !px-3 !py-1.5 text-xs font-bold rounded-xl shadow-sm transition-all whitespace-nowrap ${lesson.status === 'scheduled' ? '!bg-primary text-white hover:!bg-primary/90' : '!bg-background border border-border text-text-main hover:border-primary'}`}
-                                                >
-                                                    <Icon icon={lesson.status === 'scheduled' ? "material-symbols:fact-check-rounded" : "material-symbols:visibility-rounded"} className="text-sm" />
-                                                    Điểm danh
-                                                </button>
+                                                {canAttend ? (
+                                                    <button
+                                                        onClick={() => handleOpenAttendance(lesson)}
+                                                        className={`flex items-center !gap-1.5 !px-3 !py-1.5 text-xs font-bold rounded-xl shadow-sm transition-all whitespace-nowrap ${lesson.status === 'scheduled' ? '!bg-primary text-white hover:!bg-primary/90' : '!bg-background border border-border text-text-main hover:border-primary'}`}
+                                                    >
+                                                        <Icon icon={lesson.status === 'scheduled' ? "material-symbols:fact-check-rounded" : "material-symbols:visibility-rounded"} className="text-sm" />
+                                                        Điểm danh
+                                                    </button>
+                                                ) : (
+                                                    <div className="flex items-center !gap-1.5 !px-3 !py-1.5 text-xs font-semibold rounded-xl border border-amber-200 bg-amber-50 text-amber-600 cursor-not-allowed" title="Không có quyền điểm danh">
+                                                        <Icon icon="material-symbols:lock-rounded" className="text-sm" />
+                                                        Điểm danh
+                                                    </div>
+                                                )}
                                                 <button
                                                     title="Sửa thông tin"
                                                     onClick={() => setSessionModalState({ isOpen: true, initialData: lesson.raw })}
@@ -484,6 +494,7 @@ const ClassSchedulePage = () => {
                 lesson={attendanceTarget?.lesson}
                 onClose={() => setAttendanceTarget(null)}
                 onSave={handleSaveAttendance}
+                readOnly={!canAttend}
             />
 
             <ConfirmModal
