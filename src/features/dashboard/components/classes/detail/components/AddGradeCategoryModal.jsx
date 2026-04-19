@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Icon } from '@iconify/react';
 import { toast } from 'react-toastify';
 import useAuthStore from '../../../../../../store/authStore';
@@ -56,11 +57,11 @@ const AddGradeCategoryModal = ({ isOpen, onClose, classId, onSuccess }) => {
 
     if (!isOpen) return null;
 
-    return (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center !p-4">
+    return createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center !p-4">
             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose}></div>
             
-            <div className="relative bg-surface w-full max-w-md rounded-[2rem] shadow-2xl overflow-hidden animate-zoom-in border border-border">
+            <div className="relative bg-surface w-full max-w-md rounded-[2rem] shadow-2xl overflow-hidden animate-zoom-in border border-border pointer-events-auto">
                 {/* Header */}
                 <div className="!p-6 border-b border-border bg-background/50 flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -141,8 +142,10 @@ const AddGradeCategoryModal = ({ isOpen, onClose, classId, onSuccess }) => {
                     </div>
                 </form>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
+
 
 export default AddGradeCategoryModal;

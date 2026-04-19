@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Icon } from '@iconify/react';
 import { toast } from 'react-toastify';
 import useAuthStore from '../../../../../../store/authStore';
@@ -12,25 +13,51 @@ const AddMaterialModal = ({ isOpen, onClose, classId, onSuccess, materialToEdit 
     const [existingAttachments, setExistingAttachments] = useState([]);
     const [removedAttachmentIds, setRemovedAttachmentIds] = useState([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isLoadingDetail, setIsLoadingDetail] = useState(false);
     const fileInputRef = useRef(null);
 
     const isEditMode = !!materialToEdit;
 
     useEffect(() => {
-        if (materialToEdit && isOpen) {
-            setTitle(materialToEdit.title || '');
-            setDescription(materialToEdit.description || '');
-            setExistingAttachments(materialToEdit.attachments || []);
-            setSelectedFiles([]);
-            setRemovedAttachmentIds([]);
-        } else if (!isEditMode && isOpen) {
-            setTitle('');
-            setDescription('');
-            setSelectedFiles([]);
-            setExistingAttachments([]);
-            setRemovedAttachmentIds([]);
-        }
-    }, [materialToEdit, isOpen, isEditMode]);
+        const fetchDetail = async () => {
+            if (materialToEdit && isOpen) {
+                setIsLoadingDetail(true);
+                try {
+                    const res = await learningMaterialService.getMaterialById(materialToEdit.materialId, user?.token);
+                    if (res.ok) {
+                        const data = await res.json();
+                        setTitle(data.title || '');
+                        setDescription(data.description || '');
+                        setExistingAttachments(data.attachments || []);
+                    } else {
+                        // Fallback to prop data if API fails
+                        setTitle(materialToEdit.title || '');
+                        setDescription(materialToEdit.description || '');
+                        setExistingAttachments(materialToEdit.attachments || []);
+                    }
+                } catch (error) {
+                    console.error('Error fetching material detail for edit:', error);
+                    setTitle(materialToEdit.title || '');
+                    setDescription(materialToEdit.description || '');
+                    setExistingAttachments(materialToEdit.attachments || []);
+                } finally {
+                    setIsLoadingDetail(false);
+                    setSelectedFiles([]);
+                    setRemovedAttachmentIds([]);
+                }
+            } else if (!isEditMode && isOpen) {
+                setTitle('');
+                setDescription('');
+                setSelectedFiles([]);
+                setExistingAttachments([]);
+                setRemovedAttachmentIds([]);
+                setIsLoadingDetail(false);
+            }
+        };
+
+        fetchDetail();
+    }, [materialToEdit, isOpen, isEditMode, user?.token]);
+
 
     const handleFileChange = (e) => {
         const files = Array.from(e.target.files);
@@ -84,10 +111,19 @@ const AddMaterialModal = ({ isOpen, onClose, classId, onSuccess, materialToEdit 
                 ? await learningMaterialService.updateMaterial(materialToEdit.materialId, formData, user?.token)
                 : await learningMaterialService.createMaterial(formData, user?.token);
             
+            // Log for debugging
+            console.log('>>> Submit Material Mode:', isEditMode ? 'UPDATE' : 'CREATE');
+            console.log('>>> Payload debug:');
+            for (let pair of formData.entries()) {
+                console.log(`  - ${pair[0]}:`, pair[1]);
+            }
+
             if (!res.ok) {
                 const errorData = await res.json().catch(() => ({}));
+                console.error('>>> API Error Details:', errorData);
                 throw new Error(errorData.message || `Không thể ${isEditMode ? 'cập nhật' : 'tải lên'} tài liệu`);
             }
+
 
             toast.success(`${isEditMode ? 'Cập nhật' : 'Tải lên'} tài liệu thành công!`);
             onSuccess();
@@ -101,12 +137,12 @@ const AddMaterialModal = ({ isOpen, onClose, classId, onSuccess, materialToEdit 
     };
 
     if (!isOpen) return null;
-
-    return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center !p-4">
-            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose}></div>
+    
+    return createPortal(
+        <div className="fixed inset-0 z-[9999] flex justify-end">
+            <div className="absolute inset-0 bg-black/30 backdrop-blur-[4px]" onClick={onClose}></div>
             
-            <div className="relative bg-surface w-full max-w-lg rounded-[2rem] shadow-2xl overflow-hidden animate-zoom-in border border-border">
+            <div className="relative bg-surface w-full max-w-xl h-screen shadow-2xl flex flex-col animate-slide-in-right border-l border-border rounded-l-[2rem] pointer-events-auto">
                 {/* Header */}
                 <div className="!p-6 border-b border-border bg-background/50 flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -126,8 +162,16 @@ const AddMaterialModal = ({ isOpen, onClose, classId, onSuccess, materialToEdit 
                 </div>
 
                 {/* Form */}
-                <form onSubmit={handleSubmit} className="!p-6 space-y-6">
-                    <div className="space-y-4 max-h-[60vh] overflow-y-auto px-1 custom-scrollbar">
+                <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+                    <div className="flex-1 !p-6 space-y-6 overflow-y-auto px-7 custom-scrollbar">
+                        {isLoadingDetail ? (
+                            <div className="flex flex-col items-center justify-center h-64 gap-3 text-text-muted">
+                                <Icon icon="line-md:loading-twotone-loop" className="text-5xl" />
+                                <p className="font-medium animate-pulse">Đang tải thông tin tài liệu...</p>
+                            </div>
+                        ) : (
+                            <>
+
                         {/* Title */}
                         <div>
                             <label className="block text-xs font-black text-text-muted uppercase tracking-widest !mb-2 ml-1">
@@ -229,10 +273,12 @@ const AddMaterialModal = ({ isOpen, onClose, classId, onSuccess, materialToEdit 
                                 />
                             </div>
                         </div>
+                        </>
+                    )}
                     </div>
 
                     {/* Footer Actions */}
-                    <div className="flex gap-3 pt-2">
+                    <div className="!p-6 border-t border-border bg-background/50 flex gap-3">
                         <button 
                             type="button"
                             onClick={onClose}
@@ -243,7 +289,7 @@ const AddMaterialModal = ({ isOpen, onClose, classId, onSuccess, materialToEdit 
                         <button 
                             type="submit"
                             disabled={isSubmitting}
-                            className="flex-1 !py-3 rounded-xl bg-primary text-white font-bold hover:bg-primary-hover transition-colors shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 !py-3 rounded-xl !bg-primary text-white font-bold hover:bg-primary-hover transition-colors shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isSubmitting ? (
                                 <>
@@ -260,8 +306,11 @@ const AddMaterialModal = ({ isOpen, onClose, classId, onSuccess, materialToEdit 
                     </div>
                 </form>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
+
+
 
 export default AddMaterialModal;
