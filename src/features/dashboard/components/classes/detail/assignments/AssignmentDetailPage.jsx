@@ -22,7 +22,7 @@ const AssignmentDetailPage = () => {
         try {
             setIsLoading(true);
             const [assignmentRes, submissionsRes] = await Promise.all([
-                isTeacherOrTA 
+                isTeacherOrTA
                     ? assignmentService.getAssignmentById(assignmentId, user?.token)
                     : studentAssignmentService.getAssignmentDetail(assignmentId, user?.token),
                 isTeacherOrTA
@@ -33,19 +33,29 @@ const AssignmentDetailPage = () => {
             if (assignmentRes.ok) {
                 const result = await assignmentRes.json();
                 const data = result.data || result;
-                
+
                 let fetchedSubmissions = [];
                 if (submissionsRes && submissionsRes.ok) {
                     const subResult = await submissionsRes.json();
                     // Based on provided format: { students: [...] }
                     fetchedSubmissions = subResult.data?.students || subResult.students || [];
+                } else if (submissionsRes && !submissionsRes.ok) {
+                    console.error(`[Submissions] API error: ${submissionsRes.status} - TA/Teacher may not have access`);
                 }
 
-                setAssignment({
-                    ...data,
-                    submissions: fetchedSubmissions,
-                    maxScore: data.maxScore || 10
-                });
+                if (isTeacherOrTA) {
+                    setAssignment({
+                        ...data,
+                        submissions: fetchedSubmissions,
+                        maxScore: data.maxScore || 10
+                    });
+                } else {
+                    setAssignment({
+                        ...data,
+                        submission: data.mySubmission ?? null,
+                        maxScore: data.maxScore || 10
+                    });
+                }
             } else {
                 console.error("Lỗi lấy chi tiết bài tập:", assignmentRes.status);
             }
@@ -73,7 +83,7 @@ const AssignmentDetailPage = () => {
         return (
             <div className="text-center !py-20 flex flex-col items-center gap-4">
                 <div className="text-text-muted">Không tìm thấy bài tập này.</div>
-                <button 
+                <button
                     onClick={() => navigate(-1)}
                     className="flex items-center gap-2 text-primary font-bold hover:underline"
                 >

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Icon } from '@iconify/react';
 
-const TransactionHistory = ({ transactions, onViewInvoice }) => {
+const TransactionHistory = ({ transactions, onViewInvoice, onResubmit }) => {
     const getStatusConfig = (status) => {
         const s = status?.toLowerCase();
         if (s === 'pending' || s === 'checking') {
@@ -13,9 +13,9 @@ const TransactionHistory = ({ transactions, onViewInvoice }) => {
                 border: 'border-amber-200'
             };
         }
-        if (s === 'approved' || s === 'success' || s === 'paid') {
+        if (s === 'approved' || s === 'success' || s === 'paid' || s === 'successful') {
             return { 
-                label: 'Thành công', 
+                label: 'Đã hoàn thành', 
                 color: 'text-emerald-700', 
                 bg: 'bg-emerald-100/50', 
                 dot: 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]',
@@ -46,6 +46,7 @@ const TransactionHistory = ({ transactions, onViewInvoice }) => {
             <div className="md:!hidden !space-y-4">
                 {transactions.map((tx, idx) => {
                     const statusConfig = getStatusConfig(tx.status);
+                    const isFailed = ['failed', 'rejected', 'cancelled'].includes(tx.status?.toLowerCase());
                     return (
                         <div key={idx} className="!bg-white !p-6 !rounded-[2rem] !border !border-border !shadow-sm !relative">
                             <div className="!flex !items-center !justify-between !mb-4">
@@ -64,15 +65,26 @@ const TransactionHistory = ({ transactions, onViewInvoice }) => {
                                 </div>
                             </div>
                             
-                            <div className="!p-3 !bg-background !rounded-xl !border !border-border !border-dashed !text-[11px] !font-bold !text-text-muted !flex !items-center !justify-between">
+                            <div className="!p-3 !bg-background !rounded-xl !border !border-border !border-dashed !text-[11px] !font-bold !text-text-muted !flex !items-center !justify-between !gap-2">
                                 <span className="truncate flex-1 mr-2">Nội dung: {tx.content || 'N/A'}</span>
-                                <button 
-                                    onClick={() => onViewInvoice && onViewInvoice(tx)}
-                                    className="!text-primary hover:!underline !flex !items-center !gap-1 flex-shrink-0"
-                                >
-                                    <Icon icon="solar:import-bold-duotone" />
-                                    Hóa đơn
-                                </button>
+                                <div className="!flex !items-center !gap-2 flex-shrink-0">
+                                    {isFailed && onResubmit && (
+                                        <button 
+                                            onClick={() => onResubmit(tx)}
+                                            className="!text-orange-600 hover:!underline !flex !items-center !gap-1 !font-black"
+                                        >
+                                            <Icon icon="solar:upload-bold-duotone" />
+                                            Nộp lại
+                                        </button>
+                                    )}
+                                    <button 
+                                        onClick={() => onViewInvoice && onViewInvoice(tx)}
+                                        className="!text-primary hover:!underline !flex !items-center !gap-1"
+                                    >
+                                        <Icon icon="solar:import-bold-duotone" />
+                                        Hóa đơn
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     );
@@ -85,7 +97,6 @@ const TransactionHistory = ({ transactions, onViewInvoice }) => {
                     <thead>
                         <tr className="!bg-background/50 !border-b !border-border">
                             <th className="!p-6 !text-[10px] !font-black !text-text-muted !uppercase !tracking-widest">Thời gian</th>
-                            <th className="!p-6 !text-[10px] !font-black !text-text-muted !uppercase !tracking-widest">Thời gian</th>
                             <th className="!p-6 !text-[10px] !font-black !text-text-muted !uppercase !tracking-widest">Số tiền</th>
                             <th className="!p-6 !text-[10px] !font-black !text-text-muted !uppercase !tracking-widest">Nội dung</th>
                             <th className="!p-6 !text-[10px] !font-black !text-text-muted !uppercase !tracking-widest">Trạng thái</th>
@@ -95,8 +106,9 @@ const TransactionHistory = ({ transactions, onViewInvoice }) => {
                     <tbody className="!divide-y !divide-border">
                         {transactions.map((tx, idx) => {
                             const statusConfig = getStatusConfig(tx.status);
+                            const isFailed = ['failed', 'rejected', 'cancelled'].includes(tx.status?.toLowerCase());
                             return (
-<tr key={idx} className="hover:!bg-background/30 !transition-colors">
+                                <tr key={idx} className="hover:!bg-background/30 !transition-colors">
                                     <td className="!p-6">
                                         <span className="!text-sm !font-medium !text-text-muted">{tx.date}</span>
                                     </td>
@@ -113,13 +125,24 @@ const TransactionHistory = ({ transactions, onViewInvoice }) => {
                                         </span>
                                     </td>
                                     <td className="!p-6 !text-right">
-                                        <button 
-                                            onClick={() => onViewInvoice && onViewInvoice(tx)}
-                                            className="!px-4 !py-2 !bg-primary/5 !text-primary !text-[11px] !font-black !rounded-xl hover:!bg-primary hover:!text-white !transition-all !flex !items-center !justify-center !gap-2 !ml-auto"
-                                        >
-                                            <Icon icon="solar:document-text-bold-duotone" />
-                                            Chi tiết
-                                        </button>
+                                        <div className="!flex !items-center !justify-end !gap-3">
+                                            {isFailed && onResubmit && (
+                                                <button 
+                                                    onClick={() => onResubmit(tx)}
+                                                    className="!px-4 !py-2 !bg-orange-50 !text-orange-600 !text-[11px] !font-black !rounded-xl hover:!bg-orange-500 hover:!text-white !transition-all !flex !items-center !justify-center !gap-1.5 !border !border-orange-200 !whitespace-nowrap"
+                                                >
+                                                    <Icon icon="solar:upload-bold-duotone" />
+                                                    Nộp lại
+                                                </button>
+                                            )}
+                                            <button 
+                                                onClick={() => onViewInvoice && onViewInvoice(tx)}
+                                                className="!px-4 !py-2 !bg-primary/5 !text-primary !text-[11px] !font-black !rounded-xl hover:!bg-primary hover:!text-white !transition-all !flex !items-center !justify-center !gap-1.5 !whitespace-nowrap"
+                                            >
+                                                <Icon icon="solar:document-text-bold-duotone" />
+                                                Chi tiết
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             );

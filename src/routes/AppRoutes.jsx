@@ -34,7 +34,6 @@ import ProtectedRoute from '../components/common/ProtectedRoute';
 import useAuthStore from '../store/authStore';
 
 // New Features Imports
-import StudentManagementPage from '../features/student-management/pages/StudentManagementPage';
 import TAManagementPage from '../features/ta-management/pages/TAManagementPage';
 import GlobalTAManagementPage from '../features/ta-management/pages/GlobalTAManagementPage';
 // ViewSchedulePage replaced by ScheduleManagementPage which handles all roles
@@ -137,6 +136,7 @@ export const AppRoutes = () => {
                                    <Route path="grades" element={<ClassGradesPage />} />
                                    <Route path="schedule" element={<ClassSchedulePage />} />
                                    <Route path="attendance" element={<ClassAttendancePage />} />
+                                   <Route path="reports" element={<ClassReportsTab />} />
                               </Route>
 
                               {/* TA Tasks */}
@@ -161,9 +161,6 @@ export const AppRoutes = () => {
                               {/* Student Notifications */}
                               <Route path="notifications" element={<NotificationPage />} />
                               <Route path="tuition-payment" element={<StudentTuitionPage />} />
-
-                              {/* Student Management */}
-                              <Route path="students" element={<StudentManagementPage />} />
 
                               {/* TA Management */}
                               <Route path="assistants" element={<GlobalTAManagementPage />} />
