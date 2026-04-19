@@ -24,10 +24,10 @@ const PostComposer = ({ onPost, editMode = false, initialContent = '', initialAt
                 id: Math.random().toString(36).substr(2, 9),
                 name: file.name,
                 size: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
-                type: file.type.includes('image') ? 'image' 
-                        : file.name.endsWith('.pdf') ? 'pdf' 
+                type: file.type.includes('image') ? 'image'
+                    : file.name.endsWith('.pdf') ? 'pdf'
                         : file.name.endsWith('.doc') || file.name.endsWith('.docx') ? 'doc'
-                        : file.type.includes('video') ? 'video' : 'other',
+                            : file.type.includes('video') ? 'video' : 'other',
                 rawFile: file
             }));
             setNewFiles([...newFiles, ...formattedNewFiles]);
@@ -46,13 +46,13 @@ const PostComposer = ({ onPost, editMode = false, initialContent = '', initialAt
 
     const handlePost = () => {
         if (!title.trim() && !content.trim() && existingAttachments.length === 0 && newFiles.length === 0) return;
-        
+
         if (editMode && onSave) {
-            onSave({ 
-                title, 
-                content, 
-                newFiles: newFiles.map(f => f.rawFile), 
-                removedIds: removedAttachmentIds 
+            onSave({
+                title,
+                content,
+                newFiles: newFiles.map(f => f.rawFile),
+                removedIds: removedAttachmentIds
             });
             return;
         }
@@ -60,13 +60,13 @@ const PostComposer = ({ onPost, editMode = false, initialContent = '', initialAt
         const formData = new FormData();
         formData.append('Title', title);
         formData.append('Content', content);
-        
+
         newFiles.forEach(f => {
             if (f.rawFile) formData.append('Attachments', f.rawFile);
         });
 
         if (onPost) onPost(formData);
-        
+
         // Reset states
         setTitle('');
         setContent('');
@@ -78,7 +78,7 @@ const PostComposer = ({ onPost, editMode = false, initialContent = '', initialAt
 
     if (!isExpanded) {
         return (
-            <div 
+            <div
                 onClick={() => setIsExpanded(true)}
                 className="bg-surface rounded-2xl border border-border !mb-6 !p-4 md:!p-6 shadow-sm flex items-center gap-4 cursor-pointer hover:bg-surface-hover transition-colors group"
             >
@@ -137,7 +137,7 @@ const PostComposer = ({ onPost, editMode = false, initialContent = '', initialAt
                                         <p className="text-xs text-text-muted">Đã tải lên</p>
                                     </div>
                                 </div>
-                                <button 
+                                <button
                                     onClick={() => removeExistingAttachment(att.attachmentId || att.id)}
                                     className="p-1.5 text-text-muted hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors flex-shrink-0"
                                 >
@@ -150,14 +150,14 @@ const PostComposer = ({ onPost, editMode = false, initialContent = '', initialAt
                             <div key={f.id} className="flex items-center justify-between bg-primary/5 border border-primary/20 rounded-xl !p-3">
                                 <div className="flex items-center gap-3 overflow-hidden">
                                     <div className="w-10 h-10 rounded bg-white border border-primary/20 flex items-center justify-center flex-shrink-0">
-                                        <Icon 
+                                        <Icon
                                             icon={
                                                 f.type === 'pdf' ? 'vscode-icons:file-type-pdf2' :
-                                                f.type === 'doc' ? 'vscode-icons:file-type-word' :
-                                                f.type === 'image' ? 'vscode-icons:file-type-image' :
-                                                'material-symbols:insert-drive-file'
-                                            } 
-                                            className="text-2xl" 
+                                                    f.type === 'doc' ? 'vscode-icons:file-type-word' :
+                                                        f.type === 'image' ? 'vscode-icons:file-type-image' :
+                                                            'material-symbols:insert-drive-file'
+                                            }
+                                            className="text-2xl"
                                         />
                                     </div>
                                     <div className="truncate">
@@ -165,7 +165,7 @@ const PostComposer = ({ onPost, editMode = false, initialContent = '', initialAt
                                         <p className="text-xs text-primary/60">{f.size}</p>
                                     </div>
                                 </div>
-                                <button 
+                                <button
                                     onClick={() => removeNewFile(f.id)}
                                     className="p-1.5 text-primary/60 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors flex-shrink-0"
                                 >
@@ -180,15 +180,15 @@ const PostComposer = ({ onPost, editMode = false, initialContent = '', initialAt
             {/* Actions Area */}
             <div className="flex items-center justify-between border-t border-border !pt-4">
                 <div className="flex items-center gap-2">
-                    <input 
-                        type="file" 
+                    <input
+                        type="file"
                         multiple
-                        className="hidden" 
+                        className="hidden"
                         ref={fileInputRef}
                         onChange={handleFileChange}
                         accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png,.mp4"
                     />
-                    <button 
+                    <button
                         onClick={() => fileInputRef.current?.click()}
                         className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-surface-hover text-text-muted hover:text-primary transition-colors tooltip-trigger"
                         title="Tải tệp lên"
@@ -196,9 +196,9 @@ const PostComposer = ({ onPost, editMode = false, initialContent = '', initialAt
                         <Icon icon="material-symbols:upload-file-outline-rounded" className="text-2xl" />
                     </button>
                 </div>
-                
+
                 <div className="flex items-center gap-3">
-                    <button 
+                    <button
                         onClick={() => {
                             if (editMode && onCancel) {
                                 onCancel();
@@ -213,7 +213,7 @@ const PostComposer = ({ onPost, editMode = false, initialContent = '', initialAt
                     >
                         Hủy
                     </button>
-                    <button 
+                    <button
                         onClick={handlePost}
                         disabled={!content.trim() && existingAttachments.length === 0 && newFiles.length === 0}
                         className="!px-6 !py-2 rounded-xl font-semibold !bg-primary text-white hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"

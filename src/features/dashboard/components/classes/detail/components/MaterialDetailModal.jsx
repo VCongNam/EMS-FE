@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Icon } from '@iconify/react';
 import { toast } from 'react-toastify';
 import useAuthStore from '../../../../../../store/authStore';
@@ -33,12 +34,13 @@ const MaterialDetailModal = ({ isOpen, onClose, materialId }) => {
     }, [materialId, isOpen]);
 
     if (!isOpen) return null;
-
-    return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center !p-4">
-            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose}></div>
+    
+    return createPortal(
+        <div className="fixed inset-0 z-[9999] flex justify-end">
+            <div className="absolute inset-0 bg-black/30 backdrop-blur-[4px]" onClick={onClose}></div>
             
-            <div className="relative bg-surface w-full max-w-2xl rounded-[2rem] shadow-2xl overflow-hidden animate-zoom-in border border-border">
+            <div className="relative bg-surface w-full max-w-xl h-screen shadow-2xl flex flex-col animate-slide-in-right border-l border-border rounded-l-[2rem] pointer-events-auto">
+
                 {/* Header */}
                 <div className="!p-6 border-b border-border bg-background/50 flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -56,7 +58,7 @@ const MaterialDetailModal = ({ isOpen, onClose, materialId }) => {
                 </div>
 
                 {/* Content */}
-                <div className="!p-6 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                <div className="flex-1 !p-6 space-y-6 overflow-y-auto px-7 custom-scrollbar">
                     {loading ? (
                         <div className="space-y-4 animate-pulse">
                             <div className="h-8 bg-background rounded-xl w-3/4"></div>
@@ -150,8 +152,10 @@ const MaterialDetailModal = ({ isOpen, onClose, materialId }) => {
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
 
 export default MaterialDetailModal;
+
