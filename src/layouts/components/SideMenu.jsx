@@ -29,6 +29,7 @@ const SideMenu = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
             { name: 'Quản lý Học phí', path: '/tuition', icon: 'solar:wallet-money-bold-duotone' },
             { name: 'Thông báo', path: '/notifications', icon: 'material-symbols:circle-notifications-sharp', badge: unreadCount },
             { name: 'Hỗ trợ & Góp ý', path: '/teacher/feedback', icon: 'material-symbols:feedback-rounded' },
+            { name: 'Báo cáo học tập', path: '/teacher/academic-report', icon: 'material-symbols:insert-chart-rounded' },
             { name: 'Trang cá nhân', path: '/profile', icon: 'material-symbols:person-rounded' },
         ],
         TA: [

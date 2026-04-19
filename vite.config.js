@@ -16,6 +16,10 @@ export default defineConfig({
       srcDir: 'src',
       filename: 'sw.js',
       registerType: 'autoUpdate', 
+      devOptions: {
+        enabled: true, // Cho phép test PWA ở localhost (npm run dev)
+        type: 'module'
+      },
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png'], 
       injectManifest: {
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10MB
