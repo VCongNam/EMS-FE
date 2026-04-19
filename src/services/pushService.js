@@ -39,24 +39,41 @@ export const pushService = {
      */
     subscribeUser: async (vapidPublicKey) => {
         try {
-            const registration = await navigator.serviceWorker.ready;
+            console.log("7.1 [PUSH-SRV] Đang lấy SW Registration...");
+            
+            // Thử lấy registration hiện có trước
+            let registration = await navigator.serviceWorker.getRegistration();
+            
+            // Nếu không thấy, hoặc chưa sẵn sàng thì mới dùng .ready
+            if (!registration) {
+                console.log("7.2 [PUSH-SRV] Không tìm thấy registration, dùng .ready...");
+                registration = await navigator.serviceWorker.ready;
+            }
+
+            if (!registration) {
+                throw new Error("Không thể tìm thấy Service Worker Registration.");
+            }
+            
+            console.log("7.3 [PUSH-SRV] SW đã sẵn sàng. Kiểm tra subscription cũ...");
             
             // Kiểm tra xem đã có subscription chưa
             const existingSubscription = await registration.pushManager.getSubscription();
             if (existingSubscription) {
+                console.log("7.4 [PUSH-SRV] Đã có subscription cũ, không cần tạo mới.");
                 return existingSubscription;
             }
 
+            console.log("7.5 [PUSH-SRV] Chưa có subscription. Đang tạo mới với Google/Apple...");
             // Nếu chưa có thì tạo mới
             const subscription = await registration.pushManager.subscribe({
                 userVisibleOnly: true,
                 applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
             });
 
-            console.log("Device subscribed successfully:", subscription);
+            console.log("7.6 [PUSH-SRV] Đăng ký thành công mã thiết bị!");
             return subscription;
         } catch (error) {
-            console.error("Failed to subscribe user for push notifications:", error);
+            console.error("Lỗi tại [pushService.subscribeUser]:", error);
             throw error;
         }
     },
