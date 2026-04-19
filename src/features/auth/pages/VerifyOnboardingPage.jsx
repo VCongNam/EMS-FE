@@ -37,13 +37,23 @@ const VerifyOnboardingPage = () => {
         e.preventDefault();
         setError(null);
 
-        if (formData.newPassword !== formData.confirmPassword) {
-            setError("Mật khẩu mới và xác nhận mật khẩu không khớp.");
+        // 1. Số điện thoại: 10 số, đầu 03x/05x/07x/08x/09x
+        const phoneRegex = /^(0[3-9])\d{8}$/;
+        if (!phoneRegex.test(formData.phoneNumber.trim())) {
+            setError('Số điện thoại không hợp lệ. Vui lòng nhập đúng định dạng Việt Nam (10 số, bắt đầu bằng 0).');
             return;
         }
 
-        if (formData.newPassword.length < 8) {
-            setError("Mật khẩu mới phải có ít nhất 8 ký tự.");
+        // 2. Mật khẩu mới: ≥ 8 ký tự, 1 hoa, 1 thường, 1 ký tự đặc biệt
+        const pwRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+        if (!pwRegex.test(formData.newPassword)) {
+            setError('Mật khẩu mới phải có ít nhất 8 ký tự, bao gồm 1 chữ in hoa, 1 chữ in thường và 1 ký tự đặc biệt.');
+            return;
+        }
+
+        // 3. Xác nhận mật khẩu khớp
+        if (formData.newPassword !== formData.confirmPassword) {
+            setError('Mật khẩu mới và xác nhận mật khẩu không khớp.');
             return;
         }
 
@@ -53,10 +63,27 @@ const VerifyOnboardingPage = () => {
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || 'Kích hoạt tài khoản thất bại. Vui lòng kiểm tra lại thông tin!');
+                // Parse validation errors from BE
+                if (errorData.errors && typeof errorData.errors === 'object') {
+                    const translateMsg = (msg) => {
+                        const m = msg.toLowerCase();
+                        if (m.includes('at least 8') || m.includes('8 character')) return 'ít nhất 8 ký tự';
+                        if (m.includes('uppercase')) return 'có ít nhất 1 chữ in hoa';
+                        if (m.includes('lowercase')) return 'có ít nhất 1 chữ in thường';
+                        if (m.includes('digit') || (m.includes('numeric') && !m.includes('non'))) return 'có ít nhất 1 chữ số';
+                        if (m.includes('non alphanumeric') || m.includes('special character')) return 'có ít nhất 1 ký tự đặc biệt (!@#$...)';
+                        return null;
+                    };
+                    const allMessages = Object.values(errorData.errors).flat();
+                    const translated = allMessages.map(translateMsg).filter(Boolean);
+                    if (translated.length > 0) {
+                        throw new Error('Mật khẩu phải ' + translated.join(', ') + '.');
+                    }
+                }
+                throw new Error(errorData.message || errorData.title || 'Kích hoạt tài khoản thất bại. Vui lòng kiểm tra lại thông tin!');
             }
 
-            toast.success("Kích hoạt tài khoản thành công! Vui lòng đăng nhập lại với mật khẩu mới.");
+            toast.success('Kích hoạt tài khoản thành công! Vui lòng đăng nhập lại với mật khẩu mới.');
             navigate('/login');
         } catch (err) {
             setError(err.message);
