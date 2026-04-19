@@ -7,6 +7,8 @@ import DashboardDeadlines from './DashboardDeadlines'; // It's actually the List
 import DashboardRecentNotifications from './DashboardRecentNotifications';
 import useAuthStore from '../../../store/authStore';
 import { notificationService } from '../../notifications/api/notificationService';
+import { sessionService } from '../api/sessionService';
+import { classService } from '../api/classService';
 
 const TeacherDashboard = () => {
     const { user } = useAuthStore();
@@ -15,21 +17,83 @@ const TeacherDashboard = () => {
     const navigate = useNavigate();
 
     const [notifications, setNotifications] = useState([]);
+    const [schedule, setSchedule] = useState([]);
+    const [stats, setStats] = useState(null);
+    const [isLoadingSchedule, setIsLoadingSchedule] = useState(true);
 
     useEffect(() => {
-        const fetchRecentNotifications = async () => {
+        const fetchDashboardData = async () => {
             if (!token) return;
+            
             try {
-                const response = await notificationService.getNotifications(token);
-                if (response.ok) {
-                    const data = await response.json();
-                    setNotifications(data.slice(0, 3)); // Only show top 3
+                // 1. Fetch Notifications
+                const notifRes = await notificationService.getNotifications(token);
+                if (notifRes.ok) {
+                    const data = await notifRes.json();
+                    setNotifications(data.slice(0, 3));
+                }
+
+                // 2. Fetch Dashboard Stats
+                const statsRes = await classService.getTeacherDashboard(token);
+                if (statsRes.ok) {
+                    const data = await statsRes.json();
+                    setStats(data.data || data);
+                }
+
+                // 3. Fetch Schedule
+                setIsLoadingSchedule(true);
+                const today = new Date();
+                // Get Monday of current week
+                const current = new Date();
+                const Monday = new Date(current.setDate(current.getDate() - current.getDay() + (current.getDay() === 0 ? -6 : 1)));
+                const Sunday = new Date(new Date(Monday).setDate(Monday.getDate() + 6));
+                
+                const startDate = Monday.toISOString().split('T')[0];
+                const endDate = Sunday.toISOString().split('T')[0];
+                
+                const scheduleRes = await sessionService.getTeacherSchedule(token, startDate, endDate);
+                if (scheduleRes.ok) {
+                    const data = await scheduleRes.json();
+                    const sessions = data.data || data || [];
+                    
+                    const mappedSchedule = sessions.map(s => {
+                        const sessionDate = new Date(s.date);
+                        const isToday = sessionDate.toDateString() === new Date().toDateString();
+                        const tomorrow = new Date();
+                        tomorrow.setDate(tomorrow.getDate() + 1);
+                        const isTomorrow = sessionDate.toDateString() === tomorrow.toDateString();
+                        
+                        let dateLabel = sessionDate.toLocaleDateString('vi-VN', { weekday: 'short', day: '2-digit', month: '2-digit' });
+                        if (isToday) dateLabel = 'Hôm nay';
+                        else if (isTomorrow) dateLabel = 'Ngày mai';
+                        
+                        let statusColor = '!bg-emerald-500';
+                        if (isToday) statusColor = '!bg-red-500';
+                        else if (isTomorrow) statusColor = '!bg-orange-500';
+
+                        return {
+                            id: s.sessionId || s.id,
+                            title: s.className || s.subjectName || 'Lớp học',
+                            subtitle: `${s.roomName || 'Phòng học'} • ${s.startTime?.slice(0, 5)} - ${s.endTime?.slice(0, 5)}`,
+                            rightText: `${dateLabel}, ${s.startTime?.slice(0, 5)}`,
+                            statusColor: statusColor,
+                            dateObject: sessionDate, // Helper for sorting
+                            actionIcon: 'solar:users-group-two-rounded-bold-duotone',
+                            path: `/teacher/classes/${s.classId}/attendance`
+                        };
+                    });
+
+                    // Sort by date/time
+                    setSchedule(mappedSchedule.sort((a, b) => a.dateObject - b.dateObject).slice(0, 4));
                 }
             } catch (error) {
-                console.error('Failed to fetch dashboard notifications:', error);
+                console.error('Failed to fetch teacher dashboard data:', error);
+            } finally {
+                setIsLoadingSchedule(false);
             }
         };
-        fetchRecentNotifications();
+        
+        fetchDashboardData();
     }, [token]);
 
     const handleNotificationClick = async (notif) => {
@@ -50,11 +114,6 @@ const TeacherDashboard = () => {
             navigate('/notifications');
         }
     };
-
-    // Mock Data for Teacher
-    const MOCK_TEACHER_NEXT_CLASS = { subject: 'Giải tích 1 (SE1701)', time: '14:00 - 15:30', room: 'P.302' };
-    const MOCK_ATTENDANCE_OVERALL = 92;
-    const MOCK_PENDING_GRADING = 15;
 
     const TEACHER_ACTIONS = [
         { 
@@ -86,19 +145,15 @@ const TeacherDashboard = () => {
         },
     ];
 
-    const TEACHER_SCHEDULE = [
-        { id: 1, title: 'Giải tích 1 (SE1701)', subtitle: 'P.302', rightText: 'Hôm nay, 14:00', statusColor: '!bg-red-500', actionIcon: 'solar:users-group-two-rounded-bold-duotone' },
-        { id: 2, title: 'Vật lý Đại cương (SE1702)', subtitle: 'P.105', rightText: 'Ngày mai, 08:00', statusColor: '!bg-orange-500', actionIcon: 'solar:users-group-two-rounded-bold-duotone' },
-        { id: 3, title: 'Triết học Mác-Lênin (SE1703)', subtitle: 'Hội trường A', rightText: 'Thứ 4, 13:00', statusColor: '!bg-emerald-500', actionIcon: 'solar:users-group-two-rounded-bold-duotone' },
-    ];
-
     return (
         <div className="!max-w-7xl !mx-auto !space-y-10 !animate-fade-in custom-scrollbar !pb-10">
             {/* Header Section */}
             <div className="!flex !flex-col md:!flex-row !justify-between !items-start md:!items-center !gap-6">
                 <div className="!space-y-1">
                     <h1 className="!text-3xl !font-black !text-text-main !tracking-tight">Chào thầy/cô, {userName}!</h1>
-                    <p className="!text-sm !font-bold !text-text-muted">Hôm nay có 2 lớp cần dạy và 15 bài tập cần chấm.</p>
+                    <p className="!text-sm !font-bold !text-text-muted">
+                        Hôm nay có {schedule.filter(s => s.rightText.includes('Hôm nay')).length} lớp cần dạy và {stats?.totalStudents || 0} sinh viên đang theo dõi.
+                    </p>
                 </div>
                 <div className="!flex !items-center !gap-3 !bg-white !p-2 !rounded-2xl !border !border-border !shadow-sm">
                     <div className="!w-10 !h-10 !rounded-xl !bg-primary/10 !text-primary !flex !items-center !justify-center">
@@ -114,34 +169,26 @@ const TeacherDashboard = () => {
             {/* Horizontal Stats */}
             <DashboardStatCards 
                 card1={{
-                    title: 'Ca dạy tiếp theo',
-                    subject: MOCK_TEACHER_NEXT_CLASS.subject,
-                    time: MOCK_TEACHER_NEXT_CLASS.time,
-                    room: MOCK_TEACHER_NEXT_CLASS.room,
+                    title: 'Lớp học đang dạy',
+                    value: stats?.totalClasses || 0,
+                    unit: 'Lớp',
                     icon: 'solar:presentation-bold-duotone'
                 }}
                 card2={{
-                    title: 'Tỷ lệ đi học (TB)',
-                    value: MOCK_ATTENDANCE_OVERALL,
-                    trendText: 'Ổn định',
-                    trendColor: '!text-blue-500',
-                    trendIcon: 'solar:graph-up-bold-duotone',
+                    title: 'Tổng số sinh viên',
+                    value: stats?.totalStudents || 0,
+                    unit: 'Bạn',
                     icon: 'solar:users-group-two-rounded-bold-duotone'
                 }}
                 card3={{
-                    title: 'Bài tập chờ chấm',
-                    value: MOCK_PENDING_GRADING,
-                    unit: 'Bài',
+                    title: 'Chuyên cần trung bình',
+                    value: stats?.averageAttendance || 0,
+                    unit: '%',
                     bgClass: '!bg-amber-50 !border-amber-100',
                     iconBgClass: '!bg-amber-500 !shadow-amber-500/20',
                     titleClass: '!text-amber-900',
                     valueClass: '!text-amber-600',
-                    icon: 'solar:document-bold-duotone',
-                    button: {
-                        label: 'Chấm ngay',
-                        path: '/teacher/classes',
-                        className: '!text-amber-600 !border-amber-200 hover:!bg-amber-100'
-                    }
+                    icon: 'solar:user-check-bold-duotone',
                 }}
             />
 
@@ -156,8 +203,9 @@ const TeacherDashboard = () => {
                     icon="solar:calendar-mark-bold-duotone"
                     iconBgBase="!bg-blue-50"
                     iconColor="!text-blue-500"
-                    items={TEACHER_SCHEDULE}
-                    viewAllLink="/schedule-management"
+                    items={schedule}
+                    isLoading={isLoadingSchedule}
+                    viewAllLink="/teacher/classes"
                 />
 
                 {/* Recent Notifications Feed / Attention */}
