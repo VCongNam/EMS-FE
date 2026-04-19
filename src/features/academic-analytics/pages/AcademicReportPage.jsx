@@ -62,32 +62,32 @@ const AcademicReportPage = () => {
     });
 
     return (
-        <div className="w-full mx-auto animate-fade-in space-y-6 !pb-12 h-screen overflow-y-auto pr-2 custom-scrollbar">
+        <div className="w-full !mx-auto animate-fade-in space-y-6 !pb-12 h-screen overflow-y-auto !pr-2 custom-scrollbar">
             {/* 1. Header & Filters (Sticky Top) */}
-            <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border border-slate-200 rounded-[var(--radius-xl)] p-6 shadow-sm mb-6">
+            <div className="sticky top-0 z-20 !bg-white/80 backdrop-blur-md border border-slate-200 rounded-[var(--radius-xl)] !p-6 shadow-sm !mb-6">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div>
                         <h1 className="text-2xl font-black text-slate-900 tracking-tight">
                             Báo cáo Hiệu suất Giảng dạy
                         </h1>
-                        <p className="text-slate-500 mt-1 text-sm font-medium">
+                        <p className="text-slate-500 !mt-1 text-sm font-medium">
                             Kỳ báo cáo: {reportData?.period || 'Đang tải...'}
                         </p>
                     </div>
 
-                    <div className="flex flex-wrap items-end gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                    <div className="flex flex-wrap items-end gap-3 !bg-slate-50 !p-3 rounded-2xl border border-slate-100">
                         {/* Date Range */}
-                        <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm">
+                        <div className="flex items-center gap-2 !bg-white !px-3 !py-2 rounded-xl border border-slate-200 shadow-sm">
                             <Icon icon="material-symbols:date-range-rounded" className="text-slate-400" />
-                            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="text-xs font-bold outline-none border-none p-0 w-28 bg-transparent" />
+                            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="text-xs font-bold outline-none border-none !p-0 w-28 !bg-transparent" />
                             <span className="text-slate-300">|</span>
-                            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="text-xs font-bold outline-none border-none p-0 w-28 bg-transparent" />
+                            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="text-xs font-bold outline-none border-none !p-0 w-28 !bg-transparent" />
                         </div>
 
                         {/* Subject Filter */}
-                        <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm">
+                        <div className="flex items-center gap-2 !bg-white !px-3 !py-2 rounded-xl border border-slate-200 shadow-sm">
                             <Icon icon="material-symbols:book-outline" className="text-slate-400" />
-                            <select value={subject} onChange={(e) => setSubject(e.target.value)} className="text-xs font-bold outline-none border-none p-0 pr-6 bg-transparent">
+                            <select value={subject} onChange={(e) => setSubject(e.target.value)} className="text-xs font-bold outline-none border-none !p-0 !pr-6 !bg-transparent">
                                 <option value="All">Tất cả môn học</option>
                                 <option value="Toán">Toán</option>
                                 <option value="Văn">Ngữ Văn</option>
@@ -95,9 +95,9 @@ const AcademicReportPage = () => {
                         </div>
 
                         {/* Status Filter */}
-                        <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm">
+                        <div className="flex items-center gap-2 !bg-white !px-3 !py-2 rounded-xl border border-slate-200 shadow-sm">
                             <Icon icon="material-symbols:filter-list-rounded" className="text-slate-400" />
-                            <select value={status} onChange={(e) => setStatus(e.target.value)} className="text-xs font-bold outline-none border-none p-0 pr-6 bg-transparent">
+                            <select value={status} onChange={(e) => setStatus(e.target.value)} className="text-xs font-bold outline-none border-none !p-0 !pr-6 !bg-transparent">
                                 <option value="All">Tất cả trạng thái</option>
                                 <option value="Active">Đang dạy</option>
                                 <option value="Archived">Lưu trữ</option>
@@ -106,7 +106,7 @@ const AcademicReportPage = () => {
 
                         {/* Actions */}
                         <div className="flex gap-2">
-                            <button onClick={fetchReport} className="bg-blue-600 text-white px-4 py-2 rounded-xl font-bold text-xs hover:bg-blue-700 transition-all shadow-md shadow-blue-100 active:scale-95">
+                            <button onClick={fetchReport} className="!bg-blue-600 text-white !px-4 !py-2 rounded-xl font-bold text-xs hover:bg-blue-700 transition-all shadow-md shadow-blue-100 active:scale-95">
                                 Áp dụng
                             </button>
                         </div>
@@ -115,7 +115,7 @@ const AcademicReportPage = () => {
             </div>
 
             {isLoading ? (
-                <div className="flex justify-center items-center py-20 w-full min-h-[400px]">
+                <div className="flex justify-center items-center !py-20 w-full min-h-[400px]">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
                 </div>
             ) : (
@@ -133,7 +133,7 @@ const AcademicReportPage = () => {
                             title="Tăng trưởng" 
                             icon="material-symbols:trending-up-rounded" 
                             iconColor="text-green-600"
-                            iconBg="bg-green-50"
+                            iconBg="!bg-green-50"
                             value={`${reportData?.totalStudentGrowth?.netGrowth > 0 ? '+' : ''}${reportData?.totalStudentGrowth?.netGrowth}`} 
                             subValue={
                                 <div className="flex gap-3 text-[10px] font-black uppercase tracking-widest text-[#64748B]">
@@ -147,7 +147,7 @@ const AcademicReportPage = () => {
                             title="Chuyên cần" 
                             icon="material-symbols:calendar-check-rounded" 
                             iconColor="text-purple-600"
-                            iconBg="bg-purple-50"
+                            iconBg="!bg-purple-50"
                             value={`${reportData?.totalAcademicPerformance?.attendanceRatePercent}%`} 
                             warning={reportData?.totalAcademicPerformance?.attendanceRatePercent < 80}
                             subValue="Tỉ lệ đi học trung bình"
@@ -156,23 +156,23 @@ const AcademicReportPage = () => {
                             title="Chất lượng học lực" 
                             icon="material-symbols:school-rounded" 
                             iconColor="text-indigo-600"
-                            iconBg="bg-indigo-50"
+                            iconBg="!bg-indigo-50"
                             value={`${reportData?.totalAcademicPerformance?.grading?.aboveAveragePercent}%`} 
                             subValue="Tỉ lệ trên trung bình (>=5.0)"
                         />
                     </div>
 
                     {/* 3. Phân tích & Biểu đồ */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div className="bg-white rounded-[var(--radius-xl)] p-6 border border-slate-200 shadow-sm">
-                            <h3 className="text-lg font-black text-slate-900 mb-6 flex items-center gap-2">
+                    <div className="grid grid-cols-1 !mt-2 lg:grid-cols-2 gap-6">
+                        <div className="!bg-white rounded-[var(--radius-xl)] !p-6 border border-slate-200 shadow-sm">
+                            <h3 className="text-lg font-black text-slate-900 !mb-6 flex items-center gap-2">
                                 <Icon icon="material-symbols:pie-chart-rounded" className="text-blue-600" />
                                 Phân bổ học lực
                             </h3>
                             <GradingDonutChart data={reportData?.totalAcademicPerformance?.grading} />
                         </div>
-                        <div className="bg-white rounded-[var(--radius-xl)] p-6 border border-slate-200 shadow-sm">
-                            <h3 className="text-lg font-black text-slate-900 mb-6 flex items-center gap-2">
+                        <div className="!bg-white rounded-[var(--radius-xl)] !p-6 border border-slate-200 shadow-sm">
+                            <h3 className="text-lg font-black text-slate-900 !mb-6 flex items-center gap-2">
                                 <Icon icon="material-symbols:bar-chart-rounded" className="text-green-600" />
                                 Biến động sĩ số
                             </h3>

@@ -25,6 +25,19 @@ const ViewTAListPage = ({ classId }) => {
         type: 'danger'
     });
 
+    const translatePermission = (permStr) => {
+        if (!permStr) return 'Chưa phân quyền';
+        const map = {
+            'Attendance': 'Điểm danh',
+            'Grade': 'Chấm điểm',
+            'Report': 'Báo cáo',
+            'Assignment': 'Bài tập',
+            'Feedback': 'Nhận xét',
+            'None': 'Không có quyền'
+        };
+        return permStr.split(',').map(p => map[p.trim()] || p.trim()).join(', ');
+    };
+
     const fetchAssistants = async () => {
         if (!classId || !user?.token) return;
         try {
@@ -197,8 +210,10 @@ const ViewTAListPage = ({ classId }) => {
                                         </div>
                                     </td>
                                     <td className="!p-5">
-                                        {assistant.permission ? (
-                                            <span className="!px-3 !py-1 bg-primary/10 text-primary border border-primary/20 rounded-lg text-sm font-semibold shadow-sm">{assistant.permission}</span>
+                                        {assistant.permission && assistant.permission !== 'None' ? (
+                                            <span className="!px-3 !py-1 bg-primary/10 text-primary border border-primary/20 rounded-lg text-sm font-semibold shadow-sm">
+                                                {translatePermission(assistant.permission)}
+                                            </span>
                                         ) : (
                                             <span className="text-text-muted text-sm italic">Chưa phân quyền</span>
                                         )}
@@ -334,7 +349,7 @@ const ViewTAListPage = ({ classId }) => {
                             <div className="bg-background rounded-xl !p-3 !space-y-2 border border-border/50">
                                 <div className="flex items-center justify-between text-sm">
                                     <span className="text-text-muted">Quyền hạn:</span>
-                                    <span className="font-semibold text-primary">{assistant.permission || 'Chưa phân quyền'}</span>
+                                    <span className="font-semibold text-primary">{translatePermission(assistant.permission)}</span>
                                 </div>
                                 <div className="flex items-center justify-between text-sm">
                                     <span className="text-text-muted">Lương/Buổi:</span>

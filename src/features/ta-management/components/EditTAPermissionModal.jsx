@@ -6,11 +6,11 @@ import useAuthStore from '../../../store/authStore';
 import { taService } from '../api/taService';
 
 const PERMISSION_OPTIONS = [
-    { key: 'Attendance', label: 'Điểm danh học sinh', icon: 'solar:calendar-check-bold-duotone', desc: 'Cho phép TA thực hiện điểm danh trong lớp học do mình phụ trách.' },
+    { key: 'Attendance', label: 'Điểm danh học sinh', icon: 'solar:calendar-check-bold-duotone', desc: 'Cho phép TA thực hiện điểm danh trong lớp học.' },
     { key: 'Grade', label: 'Chấm điểm & Nhập điểm', icon: 'solar:pen-new-square-bold-duotone', desc: 'Cho phép TA nhập, sửa điểm các bài kiểm tra của học sinh.' },
     { key: 'Report', label: 'Xem Báo cáo học tập', icon: 'solar:chart-2-bold-duotone', desc: 'Xem biểu đồ thống kê, báo cáo học tập của lớp học.' },
-    { key: 'Assignment', label: 'Tạo Bài tập & Assignment', icon: 'solar:document-add-bold-duotone', desc: 'Đăng tải bài tập, quản lý tài liệu, thông báo lớp.' },
-    { key: 'Feedback', label: 'Nhận xét & Feedback', icon: 'solar:chat-round-dots-bold-duotone', desc: 'Cho phép TA viết nhận xét và phản hồi cho học sinh.' },
+    { key: 'Assignment', label: 'Quản lý bài tập', icon: 'solar:document-add-bold-duotone', desc: 'Đăng tải bài tập, quản lý tài liệu, thông báo lớp.' },
+    { key: 'Feedback', label: 'Nhận xét & Phản hồi', icon: 'solar:chat-round-dots-bold-duotone', desc: 'Cho phép TA viết nhận xét và phản hồi cho học sinh.' },
 ];
 
 const EditTAPermissionModal = ({ isOpen, onClose, assistant, onUpdate }) => {
@@ -54,9 +54,15 @@ const EditTAPermissionModal = ({ isOpen, onClose, assistant, onUpdate }) => {
             return;
         }
 
+        const salary = Number(salaryPerSession);
+        if (isNaN(salary) || salary <= 0) {
+            toast.warn('Vui lòng nhập lương hợp lệ (> 0)');
+            return;
+        }
+
         const payload = {
             permission: selectedPermissions.join(', ') || 'None',
-            salaryPerSession: Number(salaryPerSession)
+            salaryPerSession: salary
         };
 
         try {

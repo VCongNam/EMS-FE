@@ -14,10 +14,27 @@ const AddTAModal = ({ isOpen, onClose, onAdd, classId }) => {
     const [isSearching, setIsSearching] = useState(false);
     const [foundTA, setFoundTA] = useState(null);
     
+    // Permission constants
+    const PERMISSION_OPTIONS = [
+        { key: 'Attendance', label: 'Điểm danh học sinh', icon: 'solar:calendar-check-bold-duotone' },
+        { key: 'Grade', label: 'Chấm điểm & Nhập điểm', icon: 'solar:pen-new-square-bold-duotone' },
+        { key: 'Report', label: 'Xem Báo cáo học tập', icon: 'solar:chart-2-bold-duotone' },
+        { key: 'Assignment', label: 'Quản lý bài tập', icon: 'solar:document-add-bold-duotone' },
+        { key: 'Feedback', label: 'Nhận xét & Phản hồi', icon: 'solar:chat-round-dots-bold-duotone' },
+    ];
+    
     // Assignment fields
-    const [permission, setPermission] = useState('Attendance');
+    const [selectedPermissions, setSelectedPermissions] = useState(['Attendance']);
     const [salaryPerSession, setSalaryPerSession] = useState(50000);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleTogglePermission = (key) => {
+        setSelectedPermissions(prev => 
+            prev.includes(key) 
+                ? prev.filter(p => p !== key) 
+                : [...prev, key]
+        );
+    };
 
     if (!isOpen) return null;
 
@@ -49,12 +66,25 @@ const AddTAModal = ({ isOpen, onClose, onAdd, classId }) => {
 
     const handleAssign = async () => {
         if (!foundTA) return;
+        
+        // Validate Salary
+        const salary = Number(salaryPerSession);
+        if (isNaN(salary) || salary <= 10000) {
+            toast.warn('Lương mỗi buổi học phải lớn hơn 10.000đ');
+            return;
+        }
+
+        if (selectedPermissions.length === 0) {
+            toast.warn('Vui lòng chọn ít nhất một quyền hạn');
+            return;
+        }
+
         setIsSubmitting(true);
         try {
             const payload = {
                 taid: foundTA.taId,
-                permission: permission,
-                salaryPerSession: Number(salaryPerSession)
+                permission: selectedPermissions.join(', '),
+                salaryPerSession: salary
             };
             const res = await taService.assignTAToClass(classId, payload, token);
             if (res.ok) {
@@ -163,36 +193,51 @@ const AddTAModal = ({ isOpen, onClose, onAdd, classId }) => {
                                 </div>
 
                                 {/* Assignment Inputs */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 !gap-6">
-                                    <div className="!space-y-1.5 group">
-                                        <label className={labelClasses}>Quyền hạn <span className="text-red-500">*</span></label>
-                                        <div className="relative">
-                                            <Icon icon="solar:shield-keyhole-linear" className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted/70 text-lg group-focus-within:text-primary transition-colors" />
-                                            <select
-                                                value={permission}
-                                                onChange={(e) => setPermission(e.target.value)}
-                                                className={`${inputClasses} appearance-none cursor-pointer`}
-                                            >
-                                                <option value="Attendance">Attendance (Điểm danh)</option>
-                                                <option value="Grade">Grade (Điểm số)</option>
-                                                <option value="Permission">Permission (Toàn quyền cấu hình)</option>
-                                            </select>
-                                            <Icon icon="solar:alt-arrow-down-linear" className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
+                                <div className="!space-y-6">
+                                    <div className="!space-y-3 group">
+                                        <label className={labelClasses}>Quyền hạn <span className="text-red-500">*</span> (Có thể chọn nhiều)</label>
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 !gap-3">
+                                            {PERMISSION_OPTIONS.map((opt) => {
+                                                const isSelected = selectedPermissions.includes(opt.key);
+                                                return (
+                                                    <div 
+                                                        key={opt.key}
+                                                        onClick={() => handleTogglePermission(opt.key)}
+                                                        className={`flex items-center gap-2.5 !p-3 rounded-xl border transition-all cursor-pointer select-none ${
+                                                            isSelected 
+                                                                ? 'bg-primary/10 border-primary text-primary shadow-sm' 
+                                                                : 'bg-background border-border text-text-muted hover:border-primary/50'
+                                                        }`}
+                                                    >
+                                                        <div className={`w-5 h-5 rounded flex items-center justify-center border transition-all ${
+                                                            isSelected ? 'bg-primary border-primary text-white' : 'bg-white border-border'
+                                                        }`}>
+                                                            {isSelected && <Icon icon="material-symbols:check-small-rounded" className="text-lg" />}
+                                                        </div>
+                                                        <div className="flex items-center gap-2 overflow-hidden">
+                                                            <Icon icon={opt.icon} className="shrink-0 text-lg opacity-80" />
+                                                            <span className="text-sm font-bold truncate">{opt.label}</span>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                     </div>
 
                                     <div className="!space-y-1.5 group">
-                                        <label className={labelClasses}>Lương mỗi buổi (đ) <span className="text-red-500">*</span></label>
+                                        <label className={labelClasses}>Lương mỗi buổi học (đ) <span className="text-red-500">*</span></label>
                                         <div className="relative">
                                             <Icon icon="solar:wad-of-money-linear" className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted/70 text-lg group-focus-within:text-primary transition-colors" />
                                             <input
                                                 type="number"
                                                 value={salaryPerSession}
                                                 onChange={(e) => setSalaryPerSession(e.target.value)}
-                                                className={inputClasses}
+                                                className={`${inputClasses} font-bold text-primary`}
                                                 min="0"
                                                 step="1000"
+                                                placeholder="Ví dụ: 50000"
                                             />
+                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted font-bold text-xs uppercase opacity-70">VND</div>
                                         </div>
                                     </div>
                                 </div>
