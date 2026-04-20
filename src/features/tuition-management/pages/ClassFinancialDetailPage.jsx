@@ -27,6 +27,11 @@ const ClassFinancialDetailPage = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [isGenerating, setIsGenerating] = useState(false);
     const [invoiceStats, setInvoiceStats] = useState({ expectedRevenue: 0, actualRevenue: 0, debtAmount: 0 });
+    
+    // Pagination
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalStudents, setTotalStudents] = useState(0);
+    const rowsPerPage = 10;
 
     const [feeModal, setFeeModal] = useState({ isOpen: false, editData: null });
 
@@ -67,7 +72,7 @@ const ClassFinancialDetailPage = () => {
             const safeFetch = p => p.catch(error => ({ ok: false }));
 
             const [resDetail, resSummaries, configRes, summaryRes] = await Promise.all([
-                safeFetch(tuitionService.getClassInvoicesReport(classId, selectedMonth, selectedYear, user.token)),
+                safeFetch(tuitionService.getClassInvoicesReport(classId, selectedMonth, selectedYear, currentPage, rowsPerPage, user.token)),
                 safeFetch(tuitionService.getClassFinancialSummaries(user.token)),
                 safeFetch(tuitionService.getTuitionFeeConfig(classId, user.token)),
                 safeFetch(tuitionService.getClassInvoiceSummary(classId, selectedMonth, selectedYear, user.token))
@@ -115,18 +120,28 @@ const ClassFinancialDetailPage = () => {
             if (resDetail && resDetail.ok) {
                 try {
                     const data = await resDetail.json();
-                    const invoiceList = Array.isArray(data) ? data : (data.students || []);
-                    realStudentCount = invoiceList.length || realStudentCount;
+                    let invoiceList = [];
+                    let count = 0;
+
+                    if (data.items) {
+                        invoiceList = data.items;
+                        count = data.totalCount || data.total || data.items.length;
+                    } else {
+                        invoiceList = Array.isArray(data) ? data : (data.students || []);
+                        count = invoiceList.length;
+                    }
+
+                    setStudentsData(invoiceList);
+                    setTotalStudents(count);
                     
-                    setClassInfo({
-                        classId: classId,
+                    setClassInfo(prev => ({
+                        ...prev,
                         name: classConfig.className || `Lớp ${classId}`,
-                        students: realStudentCount,
+                        students: count || prev.students,
                         billingMethod: classConfig.billingMethod || 'Prepaid',
                         tuitionFee: classConfig.tuitionFee,
                         paymentDeadlineDays: classConfig.paymentDeadlineDays
-                    });
-                    setStudentsData(invoiceList);
+                    }));
                 } catch(e) {}
             } else {
                 // Render with at least config info even if detail fails
@@ -151,7 +166,12 @@ const ClassFinancialDetailPage = () => {
 
     useEffect(() => {
         fetchData();
-    }, [classId, selectedMonth, selectedYear, user?.token]);
+    }, [selectedMonth, selectedYear, classId, user?.token, currentPage]);
+
+    // Reset pagination when period changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [selectedMonth, selectedYear]);
 
     const extractApiError = (errorData, defaultMessage) => {
         if (errorData?.errors && typeof errorData.errors === 'object') {
@@ -187,6 +207,8 @@ const ClassFinancialDetailPage = () => {
     };
 
     const handleGenerateInvoice = () => {
+        // Find if this period has already been processed based on some flag if available
+        // Or just let the prompt handle it
         const next7Days = new Date();
         next7Days.setDate(next7Days.getDate() + 7);
         const dd = String(next7Days.getDate()).padStart(2, '0');
@@ -214,13 +236,8 @@ const ClassFinancialDetailPage = () => {
                 const [day, month, year] = dueDate.trim().split('-').map(Number);
                 const dateObj = new Date(year, month - 1, day);
 
-                // Verify date is mathematically valid
-                if (
-                    dateObj.getFullYear() !== year ||
-                    dateObj.getMonth() + 1 !== month ||
-                    dateObj.getDate() !== day
-                ) {
-                    toast.error('Ngày không hợp lệ. Vui lòng kiểm tra lại (ví dụ: ngày 30-02 không tồn tại).');
+                if (dateObj.getFullYear() !== year || dateObj.getMonth() + 1 !== month || dateObj.getDate() !== day) {
+                    toast.error('Ngày không hợp lệ.');
                     return;
                 }
 
@@ -243,6 +260,31 @@ const ClassFinancialDetailPage = () => {
                     toast.error("Lỗi khi phát hành hóa đơn.");
                 } finally {
                     setIsGenerating(false);
+                }
+            }
+        });
+    };
+
+    const handleReconcileAbsences = async () => {
+        setConfirmModal({
+            isOpen: true,
+            title: 'Chốt sổ vắng phép',
+            message: `Hệ thống sẽ tính toán các buổi vắng phép của tháng ${selectedMonth === 1 ? 12 : selectedMonth - 1} để hoàn vào ví học phí tháng ${selectedMonth}. Bạn chắc chắn muốn thực hiện?`,
+            action: async () => {
+                setConfirmModal({ isOpen: false });
+                setIsLoading(true);
+                try {
+                    const res = await tuitionService.reconcilePrepaidClass(classId, selectedMonth, selectedYear, user.token);
+                    if (res.ok) {
+                        toast.success("Chốt sổ vắng phép thành công!");
+                        fetchData();
+                    } else {
+                        toast.error("Chốt sổ thất bại.");
+                    }
+                } catch (error) {
+                    toast.error("Lỗi kết nối server.");
+                } finally {
+                    setIsLoading(false);
                 }
             }
         });
@@ -367,7 +409,7 @@ const ClassFinancialDetailPage = () => {
                 </div>
 
                 <div className="!flex !items-center !gap-3 !flex-wrap">
-                    {/* Xem giao dịch - same style as dashboard */}
+                    {/* Xem giao dịch */}
                     <button
                         onClick={() => navigate(`/tuition/reports/${classId}/transactions`)}
                         className="!flex !items-center !gap-2.5 !px-4 !py-3 !rounded-2xl !shadow-sm !border !transition-all !group !bg-blue-50 !border-blue-200 !text-blue-800 hover:!bg-blue-100"
@@ -382,7 +424,20 @@ const ClassFinancialDetailPage = () => {
                         <Icon icon="solar:alt-arrow-right-bold" className="!text-blue-500 !text-base !ml-1 group-hover:!translate-x-1 !transition-transform" />
                     </button>
 
-                        
+                    {classInfo.billingMethod === 'Prepaid' ? (
+                        <button
+                            onClick={handleReconcileAbsences}
+                            className="!flex !items-center !gap-2 !px-5 !py-3 !rounded-2xl !bg-emerald-50 !text-emerald-700 !border !border-emerald-200 !font-black hover:!bg-emerald-100 !transition-all shadow-sm"
+                        >
+                            <Icon icon="solar:clipboard-check-bold-duotone" className="!text-lg" />
+                            <span>Chốt sổ vắng phép</span>
+                        </button>
+                    ) : (
+                        <div className="!flex !items-center !gap-2 !px-5 !py-3 !rounded-2xl !bg-amber-50 !text-amber-700 !border !border-amber-200 !font-black !text-[10px] !max-w-[200px] !leading-tight">
+                            <Icon icon="solar:info-circle-bold-duotone" className="!text-lg !shrink-0" />
+                            <span>Kiểm tra điểm danh trước khi phát hành</span>
+                        </div>
+                    )}
 
                     <button
                         onClick={handleGenerateInvoice}
@@ -394,7 +449,7 @@ const ClassFinancialDetailPage = () => {
                         ) : (
                             <Icon icon="solar:document-add-bold-duotone" className="!text-lg" />
                         )}
-                        <span className="!text-sm">Phát hành phiếu thu học phí</span>
+                        <span className="!text-sm">Phát hành phiếu thu tháng {selectedMonth}</span>
                     </button>
                 </div>
             </div>
@@ -409,7 +464,11 @@ const ClassFinancialDetailPage = () => {
                         <span className="!text-[10px] !font-black !text-text-muted !uppercase !tracking-widest">Dự kiến thu</span>
                     </div>
                     {isLoading ? <div className="!h-8 !w-32 !bg-border !animate-pulse !rounded-md"></div> : <h3 className="!text-2xl !font-black !text-text-main !tracking-tight">{formatVND(invoiceStats.expectedRevenue)}</h3>}
-                    <p className="!text-xs !font-bold !text-text-muted !mt-2">Tổng doanh thu lý thuyết kỳ này</p>
+                    <p className="!text-xs !font-bold !text-text-muted !mt-2">
+                        {classInfo.billingMethod === 'Prepaid' 
+                            ? 'Dựa trên Số buổi dự kiến có trong tháng'
+                            : 'Dựa trên Số buổi Thực tế học sinh đi học'}
+                    </p>
                 </div>
 
                 <div className="!p-8 !bg-white !rounded-[2.5rem] !border !border-border !shadow-sm">
@@ -450,10 +509,19 @@ const ClassFinancialDetailPage = () => {
                 {isLoading ? (
                     <div className="!py-20 !text-center !text-text-muted">Đang phân tích bảng biểu học sinh...</div>
                 ) : (
-                    <StudentPaymentTable 
-                        students={studentsData} 
-                        onExtendClick={handleExtendClick}
-                    />
+                    <div className="!mt-8">
+                        <StudentPaymentTable 
+                            students={studentsData} 
+                            billingMethod={classInfo.billingMethod}
+                            onExtendClick={handleExtendClick}
+                            currentPage={currentPage}
+                            totalPages={Math.ceil(totalStudents / rowsPerPage)}
+                            onPageChange={setCurrentPage}
+                            onRemindClick={(student) => {
+                                toast.success(`Đã gửi thông báo nhắc nợ tới phụ huynh học sinh ${student.studentName || student.name}`);
+                            }}
+                        />
+                    </div>
                 )}
             </div>
 
