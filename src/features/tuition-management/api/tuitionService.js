@@ -142,7 +142,31 @@ export const tuitionService = {
 
     // Lấy thống kê Báo cáo tài chính tất cả các lớp (Màn 3)
     getClassFinancialSummaries: async (token) => {
-        const response = await fetch(getApiUrl(`/api/TuitionFee/report/class-summaries`), {
+        const response = await fetch(getApiUrl(`/api/TuitionFee/reports/class-summaries`), {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        return response;
+    },
+
+    // Lấy thống kê Báo cáo tài chính tất cả các lớp (Màn 3)
+    getClassFinancialSummaries: async (token) => {
+        const response = await fetch(getApiUrl(`/api/TuitionFee/reports/class-summaries`), {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        return response;
+    },
+
+    // Lấy thống kê Báo cáo tài chính tất cả các lớp (Màn 3)
+    getClassFinancialSummaries: async (token) => {
+        const response = await fetch(getApiUrl(`/api/TuitionFee/reports/class-summaries`), {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -312,6 +336,18 @@ export const tuitionService = {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(payload)
+        });
+        return response;
+    },
+
+    // Lấy danh sách các lớp cần nhắc nhở (phát hành hóa đơn, chốt sổ...)
+    getReminders: async (token) => {
+        const response = await fetch(getApiUrl(`/api/TuitionFee/reminders`), {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
         });
         return response;
     }

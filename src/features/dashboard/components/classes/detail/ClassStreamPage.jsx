@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { Icon } from '@iconify/react';
 import PostComposer from './components/PostComposer';
 import PostCard from './components/PostCard';
 import postService from '../../../api/postService';
@@ -13,21 +14,21 @@ const ClassStreamPage = () => {
     const [posts, setPosts] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    const fetchPosts = async () => {
-        setIsLoading(true);
+    const fetchPosts = async (silent = false) => {
+        if (!silent) setIsLoading(true);
         try {
             const res = await postService.getPostsByClassId(classId, token);
             if (res.ok) {
                 const data = await res.json();
                 setPosts(data);
             } else {
-                toast.error('Không thể tải bản tin');
+                if (!silent) toast.error('Không thể tải bản tin');
             }
         } catch (error) {
             console.error('Fetch posts error:', error);
-            toast.error('Lỗi kết nối máy chủ');
+            if (!silent) toast.error('Lỗi kết nối máy chủ');
         } finally {
-            setIsLoading(false);
+            if (!silent) setIsLoading(false);
         }
     };
 
@@ -76,7 +77,7 @@ const ClassStreamPage = () => {
             const res = await postService.updatePost(postId, formData, token);
             if (res.ok) {
                 toast.success('Đã cập nhật bài đăng');
-                fetchPosts();
+                fetchPosts(true); // Silent fetch to keep the UI smooth
             } else {
                 toast.error('Lỗi khi cập nhật bài đăng');
             }
@@ -105,7 +106,8 @@ const ClassStreamPage = () => {
         try {
             const res = await postService.commentOnPost(postId, content, token);
             if (res.ok) {
-                fetchPosts();
+                // Fetch silently to update the comments list without flickering
+                await fetchPosts(true);
             } else {
                 toast.error('Lỗi khi gửi nhận xét');
             }
@@ -120,7 +122,7 @@ const ClassStreamPage = () => {
             const res = await postService.deleteComment(commentId, token);
             if (res.ok) {
                 toast.success('Đã xóa nhận xét');
-                fetchPosts();
+                await fetchPosts(true);
             } else {
                 toast.error('Lỗi khi xóa nhận xét');
             }
@@ -131,21 +133,23 @@ const ClassStreamPage = () => {
     };
 
     return (
-        <div className="max-w-4xl mx-auto animate-fade-in-up">
+        <div className="w-full !pb-12 animate-fade-in">
             {/* Cột chính (100%) */}
-            <div className="w-full">
+            <div className="w-full space-y-6">
                 {/* Post Composer */}
-                <PostComposer onPost={handleNewPost} />
+                <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-md !pb-4 !pt-2">
+                    <PostComposer onPost={handleNewPost} />
+                </div>
 
                 {/* Danh sách Posts */}
                 {isLoading ? (
-                    <div className="space-y-6">
+                    <div className="space-y-8 mt-4">
                         {[1, 2].map(i => (
-                            <div key={i} className="bg-surface rounded-2xl border border-border h-48 animate-pulse"></div>
+                            <div key={i} className="bg-surface rounded-2xl border border-border h-64 animate-pulse shadow-sm"></div>
                         ))}
                     </div>
                 ) : posts.length > 0 ? (
-                    <div className="space-y-6">
+                    <div className="space-y-6 mt-4">
                         {posts.map(post => (
                             <PostCard
                                 key={post.postId}
@@ -158,9 +162,14 @@ const ClassStreamPage = () => {
                         ))}
                     </div>
                 ) : (
-                    <div className="bg-surface rounded-2xl border border-border !p-6 shadow-sm text-center !py-12">
-                        <p className="text-text-muted">Đây là nơi giao tiếp với lớp học của bạn</p>
-                        <p className="text-sm text-text-muted mt-2">Sử dụng luồng để chia sẻ thông báo, bài tập và câu hỏi</p>
+                    <div className="bg-surface rounded-3xl border border-border !p-12 shadow-sm text-center flex flex-col items-center justify-center min-h-[400px] mt-4">
+                        <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center !mb-6">
+                            <Icon icon="solar:chat-round-dots-bold-duotone" className="text-primary text-5xl" />
+                        </div>
+                        <h3 className="text-xl font-bold text-text-main !mb-2">Đây là nơi giao tiếp với lớp học của bạn</h3>
+                        <p className="text-text-muted max-w-md mx-auto leading-relaxed">
+                            Sử dụng bảng tin để chia sẻ thông báo quan trọng, thảo luận về bài học và đặt câu hỏi cho giáo viên.
+                        </p>
                     </div>
                 )}
             </div>

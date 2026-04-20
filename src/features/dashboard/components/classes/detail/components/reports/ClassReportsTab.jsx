@@ -35,6 +35,7 @@ const ClassReportsTab = () => {
 
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
+    const [expandedStudentId, setExpandedStudentId] = useState(null);
     const itemsPerPage = 8;
 
     // Fetch periods (last 6 to next 6 months)
@@ -103,6 +104,7 @@ const ClassReportsTab = () => {
     useEffect(() => {
         fetchData();
         setCurrentPage(1); // Reset page when filters change
+        setExpandedStudentId(null);
     }, [classId, selectedMonth, selectedYear]);
 
     const handleOpenModal = (reportData) => {
@@ -142,10 +144,15 @@ const ClassReportsTab = () => {
 
     const handleSaveReport = async (data) => {
         try {
-            const res = await progressReportService.upsertReport({
+            // When sending/publishing, we first save/upsert as 'Draft' (to avoid 400 status error)
+            // then we'll call the dedicated /send endpoint.
+            const payload = {
                 ...data,
+                status: data.status === 'Published' ? 'Draft' : (data.status || 'Draft'),
                 classId: classId
-            }, token);
+            };
+
+            const res = await progressReportService.upsertReport(payload, token);
 
             if (res.ok) {
                 const result = await res.json().catch(() => ({}));
@@ -155,12 +162,19 @@ const ClassReportsTab = () => {
                 setIsModalOpen(false);
                 setEditingReport(null);
 
-                if (data.status === 'Sent') {
-                    setConfirmModal({
-                        isOpen: true,
-                        report: { ...data, reportId: finalReportId },
-                        type: 'send'
-                    });
+                if (data.status === 'Published') {
+                    // Logic to automatically trigger the send API if the user already confirmed in the modal
+                    try {
+                        const sendRes = await progressReportService.sendReport(finalReportId, token);
+                        if (sendRes.ok) {
+                            toast.success('Báo cáo đã được gửi thành công!');
+                        } else {
+                            toast.warning('Báo cáo đã lưu nhưng chưa gửi được. Vui lòng gửi thủ công.');
+                        }
+                    } catch (e) {
+                        toast.warning('Báo cáo đã lưu nhưng có lỗi khi gửi. Vui lòng kiểm tra lại.');
+                    }
+                    fetchData();
                 } else {
                     toast.success(data.reportId ? 'Cập nhật thành công!' : 'Tạo mới thành công!');
                 }
@@ -174,8 +188,7 @@ const ClassReportsTab = () => {
 
     const getStatusStyle = (status) => {
         switch (status) {
-            case 'Published':
-            case 'Sent': return '!bg-emerald-100 !text-emerald-700';
+            case 'Published': return '!bg-emerald-100 !text-emerald-700';
             case 'Draft': return '!bg-amber-100 !text-amber-700';
             case 'Ready': return '!bg-blue-100 !text-blue-700';
             default: return '!bg-gray-100 !text-gray-700';
@@ -184,15 +197,14 @@ const ClassReportsTab = () => {
 
     const getStatusLabel = (status) => {
         switch (status) {
-            case 'Published':
-            case 'Sent': return 'Đã gửi';
+            case 'Published': return 'Đã gửi';
             case 'Draft': return 'Bản nháp';
             case 'Ready': return 'Sẵn sàng';
             default: return status;
         }
     };
 
-    const sentCount = reports.filter(s => s.status === 'Sent' || s.status === 'Published').length;
+    const sentCount = reports.filter(s => s.status === 'Published').length;
     const progressRate = reports.length > 0 ? Math.round((sentCount / reports.length) * 100) : 0;
 
     // Pagination logic
@@ -268,90 +280,200 @@ const ClassReportsTab = () => {
                             </thead>
                             <tbody className="divide-y divide-border/50">
                                 {paginatedReports.map(report => (
-                                    <tr key={report.studentId} className="hover:bg-primary/5 transition-colors group">
-                                        <td className="!p-4 text-text-main">
-                                            <div className="flex items-center !gap-3 w-max">
-                                                <div className="w-10 h-10 rounded-full bg-blue-500/10 text-blue-600 flex items-center justify-center font-bold text-sm uppercase shrink-0">
-                                                    {(report.studentName || 'S').charAt(0)}
-                                                </div>
-                                                <div className="flex flex-col">
-                                                    <span className="font-semibold text-sm">{report.studentName}</span>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="!p-4">
-                                            <div className="flex flex-col items-center gap-1.5 min-w-[150px]">
-                                                <div className="flex items-center gap-3 w-full max-w-[140px]">
-                                                    <span className="text-[10px] font-bold text-text-muted w-8">GPA</span>
-                                                    <div className="flex-1 h-1.5 bg-background rounded-full overflow-hidden border border-border/50">
-                                                        <div className="h-full bg-primary" style={{ width: `${(report.gpa || 0) * 10}%` }}></div>
+                                    <React.Fragment key={report.studentId}>
+                                        <tr className={`transition-all group ${expandedStudentId === report.studentId ? 'bg-primary/5' : 'hover:bg-primary/5'}`}>
+                                            <td className="!p-4 text-text-main">
+                                                <div className="flex items-center !gap-3 w-max">
+                                                    <div className="w-10 h-10 rounded-full bg-blue-500/10 text-blue-600 flex items-center justify-center font-bold text-sm uppercase shrink-0">
+                                                        {(report.studentName || 'S').charAt(0)}
                                                     </div>
-                                                    <span className="text-[10px] font-black text-primary w-6 text-right">{report.gpa || 0}</span>
-                                                </div>
-                                                <div className="flex items-center gap-3 w-full max-w-[140px]">
-                                                    <span className="text-[10px] font-bold text-text-muted w-8">ATT</span>
-                                                    <div className="flex-1 h-1.5 bg-background rounded-full overflow-hidden border border-border/50">
-                                                        <div className="h-full bg-emerald-500" style={{ width: `${report.attendanceRate || 0}%` }}></div>
+                                                    <div className="flex flex-col">
+                                                        <span className="font-semibold text-sm">{report.studentName}</span>
                                                     </div>
-                                                    <span className="text-[10px] font-black text-emerald-600 w-6 text-right">{report.attendanceRate || 0}%</span>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        {!isStudent && (
-                                            <td className="!p-4 text-center">
-                                                <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold ${getStatusStyle(report.status)}`}>
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-current"></div>
-                                                    {getStatusLabel(report.status)}
                                                 </div>
                                             </td>
-                                        )}
-                                        <td className="!p-4 text-right">
-                                            <div className="flex items-center justify-end gap-1.5">
-                                                {(isStudent || isTA) ? (
-                                                    // Student & TA: view-only
+                                            <td className="!p-4">
+                                                <div className="flex flex-col items-center gap-1.5 min-w-[150px]">
+                                                    <div className="flex items-center gap-3 w-full max-w-[140px]">
+                                                        <span className="text-[10px] font-bold text-text-muted w-8">GPA</span>
+                                                        <div className="flex-1 h-1.5 bg-background rounded-full overflow-hidden border border-border/50">
+                                                            <div className="h-full bg-primary" style={{ width: `${(report.gpa || 0) * 10}%` }}></div>
+                                                        </div>
+                                                        <span className="text-[10px] font-black text-primary w-6 text-right">{report.gpa || 0}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-3 w-full max-w-[140px]">
+                                                        <span className="text-[10px] font-bold text-text-muted w-8">ATT</span>
+                                                        <div className="flex-1 h-1.5 bg-background rounded-full overflow-hidden border border-border/50">
+                                                            <div className="h-full bg-emerald-500" style={{ width: `${report.attendanceRate || 0}%` }}></div>
+                                                        </div>
+                                                        <span className="text-[10px] font-black text-emerald-600 w-6 text-right">{report.attendanceRate || 0}%</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            {!isStudent && (
+                                                <td className="!p-4 text-center">
+                                                    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold ${getStatusStyle(report.status)}`}>
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-current"></div>
+                                                        {getStatusLabel(report.status)}
+                                                    </div>
+                                                </td>
+                                            )}
+                                            <td className="!p-4 text-right">
+                                                <div className="flex items-center justify-end gap-1.5">
                                                     <button 
-                                                        title="Xem chi tiết" 
-                                                        onClick={() => handleOpenModal(report)} 
-                                                        className="!p-2.5 !rounded-xl !bg-primary/10 !text-primary hover:!bg-primary hover:!text-white transition-all shadow-sm border border-primary/20"
+                                                        title="Xem chi tiết (Dữ liệu nền tảng)" 
+                                                        onClick={() => setExpandedStudentId(expandedStudentId === report.studentId ? null : report.studentId)}
+                                                        className={`!p-2.5 !rounded-xl transition-all shadow-sm border ${expandedStudentId === report.studentId ? '!bg-primary !text-white border-primary' : '!bg-white !text-text-muted border-border hover:border-primary/30 hover:text-primary'}`}
                                                     >
-                                                        <Icon icon="solar:eye-bold-duotone" className="text-xl" />
+                                                        <Icon icon={expandedStudentId === report.studentId ? "solar:alt-arrow-up-bold-duotone" : "solar:checklist-minimalistic-bold-duotone"} className="text-xl" />
                                                     </button>
-                                                ) : (
-                                                    // Teacher: full actions
-                                                    <>
-                                                        {report.status === 'Ready' ? (
-                                                            <button 
-                                                                title="Tạo báo cáo" 
-                                                                onClick={() => handleOpenModal(report)} 
-                                                                className="!p-2.5 !rounded-xl !bg-primary/10 !text-primary hover:!bg-primary hover:!text-white transition-all shadow-sm"
-                                                            >
-                                                                <Icon icon="material-symbols:add-chart-rounded" className="text-xl" />
-                                                            </button>
-                                                        ) : (
-                                                            <>
+
+                                                    {(isStudent || isTA) ? (
+                                                        // Student & TA: view-only report content
+                                                        <button 
+                                                            title="Xem báo cáo nhận xét" 
+                                                            onClick={() => handleOpenModal(report)} 
+                                                            className="!p-2.5 !rounded-xl !bg-primary/10 !text-primary hover:!bg-primary hover:!text-white transition-all shadow-sm border border-primary/20"
+                                                        >
+                                                            <Icon icon="solar:eye-bold-duotone" className="text-xl" />
+                                                        </button>
+                                                    ) : (
+                                                        // Teacher: full actions
+                                                        <>
+                                                            {report.status === 'Ready' ? (
                                                                 <button 
-                                                                    title="Gửi báo cáo" 
-                                                                    onClick={() => setConfirmModal({ isOpen: true, report: report, type: 'send' })} 
-                                                                    className="!p-2.5 !rounded-xl !bg-emerald-50 !text-emerald-600 hover:!bg-emerald-600 hover:!text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm border border-emerald-100"
-                                                                    disabled={report.status !== 'Draft'}
-                                                                >
-                                                                    <Icon icon="material-symbols:send-rounded" className="text-xl" />
-                                                                </button>
-                                                                <button 
-                                                                    title="Sửa báo cáo" 
+                                                                    title="Tạo báo cáo" 
                                                                     onClick={() => handleOpenModal(report)} 
-                                                                    className="!p-2.5 !rounded-xl !bg-amber-50 !text-amber-600 hover:!bg-amber-600 hover:!text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm border border-amber-100"
-                                                                    disabled={report.status === 'Published' || report.status === 'Sent'}
+                                                                    className="!p-2.5 !rounded-xl !bg-primary/10 !text-primary hover:!bg-primary hover:!text-white transition-all shadow-sm"
                                                                 >
-                                                                    <Icon icon="material-symbols:edit-document-rounded" className="text-xl" />
+                                                                    <Icon icon="material-symbols:add-chart-rounded" className="text-xl" />
                                                                 </button>
-                                                            </>
-                                                        )}
-                                                    </>
-                                                )}
-                                            </div>
-                                        </td>
-                                    </tr>
+                                                            ) : (
+                                                                <>
+                                                                    <button 
+                                                                        title="Gửi báo cáo" 
+                                                                        onClick={() => setConfirmModal({ isOpen: true, report: report, type: 'send' })} 
+                                                                        className="!p-2.5 !rounded-xl !bg-emerald-50 !text-emerald-600 hover:!bg-emerald-600 hover:!text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm border border-emerald-100"
+                                                                        disabled={report.status !== 'Draft'}
+                                                                    >
+                                                                        <Icon icon="material-symbols:send-rounded" className="text-xl" />
+                                                                    </button>
+                                                                    <button 
+                                                                        title="Sửa báo cáo" 
+                                                                        onClick={() => handleOpenModal(report)} 
+                                                                        className="!p-2.5 !rounded-xl !bg-amber-50 !text-amber-600 hover:!bg-amber-600 hover:!text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm border border-amber-100"
+                                                                        disabled={report.status === 'Published' || report.status === 'Sent'}
+                                                                    >
+                                                                        <Icon icon="material-symbols:edit-document-rounded" className="text-xl" />
+                                                                    </button>
+                                                                </>
+                                                            )}
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+
+                                        {/* Expandable Detail Section */}
+                                        {expandedStudentId === report.studentId && (
+                                            <tr className="bg-background/80 animate-fade-in">
+                                                <td colSpan={isStudent ? 3 : 4} className="!p-6">
+                                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                                        {/* Scores Table */}
+                                                        <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
+                                                            <div className="!px-4 !py-3 bg-slate-50 border-b border-border flex items-center gap-2">
+                                                                <Icon icon="solar:ranking-bold-duotone" className="text-primary text-lg" />
+                                                                <span className="text-xs font-black text-text-main uppercase tracking-wider">Chi tiết điểm số (Tháng {selectedMonth})</span>
+                                                            </div>
+                                                            <div className="max-h-[250px] overflow-y-auto custom-scrollbar">
+                                                                <table className="w-full text-xs">
+                                                                    <thead className="sticky top-0 bg-white">
+                                                                        <tr className="text-text-muted border-b border-border">
+                                                                            <th className="!p-3 text-left font-bold">Tên bài tập/kiểm tra</th>
+                                                                            <th className="!p-3 text-center font-bold">Điểm</th>
+                                                                            <th className="!p-3 text-right font-bold">Trọng số</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody className="divide-y divide-border/30">
+                                                                        {(report.gradeHistory && report.gradeHistory.length > 0) ? (
+                                                                            report.gradeHistory.map((s, idx) => (
+                                                                                <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                                                                                    <td className="!p-3">
+                                                                                        <div className="flex flex-col">
+                                                                                            <span className="font-semibold text-text-main">{s.assignmentTitle}</span>
+                                                                                            <span className="text-[10px] text-text-muted opacity-70 uppercase tracking-tighter">{s.categoryName || 'Chưa phân loại'}</span>
+                                                                                        </div>
+                                                                                    </td>
+                                                                                    <td className="!p-3 text-center">
+                                                                                        <span className={`px-2 py-0.5 rounded-md font-black ${Number(s.grade) >= 5 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+                                                                                            {s.grade}
+                                                                                        </span>
+                                                                                    </td>
+                                                                                    <td className="!p-3 text-right text-text-muted">
+                                                                                        {s.weight ? `${s.weight}%` : '-'}
+                                                                                    </td>
+                                                                                </tr>
+                                                                            ))
+                                                                        ) : (
+                                                                            <tr>
+                                                                                <td colSpan="3" className="!p-8 text-center text-text-muted italic opacity-50">Chưa có dữ liệu điểm số</td>
+                                                                            </tr>
+                                                                        )}
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Attendance Table */}
+                                                        <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
+                                                            <div className="!px-4 !py-3 bg-emerald-50/50 border-b border-border flex items-center gap-2">
+                                                                <Icon icon="solar:calendar-check-bold-duotone" className="text-emerald-600 text-lg" />
+                                                                <span className="text-xs font-black text-text-main uppercase tracking-wider">Lịch sử buổi học</span>
+                                                            </div>
+                                                            <div className="max-h-[250px] overflow-y-auto custom-scrollbar">
+                                                                <table className="w-full text-xs">
+                                                                    <thead className="sticky top-0 bg-white shadow-sm">
+                                                                        <tr className="text-text-muted border-b border-border">
+                                                                            <th className="!p-3 text-left font-bold">Ngày học</th>
+                                                                            <th className="!p-3 text-center font-bold">Trạng thái</th>
+                                                                            <th className="!p-3 text-right font-bold">Chủ đề</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody className="divide-y divide-border/30">
+                                                                        {(report.attendanceHistory && report.attendanceHistory.length > 0) ? (
+                                                                            report.attendanceHistory.map((att, idx) => (
+                                                                                <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                                                                                    <td className="!p-3 font-semibold text-text-main">
+                                                                                        {new Date(att.date).toLocaleDateString('vi-VN', { weekday: 'short', day: '2-digit', month: '2-digit' })}
+                                                                                    </td>
+                                                                                    <td className="!p-3 text-center">
+                                                                                        <span className={`px-2 py-0.5 rounded-md font-bold uppercase text-[10px] ${
+                                                                                            att.status === 'Present' ? 'bg-emerald-100 text-emerald-700' : 
+                                                                                            att.status === 'Absent' ? 'bg-red-100 text-red-700' : 
+                                                                                            'bg-amber-100 text-amber-700'
+                                                                                        }`}>
+                                                                                            {att.status === 'Present' ? 'Đi học' : att.status === 'Absent' ? 'Vắng mặt' : 'Muộn'}
+                                                                                        </span>
+                                                                                    </td>
+                                                                                    <td className="!p-3 text-right text-text-muted italic truncate max-w-[100px]" title={att.topic}>
+                                                                                        {att.topic || '-'}
+                                                                                    </td>
+                                                                                </tr>
+                                                                            ))
+                                                                        ) : (
+                                                                            <tr>
+                                                                                <td colSpan="3" className="!p-8 text-center text-text-muted italic opacity-50">Chưa có dữ liệu chuyên cần</td>
+                                                                            </tr>
+                                                                        )}
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </React.Fragment>
                                 ))}
                             </tbody>
                         </table>

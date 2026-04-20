@@ -62,8 +62,9 @@ const RevenueTrendChart = ({ data = MOCK_DATA }) => {
                     <YAxis 
                         axisLine={false} 
                         tickLine={false} 
-                        tick={{ fontSize: 11, fontWeight: 700, fill: '#64748b' }}
-                        tickFormatter={(value) => `${value / 1000000}M`}
+                        tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }}
+                        tickFormatter={(value) => value >= 1000000 ? `${(value / 1000000).toLocaleString('vi-VN')} Tr ₫` : value.toLocaleString('vi-VN') + ' ₫'}
+                        width={80}
                     />
                     <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '5 5' }} />
                     <Area 

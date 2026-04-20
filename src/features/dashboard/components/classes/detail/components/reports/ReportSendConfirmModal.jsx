@@ -26,56 +26,111 @@ const ReportSendConfirmModal = ({ isOpen, onClose, onConfirm, report, className 
                         </div>
                     </div>
 
-                    {/* Content Preview */}
-                    <div className="!p-6 sm:!p-8 space-y-6 overflow-y-auto max-h-[60vh] custom-scrollbar bg-white">
+                    {/* Paper Preview Content */}
+                    <div className="!p-6 sm:!p-10 !bg-[#F1F5F9] !overflow-y-auto !max-h-[65vh] custom-scrollbar">
                         
-                        {/* Student Info Card */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="!p-4 !bg-background !rounded-2xl !border !border-border">
-                                <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-1">Học sinh</p>
-                                <p className="text-base font-bold text-text-main">{report.studentName}</p>
-                            </div>
-                            <div className="!p-4 !bg-background !rounded-2xl !border !border-border">
-                                <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-1">Lớp học / Kỳ học</p>
-                                <p className="text-base font-bold text-text-main">{className || report.classId}</p>
-                                <p className="text-xs text-text-muted font-medium">Tháng {report.periodMonth}/{report.periodYear}</p>
-                            </div>
-                        </div>
+                        {/* The "Paper" */}
+                        <div className="!w-full !max-w-[550px] !mx-auto !bg-white !shadow-xl !rounded-sm !flex !flex-col !overflow-hidden !border !border-border/50">
+                            {/* Decorative Top Bar */}
+                            <div className="!h-1.5 !bg-primary !w-full" />
+                            
+                            <div className="!p-8 sm:!p-10 !flex-1 !flex !flex-col !gap-8">
+                                {/* Report Header */}
+                                <div className="!flex !justify-between !items-start">
+                                    <div className="!space-y-1">
+                                        <h3 className="!text-xl !font-black !text-text-main !tracking-tighter !uppercase">Học bạ điện tử</h3>
+                                        <p className="!text-[10px] !font-bold !text-primary !uppercase !tracking-widest">EMS Analytics System</p>
+                                    </div>
+                                    <div className="!w-10 !h-10 !bg-background !border !border-border !rounded-xl !flex !items-center !justify-center !text-primary/40">
+                                        <Icon icon="solar:qr-code-bold-duotone" className="!text-2xl" />
+                                    </div>
+                                </div>
 
-                        {/* Academic Stats */}
-                        <div className="grid grid-cols-2 gap-4 !mt-2">
-                            <div className="!p-5 !bg-emerald-50 !rounded-2xl !border !border-emerald-100 flex !flex-col !items-center !text-center">
-                                <p className="text-[10px] font-black text-emerald-700 uppercase tracking-widest !mb-2">Điểm TB (GPA)</p>
-                                <div className="text-3xl font-black text-emerald-600">{report.gpa || 0}</div>
-                                <div className="w-full h-1.5 bg-emerald-200/50 rounded-full mt-3 overflow-hidden">
-                                    <div className="h-full bg-emerald-500" style={{ width: `${(report.gpa || 0) * 10}%` }}></div>
+                                {/* Student Meta */}
+                                <div className="!grid !grid-cols-2 !gap-6 !p-5 !bg-background/40 !rounded-2xl !border !border-dashed !border-border">
+                                    <div>
+                                        <p className="!text-[9px] !font-black !text-text-muted !uppercase !tracking-widest">Học sinh</p>
+                                        <p className="!text-sm !font-bold !text-text-main !mt-1">{report.studentName}</p>
+                                    </div>
+                                    <div>
+                                        <p className="!text-[9px] !font-black !text-text-muted !uppercase !tracking-widest">Kỳ học</p>
+                                        <p className="!text-xs !font-bold !text-text-main !mt-1">Tháng {report.periodMonth}/{report.periodYear}</p>
+                                    </div>
+                                </div>
+
+                                {/* Stats Overview */}
+                                <div className="!grid !grid-cols-2 !gap-4">
+                                    <div className="!p-4 !bg-emerald-50 !rounded-2xl !text-center !border !border-emerald-100">
+                                        <p className="!text-[9px] !font-black !text-emerald-700 !uppercase !tracking-widest">GPA</p>
+                                        <p className="!text-2xl !font-black !text-emerald-600">{report.gpa || 0}</p>
+                                    </div>
+                                    <div className="!p-4 !bg-blue-50 !rounded-2xl !text-center !border !border-blue-100">
+                                        <p className="!text-[9px] !font-black !text-blue-700 !uppercase !tracking-widest">Chuyên cần</p>
+                                        <p className="!text-2xl !font-black !text-blue-600">{report.attendanceRate || 0}%</p>
+                                    </div>
+                                </div>
+
+                                {/* Evaluation */}
+                                <div className="!space-y-3">
+                                    <div className="!flex !items-center !gap-2 !border-b !border-border !pb-1">
+                                        <Icon icon="material-symbols:comment-rounded" className="!text-primary !text-sm" />
+                                        <span className="!text-[10px] !font-black !text-text-main !uppercase !tracking-widest">Nhận xét của giáo viên</span>
+                                    </div>
+                                    <div className="!text-xs !text-text-main !leading-relaxed !italic !min-h-[80px] !font-serif !whitespace-pre-wrap">
+                                        {report.content || "Chưa có nội dung nhận xét."}
+                                    </div>
+                                </div>
+
+                                {/* Detailed Breakdown */}
+                                <div className="!grid !grid-cols-2 !gap-6 !pt-2">
+                                    <div className="!space-y-2">
+                                        <h4 className="!text-[9px] !font-black !text-text-muted !uppercase !tracking-tighter !border-b !border-border/50 !pb-1">Chi tiết điểm (Top 5)</h4>
+                                        <table className="!w-full !text-[9px]">
+                                            <tbody>
+                                                {report.gradeHistory?.slice(0, 5).map((s, idx) => (
+                                                    <tr key={idx} className="!border-b !border-border/20">
+                                                        <td className="!py-1 !text-text-muted !truncate !max-w-[80px]">{s.assignmentTitle}</td>
+                                                        <td className="!py-1 !text-right !font-black !text-primary">{s.grade}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div className="!space-y-2">
+                                        <h4 className="!text-[9px] !font-black !text-text-muted !uppercase !tracking-tighter !border-b !border-border/50 !pb-1">Chuyên cần (Top 5)</h4>
+                                        <table className="!w-full !text-[9px]">
+                                            <tbody>
+                                                {report.attendanceHistory?.slice(0, 5).map((att, idx) => (
+                                                    <tr key={idx} className="!border-b !border-border/20">
+                                                        <td className="!py-1 !text-text-muted">{new Date(att.date).toLocaleDateString('vi-VN', {day: '2-digit', month: '2-digit'})}</td>
+                                                        <td className="!py-1 !text-right">
+                                                            <div className={`!w-1.5 !h-1.5 !rounded-full !ml-auto ${att.status === 'Present' ? '!bg-emerald-500' : '!bg-red-500'}`}></div>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                {/* Footer Sign */}
+                                <div className="!mt-auto !pt-6 !border-t !border-border !flex !justify-between !items-end">
+                                    <div className="!text-center">
+                                        <p className="!text-[8px] !font-bold !text-text-muted !uppercase">Ngày ký</p>
+                                        <p className="!text-[10px] !font-bold !text-text-main !mt-1">{new Date().toLocaleDateString('vi-VN')}</p>
+                                    </div>
+                                    <div className="!w-16 !h-8 !bg-slate-50 !rounded !border !border-dashed !border-slate-200 !flex !items-center !justify-center">
+                                        <Icon icon="material-symbols:signature-rounded" className="!text-2xl !text-primary/10" />
+                                    </div>
                                 </div>
                             </div>
-                            <div className="!p-5 !bg-blue-50 rounded-2xl border border-blue-100 flex flex-col items-center text-center">
-                                <p className="text-[10px] font-black text-blue-700 uppercase tracking-widest mb-2">Chuyên cần</p>
-                                <div className="text-3xl font-black text-blue-600">{report.attendanceRate || 0}%</div>
-                                <div className="w-full !h-1.5 bg-blue-200/50 rounded-full !mt-3 overflow-hidden">
-                                    <div className="h-full bg-blue-500" style={{ width: `${report.attendanceRate || 0}%` }}></div>
-                                </div>
-                            </div>
                         </div>
 
-                        {/* Evaluation Message */}
-                        <div className="space-y-3 !mt-2">
-                            <div className="flex items-center gap-2 text-text-main">
-                                <Icon icon="material-symbols:comment-rounded" className="text-primary" />
-                                <span className="text-xs font-black uppercase tracking-widest">Nội dung nhận xét</span>
-                            </div>
-                            <div className="!p-6 bg-slate-50 border border-slate-200 rounded-3xl italic text-sm text-text-main leading-relaxed font-serif min-h-[100px] shadow-inner">
-                                {report.content || "Chưa có nội dung nhận xét."}
-                            </div>
-                        </div>
-
-                        {/* Warning Box */}
-                        <div className="!p-4 !mt-2 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-3">
-                            <Icon icon="material-symbols:warning-rounded" className="text-amber-500 text-xl mt-0.5 shrink-0" />
-                            <p className="text-[12px] text-amber-800 font-medium leading-relaxed">
-                                <span className="font-bold">Lưu ý:</span> Sau khi xác nhận gửi, báo cáo sẽ được hiển thị ngay lập tức trên ứng dụng của Phụ huynh và học sinh. Bạn sẽ <span className="font-bold underline">không thể chỉnh sửa</span> nội dung báo cáo này nữa.
+                        {/* Updated Warning Box below the paper */}
+                        <div className="!p-5 !mt-8 !bg-amber-500/10 !border !border-amber-200 !rounded-3xl !flex !items-start !gap-4 !max-w-[550px] !mx-auto">
+                            <Icon icon="material-symbols:warning-rounded" className="!text-amber-600 !text-2xl !mt-0.5 !shrink-0" />
+                            <p className="!text-sm !text-amber-900 !font-semibold !leading-relaxed">
+                                Kiểm tra kỹ tờ học bạ trên. Sau khi xác nhận, báo cáo sẽ được gửi cho phụ huynh và <span className="!underline !decoration-amber-500 !decoration-2">không thể chỉnh sửa</span> nội dung này nữa.
                             </p>
                         </div>
                     </div>

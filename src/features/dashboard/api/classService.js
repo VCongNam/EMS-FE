@@ -127,6 +127,17 @@ export const classService = {
       },
       body: JSON.stringify({ studentIds })
     });
+  },
+
+  resetStudentPassword: async (studentId, newPassword, token) => {
+    return fetch(getApiUrl('/api/Account/student/reset-password'), {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ studentId, newPassword })
+    });
   }
 };
 

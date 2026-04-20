@@ -82,6 +82,7 @@ const StudentPaymentTable = ({ students = [], onExtendClick }) => {
                                 <tr className="!bg-[#F8FAFC] !border-b !border-border">
                                     <th className="!px-6 !py-5 !text-[11px] !font-black !text-text-muted !uppercase !tracking-widest">Học sinh</th>
                                     <th className="!px-6 !py-5 !text-[11px] !font-black !text-text-muted !uppercase !tracking-widest">Mô tả</th>
+                                    <th className="!px-6 !py-5 !text-[11px] !font-black !text-text-muted !uppercase !tracking-widest text-center">Đơn giá</th>
                                     <th className="!px-6 !py-5 !text-[11px] !font-black !text-text-muted !uppercase !tracking-widest text-center">Số buổi</th>
                                     <th className="!px-6 !py-5 !text-[11px] !font-black !text-text-muted !uppercase !tracking-widest">Tổng tiền</th>
                                     <th className="!px-6 !py-5 !text-[11px] !font-black !text-text-muted !uppercase !tracking-widest">Đã nộp</th>
@@ -120,7 +121,6 @@ const StudentPaymentTable = ({ students = [], onExtendClick }) => {
                                                         </div>
                                                         <div>
                                                             <p className="!text-sm !font-bold !text-text-main">{student.studentName || student.name}</p>
-                                                            <p className="!text-[10px] !font-black !text-text-muted !uppercase">{student.studentId?.split('-')[0] || student.id}</p>
                                                         </div>
                                                     </div>
                                                 </td>
@@ -128,6 +128,11 @@ const StudentPaymentTable = ({ students = [], onExtendClick }) => {
                                                     <p className="!text-xs !font-medium !text-text-muted !max-w-[180px] !truncate" title={student.description || '--'}>
                                                         {student.description || '--'}
                                                     </p>
+                                                </td>
+                                                <td className="!px-6 !py-5 text-center">
+                                                    <span className="!text-sm !font-black !text-text-main">
+                                                        {formatVND(student.unitPrice || student.pricePerSession || 0)}
+                                                    </span>
                                                 </td>
                                                 <td className="!px-6 !py-5 text-center">
                                                     <span className="!text-sm !font-black !text-text-main !bg-background !px-3 !py-1 !rounded-lg !border !border-border">
@@ -201,7 +206,6 @@ const StudentPaymentTable = ({ students = [], onExtendClick }) => {
                                             </div>
                                             <div>
                                                 <p className="!text-sm !font-bold !text-text-main">{student.studentName || student.name}</p>
-                                                <p className="!text-[10px] !font-black !text-text-muted">{student.studentId?.split('-')[0] || student.id}</p>
                                             </div>
                                         </div>
                                         <div className={`!inline-flex !items-center !gap-1.5 !px-3 !py-1 !rounded-full !text-[11px] !font-black ${config.bg} ${config.color}`}>

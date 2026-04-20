@@ -6,6 +6,7 @@ import Button from "../../../../../components/ui/Button";
 import ConfirmModal from '../../../../../components/ui/ConfirmModal';
 import AddStudentModal from './components/AddStudentModal';
 import ImportStudentModal from './components/ImportStudentModal';
+import ResetPasswordModal from './components/ResetPasswordModal';
 import useAuthStore from '../../../../../store/authStore';
 import TAPermissionsModal from './components/TAPermissionsModal';
 import { classService } from '../../../api/classService';
@@ -21,6 +22,7 @@ const ClassPeoplePage = () => {
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isPermissionsModalOpen, setIsPermissionsModalOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [resetModal, setResetModal] = useState({ isOpen: false, studentId: null, studentName: '' });
 
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
@@ -150,6 +152,10 @@ const ClassPeoplePage = () => {
                 setConfirmConfig(prev => ({ ...prev, isOpen: false }));
             }
         });
+    };
+
+    const handleResetPassword = (studentId, studentName) => {
+        setResetModal({ isOpen: true, studentId, studentName });
     };
 
     const filteredMembers = members.filter(member => {
@@ -417,13 +423,22 @@ const ClassPeoplePage = () => {
                                                 <div className={`flex items-center justify-end gap-1 transition-opacity ${member.status === 'Active' ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`}>
 
                                                     {member.status === 'Active' ? (
-                                                        <button
-                                                            onClick={() => handleRemoveStudent(member.id)}
-                                                            className="!p-1.5 text-text-muted hover:text-red-500 transition-colors rounded-lg hover:bg-red-500/10"
-                                                            title="Xóa khỏi lớp"
-                                                        >
-                                                            <Icon icon="solar:trash-bin-trash-bold-duotone" className="text-lg" />
-                                                        </button>
+                                                        <>
+                                                            <button
+                                                                onClick={() => handleResetPassword(member.id, member.name)}
+                                                                className="!p-1.5 text-text-muted hover:text-amber-500 transition-colors rounded-lg hover:bg-amber-500/10"
+                                                                title="Reset mật khẩu"
+                                                            >
+                                                                <Icon icon="solar:key-bold-duotone" className="text-lg" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleRemoveStudent(member.id)}
+                                                                className="!p-1.5 text-text-muted hover:text-red-500 transition-colors rounded-lg hover:bg-red-500/10"
+                                                                title="Xóa khỏi lớp"
+                                                            >
+                                                                <Icon icon="solar:trash-bin-trash-bold-duotone" className="text-lg" />
+                                                            </button>
+                                                        </>
                                                     ) : (
                                                         <button
                                                             onClick={() => handleRestoreStudent(member.id)}
@@ -479,9 +494,14 @@ const ClassPeoplePage = () => {
                             {!isCurrentUserTA && isTeacherOrTA && (
                                 <div className="flex gap-2 !mt-2">
                                     {member.status === 'Active' ? (
+                                        <>
+                                        <button onClick={() => handleResetPassword(member.id, member.name)} className="flex-1 !py-2 bg-amber-50 text-amber-600 hover:bg-amber-100 rounded-xl text-xs font-bold flex justify-center items-center gap-2 transition-colors border border-amber-100">
+                                            <Icon icon="solar:key-bold-duotone" /> Reset MK
+                                        </button>
                                         <button onClick={() => handleRemoveStudent(member.id)} className="flex-1 !py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl text-xs font-bold flex justify-center items-center gap-2 transition-colors border border-red-100">
                                             <Icon icon="solar:trash-bin-trash-bold-duotone" /> Xóa
                                         </button>
+                                        </>
                                     ) : (
                                         <button onClick={() => handleRestoreStudent(member.id)} className="flex-1 !py-2 bg-green-600 text-white hover:bg-green-700 rounded-xl text-xs font-bold flex justify-center items-center gap-2 transition-colors border border-green-600">
                                             <Icon icon="solar:refresh-bold-duotone" /> Khôi phục
@@ -503,6 +523,13 @@ const ClassPeoplePage = () => {
                     />
                 )}
             </div>
+
+            <ResetPasswordModal
+                isOpen={resetModal.isOpen}
+                onClose={() => setResetModal({ isOpen: false, studentId: null, studentName: '' })}
+                studentId={resetModal.studentId}
+                studentName={resetModal.studentName}
+            />
 
             <AddStudentModal
                 isOpen={isAddModalOpen}

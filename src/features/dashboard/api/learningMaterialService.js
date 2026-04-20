@@ -37,15 +37,17 @@ const learningMaterialService = {
 
     // Update material (FormData)
     updateMaterial: async (materialId, formData, token) => {
-        return fetch(getApiUrl(`api/LearningMaterial/${materialId}`), {
+        const url = getApiUrl(`api/LearningMaterial/${materialId}`);
+        console.log('>>> PUT Request URL:', url);
+        return fetch(url, {
             method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${token}`
-                // Do NOT set Content-Type header when sending FormData
             },
             body: formData
         });
     },
+
 
     // Delete material
     deleteMaterial: async (materialId, token) => {

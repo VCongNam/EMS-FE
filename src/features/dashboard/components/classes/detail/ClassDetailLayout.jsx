@@ -150,12 +150,12 @@ const ClassDetailLayout = () => {
     // ── Tabs ─────────────────────────────────────────────────────────────────────
     // tab shape: { path, label, icon, disabled? }
     const tabs = [
-        { path: 'stream',    label: 'Bảng tin',  icon: 'material-symbols:stream-rounded' },
-        { path: 'materials', label: 'Tài liệu',  icon: 'material-symbols:folder-open-rounded' },
-        { path: 'classwork', label: 'Bài tập',   icon: 'material-symbols:assignment-rounded' },
-        { path: 'people',    label: 'Thành viên',icon: 'material-symbols:group-rounded' },
-        { path: 'grades',    label: 'Điểm số',   icon: 'material-symbols:grading-rounded' },
-        { path: 'schedule',  label: 'Lịch học',  icon: 'solar:calendar-bold-duotone' },
+        { path: 'stream', label: 'Bảng tin', icon: 'material-symbols:stream-rounded' },
+        { path: 'materials', label: 'Tài liệu', icon: 'material-symbols:folder-open-rounded' },
+        { path: 'classwork', label: 'Bài tập', icon: 'material-symbols:assignment-rounded' },
+        { path: 'people', label: 'Thành viên', icon: 'material-symbols:group-rounded' },
+        { path: 'grades', label: 'Điểm số', icon: 'material-symbols:grading-rounded' },
+        { path: 'schedule', label: 'Lịch học', icon: 'solar:calendar-bold-duotone' },
     ];
 
     if (!isStudentPortal) {
@@ -177,6 +177,7 @@ const ClassDetailLayout = () => {
     }
 
     if (isStudentPortal) {
+        tabs.push({ path: 'reports', label: 'Đánh giá', icon: 'material-symbols:analytics-rounded' });
         tabs.push({ path: 'tuition', label: 'Học phí', icon: 'material-symbols:payments-outline-rounded' });
     }
 

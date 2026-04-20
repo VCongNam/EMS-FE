@@ -244,8 +244,7 @@ const ImportStudentModal = ({ isOpen, onClose, onImportSuccess, classId }) => {
                                 </div>
                             </div>
 
-                            <div className="space-y-4">
-                            <div className="space-y-4">
+                            <div className="space-y-5">
                                 <div className="flex items-center justify-between">
                                     <h4 className="font-bold text-text-main text-sm">Chi tiết tài khoản Import</h4>
                                     {results.base64ExcelReport && (
@@ -254,28 +253,103 @@ const ImportStudentModal = ({ isOpen, onClose, onImportSuccess, classId }) => {
                                         </button>
                                     )}
                                 </div>
-                                <div className="max-h-[300px] overflow-y-auto custom-scrollbar border border-border rounded-2xl">
-                                    {[...(results.newAccounts || []), ...(results.existedAccounts || [])].map((acc, idx) => (
-                                        <div key={idx} className="!p-4 border-b border-border last:border-0 flex items-center justify-between hover:bg-background transition-colors">
-                                            <div className="flex items-center !gap-3">
-                                                <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
-                                                    {acc.fullName?.charAt(0) || "S"}
-                                                </div>
-                                                <div className="min-w-0">
-                                                    <p className="text-[14px] font-bold truncate">{acc.fullName}</p>
-                                                    <p className="text-xs text-text-muted truncate">{acc.phoneNumber}</p>
-                                                </div>
-                                            </div>
-                                            <div className="text-right shrink-0">
-                                                {results.newAccounts?.some(n => n.studentId === acc.studentId) ? 
-                                                    <span className="text-[10px] font-bold bg-blue-100 text-blue-700 !px-2 !py-0.5 rounded">Mới</span> :
-                                                    <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 !px-2 !py-0.5 rounded">Tồn tại</span>
-                                                }
-                                            </div>
+
+                                {/* Section 1: Tài khoản mới */}
+                                {results.newAccounts?.length > 0 && (
+                                    <div>
+                                        <div className="flex items-center !gap-2 !mb-2">
+                                            <div className="w-2 h-2 rounded-full bg-blue-500"/>
+                                            <p className="text-xs font-bold text-blue-600 uppercase tracking-wider">
+                                                Tài khoản mới ({results.newAccounts.length})
+                                            </p>
                                         </div>
-                                    ))}
-                                </div>
-                            </div>
+                                        <div className="border border-blue-200 rounded-2xl overflow-hidden bg-blue-50/30">
+                                            {results.newAccounts.map((acc, idx) => (
+                                                <div key={idx} className="!px-4 !py-3 border-b border-blue-100 last:border-0 flex items-center justify-between hover:bg-blue-50/60 transition-colors">
+                                                    <div className="flex items-center !gap-3">
+                                                        <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm">
+                                                            {acc.fullName?.charAt(0) || "S"}
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <p className="text-sm font-bold truncate text-text-main">{acc.fullName}</p>
+                                                            <p className="text-xs text-text-muted truncate">{acc.phoneNumber}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center !gap-2 shrink-0">
+                                                        {acc.password && (
+                                                            <span className="text-[10px] font-mono bg-white border border-blue-200 text-blue-700 !px-2 !py-0.5 rounded">
+                                                                MK: {acc.password}
+                                                            </span>
+                                                        )}
+                                                        <span className="text-[10px] font-bold bg-blue-100 text-blue-700 !px-2 !py-0.5 rounded-full">
+                                                            Mới
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Section 2: Tài khoản đã tồn tại */}
+                                {results.existedAccounts?.length > 0 && (
+                                    <div>
+                                        <div className="flex items-center !gap-2 !mb-2">
+                                            <div className="w-2 h-2 rounded-full bg-emerald-500"/>
+                                            <p className="text-xs font-bold text-emerald-600 uppercase tracking-wider">
+                                                Đã tồn tại ({results.existedAccounts.length})
+                                            </p>
+                                        </div>
+                                        <div className="border border-emerald-200 rounded-2xl overflow-hidden bg-emerald-50/30">
+                                            {results.existedAccounts.map((acc, idx) => (
+                                                <div key={idx} className="!px-4 !py-3 border-b border-emerald-100 last:border-0 flex items-center justify-between hover:bg-emerald-50/60 transition-colors">
+                                                    <div className="flex items-center !gap-3">
+                                                        <div className="w-9 h-9 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm">
+                                                            {acc.fullName?.charAt(0) || "S"}
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <p className="text-sm font-bold truncate text-text-main">{acc.fullName}</p>
+                                                            <p className="text-xs text-text-muted truncate">{acc.phoneNumber}</p>
+                                                        </div>
+                                                    </div>
+                                                    <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 !px-2 !py-0.5 rounded-full shrink-0">
+                                                        Đã tồn tại
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Section 3: Thất bại */}
+                                {results.errorList?.length > 0 && (
+                                    <div>
+                                        <div className="flex items-center !gap-2 !mb-2">
+                                            <div className="w-2 h-2 rounded-full bg-red-500"/>
+                                            <p className="text-xs font-bold text-red-600 uppercase tracking-wider">
+                                                Thất bại ({results.errorList.length})
+                                            </p>
+                                        </div>
+                                        <div className="border border-red-200 rounded-2xl overflow-hidden bg-red-50/30">
+                                            {results.errorList.map((err, idx) => (
+                                                <div key={idx} className="!px-4 !py-3 border-b border-red-100 last:border-0 flex items-center justify-between hover:bg-red-50/60 transition-colors">
+                                                    <div className="flex items-center !gap-3">
+                                                        <div className="w-9 h-9 rounded-full bg-red-100 text-red-600 flex items-center justify-center">
+                                                            <Icon icon="solar:close-circle-bold-duotone" className="text-lg" />
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <p className="text-sm font-bold truncate text-text-main">{err.studentName}</p>
+                                                            <p className="text-xs text-red-500 truncate">{err.errorMessage}</p>
+                                                        </div>
+                                                    </div>
+                                                    <span className="text-[10px] font-bold text-text-muted shrink-0">
+                                                        Dòng {err.rowNumber}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
