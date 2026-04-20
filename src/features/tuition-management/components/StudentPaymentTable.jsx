@@ -14,11 +14,22 @@ const formatDate = (dateStr) => {
     return formatViFullDate(dateStr) || '--';
 };
 
-const StudentPaymentTable = ({ students = [], onExtendClick }) => {
+const StudentPaymentTable = ({ 
+    students = [], 
+    billingMethod = 'Postpaid', 
+    onExtendClick, 
+    onRemindClick,
+    currentPage: externalPage,
+    totalPages: externalTotalPages,
+    onPageChange
+}) => {
     const [filter, setFilter] = useState('All');
     const [search, setSearch] = useState('');
-    const [currentPage, setCurrentPage] = useState(1);
-    const rowsPerPage = 5;
+    const [localPage, setLocalPage] = useState(1);
+    const rowsPerPage = 10;
+
+    const currentPage = onPageChange ? externalPage : localPage;
+    const setCurrentPage = onPageChange ? onPageChange : setLocalPage;
 
     const filteredStudents = useMemo(() => {
         return students.filter(s => {
@@ -31,10 +42,16 @@ const StudentPaymentTable = ({ students = [], onExtendClick }) => {
     // Reset pagination when filter/search changes
     React.useEffect(() => {
         setCurrentPage(1);
-    }, [filter, search]);
+    }, [filter, search, setCurrentPage]);
 
-    const totalPages = Math.ceil(filteredStudents.length / rowsPerPage);
-    const paginatedStudents = filteredStudents.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
+    // If external pagination is used, totalPages is passed from parent.
+    // Otherwise, calculate locally based on the filtered list.
+    const totalPages = onPageChange ? externalTotalPages : Math.ceil(filteredStudents.length / rowsPerPage);
+    
+    // If external pagination is used, provided students array IS the current page.
+    const paginatedStudents = onPageChange ? filteredStudents : filteredStudents.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
+
+    const isPrepaid = billingMethod === 'Prepaid';
 
     return (
         <div className="!space-y-4">
@@ -72,207 +89,140 @@ const StudentPaymentTable = ({ students = [], onExtendClick }) => {
 
             {/* Main Content - Responsive */}
             <div className="!bg-white !rounded-[2.5rem] !border !border-border !shadow-sm !overflow-hidden">
-                {/* ── Desktop Table (md+) ─────────────────────────── */}
-                <div className="!hidden md:!block">
-                    <div className="!overflow-x-auto custom-scrollbar">
-                        <table className="!w-full !text-left !border-collapse">
-                            <thead>
-                                <tr className="!bg-[#F8FAFC] !border-b !border-border">
-                                    <th className="!px-6 !py-5 !text-[11px] !font-black !text-text-muted !uppercase !tracking-widest">Học sinh</th>
-                                    <th className="!px-6 !py-5 !text-[11px] !font-black !text-text-muted !uppercase !tracking-widest">Mô tả</th>
-                                    <th className="!px-6 !py-5 !text-[11px] !font-black !text-text-muted !uppercase !tracking-widest text-center">Đơn giá</th>
-                                    <th className="!px-6 !py-5 !text-[11px] !font-black !text-text-muted !uppercase !tracking-widest text-center">Số buổi</th>
-                                    <th className="!px-6 !py-5 !text-[11px] !font-black !text-text-muted !uppercase !tracking-widest">Tổng tiền</th>
-                                    <th className="!px-6 !py-5 !text-[11px] !font-black !text-text-muted !uppercase !tracking-widest">Đã nộp</th>
-                                    <th className="!px-6 !py-5 !text-[11px] !font-black !text-text-muted !uppercase !tracking-widest">Ngày hết hạn</th>
-                                    <th className="!px-6 !py-5 !text-[11px] !font-black !text-text-muted !uppercase !tracking-widest">Trạng thái</th>
-                                    <th className="!px-6 !py-5 !text-[11px] !font-black !text-text-muted !uppercase !tracking-widest !text-right">Hành động</th>
-                                </tr>
-                            </thead>
-                            <tbody className="!divide-y !divide-border">
-                                {filteredStudents.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={8} className="!py-20 !text-center">
-                                            <div className="!flex !flex-col !items-center !gap-2 !opacity-40">
-                                                <Icon icon="solar:folder-error-bold" className="!text-5xl" />
-                                                <p className="!font-bold">Chưa có hoặc không tìm thấy dữ liệu hóa đơn</p>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    paginatedStudents.map((student) => {
-                                        const config = STATUS_CONFIG[student.status] || STATUS_CONFIG['Pending'];
-                                        const expectedAmount = student.totalAmount || student.expectedAmount || 0;
-                                        const paidAmount = student.paidAmount || 0;
-                                        const sessionCount = student.sessionCount || student.totalSessions || 0;
-
-                                        return (
-                                            <tr key={student.invoiceId || student.studentId || student.id} className="!group hover:!bg-[#F8FAFC] !transition-all">
-                                                <td className="!px-6 !py-5">
-                                                    <div className="!flex !items-center !gap-3">
-                                                        <div className="!w-9 !h-9 !rounded-full !bg-primary/5 !border !border-primary/10 !flex !items-center !justify-center !overflow-hidden">
-                                                            {student.avatarUrl ? (
-                                                                <img src={student.avatarUrl} alt={student.studentName} className="!w-full !h-full !object-cover" />
-                                                            ) : (
-                                                                <Icon icon="solar:user-bold" className="!text-primary" />
-                                                            )}
-                                                        </div>
-                                                        <div>
-                                                            <p className="!text-sm !font-bold !text-text-main">{student.studentName || student.name}</p>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="!px-6 !py-5">
-                                                    <p className="!text-xs !font-medium !text-text-muted !max-w-[180px] !truncate" title={student.description || '--'}>
-                                                        {student.description || '--'}
-                                                    </p>
-                                                </td>
-                                                <td className="!px-6 !py-5 text-center">
-                                                    <span className="!text-sm !font-black !text-text-main">
-                                                        {formatVND(student.unitPrice || student.pricePerSession || 0)}
-                                                    </span>
-                                                </td>
-                                                <td className="!px-6 !py-5 text-center">
-                                                    <span className="!text-sm !font-black !text-text-main !bg-background !px-3 !py-1 !rounded-lg !border !border-border">
-                                                        {sessionCount}
-                                                    </span>
-                                                </td>
-                                                <td className="!px-6 !py-5">
-                                                    <span className="!text-sm !font-black !text-text-main">{formatVND(expectedAmount)}</span>
-                                                </td>
-                                                <td className="!px-6 !py-5">
-                                                    <span className="!text-sm !font-black !text-emerald-600">{formatVND(paidAmount)}</span>
-                                                </td>
-                                                <td className="!px-6 !py-5">
-                                                    <span className={`!text-sm !font-bold ${student.status === 'Overdue' ? '!text-red-600' : '!text-text-main'}`}>
-                                                        {formatDate(student.dueDate)}
-                                                    </span>
-                                                </td>
-                                                <td className="!px-6 !py-5">
-                                                    <div className={`!inline-flex !items-center !gap-1.5 !px-3 !py-1 !rounded-full !text-[11px] !font-black ${config.bg} ${config.color}`}>
-                                                        <Icon icon={config.icon} />
-                                                        {config.label}
-                                                    </div>
-                                                </td>
-                                                <td className="!px-6 !py-5">
-                                                    <div className="!flex !items-center !justify-end !gap-2">
-                                                        {(student.status === 'Overdue' || student.status === 'Pending') && student.invoiceId && (
-                                                            <button 
-                                                                onClick={() => onExtendClick && onExtendClick(student)}
-                                                                className={`!p-2 !rounded-xl !bg-background !border !border-border !transition-all !group/btn ${
-                                                                    student.status === 'Overdue' ? 'hover:!border-amber-500 hover:!text-amber-600' : 'hover:!border-blue-500 hover:!text-blue-600'
-                                                                }`}
-                                                                title="Gia hạn nộp"
-                                                            >
-                                                                <Icon icon="solar:calendar-add-bold-duotone" className="!text-lg" />
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })
+                <div className="!overflow-x-auto custom-scrollbar">
+                    <table className="!w-full !text-left !border-collapse">
+                        <thead>
+                            <tr className="!bg-[#F8FAFC] !border-b !border-border">
+                                <th className="!px-6 !py-5 !text-[11px] !font-black !text-text-muted !uppercase !tracking-widest">Học sinh</th>
+                                <th className="!px-6 !py-5 !text-[11px] !font-black !text-text-muted !uppercase !tracking-widest">Đơn giá</th>
+                                <th className="!px-6 !py-5 !text-[11px] !font-black !text-text-muted !uppercase !tracking-widest text-center">Học phí gốc</th>
+                                {isPrepaid && (
+                                    <th className="!px-6 !py-5 !text-[11px] !font-black !text-text-muted !uppercase !tracking-widest text-center">Ví học phí</th>
                                 )}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                                <th className="!px-6 !py-5 !text-[11px] !font-black !text-text-muted !uppercase !tracking-widest">Cần nộp</th>
+                                <th className="!px-6 !py-5 !text-[11px] !font-black !text-text-muted !uppercase !tracking-widest">Trạng thái</th>
+                                <th className="!px-6 !py-5 !text-[11px] !font-black !text-text-muted !uppercase !tracking-widest">Hạn nộp</th>
+                                <th className="!px-6 !py-5 !text-[11px] !font-black !text-text-muted !uppercase !tracking-widest text-right"></th>
+                            </tr>
+                        </thead>
+                        <tbody className="!divide-y !divide-border">
+                            {filteredStudents.length === 0 ? (
+                                <tr>
+                                    <td colSpan={isPrepaid ? 8 : 7} className="!py-20 !text-center">
+                                        <div className="!flex !flex-col !items-center !gap-2 !opacity-40">
+                                            <Icon icon="solar:folder-error-bold" className="!text-5xl" />
+                                            <p className="!font-bold">Chưa có dữ liệu học sinh</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : (
+                                paginatedStudents.map((student) => {
+                                 const config = STATUS_CONFIG[student.status] || STATUS_CONFIG['Pending'];
+                                 
+                                 // New API mapping
+                                 const theoreticalFee = student.originalAmount || 0;
+                                 const creditBalance = student.creditBalance || 0;
+                                 const amountToPay = student.totalAmount || 0;
+                                 const unitPrice = student.unitPrice || 0;
+                                 const sessions = student.sessionCount || 0;
 
-                {/* ── Mobile Card List (below md) ─────────────────── */}
-                <div className="md:!hidden !divide-y !divide-border">
-                    {filteredStudents.length === 0 ? (
-                        <div className="!py-16 !text-center !opacity-40">
-                             <p className="!font-bold">Chưa có dữ liệu</p>
-                        </div>
-                    ) : (
-                        paginatedStudents.map((student) => {
-                            const config = STATUS_CONFIG[student.status] || STATUS_CONFIG['Pending'];
-                            const expectedAmount = student.totalAmount || student.expectedAmount || 0;
-                            const paidAmount = student.paidAmount || 0;
-                            const sessionCount = student.sessionCount || student.totalSessions || 0;
-
-                            return (
-                                <div key={student.invoiceId || student.studentId || student.id} className="!p-4 !space-y-4">
-                                    <div className="!flex !items-center !justify-between">
-                                        <div className="!flex !items-center !gap-3">
-                                            <div className="!w-10 !h-10 !rounded-full !bg-primary/5 !border !border-primary/10 !flex !items-center !justify-center !overflow-hidden">
-                                                {student.avatarUrl ? (
-                                                    <img src={student.avatarUrl} alt={student.studentName} className="!w-full !h-full !object-cover" />
-                                                ) : (
-                                                    <Icon icon="solar:user-bold" className="!text-primary" />
-                                                )}
+                                 return (
+                                    <tr key={student.invoiceId || student.studentId || student.id} className="!group hover:!bg-[#F8FAFC] !transition-all">
+                                         <td className="!px-6 !py-5">
+                                             <div className="!flex !items-center !gap-3">
+                                                 <div className="!w-9 !h-9 !rounded-full !bg-primary/5 !border !border-primary/10 !flex !items-center !justify-center !overflow-hidden">
+                                                     <Icon icon="solar:user-bold" className="!text-primary" />
+                                                 </div>
+                                                 <div>
+                                                     <p className="!text-sm !font-bold !text-text-main">{student.studentName || student.name}</p>
+                                                     <div className="!flex !items-center !gap-2 !mt-0.5">
+                                                         <span className="!text-[9px] !font-black !px-1.5 !rounded !bg-slate-100 !text-slate-500 !uppercase">
+                                                             {sessions} buổi {isPrepaid ? 'dự kiến' : 'thực tế'}
+                                                         </span>
+                                                         {student.phoneNumber && <p className="!text-[10px] !text-text-muted">{student.phoneNumber}</p>}
+                                                     </div>
+                                                 </div>
+                                             </div>
+                                         </td>
+                                         <td className="!px-6 !py-5">
+                                             <span className="!text-xs !font-bold !text-text-muted">{formatVND(unitPrice)}</span>
+                                         </td>
+                                         <td className="!px-6 !py-5 text-center">
+                                             <div className="!flex !flex-col">
+                                                 <span className="!text-sm !font-bold !text-text-muted">{formatVND(theoreticalFee)}</span>
+                                                 <span className="!text-[9px] !font-bold !text-slate-400 uppercase">
+                                                     {isPrepaid ? 'Lý thuyết' : 'Theo điểm danh'}
+                                                 </span>
+                                             </div>
+                                         </td>
+                                         {isPrepaid && (
+                                             <td className="!px-6 !py-5 text-center">
+                                                 <div className="!flex !flex-col !items-center !gap-1">
+                                                     <span className={`!px-3 !py-1 !rounded-lg !text-xs !font-black ${creditBalance > 0 ? '!bg-emerald-50 !text-emerald-600' : '!bg-slate-50 !text-slate-400'}`}>
+                                                         {formatVND(creditBalance)}
+                                                     </span>
+                                                     {creditBalance > 0 && <span className="!text-[8px] !font-black !text-emerald-500 !uppercase">Hoàn vắng tháng trước</span>}
+                                                 </div>
+                                             </td>
+                                         )}
+                                         <td className="!px-6 !py-5">
+                                            <div className="!flex !flex-col">
+                                                <span className="!text-sm !font-black !text-text-main">
+                                                    {formatVND(amountToPay)}
+                                                </span>
+                                                {isPrepaid && creditBalance > 0 && <span className="!text-[9px] !font-bold !text-emerald-500 italic">Đã trừ ví</span>}
                                             </div>
-                                            <div>
-                                                <p className="!text-sm !font-bold !text-text-main">{student.studentName || student.name}</p>
-                                            </div>
-                                        </div>
-                                        <div className={`!inline-flex !items-center !gap-1.5 !px-3 !py-1 !rounded-full !text-[11px] !font-black ${config.bg} ${config.color}`}>
-                                            <Icon icon={config.icon} />
-                                            {config.label}
-                                        </div>
-                                    </div>
-
-                                    {student.description && (
-                                        <p className="!text-xs !font-medium !text-text-muted !px-1">{student.description}</p>
-                                    )}
-
-                                    <div className="!grid !grid-cols-3 !gap-2 !p-3 !bg-background !rounded-2xl !border !border-border">
-                                        <div className="!space-y-1">
-                                            <p className="!text-[9px] !font-black !text-text-muted !uppercase">Phải nộp</p>
-                                            <p className="!text-xs !font-black !text-text-main">{formatVND(expectedAmount)}</p>
-                                        </div>
-                                        <div className="!space-y-1">
-                                            <p className="!text-[9px] !font-black !text-text-muted !uppercase">Đã nộp</p>
-                                            <p className="!text-xs !font-black !text-emerald-600">{formatVND(paidAmount)}</p>
-                                        </div>
-                                        <div className="!space-y-1">
-                                            <p className="!text-[9px] !font-black !text-text-muted !uppercase">Hạn nộp</p>
-                                            <p className={`!text-xs !font-black ${student.status === 'Overdue' ? '!text-red-600' : '!text-text-main'}`}>
-                                                {formatDate(student.dueDate)}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    {(student.status === 'Overdue' || student.status === 'Pending') && student.invoiceId && (
-                                        <div className="!flex !justify-end !gap-2">
-                                            <button 
-                                                onClick={() => onExtendClick && onExtendClick(student)}
-                                                className={`!flex !items-center !gap-2 !px-4 !py-2 !rounded-xl !bg-white !border !border-border !text-xs !font-bold !transition-all ${
-                                                    student.status === 'Overdue' ? 'hover:!border-amber-500 hover:!text-amber-600' : 'hover:!border-blue-500 hover:!text-blue-600'
-                                                }`}
-                                            >
-                                                <Icon icon="solar:calendar-add-bold-duotone" className="!text-base" />
-                                                Gia hạn
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })
-                    )}
+                                         </td>
+                                         <td className="!px-6 !py-5">
+                                             <div className={`!inline-flex !items-center !gap-1.5 !px-3 !py-1 !rounded-full !text-[11px] !font-black ${config.bg} ${config.color}`}>
+                                                 <Icon icon={config.icon} />
+                                                 {config.label}
+                                             </div>
+                                         </td>
+                                         <td className="!px-6 !py-5">
+                                             <span className={`!text-xs !font-bold ${student.status === 'Overdue' ? '!text-red-500' : '!text-text-muted'}`}>
+                                                 {formatDate(student.dueDate)}
+                                             </span>
+                                         </td>
+                                            <td className="!px-6 !py-5">
+                                                <div className="!flex !items-center !justify-end !gap-2">
+                                                    {(student.status === 'Overdue' || student.status === 'Pending') && student.invoiceId && (
+                                                        <button 
+                                                            onClick={() => onExtendClick && onExtendClick(student)}
+                                                            className="!p-2 !rounded-xl !bg-amber-50 !text-amber-600 hover:!bg-amber-500 hover:!text-white !transition-all"
+                                                            title="Gia hạn nộp"
+                                                        >
+                                                            <Icon icon="solar:calendar-add-bold-duotone" className="!text-lg" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            )}
+                        </tbody>
+                    </table>
                 </div>
                 
                 {/* Pagination Controls */}
                 {totalPages > 1 && (
                     <div className="!flex !items-center !justify-between !p-6 !border-t !border-border !bg-[#F8FAFC]">
                         <span className="!text-sm !font-bold !text-text-muted">
-                            Hiển thị {(currentPage - 1) * rowsPerPage + 1} - {Math.min(currentPage * rowsPerPage, filteredStudents.length)} trên tổng {filteredStudents.length} hóa đơn
+                            Trang {currentPage} / {totalPages}
                         </span>
                         <div className="!flex !items-center !gap-2">
                             <button 
                                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                                 disabled={currentPage === 1}
-                                className="!w-9 !h-9 !rounded-xl !bg-white !border !border-border !flex !items-center !justify-center !text-text-main disabled:!opacity-40 hover:!border-primary hover:!text-primary !transition-all !shadow-sm"
+                                className="!w-9 !h-9 !rounded-xl !bg-white !border !border-border !flex !items-center !justify-center hover:!border-primary hover:!text-primary disabled:!opacity-30 !transition-all"
                             >
                                 <Icon icon="solar:round-alt-arrow-left-bold-duotone" className="!text-xl" />
                             </button>
-                            <span className="!text-sm !font-black !text-text-main !px-2">
-                                {currentPage} / {totalPages}
-                            </span>
                             <button 
                                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                                 disabled={currentPage === totalPages}
-                                className="!w-9 !h-9 !rounded-xl !bg-white !border !border-border !flex !items-center !justify-center !text-text-main disabled:!opacity-40 hover:!border-primary hover:!text-primary !transition-all !shadow-sm"
+                                className="!w-9 !h-9 !rounded-xl !bg-white !border !border-border !flex !items-center !justify-center hover:!border-primary hover:!text-primary disabled:!opacity-30 !transition-all"
                             >
                                 <Icon icon="solar:round-alt-arrow-right-bold-duotone" className="!text-xl" />
                             </button>
