@@ -99,6 +99,7 @@ const StudentTuitionPage = () => {
                     return {
                         id: tx.transactionId,
                         transactionId: tx.transactionId,
+                        invoiceId: tx.invoiceId,
                         amount: tx.amountPaid,
                         date: formattedDate,
                         method: tx.paymentMethod || 'Chuyển khoản',
@@ -130,6 +131,20 @@ const StudentTuitionPage = () => {
 
     const handlePay = (fee) => {
         setSelectedFee(fee);
+        setIsPaymentOpen(true);
+    };
+
+    const handleResubmit = (tx) => {
+        if (!tx.invoiceId) {
+            toast.error('Không tìm thấy mã hóa đơn. Vui lòng liên hệ hỗ trợ.');
+            return;
+        }
+        setSelectedFee({
+            invoiceId: tx.invoiceId,
+            id: tx.invoiceId,
+            amount: tx.amount,
+            title: tx.content || 'Nộp lại minh chứng'
+        });
         setIsPaymentOpen(true);
     };
 
@@ -251,7 +266,7 @@ const StudentTuitionPage = () => {
                             <Icon icon="solar:spinner-linear" className="!animate-spin !text-4xl" />
                         </div>
                     ) : (
-                        <TransactionHistory transactions={transactions} onViewInvoice={handleViewInvoice} />
+                        <TransactionHistory transactions={transactions} onViewInvoice={handleViewInvoice} onResubmit={handleResubmit} />
                     )
                 )}
             </div>

@@ -141,7 +141,6 @@ const GlobalTAManagementPage = () => {
                                     <td className="!p-5">
                                         <div className="flex flex-col">
                                             <span className="font-bold text-sm text-primary">{assistant.className || 'Chưa rõ'}</span>
-                                            <span className="text-[10px] text-text-muted">Mã lớp: {assistant.classId?.split('-')[0]}...</span>
                                         </div>
                                     </td>
                                     <td className="!p-5">

@@ -195,7 +195,7 @@ const ClassPeoplePage = () => {
                     </div>
                     {isTeacherOrTA && <p className="text-sm text-text-muted !mb-4">Quản lý danh sách học viên trong lớp</p>}
                     <div className="flex flex-col !gap-2.5">
-                        {isTeacherOrTA && (
+                    {!isCurrentUserTA && isTeacherOrTA && (
                             <>
                                 <Button
                                     onClick={() => setIsAddModalOpen(true)}
@@ -412,7 +412,7 @@ const ClassPeoplePage = () => {
                                                 </td>
                                             </>
                                         )}
-                                        {isTeacherOrTA && (
+                                        {!isCurrentUserTA && isTeacherOrTA && (
                                             <td className="!p-4 text-right">
                                                 <div className={`flex items-center justify-end gap-1 transition-opacity ${member.status === 'Active' ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`}>
 
@@ -476,11 +476,8 @@ const ClassPeoplePage = () => {
                                     <span>{member.phone}</span>
                                 </div>
                             </div>
-                            {isTeacherOrTA && (
+                            {!isCurrentUserTA && isTeacherOrTA && (
                                 <div className="flex gap-2 !mt-2">
-                                    <button className="flex-1 !py-2 bg-background hover:bg-border/20 rounded-xl text-xs font-bold text-text-muted flex justify-center items-center gap-2 transition-colors">
-                                        <Icon icon="solar:chart-2-bold-duotone" /> Tiến độ
-                                    </button>
                                     {member.status === 'Active' ? (
                                         <button onClick={() => handleRemoveStudent(member.id)} className="flex-1 !py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl text-xs font-bold flex justify-center items-center gap-2 transition-colors border border-red-100">
                                             <Icon icon="solar:trash-bin-trash-bold-duotone" /> Xóa

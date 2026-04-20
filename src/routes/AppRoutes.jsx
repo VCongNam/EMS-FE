@@ -34,7 +34,6 @@ import ProtectedRoute from '../components/common/ProtectedRoute';
 import useAuthStore from '../store/authStore';
 
 // New Features Imports
-import StudentManagementPage from '../features/student-management/pages/StudentManagementPage';
 import TAManagementPage from '../features/ta-management/pages/TAManagementPage';
 import GlobalTAManagementPage from '../features/ta-management/pages/GlobalTAManagementPage';
 // ViewSchedulePage replaced by ScheduleManagementPage which handles all roles
@@ -49,6 +48,10 @@ import TuitionManagementPage from '../features/tuition-management/pages/TuitionM
 import TotalRevenuePage from '../features/tuition-management/pages/TotalRevenuePage';
 import ClassFinancialReportsPage from '../features/tuition-management/pages/ClassFinancialReportsPage';
 import ClassFinancialDetailPage from '../features/tuition-management/pages/ClassFinancialDetailPage';
+
+// Academic Analytics Page
+import AcademicReportPage from '../features/academic-analytics/pages/AcademicReportPage';
+import ClassReportDetailPage from '../features/academic-analytics/pages/ClassReportDetailPage';
 
 // Class Detail Components
 import ClassReportsTab from '../features/dashboard/components/classes/detail/components/reports/ClassReportsTab';
@@ -105,6 +108,8 @@ export const AppRoutes = () => {
                          <Route element={<DashboardLayout />}>
                               <Route path="dashboard" element={<DashboardPage />} />
                               <Route path="profile" element={<ProfilePage />} />
+                              <Route path="teacher/academic-report" element={<AcademicReportPage />} />
+                              <Route path="teacher/academic-report/:classId" element={<ClassReportDetailPage />} />
                               <Route path="teacher/classes" element={<TeacherClassListPage />} />
                               <Route path="teacher/feedback" element={<TeacherFeedbackPage />} />
                               <Route path="teacher/classes/:classId" element={<ClassDetailLayout />}>
@@ -137,6 +142,7 @@ export const AppRoutes = () => {
                                    <Route path="grades" element={<ClassGradesPage />} />
                                    <Route path="schedule" element={<ClassSchedulePage />} />
                                    <Route path="attendance" element={<ClassAttendancePage />} />
+                                   <Route path="reports" element={<ClassReportsTab />} />
                               </Route>
 
                               {/* TA Tasks */}
@@ -161,9 +167,6 @@ export const AppRoutes = () => {
                               {/* Student Notifications */}
                               <Route path="notifications" element={<NotificationPage />} />
                               <Route path="tuition-payment" element={<StudentTuitionPage />} />
-
-                              {/* Student Management */}
-                              <Route path="students" element={<StudentManagementPage />} />
 
                               {/* TA Management */}
                               <Route path="assistants" element={<GlobalTAManagementPage />} />

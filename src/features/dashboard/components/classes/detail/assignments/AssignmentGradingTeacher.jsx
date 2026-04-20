@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
-import FileViewer from 'react-file-viewer';
 import { assignmentService } from '../../../../api/assignmentService';
 import useAuthStore from '../../../../../../store/authStore';
 import { toast } from 'react-toastify';
+import { useTAPermission } from '../../../../../dashboard/context/TAPermissionContext';
 
 /* ─── helpers ─────────────────────────────────────────────────────────────── */
 const getFileIcon = (type = '', name = '') => {
@@ -27,12 +27,14 @@ const getInitials = (name = '') =>
 
 const StatusBadge = ({ status }) => {
     const map = {
-        'In Time':  { bg: 'bg-green-100',  text: 'text-green-700', label: 'Đã nộp' },
-        'Late':     { bg: 'bg-amber-100',  text: 'text-amber-700', label: 'Nộp muộn' },
-        'Pending':  { bg: 'bg-red-100',    text: 'text-red-600',   label: 'Chưa nộp' },
-        'Đã nộp':   { bg: 'bg-green-100',  text: 'text-green-700', label: 'Đã nộp' },
-        'Nộp muộn': { bg: 'bg-amber-100',  text: 'text-amber-700', label: 'Nộp muộn' },
-        'Chưa nộp': { bg: 'bg-red-100',    text: 'text-red-600',   label: 'Chưa nộp' },
+        'In Time': { bg: 'bg-green-100', text: 'text-green-700', label: 'Đã nộp' },
+        'Late': { bg: 'bg-amber-100', text: 'text-amber-700', label: 'Nộp muộn' },
+        'Pending': { bg: 'bg-red-100', text: 'text-red-600', label: 'Chưa nộp' },
+        'Missing': { bg: 'bg-red-100', text: 'text-red-600', label: 'Chưa nộp' },
+        'Graded': { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Đã chấm' },
+        'Đã nộp': { bg: 'bg-green-100', text: 'text-green-700', label: 'Đã nộp' },
+        'Nộp muộn': { bg: 'bg-amber-100', text: 'text-amber-700', label: 'Nộp muộn' },
+        'Chưa nộp': { bg: 'bg-red-100', text: 'text-red-600', label: 'Chưa nộp' },
     };
     const s = map[status] ?? { bg: 'bg-gray-100', text: 'text-gray-600', label: status };
     return (
@@ -44,10 +46,12 @@ const StatusBadge = ({ status }) => {
 
 const AvatarCircle = ({ name, status, size = 'md' }) => {
     const colorMap = {
-        'In Time':  'bg-green-100 text-green-700',
-        'Late':     'bg-amber-100 text-amber-700',
-        'Pending':  'bg-red-100   text-red-600',
-        'Đã nộp':   'bg-green-100 text-green-700',
+        'In Time': 'bg-green-100 text-green-700',
+        'Late': 'bg-amber-100 text-amber-700',
+        'Pending': 'bg-red-100   text-red-600',
+        'Missing': 'bg-red-100   text-red-600',
+        'Graded': 'bg-blue-100  text-blue-700',
+        'Đã nộp': 'bg-green-100 text-green-700',
         'Nộp muộn': 'bg-amber-100 text-amber-700',
         'Chưa nộp': 'bg-red-100   text-red-600',
     };
@@ -75,36 +79,63 @@ const FilePreview = ({ file }) => {
         );
     }
 
-    const url  = file.url || file.fileUrl || '';
-    const name = file.name || file.fileName || '';
-    let ext    = name.includes('.') ? name.split('.').pop().toLowerCase() : '';
-    if (ext === 'jpg') ext = 'jpeg';
-    if (ext === 'doc') ext = 'docx';
-    if (ext === 'xls') ext = 'xlsx';
+    const url = file.fileUrl || file.url || '';
+    const name = file.fileName || file.name || '';
+    const ext = name.includes('.') ? name.split('.').pop().toLowerCase() : '';
 
-    const supported = ['png', 'jpeg', 'gif', 'bmp', 'pdf', 'csv', 'xlsx', 'docx', 'mp4', 'webm', 'mp3'];
+    const isImage = ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'].includes(ext);
+    const isPdf = ext === 'pdf';
+    const isOffice = ['xlsx', 'xls', 'docx', 'doc', 'pptx', 'ppt', 'csv'].includes(ext);
 
-    if (supported.includes(ext)) {
+    const PreviewHeader = () => (
+        <div className="!px-4 !py-2.5 border-b border-border bg-surface flex items-center justify-between shrink-0">
+            <span className="text-xs font-semibold text-text-main flex items-center !gap-2">
+                <Icon icon="material-symbols:preview-rounded" className="text-primary" />
+                Xem trước — {ext.toUpperCase()}
+            </span>
+            <a
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-primary/10 text-text-muted hover:text-primary transition-colors"
+                title="Mở tab mới"
+            >
+                <Icon icon="material-symbols:open-in-new-rounded" />
+            </a>
+        </div>
+    );
+
+    if (isImage) {
         return (
             <div className="w-full border border-border rounded-xl overflow-hidden flex flex-col" style={{ height: '420px' }}>
-                <div className="!px-4 !py-2.5 border-b border-border bg-surface flex items-center justify-between shrink-0">
-                    <span className="text-xs font-semibold text-text-main flex items-center !gap-2">
-                        <Icon icon="material-symbols:preview-rounded" className="text-primary" />
-                        Xem trước — {ext.toUpperCase()}
-                    </span>
-                    <a
-                        href={url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-primary/10 text-text-muted hover:text-primary transition-colors"
-                        title="Mở tab mới"
-                    >
-                        <Icon icon="material-symbols:open-in-new-rounded" />
-                    </a>
-                </div>
+                <PreviewHeader />
                 <div className="flex-1 overflow-auto bg-white flex items-center justify-center !p-2">
-                    <FileViewer fileType={ext} filePath={url} onError={(e) => console.error('FileViewer:', e)} />
+                    <img src={url} alt={name} className="max-w-full max-h-full object-contain" />
                 </div>
+            </div>
+        );
+    }
+
+    if (isPdf) {
+        return (
+            <div className="w-full border border-border rounded-xl overflow-hidden flex flex-col" style={{ height: '420px' }}>
+                <PreviewHeader />
+                <iframe src={url} title={name} className="flex-1 w-full border-none" />
+            </div>
+        );
+    }
+
+    if (isOffice) {
+        const googleUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+        return (
+            <div className="w-full border border-border rounded-xl overflow-hidden flex flex-col" style={{ height: '420px' }}>
+                <PreviewHeader />
+                <iframe
+                    src={googleUrl}
+                    title={name}
+                    className="flex-1 w-full border-none"
+                    sandbox="allow-scripts allow-same-origin allow-popups"
+                />
             </div>
         );
     }
@@ -131,16 +162,18 @@ const FilePreview = ({ file }) => {
 /* ─── Main Component ──────────────────────────────────────────────────────── */
 const AssignmentGradingTeacher = ({ assignment, onRefresh }) => {
     const { user } = useAuthStore();
+    const { hasPermission, isTA } = useTAPermission();
+    const canGrade = !isTA || hasPermission('Grade');
     const [selectedStudent, setSelectedStudent] = useState(null);
-    const [scoreInput,  setScoreInput]  = useState('');
+    const [scoreInput, setScoreInput] = useState('');
     const [commentInput, setCommentInput] = useState('');
-    const [previewFile, setPreviewFile]  = useState(null);
+    const [previewFile, setPreviewFile] = useState(null);
     const [isGrading, setIsGrading] = useState(false);
     const [isFeedbackPosting, setIsFeedbackPosting] = useState(false);
 
-    const submissions    = assignment.submissions || [];
-    const countTurnedIn  = submissions.filter((s) => s.status === 'In Time' || s.status === 'Late' || s.status === 'Đã nộp' || s.status === 'Nộp muộn').length;
-    const countMissing   = submissions.length - countTurnedIn;
+    const submissions = assignment.submissions || [];
+    const countTurnedIn = submissions.filter((s) => ['In Time', 'Late', 'Đã nộp', 'Nộp muộn', 'Graded'].includes(s.status)).length;
+    const countMissing = submissions.length - countTurnedIn;
 
     const handleSelectStudent = async (sub) => {
         // Hiển thị thông tin cơ bản trước để UI phản hồi nhanh
@@ -155,13 +188,13 @@ const AssignmentGradingTeacher = ({ assignment, onRefresh }) => {
             if (res.ok) {
                 const result = await res.json();
                 const detailedData = result.data || result;
-                
+
                 setSelectedStudent(prev => ({
                     ...prev,
                     ...detailedData,
-                    // Giữ lại các trường thông tin cơ bản nếu API không trả về đầy đủ
-                    fullName: prev.fullName || detailedData.fullName,
-                    studentName: prev.studentName || detailedData.studentName,
+                    // Map studentFullName -> fullName
+                    fullName: prev.fullName || detailedData.studentFullName || detailedData.fullName,
+                    studentName: prev.studentName || detailedData.studentFullName || detailedData.studentName,
                     status: detailedData.status || prev.status
                 }));
             }
@@ -181,15 +214,15 @@ const AssignmentGradingTeacher = ({ assignment, onRefresh }) => {
         try {
             setIsGrading(true);
             const res = await assignmentService.gradeSubmission(
-                selectedStudent.submissionId, 
-                scoreInput, 
+                selectedStudent.submissionId,
+                scoreInput,
                 user?.token
             );
             if (res.ok) {
                 toast.success("Đã chấm điểm thành công!");
                 if (onRefresh) onRefresh();
                 // Cập nhật local state
-                setSelectedStudent(prev => ({...prev, grade: scoreInput}));
+                setSelectedStudent(prev => ({ ...prev, grade: scoreInput }));
             } else {
                 toast.error("Lỗi khi chấm điểm");
             }
@@ -293,7 +326,7 @@ const AssignmentGradingTeacher = ({ assignment, onRefresh }) => {
                                 <span className="text-xs font-bold text-text-main whitespace-nowrap">
                                     {sub.grade !== null && sub.grade !== undefined
                                         ? `${sub.grade}/${assignment.maxScore ?? 10}`
-                                        : (sub.score !== null && sub.score !== undefined 
+                                        : (sub.score !== null && sub.score !== undefined
                                             ? `${sub.score}/${assignment.maxScore ?? 10}`
                                             : `--/${assignment.maxScore ?? 10}`)}
                                 </span>
@@ -336,25 +369,34 @@ const AssignmentGradingTeacher = ({ assignment, onRefresh }) => {
 
                     {/* Score + action */}
                     <div className="flex items-center !gap-2.5 shrink-0">
-                        <div className="flex items-center !gap-0 border border-border rounded-xl overflow-hidden focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
-                            <input
-                                type="number"
-                                value={scoreInput}
-                                onChange={(e) => setScoreInput(e.target.value)}
-                                placeholder="--"
-                                className="w-14 bg-transparent border-none text-center !py-2 !px-2 focus:outline-none font-bold text-primary text-sm"
-                            />
-                            <span className="bg-background !px-3 !py-2 text-text-muted font-medium text-sm border-l border-border">
-                                / {assignment.maxScore ?? 10}
-                            </span>
-                        </div>
-                        <button 
-                            onClick={handleGrade}
-                            disabled={isGrading}
-                            className="!bg-primary text-white font-bold !px-5 !py-2 rounded-xl hover:bg-primary/90 transition-colors text-sm shadow-sm disabled:opacity-50"
-                        >
-                            {isGrading ? <Icon icon="solar:spinner-linear" className="animate-spin text-lg" /> : 'Trả bài'}
-                        </button>
+                        {canGrade ? (
+                            <>
+                                <div className="flex items-center !gap-0 border border-border rounded-xl overflow-hidden focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
+                                    <input
+                                        type="number"
+                                        value={scoreInput}
+                                        onChange={(e) => setScoreInput(e.target.value)}
+                                        placeholder="--"
+                                        className="w-14 bg-transparent border-none text-center !py-2 !px-2 focus:outline-none font-bold text-primary text-sm"
+                                    />
+                                    <span className="bg-background !px-3 !py-2 text-text-muted font-medium text-sm border-l border-border">
+                                        / {assignment.maxScore ?? 10}
+                                    </span>
+                                </div>
+                                <button
+                                    onClick={handleGrade}
+                                    disabled={isGrading}
+                                    className="!bg-primary text-white font-bold !px-5 !py-2 rounded-xl hover:bg-primary/90 transition-colors text-sm shadow-sm disabled:opacity-50"
+                                >
+                                    {isGrading ? <Icon icon="solar:spinner-linear" className="animate-spin text-lg" /> : 'Trả bài'}
+                                </button>
+                            </>
+                        ) : (
+                            <div className="flex items-center gap-2 !px-3 !py-2 bg-amber-50 border border-amber-200 rounded-xl text-amber-700 text-xs font-bold">
+                                <Icon icon="material-symbols:lock-rounded" />
+                                Không có quyền chấm điểm
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -364,23 +406,23 @@ const AssignmentGradingTeacher = ({ assignment, onRefresh }) => {
 
                 {/* Files panel */}
                 <div className="flex-1 !p-5 overflow-y-auto border-b lg:border-b-0 lg:border-r border-border bg-background/40">
-                    {selectedStudent.files && selectedStudent.files.length > 0 ? (
+                    {selectedStudent.attachments && selectedStudent.attachments.length > 0 ? (
                         <div className="flex flex-col !gap-4">
                             <h4 className="font-semibold text-sm text-text-main flex items-center !gap-1.5">
                                 <Icon icon="material-symbols:attach-file-rounded" className="text-primary rotate-45" />
                                 Tệp đã nộp
                                 <span className="!ml-0.5 text-xs text-text-muted font-normal">
-                                    ({selectedStudent.files.length})
+                                    ({selectedStudent.attachments.length})
                                 </span>
                             </h4>
 
                             {/* File grid */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 !gap-3">
-                                {selectedStudent.files.map((file) => {
-                                    const isActive = previewFile?.id === file.id;
+                                {selectedStudent.attachments.map((file) => {
+                                    const isActive = previewFile?.attachmentId === file.attachmentId;
                                     return (
                                         <div
-                                            key={file.id}
+                                            key={file.attachmentId}
                                             onClick={() => setPreviewFile(file)}
                                             className={`
                                                 relative flex items-center !gap-3 !p-3 rounded-xl border cursor-pointer
@@ -395,11 +437,11 @@ const AssignmentGradingTeacher = ({ assignment, onRefresh }) => {
                                                 w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors
                                                 ${isActive ? 'bg-primary/15 text-primary' : 'bg-background text-primary border border-border'}
                                             `}>
-                                                <Icon icon={getFileIcon(file.type, file.name || file.fileName)} className="text-xl" />
+                                                <Icon icon={getFileIcon(file.fileType, file.fileName)} className="text-xl" />
                                             </div>
                                             <div className="flex-1 min-w-0 !pr-8">
                                                 <p className="text-sm font-semibold text-text-main truncate group-hover:text-primary transition-colors">
-                                                    {file.name || file.fileName}
+                                                    {file.fileName}
                                                 </p>
                                                 <p className="text-xs text-text-muted !mt-0.5">{selectedStudent.submittedAt}</p>
                                             </div>
@@ -408,8 +450,8 @@ const AssignmentGradingTeacher = ({ assignment, onRefresh }) => {
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     const link = document.createElement('a');
-                                                    link.href = file.url || file.fileUrl || '#';
-                                                    link.setAttribute('download', file.name || file.fileName || 'download');
+                                                    link.href = file.fileUrl || '#';
+                                                    link.setAttribute('download', file.fileName || 'download');
                                                     link.target = '_blank';
                                                     document.body.appendChild(link);
                                                     link.click();
