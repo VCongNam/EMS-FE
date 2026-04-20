@@ -4,6 +4,8 @@ import { Icon } from '@iconify/react';
 import useAuthStore from '../../../../../store/authStore';
 import { sessionService } from '../../../api/sessionService';
 import studentScheduleService from '../../../api/studentScheduleService';
+import AttendanceModal from './components/AttendanceModal';
+import { toast } from 'react-toastify';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const STATUS_CFG = {
@@ -35,6 +37,7 @@ const ClassAttendancePage = () => {
     const [recordsData, setRecordsData] = useState({});
     const [studentsData, setStudentsData] = useState([]);
     const [historyData, setHistoryData] = useState(null);
+    const [attendanceTarget, setAttendanceTarget] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
 
     const fetchAttendanceData = useCallback(async () => {
@@ -287,16 +290,29 @@ const ClassAttendancePage = () => {
                     expandedSession={expandedSession}
                     setExpandedSession={setExpandedSession}
                     statusFilter={statusFilter}
+                    isTeacherOrTA={isTeacherOrTA}
+                    onOpenAttendance={(lesson) => setAttendanceTarget({ lesson })}
                 />
             ) : (
                 <ByStudentView rows={studentRows} sessions={recordedSessions} />
             )}
+
+            <AttendanceModal
+                isOpen={!!attendanceTarget}
+                lesson={attendanceTarget?.lesson}
+                onClose={() => setAttendanceTarget(null)}
+                onSave={() => {
+                    setAttendanceTarget(null);
+                    fetchAttendanceData();
+                }}
+                readOnly={attendanceTarget?.lesson?.isLocked}
+            />
         </div>
     );
 };
 
 // ── Sub-view: By Session ──────────────────────────────────────────────────────
-const BySessionView = ({ rows, expandedSession, setExpandedSession, statusFilter }) => {
+const BySessionView = ({ rows, expandedSession, setExpandedSession, statusFilter, isTeacherOrTA, onOpenAttendance }) => {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
 
@@ -345,6 +361,30 @@ const BySessionView = ({ rows, expandedSession, setExpandedSession, statusFilter
                                 <StatPill value={session.present} label="Hiện diện" color="text-green-600 !bg-green-500/10 border-green-500/20" />
                                 <StatPill value={session.late}    label="Đi muộn"   color="text-orange-500 !bg-orange-500/10 border-orange-500/20" />
                                 <StatPill value={session.absent}  label="Vắng mặt"  color="text-red-500 !bg-red-500/10 border-red-500/20" />
+                                {isTeacherOrTA && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            const now = new Date();
+                                            now.setHours(0, 0, 0, 0);
+                                            const lessonDate = new Date(session.date + 'T00:00:00');
+                                            const diffDays = Math.floor((lessonDate - now) / (1000 * 60 * 60 * 24));
+                                            
+                                            const tooEarly = diffDays > 0;
+                                            const isLocked = diffDays < -7;
+
+                                            if (tooEarly) {
+                                                toast.info("Buổi học này chưa đến lúc điểm danh");
+                                                return;
+                                            }
+                                            onOpenAttendance({ ...session, isLocked });
+                                        }}
+                                        className="!ml-2 flex items-center !gap-1.5 !px-3 !py-1.5 text-[11px] font-bold !bg-primary text-white rounded-xl hover:!bg-primary/90 shadow-sm transition-all shadow-primary/20 shrink-0"
+                                    >
+                                        <Icon icon="solar:pen-bold" className="text-sm" />
+                                        Sửa
+                                    </button>
+                                )}
                                 <Icon
                                     icon="material-symbols:keyboard-arrow-down-rounded"
                                     className={`text-xl text-text-muted transition-transform duration-200 ml-1 ${isExpanded ? 'rotate-180' : ''}`}

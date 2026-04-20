@@ -202,7 +202,7 @@ const ClassReportsPage = () => {
                 setIsModalOpen(false);
                 setEditingReport(null);
 
-                if (data.status === 'Sent') {
+                if (data.status === 'Sent' || data.status === 'Published') {
                     // NOW OPEN the specialized send confirm modal
                     // We pass the updated data so the user can preview what they just saved
                     setSendConfirmModal({
@@ -430,7 +430,7 @@ const ClassReportsPage = () => {
                                                         title="Gửi báo cáo" 
                                                         onClick={() => handleSendClick(report)} 
                                                         className="!p-2 !rounded-lg !bg-emerald-50 !text-emerald-600 hover:!bg-emerald-600 hover:!text-white !transition-all disabled:!opacity-30 disabled:!cursor-not-allowed"
-                                                        disabled={report.status !== 'Draft'}
+                                                        disabled={report.status !== 'Draft' && report.status !== 'Ready'}
                                                     >
                                                         <Icon icon="material-symbols:send-rounded" className="text-xl" />
                                                     </button>

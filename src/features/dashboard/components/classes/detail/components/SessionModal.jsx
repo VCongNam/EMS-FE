@@ -19,18 +19,33 @@ const SessionModal = ({ isOpen, onClose, onSave, initialData = null }) => {
 
     useEffect(() => {
         if (initialData) {
-            const getGMT7Value = (iso) => {
-                if (!iso) return { date: '', time: '' };
-                const d = new Date(iso);
+            const getGMT7Value = (iso, fallbackDate) => {
+                if (!iso && !fallbackDate) return { date: '', time: '' };
+                
+                let d = new Date(iso);
+                
+                // If invalid and we have a fallback date, try combining them
+                if (isNaN(d.getTime()) && fallbackDate) {
+                    const datePart = fallbackDate.split('T')[0];
+                    const timePart = (iso && iso.length >= 5 && !iso.includes('-')) ? iso : '00:00:00';
+                    d = new Date(`${datePart}T${timePart.substring(0, 8)}`);
+                }
+
+                // If still invalid, try fallback date directly
+                if (isNaN(d.getTime()) && fallbackDate) {
+                    d = new Date(fallbackDate);
+                }
+
                 if (isNaN(d.getTime())) return { date: '', time: '' };
+
                 return {
                     date: d.toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }),
                     time: d.toLocaleTimeString('en-GB', { timeZone: 'Asia/Ho_Chi_Minh', hour12: false })
                 };
             };
 
-            const startInfo = getGMT7Value(initialData.startTime || initialData.date);
-            const endInfo = getGMT7Value(initialData.endTime || initialData.date);
+            const startInfo = getGMT7Value(initialData.startTime, initialData.date);
+            const endInfo = getGMT7Value(initialData.endTime, initialData.date);
 
             setFormData({
                 title: initialData.title || '',

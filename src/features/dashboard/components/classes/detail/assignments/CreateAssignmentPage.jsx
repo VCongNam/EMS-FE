@@ -147,15 +147,12 @@ const CreateAssignmentPage = () => {
 
         try {
             console.log(">>> [Assignment] Target Status:", targetStatus);
-            console.log(">>> [Assignment] Is Graded:", isGraded);
             
             const formData = new FormData();
             if (isGraded && gradeCategoryId) {
                 formData.append('GradeCategoryId', gradeCategoryId);
-                console.log(">>> [Assignment] GradeCategoryId:", gradeCategoryId);
             }
             formData.append('Isgraded', isGraded ? "True" : "False");
-            formData.append('Status', targetStatus);
             formData.append('Title', title);
             formData.append('Description', description || '');
             
@@ -177,36 +174,28 @@ const CreateAssignmentPage = () => {
 
             let res;
             if (isEditMode) {
-                // If we are publishing an existing draft, we should call the specific publish API 
-                // after saving any content changes.
+                // API Update ONLY for content changes (No Status field)
+                console.log(">>> [Assignment] Updating content via PUT...");
+                const updateRes = await assignmentService.updateAssignment(assignmentId, formData, token);
+                
+                if (!updateRes.ok) {
+                    const err = await updateRes.json().catch(() => ({}));
+                    throw new Error(err.message || 'Không thể lưu thay đổi nội dung');
+                }
+
+                // If user specifically wants to publish a draft, call the publish API separately
                 if (currentStatus === 'Draft' && targetStatus === 'Published') {
-                    console.log(">>> [Assignment] Step 1: Saving updates via PUT (maintaining Draft status for save)...");
-                    
-                    // We must save content changes first, but keep status as Draft 
-                    // to avoid potential backend rejection of status change in PUT.
-                    formData.set('Status', 'Draft');
-                    
-                    const updateRes = await assignmentService.updateAssignment(assignmentId, formData, token);
-                    console.log(">>> [Assignment] Save Response Status:", updateRes.status);
-                    
-                    if (!updateRes.ok) {
-                        const err = await updateRes.json().catch(() => ({}));
-                        throw new Error(err.message || 'Không thể lưu thay đổi trước khi giao bài');
-                    }
-                    
-                    console.log(">>> [Assignment] Step 2: Calling specific publish API (POST /publish)...");
+                    console.log(">>> [Assignment] Transitioning status from Draft to Published...");
                     res = await assignmentService.publishAssignment(assignmentId, token);
-                    console.log(">>> [Assignment] Publish Response Status:", res.status);
                 } else {
-                    console.log(">>> [Assignment] Normal Update via PUT...");
-                    res = await assignmentService.updateAssignment(assignmentId, formData, token);
-                    console.log(">>> [Assignment] Update Response Status:", res.status);
+                    res = updateRes; // Success from update
                 }
             } else {
-                console.log(">>> [Assignment] Creating New Assignment via POST...");
+                // Creation: Include status in POST
+                console.log(">>> [Assignment] Creating new assignment with status:", targetStatus);
+                formData.append('Status', targetStatus);
                 formData.append('ClassId', classId);
                 res = await assignmentService.createAssignment(formData, token);
-                console.log(">>> [Assignment] Create Response Status:", res.status);
             }
 
             if (!res.ok) {
@@ -442,7 +431,7 @@ const CreateAssignmentPage = () => {
                         ) : (
                             <Icon icon="solar:diskette-bold-duotone" className="text-lg text-primary" />
                         )}
-                        Lưu bản nháp
+                        {isEditMode ? 'Lưu thay đổi' : 'Lưu bản nháp'}
                     </button>
                 )}
 

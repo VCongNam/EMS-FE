@@ -82,6 +82,29 @@ const ClassworkPage = () => {
         }
     };
 
+    const handlePublish = async (e, id) => {
+        e.stopPropagation();
+        try {
+            const res = await assignmentService.publishAssignment(id, user?.token);
+            if (res.ok) {
+                toast.success('Giao bài tập thành công!');
+                // Update local state to reflect the status change
+                setAssignments(prev => prev.map(a => {
+                    const aId = a.assignmentID || a.assignmentId;
+                    if (aId === id) {
+                        return { ...a, status: 'Published' };
+                    }
+                    return a;
+                }));
+            } else {
+                toast.error('Có lỗi xảy ra khi giao bài tập.');
+            }
+        } catch (err) {
+            console.error(err);
+            toast.error('Lỗi khi giao bài tập.');
+        }
+    };
+
     const getStatusInfo = (status, isOverdue, isSubmitted) => {
         const s = (status || '').toLowerCase();
         
@@ -113,7 +136,8 @@ const ClassworkPage = () => {
             statusColor: stInfo.color,
             isSubmitted: a.isSubmitted || false,
             grade: a.grade,
-            isOverdue: isOverdue
+            isOverdue: isOverdue,
+            isDraft: statusRaw.toLowerCase() === 'draft'
         };
     });
 

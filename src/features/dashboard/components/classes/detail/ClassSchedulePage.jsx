@@ -83,7 +83,31 @@ const ClassSchedulePage = () => {
                 const sessionData = Array.isArray(response) ? response : response.data || [];
 
                 const mappedLessons = sessionData.map((item, index) => {
-                    const dateObj = new Date(item.startTime || item.date);
+                    // Helper to safely parse date & time components
+                    const parseDateTime = (timeStr, dateFallback) => {
+                        if (!timeStr && !dateFallback) return new Date(NaN);
+                        
+                        // 1. If it's already a full ISO/Date string with date part
+                        if (timeStr && (timeStr.includes('T') || timeStr.includes('-'))) {
+                            const d = new Date(timeStr);
+                            if (!isNaN(d.getTime())) return d;
+                        }
+                        
+                        // 2. If it's just a time string (HH:mm:ss) or we need fallback
+                        const datePart = (dateFallback || '').split('T')[0] || new Date().toISOString().split('T')[0];
+                        const timePart = (timeStr && timeStr.length >= 5) ? timeStr : '00:00:00';
+                        
+                        // Try combining date and time parts
+                        // We use a simple T separator which parses as local time in most browsers
+                        const combined = new Date(`${datePart}T${timePart.substring(0, 8)}`);
+                        if (!isNaN(combined.getTime())) return combined;
+                        
+                        // Last ditch effort: raw fallback
+                        return new Date(dateFallback || timeStr);
+                    };
+
+                    const dateObj = parseDateTime(item.startTime, item.date);
+                    const endDateObj = parseDateTime(item.endTime, item.date);
                     
                     // Format to GMT+7 (Asia/Ho_Chi_Minh)
                     const gmt7Formatter = new Intl.DateTimeFormat('en-GB', {
@@ -97,21 +121,35 @@ const ClassSchedulePage = () => {
                         weekday: 'short'
                     });
 
-                    const parts = gmt7Formatter.formatToParts(dateObj);
-                    const getPart = (type) => parts.find(p => p.type === type)?.value;
+                    // Safety: handle invalid dates to prevent RangeError in formatToParts
+                    let parts = [], endParts = [];
+                    const isValidDate = !isNaN(dateObj.getTime());
+                    const isValidEndDate = !isNaN(endDateObj.getTime());
+
+                    if (isValidDate) {
+                        parts = gmt7Formatter.formatToParts(dateObj);
+                    }
+                    if (isValidEndDate) {
+                        endParts = gmt7Formatter.formatToParts(endDateObj);
+                    }
+
+                    const getPart = (type, pList) => pList.find(p => p.type === type)?.value || '??';
                     
-                    const gmt7Date = `${getPart('year')}-${getPart('month')}-${getPart('day')}`;
-                    const gmt7StartTime = `${getPart('hour')}:${getPart('minute')}`;
+                    const gmt7Date = isValidDate 
+                        ? `${getPart('year', parts)}-${getPart('month', parts)}-${getPart('day', parts)}`
+                        : (item.date ? item.date.split('T')[0] : '????-??-??');
+
+                    const gmt7StartTime = isValidDate
+                        ? `${getPart('hour', parts)}:${getPart('minute', parts)}`
+                        : (item.startTime ? item.startTime.substring(0, 5) : '??:??');
                     
-                    // Also for endTime
-                    const endDateObj = new Date(item.endTime || item.date);
-                    const endParts = gmt7Formatter.formatToParts(endDateObj);
-                    const getEndPart = (type) => endParts.find(p => p.type === type)?.value;
-                    const gmt7EndTime = `${getEndPart('hour')}:${getEndPart('minute')}`;
+                    const gmt7EndTime = isValidEndDate
+                        ? `${getPart('hour', endParts)}:${getPart('minute', endParts)}`
+                        : (item.endTime ? item.endTime.substring(0, 5) : '??:??');
 
                     const dayLabels = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
                     const dayNameMap = { 'Sun': 0, 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6 };
-                    const dayIdx = dayNameMap[getPart('weekday')] ?? dateObj.getDay();
+                    const dayIdx = isValidDate ? (dayNameMap[getPart('weekday', parts)] ?? dateObj.getDay()) : 0;
 
                     // Normalize status: handle both English keys and Vietnamese strings
                     const rawStatus = item.status || '';
@@ -366,18 +404,14 @@ const ClassSchedulePage = () => {
                             const cfg = STATUS_CONFIG[lesson.status] || STATUS_CONFIG.scheduled;
                             const isDeleting = deletingId === lesson.id;
 
-                            // Attendance rules logic: Don't allow attendance more than 2 days in advance
+                            // Attendance rules logic: Strictly on or after session day, lock after 7 days
                             const now = new Date();
                             now.setHours(0, 0, 0, 0);
                             const lessonDate = new Date(lesson.date + 'T00:00:00');
-                            
-                            // Days difference (positive if lesson is in future)
-                            const diffDaysToFuture = Math.floor((lessonDate - now) / (1000 * 60 * 60 * 24));
-                            const tooEarly = diffDaysToFuture > 2;
-                            
-                            // Days difference (positive if lesson is in past)
-                            const diffDaysToPast = Math.floor((now - lessonDate) / (1000 * 60 * 60 * 24));
-                            const isLocked = diffDaysToPast > 7;
+                            const diffDays = Math.floor((lessonDate - now) / (1000 * 60 * 60 * 24));
+
+                            const tooEarly = diffDays > 0;
+                            const isLocked = diffDays < -7;
 
                             return (
                                 <div key={lesson.id || idx}
@@ -416,7 +450,7 @@ const ClassSchedulePage = () => {
                                         {isTeacherOrTA && (
                                             <div className="flex items-center !gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                                                 {tooEarly ? (
-                                                    <div className="flex items-center !gap-1.5 !px-3 !py-1.5 text-xs font-semibold rounded-xl border border-border bg-background text-text-muted cursor-not-allowed" title="Chưa đến hạn điểm danh (Chỉ được điểm danh trước tối đa 2 ngày)">
+                                                    <div className="flex items-center !gap-1.5 !px-3 !py-1.5 text-xs font-semibold rounded-xl border border-border bg-background text-text-muted cursor-not-allowed" title="Cần đợi đến ngày học để điểm danh (Không được điểm danh trước)">
                                                         <Icon icon="solar:calendar-linear" className="text-sm" />
                                                         Chưa đến hạn
                                                     </div>
