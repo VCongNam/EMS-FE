@@ -193,7 +193,7 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
             startDate: form.startDate,
             endDate: form.endDate,
             tuitionFee: form.tuitionFee ? parseInt(form.tuitionFee) : 0,
-            maxStudents: form.maxCapacity ? parseInt(form.maxCapacity) : 0,
+            maxStudents: form.maxCapacity ? parseInt(form.maxCapacity) : null,
             subjectName: form.subjectName.trim(),
             gradeLevel: parseInt(form.gradeLevel),
             schedules: form.schedules.map(s => ({
