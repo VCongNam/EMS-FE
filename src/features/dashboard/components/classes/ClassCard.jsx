@@ -12,8 +12,9 @@ const getStatusConfig = (status) => {
         case 'upcoming':
             return { label: 'Đã lên lịch', color: 'text-blue-600', bg: 'bg-blue-100', dot: 'bg-blue-500' };
         case 'completed':
-        case 'archived':
             return { label: 'Đã kết thúc', color: 'text-gray-600', bg: 'bg-gray-100', dot: 'bg-gray-500' };
+        case 'archived':
+            return { label: 'Lưu trữ', color: 'text-orange-600', bg: 'bg-orange-50', dot: 'bg-orange-400' };
         default:
             return { label: 'Không xác định', color: 'text-gray-600', bg: 'bg-gray-100', dot: 'bg-gray-500' };
     }

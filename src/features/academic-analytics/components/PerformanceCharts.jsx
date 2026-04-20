@@ -17,7 +17,7 @@ export const GradingDonutChart = ({ data, totalGraded }) => {
     const displayData = chartData.length > 0 ? chartData : [{ name: 'Chưa có dữ liệu', value: 1, color: '#E2E8F0' }];
 
     return (
-        <div className="h-[300px] w-full relative">
+        <div className="!h-[300px] !w-full !relative">
             <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                     <Pie
@@ -43,9 +43,9 @@ export const GradingDonutChart = ({ data, totalGraded }) => {
             
             {/* Center Text for Screen 2 */}
             {totalGraded !== undefined && (
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
-                    <div className="text-2xl font-black text-[#1E293B]">{totalGraded}</div>
-                    <div className="text-[10px] text-[#64748B] uppercase font-bold tracking-tighter">Học sinh</div>
+                <div className="!absolute !top-1/2 !left-1/2 !-translate-x-1/2 !-translate-y-1/2 !text-center !pointer-events-none">
+                    <div className="!text-2xl !font-black !text-[#1E293B]">{totalGraded}</div>
+                    <div className="!text-[10px] !text-[#64748B] !uppercase !font-bold !tracking-tighter">Học sinh</div>
                 </div>
             )}
         </div>
@@ -114,7 +114,7 @@ export const GrowthTrendsChart = ({ data, startDate, endDate, isTrendArray }) =>
     }
 
     return (
-        <div className="h-[300px] w-full">
+        <div className="!h-[300px] !w-full">
             <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData} margin={{ top: 20, right: 30, bottom: 20, left: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />

@@ -14,7 +14,7 @@ const ClassDetailsModal = ({ isOpen, onClose, classData, onEdit }) => {
             case 'completed':
                 return { label: 'Đã kết thúc', color: 'text-gray-600', bg: 'bg-gray-100', dot: 'bg-gray-500' };
             case 'archived':
-                return { label: 'Đã lưu trữ', color: 'text-orange-600', bg: 'bg-orange-100', dot: 'bg-orange-500' };
+                return { label: 'Lưu trữ', color: 'text-orange-600', bg: 'bg-orange-100', dot: 'bg-orange-500' };
             default:
                 return { label: 'Không xác định', color: 'text-gray-600', bg: 'bg-gray-100', dot: 'bg-gray-500' };
         }

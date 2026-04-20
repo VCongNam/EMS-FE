@@ -62,7 +62,7 @@ const ClassListFilter = ({
                     className={`!px-4 !py-2 rounded-xl font-medium text-sm transition-all border flex items-center gap-2 ${filterStatus === 'archived' ? 'bg-slate-700 text-outline border-slate-700 shadow-md shadow-slate-700/20' : 'bg-background hover:bg-surface border-border text-text-muted hover:text-text-main'}`}
                 >
                     <Icon icon="material-symbols:archive-outline-rounded" className={filterStatus === 'archived' ? 'text-white' : 'text-slate-500'} />
-                    Đã lưu trữ
+                    Lưu trữ
                 </button>
             </div>
         </div>

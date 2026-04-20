@@ -83,9 +83,35 @@ const ClassSchedulePage = () => {
                 const sessionData = Array.isArray(response) ? response : response.data || [];
 
                 const mappedLessons = sessionData.map((item, index) => {
-                    const dateObj = new Date(item.date);
-                    const dayIdx = dateObj.getDay();
+                    const dateObj = new Date(item.startTime || item.date);
+                    
+                    // Format to GMT+7 (Asia/Ho_Chi_Minh)
+                    const gmt7Formatter = new Intl.DateTimeFormat('en-GB', {
+                        timeZone: 'Asia/Ho_Chi_Minh',
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false,
+                        weekday: 'short'
+                    });
+
+                    const parts = gmt7Formatter.formatToParts(dateObj);
+                    const getPart = (type) => parts.find(p => p.type === type)?.value;
+                    
+                    const gmt7Date = `${getPart('year')}-${getPart('month')}-${getPart('day')}`;
+                    const gmt7StartTime = `${getPart('hour')}:${getPart('minute')}`;
+                    
+                    // Also for endTime
+                    const endDateObj = new Date(item.endTime || item.date);
+                    const endParts = gmt7Formatter.formatToParts(endDateObj);
+                    const getEndPart = (type) => endParts.find(p => p.type === type)?.value;
+                    const gmt7EndTime = `${getEndPart('hour')}:${getEndPart('minute')}`;
+
                     const dayLabels = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+                    const dayNameMap = { 'Sun': 0, 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6 };
+                    const dayIdx = dayNameMap[getPart('weekday')] ?? dateObj.getDay();
 
                     // Normalize status: handle both English keys and Vietnamese strings
                     const rawStatus = item.status || '';
@@ -95,9 +121,9 @@ const ClassSchedulePage = () => {
                         id: item.sessionId || item.sessionID,
                         session: index + 1,
                         day: dayLabels[dayIdx],
-                        date: item.date ? item.date.split('T')[0] : '',
-                        startTime: item.startTime?.substring(0, 5) || '--:--',
-                        endTime: item.endTime?.substring(0, 5) || '--:--',
+                        date: gmt7Date,
+                        startTime: gmt7StartTime,
+                        endTime: gmt7EndTime,
                         status: normalizedStatus || 'scheduled',
                         attendanceStatus: item.attendanceStatus || null,
                         title: item.title || item.className,
@@ -340,13 +366,18 @@ const ClassSchedulePage = () => {
                             const cfg = STATUS_CONFIG[lesson.status] || STATUS_CONFIG.scheduled;
                             const isDeleting = deletingId === lesson.id;
 
-                            // Attendance rules logic
+                            // Attendance rules logic: Don't allow attendance more than 2 days in advance
                             const now = new Date();
-                            now.setHours(0,0,0,0);
+                            now.setHours(0, 0, 0, 0);
                             const lessonDate = new Date(lesson.date + 'T00:00:00');
-                            const isFuture = lessonDate > now;
-                            const diffDays = Math.floor((now - lessonDate) / (1000 * 60 * 60 * 24));
-                            const isLocked = diffDays > 7;
+                            
+                            // Days difference (positive if lesson is in future)
+                            const diffDaysToFuture = Math.floor((lessonDate - now) / (1000 * 60 * 60 * 24));
+                            const tooEarly = diffDaysToFuture > 2;
+                            
+                            // Days difference (positive if lesson is in past)
+                            const diffDaysToPast = Math.floor((now - lessonDate) / (1000 * 60 * 60 * 24));
+                            const isLocked = diffDaysToPast > 7;
 
                             return (
                                 <div key={lesson.id || idx}
@@ -384,10 +415,10 @@ const ClassSchedulePage = () => {
 
                                         {isTeacherOrTA && (
                                             <div className="flex items-center !gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                                                {isFuture ? (
-                                                    <div className="flex items-center !gap-1.5 !px-3 !py-1.5 text-xs font-semibold rounded-xl border border-border bg-background text-text-muted cursor-not-allowed" title="Chưa đến ngày điểm danh">
+                                                {tooEarly ? (
+                                                    <div className="flex items-center !gap-1.5 !px-3 !py-1.5 text-xs font-semibold rounded-xl border border-border bg-background text-text-muted cursor-not-allowed" title="Chưa đến hạn điểm danh (Chỉ được điểm danh trước tối đa 2 ngày)">
                                                         <Icon icon="solar:calendar-linear" className="text-sm" />
-                                                        Sắp tới
+                                                        Chưa đến hạn
                                                     </div>
                                                 ) : canAttend ? (
                                                     <button

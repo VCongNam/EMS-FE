@@ -20,6 +20,8 @@ const CreateAssignmentPage = () => {
     const [isLoadingCategories, setIsLoadingCategories] = useState(false);
     const [dueDate, setDueDate] = useState('');
     const [dueTime, setDueTime] = useState('');
+    const [isGraded, setIsGraded] = useState(true);
+    const [currentStatus, setCurrentStatus] = useState('Published');
     const [allowLateSubmission, setAllowLateSubmission] = useState(true);
     const [attachments, setAttachments] = useState([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -79,8 +81,9 @@ const CreateAssignmentPage = () => {
                             }
                         }
                         
-                        // Parse true/false properly
+                        setIsGraded(data.isGraded === true || data.isGraded === 'True');
                         setAllowLateSubmission(data.allowLateSubmission === true || data.allowLateSubmission === 'True');
+                        setCurrentStatus(data.status || 'Published');
                         
                         // Nếu backend có trả về attachments cũ
                         if (Array.isArray(data.attachments)) {
@@ -125,9 +128,17 @@ const CreateAssignmentPage = () => {
         setAttachments(attachments.filter(a => a.id !== id));
     };
 
-    const handleCreate = async () => {
+    const handleSave = async (targetStatus) => {
         if (!title.trim() || !dueDate) {
             toast.warning('Vui lòng nhập đầy đủ Tiêu đề và Hạn nộp');
+            return;
+        }
+
+        // Validate Date Time > Now
+        const dateTimeStr = `${dueDate}T${dueTime || '23:59'}`;
+        const dueDateTime = new Date(dateTimeStr);
+        if (dueDateTime < new Date()) {
+            toast.warning('Hạn nộp phải lớn hơn thời gian hiện tại');
             return;
         }
 
@@ -135,20 +146,25 @@ const CreateAssignmentPage = () => {
         const token = user?.token;
 
         try {
+            console.log(">>> [Assignment] Target Status:", targetStatus);
+            console.log(">>> [Assignment] Is Graded:", isGraded);
+            
             const formData = new FormData();
-            formData.append('GradeCategoryId', gradeCategoryId);
+            if (isGraded && gradeCategoryId) {
+                formData.append('GradeCategoryId', gradeCategoryId);
+                console.log(">>> [Assignment] GradeCategoryId:", gradeCategoryId);
+            }
+            formData.append('Isgraded', isGraded ? "True" : "False");
+            formData.append('Status', targetStatus);
             formData.append('Title', title);
             formData.append('Description', description || '');
             
-            // Tạm thời fix cứng định dạng ngày giống hệt Hoppscotch (YYYY-MM-DD)
-            formData.append('DueDate', dueDate);
+            // Format DueDate: YYYY-MM-DDTHH:mm:ss
+            formData.append('DueDate', dueDate + (dueTime ? `T${dueTime}:00` : 'T23:59:59'));
             
-            // Ép kiểu chữ True in hoa đầu giống Hoppscotch
             const allowLateStr = allowLateSubmission ? "True" : "False";
             formData.append('AllowLateSubmission', allowLateStr);
 
-            // Append each file object individually
-            // Lúc Edit thì backend yêu cầu key là 'NewAttachments'
             attachments.forEach(att => {
                 if (att.file) {
                     if (isEditMode) {
@@ -161,10 +177,36 @@ const CreateAssignmentPage = () => {
 
             let res;
             if (isEditMode) {
-                res = await assignmentService.updateAssignment(assignmentId, formData, token);
+                // If we are publishing an existing draft, we should call the specific publish API 
+                // after saving any content changes.
+                if (currentStatus === 'Draft' && targetStatus === 'Published') {
+                    console.log(">>> [Assignment] Step 1: Saving updates via PUT (maintaining Draft status for save)...");
+                    
+                    // We must save content changes first, but keep status as Draft 
+                    // to avoid potential backend rejection of status change in PUT.
+                    formData.set('Status', 'Draft');
+                    
+                    const updateRes = await assignmentService.updateAssignment(assignmentId, formData, token);
+                    console.log(">>> [Assignment] Save Response Status:", updateRes.status);
+                    
+                    if (!updateRes.ok) {
+                        const err = await updateRes.json().catch(() => ({}));
+                        throw new Error(err.message || 'Không thể lưu thay đổi trước khi giao bài');
+                    }
+                    
+                    console.log(">>> [Assignment] Step 2: Calling specific publish API (POST /publish)...");
+                    res = await assignmentService.publishAssignment(assignmentId, token);
+                    console.log(">>> [Assignment] Publish Response Status:", res.status);
+                } else {
+                    console.log(">>> [Assignment] Normal Update via PUT...");
+                    res = await assignmentService.updateAssignment(assignmentId, formData, token);
+                    console.log(">>> [Assignment] Update Response Status:", res.status);
+                }
             } else {
+                console.log(">>> [Assignment] Creating New Assignment via POST...");
                 formData.append('ClassId', classId);
                 res = await assignmentService.createAssignment(formData, token);
+                console.log(">>> [Assignment] Create Response Status:", res.status);
             }
 
             if (!res.ok) {
@@ -172,11 +214,15 @@ const CreateAssignmentPage = () => {
                 throw new Error(err.message || 'Không thể lưu bài tập, kiểm tra lại dữ liệu');
             }
 
-            toast.success(isEditMode ? 'Cập nhật bài tập thành công!' : 'Giao bài tập thành công!');
+            const successMsg = targetStatus === 'Draft' 
+                ? 'Lưu bản nháp thành công!' 
+                : (isEditMode ? 'Cập nhật bài tập thành công!' : 'Giao bài tập thành công!');
+                
+            toast.success(successMsg);
             navigate(`../classwork`, { relative: 'path' });
 
         } catch (error) {
-            console.error('Lỗi tạo bài tập:', error);
+            console.error('Lỗi lưu bài tập:', error);
             toast.error(error.message);
         } finally {
             setIsSubmitting(false);
@@ -278,7 +324,25 @@ const CreateAssignmentPage = () => {
                 <div className="md:col-span-1">
                     <div className="bg-surface rounded-2xl border border-border !p-5 sm:!p-6 shadow-sm space-y-5">
 
+                        {/* Toggle Graded */}
+                        <div className="flex items-center justify-between !mb-4 pb-4 border-b border-border">
+                            <div>
+                                <label className="block text-sm font-semibold text-text-main">Có tính điểm bài tập</label>
+                                <span className="text-xs text-text-muted">Chọn nếu bài tập này có chấm điểm</span>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input 
+                                    type="checkbox" 
+                                    checked={isGraded}
+                                    onChange={(e) => setIsGraded(e.target.checked)}
+                                    className="sr-only peer"
+                                />
+                                <div className="w-11 h-6 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                            </label>
+                        </div>
+
                         {/* Thay "Thang Điểm" đi, thay bằng GradeCategoryId loại điểm */}
+                        {isGraded && (
                         <div>
                             <div className="flex items-center justify-between !mb-2">
                                 <label className="block text-sm font-semibold text-text-main">Loại điểm (Grade Category)</label>
@@ -315,6 +379,7 @@ const CreateAssignmentPage = () => {
                                 </p>
                             )}
                         </div>
+                        )}
 
                         <div>
                             <label className="block text-sm font-semibold text-text-main !mb-2">Hạn nộp</label>
@@ -365,17 +430,33 @@ const CreateAssignmentPage = () => {
                 >
                     Hủy
                 </button>
+                
+                {(!isEditMode || currentStatus === 'Draft') && (
+                    <button
+                        onClick={() => handleSave('Draft')}
+                        disabled={isSubmitting || !title.trim()}
+                        className="w-full sm:w-auto flex items-center justify-center gap-2 !bg-background text-text-main border border-border font-bold !px-6 !py-2.5 rounded-xl hover:bg-surface transition-colors disabled:opacity-50"
+                    >
+                        {isSubmitting ? (
+                            <Icon icon="solar:spinner-linear" className="animate-spin text-xl text-primary" />
+                        ) : (
+                            <Icon icon="solar:diskette-bold-duotone" className="text-lg text-primary" />
+                        )}
+                        Lưu bản nháp
+                    </button>
+                )}
+
                 <button
-                    onClick={handleCreate}
+                    onClick={() => handleSave('Published')}
                     disabled={!title.trim() || !dueDate || isSubmitting}
                     className="w-full sm:w-auto flex items-center justify-center gap-2 !bg-primary text-white font-black !px-8 !py-2.5 rounded-xl hover:bg-primary/90 transition-colors shadow-sm shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed min-w-[150px]"
                 >
                     {isSubmitting ? (
                         <Icon icon="solar:spinner-linear" className="animate-spin text-xl text-white mr-2" />
                     ) : (
-                        <Icon icon={isEditMode ? "material-symbols:save-rounded" : "material-symbols:assignment-turned-in-rounded"} className="text-lg" />
+                        <Icon icon={isEditMode && currentStatus === 'Published' ? "material-symbols:save-rounded" : "material-symbols:assignment-turned-in-rounded"} className="text-lg" />
                     )}
-                    {isEditMode ? 'Lưu thay đổi' : 'Giao bài'}
+                    {isEditMode && currentStatus === 'Published' ? 'Lưu thay đổi' : (currentStatus === 'Draft' ? 'Giao bài' : 'Giao bài')}
                 </button>
             </div>
 

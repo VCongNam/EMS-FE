@@ -82,16 +82,35 @@ const ClassworkPage = () => {
         }
     };
 
+    const getStatusInfo = (status, isOverdue, isSubmitted) => {
+        const s = (status || '').toLowerCase();
+        
+        // Priority: Submitted > Overdue > Status-based
+        if (isSubmitted) return { label: 'Đã nộp', color: '!bg-green-500/10 text-green-600 border-green-200' };
+        if (isOverdue) return { label: 'Quá hạn', color: '!bg-red-500/10 text-red-600 border-red-200' };
+        
+        if (s === 'draft') return { label: 'Bản nháp', color: '!bg-slate-500/15 text-slate-600 border-slate-500/20' };
+        if (s === 'published') return { label: 'Đã giao', color: '!bg-primary/10 text-primary border-primary/20' };
+        if (s === 'turned in' || s === 'submitted') return { label: 'Đã nộp', color: '!bg-green-500/10 text-green-600 border-green-200' };
+        if (s === 'graded') return { label: 'Đã chấm điểm', color: '!bg-purple-500/10 text-purple-600 border-purple-200' };
+        
+        return { label: status || 'Đã giao', color: '!bg-blue-500/10 text-blue-600 border-blue-200' };
+    };
+
     const formattedAssignments = assignments.map(a => {
         const dDate = new Date(a.dueDate);
         const isOverdue = !isNaN(dDate) && dDate < new Date() && !a.isSubmitted;
+        const statusRaw = a.studentStatus || a.status || 'Published';
+        const stInfo = getStatusInfo(statusRaw, isOverdue, a.isSubmitted);
+
         return {
             id: a.assignmentID || a.assignmentId,
             title: a.title || 'Chưa có tiêu đề',
             dueDateDisplay: isNaN(dDate) ? 'Không xác định' : dDate.toLocaleString('vi-VN', {
                hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric'
             }),
-            status: a.studentStatus || a.status || 'Published',
+            statusLabel: stInfo.label,
+            statusColor: stInfo.color,
             isSubmitted: a.isSubmitted || false,
             grade: a.grade,
             isOverdue: isOverdue
@@ -153,17 +172,18 @@ const ClassworkPage = () => {
                                     </div>
                                     <div>
                                         <h4 className="font-bold text-text-main text-lg group-hover:text-primary transition-colors">{assignment.title}</h4>
-                                        <p className="text-sm text-text-muted mt-1">Trạng thái: <span className="font-medium">{assignment.status}</span></p>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <span className={`text-[10px] font-bold uppercase tracking-wider !px-2 !py-0.5 rounded-lg border ${assignment.statusColor}`}>
+                                                {assignment.statusLabel}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                                 
                                 <div className="flex items-center justify-between sm:justify-end gap-6 sm:w-1/3">
                                     {!isTeacherOrTA && (
-                                        <span className={`text-sm font-semibold !px-3 !py-1 rounded-full ${
-                                            assignment.isSubmitted ? '!bg-green-500/10 text-green-600' : 
-                                            assignment.isOverdue ? '!bg-red-500/10 text-red-600' : '!bg-orange-500/10 text-orange-600'
-                                        }`}>
-                                            {assignment.status}
+                                        <span className={`text-xs font-bold !px-3 !py-1.5 rounded-xl border ${assignment.statusColor}`}>
+                                            {assignment.statusLabel}
                                         </span>
                                     )}
                                     <div className="text-right flex-shrink-0">

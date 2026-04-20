@@ -19,11 +19,24 @@ const SessionModal = ({ isOpen, onClose, onSave, initialData = null }) => {
 
     useEffect(() => {
         if (initialData) {
+            const getGMT7Value = (iso) => {
+                if (!iso) return { date: '', time: '' };
+                const d = new Date(iso);
+                if (isNaN(d.getTime())) return { date: '', time: '' };
+                return {
+                    date: d.toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }),
+                    time: d.toLocaleTimeString('en-GB', { timeZone: 'Asia/Ho_Chi_Minh', hour12: false })
+                };
+            };
+
+            const startInfo = getGMT7Value(initialData.startTime || initialData.date);
+            const endInfo = getGMT7Value(initialData.endTime || initialData.date);
+
             setFormData({
                 title: initialData.title || '',
-                date: initialData.date ? initialData.date.split('T')[0] : '', // Format YYYY-MM-DD
-                startTime: initialData.startTime || '',
-                endTime: initialData.endTime || '',
+                date: startInfo.date,
+                startTime: startInfo.time,
+                endTime: endInfo.time,
                 meetingLink: initialData.meetingLink || '',
                 topic: initialData.topic || '',
                 note: initialData.note || ''

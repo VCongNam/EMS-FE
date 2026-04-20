@@ -86,5 +86,14 @@ export const assignmentService = {
         'Content-Type': 'application/json'
       }
     });
+  },
+  publishAssignment: async (assignmentId, token) => {
+    return fetch(getApiUrl(`/api/Assignment/${assignmentId}/publish`), {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
   }
 };
