@@ -62,6 +62,15 @@ const StudentClassListPage = () => {
                         console.warn(`Failed to fetch sessions for student class ${cls.classID}`, e);
                     }
 
+                    let scheduleDisplay = 'Chưa có lịch cụ thể';
+                    if (cls.schedules && cls.schedules.length > 0) {
+                        const dayMap = { 1: 'CN', 2: 'T2', 3: 'T3', 4: 'T4', 5: 'T5', 6: 'T6', 7: 'T7' };
+                        scheduleDisplay = cls.schedules
+                            .sort((a, b) => (a.dayOfWeek === 1 ? 8 : a.dayOfWeek) - (b.dayOfWeek === 1 ? 8 : b.dayOfWeek))
+                            .map(s => dayMap[s.dayOfWeek])
+                            .join(', ');
+                    }
+
                     return {
                         id: cls.classID,
                         name: cls.className,
@@ -69,7 +78,7 @@ const StudentClassListPage = () => {
                         status: cls.enrollmentStatus?.toLowerCase() === 'active' ? 'ongoing' : 
                                 cls.enrollmentStatus?.toLowerCase() === 'past' ? 'completed' : 'ongoing',
                         createdAt: cls.startDate ? new Date(cls.startDate).toLocaleDateString('vi-VN') : 'Chưa xác định',
-                        schedule: 'Chưa có lịch cụ thể',
+                        schedule: scheduleDisplay,
                         progress: {
                             currentSession: currentSession,
                             totalSessions: totalSessions || 1

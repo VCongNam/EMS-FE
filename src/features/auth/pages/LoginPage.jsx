@@ -108,11 +108,11 @@ const LoginPage = () => {
         } else if (role === 'ta') {
             navigate('/dashboard'); 
         } else if (role === 'student') {
-            navigate('/dashboard'); 
+            navigate('/student/classes'); 
         } else if (role === 'admin') {
             navigate('/admin/dashboard');
         } else {
-            navigate('/dashboard');
+            navigate('/student/classes');
         }
     };
 

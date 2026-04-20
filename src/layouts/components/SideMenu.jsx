@@ -14,7 +14,6 @@ const SideMenu = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
     const { unreadCount } = useNotifications();
     const menuConfigs = {
         student: [
-            { name: 'Bảng điều khiển', path: '/dashboard', icon: 'material-symbols:dashboard-rounded' },
             { name: 'Lớp học của tôi', path: '/student/classes', icon: 'material-symbols:school-rounded' },
             { name: 'Thời khóa biểu', path: '/schedule', icon: 'material-symbols:calendar-month-rounded' },
             { name: 'Thông báo', path: '/notifications', icon: 'material-symbols:circle-notifications-sharp', badge: unreadCount },

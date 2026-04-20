@@ -26,15 +26,15 @@ const STATUS_CONFIG = {
     'đã hủy': { label: 'Đã hủy', className: '!bg-red-100 text-red-700 border-red-200', dot: '!bg-red-400' },
 };
 
-const MOCK_SCHEDULE_CONFIG = {
-    openingDate: '2026-04-07',
-    transcriptTemplateId: 'T1',
-    selectedDays: ['TUE', 'THU'],
-    startTime: '17:30',
-    endTime: '19:00',
-    pricePerLesson: '150000',
-    paymentMethod: 'bank_transfer',
-};
+// const MOCK_SCHEDULE_CONFIG = {
+//     openingDate: '2026-04-07',
+//     transcriptTemplateId: 'T1',
+//     selectedDays: ['TUE', 'THU'],
+//     startTime: '17:30',
+//     endTime: '19:00',
+//     pricePerLesson: '150000',
+//     paymentMethod: 'bank_transfer',
+// };
 
 const ClassSchedulePage = () => {
     const { classId } = useParams();
@@ -43,7 +43,7 @@ const ClassSchedulePage = () => {
     const { hasPermission, isTA } = useTAPermission();
     const canAttend = !isTA || hasPermission('Attendance');
 
-    const [scheduleConfig, setScheduleConfig] = useState(MOCK_SCHEDULE_CONFIG);
+    const [scheduleConfig, setScheduleConfig] = useState(null);
     const [lessons, setLessons] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -241,66 +241,7 @@ const ClassSchedulePage = () => {
                 </div>
             )}
 
-            {/* ── Config Summary Card ── */}
-            {scheduleConfig ? (
-                <div className="!bg-surface !p-6 rounded-[2rem] border border-border shadow-sm">
-                    <div className="flex items-start justify-between !mb-5">
-                        <div className="flex items-center !gap-3">
-                            <div className="w-10 h-10 rounded-2xl !bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                                <Icon icon="solar:settings-bold-duotone" className="text-xl" />
-                            </div>
-                            <div>
-                                <h2 className="text-base font-bold text-text-main">Cấu hình lịch định kỳ</h2>
-                                <p className="text-xs text-text-muted">Thông tin thiết lập hiện tại của lớp</p>
-                            </div>
-                        </div>
-                        {isTeacherOrTA && (
-                            <div className="flex items-center !gap-2">
-                                <button onClick={() => setIsModalOpen(true)} className="flex items-center !gap-1.5 text-xs font-semibold text-primary !px-3 !py-2 border border-primary/30 rounded-xl hover:!bg-primary/5 transition-colors">
-                                    <Icon icon="solar:pen-bold-duotone" className="text-sm" /> Chỉnh sửa
-                                </button>
-                                <button onClick={handleDeleteSchedule} className="flex items-center !gap-1.5 text-xs font-semibold text-red-500 !px-3 !py-2 border border-red-200 rounded-xl hover:!bg-red-50 transition-colors">
-                                    <Icon icon="solar:trash-bin-2-bold-duotone" className="text-sm" /> Xóa cấu hình
-                                </button>
-                            </div>
-                        )}
-                    </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 !gap-3">
-                        {[
-                            { icon: 'solar:calendar-date-bold-duotone', color: 'text-blue-500 !bg-blue-500/10', label: 'Ngày khai giảng', value: new Date(scheduleConfig.openingDate + 'T00:00:00').toLocaleDateString('vi-VN') },
-                            { icon: 'solar:calendar-mark-bold-duotone', color: 'text-violet-500 !bg-violet-500/10', label: 'Ngày học', value: scheduleConfig.selectedDays.map(id => DAYS_OF_WEEK.find(d => d.id === id)?.label).join(', ') },
-                            { icon: 'solar:clock-circle-bold-duotone', color: 'text-orange-500 !bg-orange-500/10', label: 'Ca học', value: `${scheduleConfig.startTime} – ${scheduleConfig.endTime}` },
-                            { icon: 'solar:document-text-bold-duotone', color: 'text-indigo-500 !bg-indigo-500/10', label: 'Bảng điểm', value: templateLabels[scheduleConfig.transcriptTemplateId] || '-' },
-                            { icon: 'solar:tag-price-bold-duotone', color: 'text-emerald-500 !bg-emerald-500/10', label: 'Học phí/buổi', value: Number(scheduleConfig.pricePerLesson).toLocaleString('vi-VN') + ' ₫' },
-                            { icon: 'solar:card-transfer-bold-duotone', color: 'text-pink-500 !bg-pink-500/10', label: 'Thanh toán', value: paymentLabels[scheduleConfig.paymentMethod] || '-' },
-                        ].map((item, i) => (
-                            <div key={i} className="flex flex-col !gap-2 !p-4 !bg-background rounded-2xl border border-border">
-                                <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${item.color}`}>
-                                    <Icon icon={item.icon} className="text-base" />
-                                </div>
-                                <p className="text-[11px] text-text-muted">{item.label}</p>
-                                <p className="text-sm font-bold text-text-main leading-tight truncate">{item.value}</p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            ) : (
-                <div className="flex flex-col items-center text-center !gap-4 !py-8 !bg-surface rounded-[2rem] border border-dashed border-border">
-                    <div className="w-16 h-16 rounded-full !bg-primary/10 flex items-center justify-center">
-                        <Icon icon="solar:calendar-add-bold-duotone" className="text-3xl text-primary" />
-                    </div>
-                    <div>
-                        <h2 className="text-lg font-bold text-text-main">Chưa có Luật Lịch Định Kỳ</h2>
-                        <p className="text-text-muted mt-1 text-sm">Cấu hình luật tự động đẻ lịch học hàng tuần</p>
-                    </div>
-                    {isTeacherOrTA && (
-                        <button onClick={() => setIsModalOpen(true)} className="!bg-primary text-white font-bold !py-2 !px-6 rounded-xl hover:!bg-primary/90 text-sm">
-                            Thiết lập ngay
-                        </button>
-                    )}
-                </div>
-            )}
 
             {/* ── Lesson List ── */}
             <div className="!bg-surface !p-6 rounded-[2rem] border border-border shadow-sm min-h-[400px]">
