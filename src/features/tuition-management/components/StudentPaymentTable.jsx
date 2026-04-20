@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Icon } from '@iconify/react';
+import { formatViFullDate } from '../../../utils/dateUtils';
 
 const STATUS_CONFIG = {
     Paid: { label: 'Đã đóng', color: 'text-emerald-600', bg: 'bg-emerald-50', icon: 'solar:check-read-bold' },
@@ -10,10 +11,7 @@ const STATUS_CONFIG = {
 const formatVND = (amount) => amount?.toLocaleString('vi-VN') + ' ₫';
 
 const formatDate = (dateStr) => {
-    if (!dateStr) return '--';
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return '--';
-    return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    return formatViFullDate(dateStr) || '--';
 };
 
 const StudentPaymentTable = ({ students = [], onExtendClick }) => {

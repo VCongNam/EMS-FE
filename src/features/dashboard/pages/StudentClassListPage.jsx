@@ -134,6 +134,7 @@ const StudentClassListPage = () => {
                     onSearchChange={setSearchQuery}
                     filterStatus={filterStatus}
                     onFilterChange={setFilterStatus}
+                    showArchived={false}
                 />
             </div>
 

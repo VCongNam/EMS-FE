@@ -1,14 +1,23 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
 import useAuthStore from '../../../../../../store/authStore';
+import { formatViDate } from '../../../../../../utils/dateUtils';
 import PostComposer from './PostComposer';
 import ConfirmModal from '../../../../../../components/ui/ConfirmModal';
 
 const PostCard = ({ post, onUpdate, onDelete, onComment, onDeleteComment }) => {
     const { user } = useAuthStore();
     const token = user?.token;
-    const isTeacherOrTA = ['TEACHER', 'TA'].includes(user?.role?.toUpperCase());
-    console.log('PostCard - User Role:', user?.role, 'isTeacherOrTA:', isTeacherOrTA);
+    const userRole = user?.role?.toUpperCase();
+    const isTeacher = userRole === 'TEACHER';
+    const isTA = userRole === 'TA';
+    
+    // Permission rules:
+    // 1. Teachers can manage all posts (moderator role)
+    // 2. TAs can only manage posts that are NOT from Teachers
+    const canManagePost = isTeacher || (isTA && post.role !== 'TEACHER');
+    
+    console.log('PostCard - Role:', userRole, 'Post Role:', post.role, 'Can Manage:', canManagePost);
     const [isEditing, setIsEditing] = useState(false);
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
     const [commentText, setCommentText] = useState('');
@@ -58,7 +67,7 @@ const PostCard = ({ post, onUpdate, onDelete, onComment, onDeleteComment }) => {
                                     {post.role === 'TEACHER' ? 'GIÁO VIÊN' : post.role === 'TA' ? 'TRỢ GIẢNG' : 'HỌC SINH'}
                                 </span>
                             )}
-                            <span>{new Date(post.createdAt).toLocaleString('vi-VN', {
+                            <span>{formatViDate(post.createdAt, {
                                 day: '2-digit', month: '2-digit', year: 'numeric',
                                 hour: '2-digit', minute: '2-digit'
                             })}</span>
@@ -67,7 +76,7 @@ const PostCard = ({ post, onUpdate, onDelete, onComment, onDeleteComment }) => {
                 </div>
 
                 <div className="flex items-center gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                    {isTeacherOrTA && (
+                    {canManagePost && (
                         <>
                             <button
                                 onClick={() => setIsEditing(true)}
@@ -171,20 +180,20 @@ const PostCard = ({ post, onUpdate, onDelete, onComment, onDeleteComment }) => {
                                     <Icon icon="solar:user-bold-duotone" className="text-primary text-xs" />
                                 </div>
                                 <div className="flex-1 bg-background !p-3 rounded-2xl border border-border group-hover:border-primary/30 transition-colors">
-                                    <div className="flex items-center justify-between !mb-1">
-                                        <h5 className="text-xs font-bold text-text-main">{comment.authorName}</h5>
-                                        <div className="flex items-center gap-2">
-                                            {isTeacherOrTA && (
-                                                <button
-                                                    onClick={() => onDeleteComment(comment.commentId)}
-                                                    className="opacity-0 group-hover:opacity-100 p-1 text-text-muted hover:text-red-500 transition-opacity"
-                                                    title="Xóa nhận xét"
-                                                >
-                                                    <Icon icon="material-symbols:delete-outline-rounded" className="text-sm" />
-                                                </button>
-                                            )}
+                                        <div className="flex items-center justify-between !mb-1">
+                                            <h5 className="text-xs font-bold text-text-main">{comment.authorName}</h5>
+                                            <div className="flex items-center gap-2">
+                                                {canManagePost && (
+                                                    <button
+                                                        onClick={() => onDeleteComment(comment.commentId)}
+                                                        className="opacity-0 group-hover:opacity-100 p-1 text-text-muted hover:text-red-500 transition-opacity"
+                                                        title="Xóa nhận xét"
+                                                    >
+                                                        <Icon icon="material-symbols:delete-outline-rounded" className="text-sm" />
+                                                    </button>
+                                                )}
                                             <span className="text-[10px] text-text-muted">
-                                                {new Date(comment.createdAt).toLocaleDateString('vi-VN')}
+                                                {formatViDate(comment.createdAt, { day: '2-digit', month: '2-digit', year: 'numeric' })}
                                             </span>
                                         </div>
                                     </div>

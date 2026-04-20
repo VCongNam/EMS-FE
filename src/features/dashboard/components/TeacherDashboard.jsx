@@ -9,6 +9,7 @@ import useAuthStore from '../../../store/authStore';
 import { notificationService } from '../../notifications/api/notificationService';
 import { sessionService } from '../api/sessionService';
 import { classService } from '../api/classService';
+import { formatViDate } from '../../../utils/dateUtils';
 
 const TeacherDashboard = () => {
     const { user } = useAuthStore();
@@ -63,7 +64,7 @@ const TeacherDashboard = () => {
                         tomorrow.setDate(tomorrow.getDate() + 1);
                         const isTomorrow = sessionDate.toDateString() === tomorrow.toDateString();
                         
-                        let dateLabel = sessionDate.toLocaleDateString('vi-VN', { weekday: 'short', day: '2-digit', month: '2-digit' });
+                        let dateLabel = formatViDate(sessionDate, { weekday: 'short', day: '2-digit', month: '2-digit' });
                         if (isToday) dateLabel = 'Hôm nay';
                         else if (isTomorrow) dateLabel = 'Ngày mai';
                         
@@ -161,36 +162,13 @@ const TeacherDashboard = () => {
                     </div>
                     <div className="!pr-4">
                         <p className="!text-[10px] !font-black !text-text-muted !uppercase !tracking-widest">Ngày hôm nay</p>
-                        <p className="!text-sm !font-black !text-text-main">{new Date().toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+                        <p className="!text-sm !font-black !text-text-main">{formatViDate(new Date(), { weekday: 'long', day: 'numeric', month: 'long' })}</p>
                     </div>
                 </div>
             </div>
 
             {/* Horizontal Stats */}
-            <DashboardStatCards 
-                card1={{
-                    title: 'Lớp học đang dạy',
-                    value: stats?.totalClasses || 0,
-                    unit: 'Lớp',
-                    icon: 'solar:presentation-bold-duotone'
-                }}
-                card2={{
-                    title: 'Tổng số sinh viên',
-                    value: stats?.totalStudents || 0,
-                    unit: 'Bạn',
-                    icon: 'solar:users-group-two-rounded-bold-duotone'
-                }}
-                card3={{
-                    title: 'Chuyên cần trung bình',
-                    value: stats?.averageAttendance || 0,
-                    unit: '%',
-                    bgClass: '!bg-amber-50 !border-amber-100',
-                    iconBgClass: '!bg-amber-500 !shadow-amber-500/20',
-                    titleClass: '!text-amber-900',
-                    valueClass: '!text-amber-600',
-                    icon: 'solar:user-check-bold-duotone',
-                }}
-            />
+            
 
             {/* Action Hub - Priority Actions */}
             <DashboardActionHub actions={TEACHER_ACTIONS} />

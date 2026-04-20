@@ -61,6 +61,27 @@ const ClassCard = ({
         navigate(`${basePath}/${classData.id}/stream`);
     };
 
+    const getPermissionLabel = (permString) => {
+        if (!permString) return '';
+        
+        const mapping = {
+            'attendance': 'Điểm danh',
+            'grades': 'Điểm số',
+            'posts': 'Bài đăng',
+            'materials': 'Tài liệu',
+            'sessions': 'Buổi học',
+            'students': 'Học viên',
+            'tasks': 'Nhiệm vụ',
+            'feedback': 'Nhận xét',
+            'reports': 'Báo cáo'
+        };
+
+        return permString.split(',')
+            .map(p => p.trim().toLowerCase())
+            .map(p => mapping[p] || p)
+            .join(', ');
+    };
+
     return (
         <div 
             onClick={handleCardClick}
@@ -176,7 +197,7 @@ const ClassCard = ({
                             <div className="flex items-center gap-2">
                                 <Icon icon="solar:shield-keyhole-linear" className="text-amber-500 text-base" />
                                 <span className="text-xs font-semibold text-text-main">Quyền: </span>
-                                <span className="text-xs text-text-muted truncate">{permission}</span>
+                                <span className="text-xs text-text-muted truncate">{getPermissionLabel(permission)}</span>
                             </div>
                         )}
                         {salary && (

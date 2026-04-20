@@ -7,6 +7,7 @@ import DashboardDeadlines from './DashboardDeadlines'; // It's actually the List
 import DashboardRecentNotifications from './DashboardRecentNotifications';
 import useAuthStore from '../../../store/authStore';
 import { notificationService } from '../../notifications/api/notificationService';
+import { formatViDate } from '../../../utils/dateUtils';
 
 const TADashboard = () => {
     const { user } = useAuthStore();
@@ -96,7 +97,7 @@ const TADashboard = () => {
                     </div>
                     <div className="!pr-4">
                         <p className="!text-[10px] !font-black !text-text-muted !uppercase !tracking-widest">Ngày hôm nay</p>
-                        <p className="!text-sm !font-black !text-text-main">{new Date().toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+                        <p className="!text-sm !font-black !text-text-main">{formatViDate(new Date(), { weekday: 'long', day: 'numeric', month: 'long' })}</p>
                     </div>
                 </div>
             </div>

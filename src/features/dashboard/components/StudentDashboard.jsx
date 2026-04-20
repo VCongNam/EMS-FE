@@ -9,6 +9,7 @@ import useAuthStore from '../../../store/authStore';
 import { notificationService } from '../../notifications/api/notificationService';
 import studentClassService from '../api/studentClassService';
 import { studentAssignmentService } from '../api/studentAssignmentService';
+import { formatViDate } from '../../../utils/dateUtils';
 
 const StudentDashboard = () => {
     const { user } = useAuthStore();
@@ -92,7 +93,7 @@ const StudentDashboard = () => {
                                 id: a.id,
                                 title: a.title,
                                 subtitle: a.subtitle,
-                                rightText: a.dueDate.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }) + ', ' + a.dueDate.toTimeString().slice(0, 5),
+                                rightText: formatViDate(a.dueDate, { day: '2-digit', month: '2-digit' }) + ', ' + formatViDate(a.dueDate, { hour: '2-digit', minute: '2-digit' }),
                                 status: status,
                                 path: `/student/classes/${a.classId}/assignment/${a.id}`,
                                 actionIcon: 'solar:pen-new-square-bold-duotone'
@@ -148,7 +149,7 @@ const StudentDashboard = () => {
                     </div>
                     <div className="!pr-4">
                         <p className="!text-[10px] !font-black !text-text-muted !uppercase !tracking-widest">Ngày hôm nay</p>
-                        <p className="!text-sm !font-black !text-text-main">{new Date().toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+                        <p className="!text-sm !font-black !text-text-main">{formatViDate(new Date(), { weekday: 'long', day: 'numeric', month: 'long' })}</p>
                     </div>
                 </div>
             </div>

@@ -6,6 +6,7 @@ import { sessionService } from '../../../api/sessionService';
 import studentScheduleService from '../../../api/studentScheduleService';
 import AttendanceModal from './components/AttendanceModal';
 import { toast } from 'react-toastify';
+import { formatViDate } from '../../../../../utils/dateUtils';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const STATUS_CFG = {
@@ -17,10 +18,9 @@ const STATUS_CFG = {
 
 const getStatusCfg = (status) => STATUS_CFG[status?.toLowerCase()] || STATUS_CFG['not taken'];
 
-const fmtDate = (dateStr) =>
-    new Date(dateStr + 'T00:00:00').toLocaleDateString('vi-VN', {
-        day: '2-digit', month: '2-digit', year: 'numeric',
-    });
+const fmtDate = (dateStr) => {
+    return formatViDate(dateStr, { day: '2-digit', month: '2-digit', year: 'numeric' });
+};
 
 // ── View modes ────────────────────────────────────────────────────────────────
 const ClassAttendancePage = () => {

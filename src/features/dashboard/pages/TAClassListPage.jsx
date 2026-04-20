@@ -156,6 +156,7 @@ const TAClassListPage = () => {
                     filterStatus={filterStatus}
                     onFilterChange={setFilterStatus}
                     showUpcoming={true}
+                    showArchived={false}
                 />
             </div>
 

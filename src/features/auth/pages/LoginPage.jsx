@@ -106,9 +106,9 @@ const LoginPage = () => {
         if (role === 'teacher') {
             navigate('/teacher/classes');
         } else if (role === 'ta') {
-            navigate('/dashboard'); 
+            navigate('/assisted-classes'); 
         } else if (role === 'student') {
-            navigate('/dashboard'); 
+            navigate('/student/classes'); 
         } else if (role === 'admin') {
             navigate('/admin/dashboard');
         } else {
