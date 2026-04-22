@@ -6,6 +6,7 @@ import PostComposer from './components/PostComposer';
 import PostCard from './components/PostCard';
 import postService from '../../../api/postService';
 import useAuthStore from '../../../../../store/authStore';
+import { extractErrorMessage } from '../../../../../utils/errorHandler';
 
 const ClassStreamPage = () => {
     const { classId } = useParams();
@@ -22,7 +23,8 @@ const ClassStreamPage = () => {
                 const data = await res.json();
                 setPosts(data);
             } else {
-                if (!silent) toast.error('Không thể tải bản tin');
+                const errData = await res.json().catch(() => ({}));
+                if (!silent) toast.error(extractErrorMessage(errData, 'Không thể tải bản tin'));
             }
         } catch (error) {
             console.error('Fetch posts error:', error);
@@ -48,7 +50,7 @@ const ClassStreamPage = () => {
                 fetchPosts();
             } else {
                 const errorData = await res.json().catch(() => ({}));
-                toast.error(`Lỗi khi đăng bài: ${errorData.message || res.statusText}`);
+                toast.error(`Lỗi khi đăng bài: ${extractErrorMessage(errorData, res.statusText)}`);
             }
         } catch (error) {
             console.error('Create post error:', error);
@@ -79,7 +81,8 @@ const ClassStreamPage = () => {
                 toast.success('Đã cập nhật bài đăng');
                 fetchPosts(true); // Silent fetch to keep the UI smooth
             } else {
-                toast.error('Lỗi khi cập nhật bài đăng');
+                const errData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errData, 'Lỗi khi cập nhật bài đăng'));
             }
         } catch (error) {
             console.error('Update post error:', error);
@@ -94,7 +97,8 @@ const ClassStreamPage = () => {
                 toast.success('Đã xóa bài đăng');
                 setPosts(posts.filter(p => p.postId !== postId));
             } else {
-                toast.error('Lỗi khi xóa bài đăng');
+                const errData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errData, 'Lỗi khi xóa bài đăng'));
             }
         } catch (error) {
             console.error('Delete post error:', error);
@@ -109,7 +113,8 @@ const ClassStreamPage = () => {
                 // Fetch silently to update the comments list without flickering
                 await fetchPosts(true);
             } else {
-                toast.error('Lỗi khi gửi nhận xét');
+                const errData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errData, 'Lỗi khi gửi nhận xét'));
             }
         } catch (error) {
             console.error('Comment error:', error);
@@ -124,7 +129,8 @@ const ClassStreamPage = () => {
                 toast.success('Đã xóa nhận xét');
                 await fetchPosts(true);
             } else {
-                toast.error('Lỗi khi xóa nhận xét');
+                const errData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errData, 'Lỗi khi xóa nhận xét'));
             }
         } catch (error) {
             console.error('Delete comment error:', error);

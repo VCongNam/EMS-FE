@@ -9,6 +9,8 @@ import TransactionDetailModal from '../components/TransactionDetailModal';
 import { tuitionService } from '../api/tuitionServiceStudent';
 import useAuthStore from '../../../store/authStore';
 import { toast } from 'react-toastify';
+import { extractErrorMessage } from '../../../utils/errorHandler';
+
 
 const StudentTuitionPage = () => {
     const { classId } = useParams();
@@ -67,7 +69,8 @@ const StudentTuitionPage = () => {
 
                 setFees(mappedFees);
             } else {
-                toast.error('Không thể tải danh sách học phí');
+                const errData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errData, 'Không thể tải danh sách học phí'));
             }
         } catch (error) {
             console.error('Error fetching fees:', error);
@@ -109,7 +112,8 @@ const StudentTuitionPage = () => {
                 });
                 setTransactions(mappedTransactions);
             } else {
-                toast.error('Không thể tải lịch sử giao dịch');
+                const errData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errData, 'Không thể tải lịch sử giao dịch'));
             }
         } catch (error) {
             console.error('Error fetching transactions:', error);

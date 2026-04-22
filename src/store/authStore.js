@@ -82,6 +82,22 @@ const useAuthStore = create(
                     isAuthenticated: true,
                 }));
             },
+
+            getHomePath: () => {
+                const user = useAuthStore.getState().user;
+                if (!user) return '/login';
+                
+                const role = user.role?.toLowerCase();
+                switch (role) {
+                    case 'teacher': return '/teacher/classes';
+                    case 'ta':
+                    case 'assistant':
+                    case 'teachingassistant': return '/assisted-classes';
+                    case 'student': return '/student/classes';
+                    case 'admin': return '/admin/dashboard';
+                    default: return '/dashboard';
+                }
+            }
         }),
         {
             name: 'ems-auth-storage', // name of the item in the storage (must be unique)

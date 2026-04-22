@@ -12,8 +12,12 @@ export const assignmentService = {
       body: payloadFormData
     });
   },
-  getAssignmentsByClass: async (classId, token) => {
-    return fetch(getApiUrl(`/api/Assignment/class/${classId}`), {
+  getAssignmentsByClass: async (classId, token, page = 1, size = 100) => {
+    const queryParams = new URLSearchParams({
+      Page: page,
+      Size: size
+    });
+    return fetch(getApiUrl(`/api/Assignment/class/${classId}?${queryParams.toString()}`), {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,

@@ -93,7 +93,9 @@ const TeacherClassListPage = () => {
                     const dayMap = { 1: 'CN', 2: 'T2', 3: 'T3', 4: 'T4', 5: 'T5', 6: 'T6', 7: 'T7' };
                     scheduleDisplay = apiClass.schedules
                         .sort((a, b) => (a.dayOfWeek === 1 ? 8 : a.dayOfWeek) - (b.dayOfWeek === 1 ? 8 : b.dayOfWeek))
-                        .map(s => dayMap[s.dayOfWeek])
+                        .map(s => {
+                            return `${dayMap[s.dayOfWeek] || '??'}`;
+                        })
                         .join(', ');
                 }
 

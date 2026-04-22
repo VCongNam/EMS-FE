@@ -3,6 +3,7 @@ import { Icon } from '@iconify/react';
 import { toast } from 'react-toastify';
 import useAuthStore from '../../../../../../store/authStore';
 import { studentAssignmentService } from '../../../../api/studentAssignmentService';
+import { extractErrorMessage } from '../../../../../../utils/errorHandler';
 
 const getFileIcon = (type) => {
     if (type?.includes('pdf')) return <Icon icon="vscode-icons:file-type-pdf2" className="text-3xl" />;
@@ -55,7 +56,7 @@ const AssignmentDetailStudent = ({ assignment, onRefresh }) => {
                 if (onRefresh) onRefresh();
             } else {
                 const errData = await res.json().catch(() => ({}));
-                toast.error(errData.message || 'Có lỗi xảy ra khi nộp bài.');
+                toast.error(extractErrorMessage(errData, 'Có lỗi xảy ra khi nộp bài.'));
             }
         } catch (err) {
             console.error(err);
@@ -83,7 +84,7 @@ const AssignmentDetailStudent = ({ assignment, onRefresh }) => {
                 if (onRefresh) onRefresh();
             } else {
                 const errData = await res.json().catch(() => ({}));
-                toast.error(errData.message || 'Không thể hủy nộp bài. Có thể bài đã quá hạn hoặc đã được chấm.');
+                toast.error(extractErrorMessage(errData, 'Không thể hủy nộp bài. Có thể bài đã quá hạn hoặc đã được chấm.'));
             }
         } catch (err) {
             console.error(err);
@@ -149,7 +150,7 @@ const AssignmentDetailStudent = ({ assignment, onRefresh }) => {
                     </div>
 
                     {/* Description Card */}
-                    <div className="bg-white rounded-3xl border border-border shadow-sm overflow-hidden">
+                    <div className="bg-white rounded-3xl !mt-2 border border-border shadow-sm overflow-hidden">
                         <div className="!px-6 !py-4 border-b border-border bg-background/50 flex items-center gap-2">
                             <Icon icon="material-symbols:subject-rounded" className="text-primary text-xl" />
                             <h4 className="font-bold text-text-main">Hướng dẫn chi tiết</h4>
@@ -169,7 +170,7 @@ const AssignmentDetailStudent = ({ assignment, onRefresh }) => {
                     {/* Attachments Section */}
                     {assignment.attachments && assignment.attachments.length > 0 && (
                         <div className="space-y-4">
-                            <h4 className="font-bold text-text-main flex items-center gap-2 !px-2">
+                            <h4 className="font-bold text-text-main flex items-center !mt-2 gap-2 !px-2">
                                 <Icon icon="material-symbols:attach-file-rounded" className="text-primary rotate-45 text-xl" />
                                 Tài liệu tham khảo ({assignment.attachments.length})
                             </h4>
@@ -276,31 +277,83 @@ const AssignmentDetailStudent = ({ assignment, onRefresh }) => {
                     {/* Grade & Feedback Section - shown when Graded */}
                     {isGraded && (
                         <div className="space-y-4 !pt-4 border-t border-border">
-                            {/* Grade */}
-                            <div className="flex items-center justify-between bg-blue-50 border border-blue-100 rounded-2xl !px-5 !py-4">
-                                <div className="flex items-center gap-2 text-blue-700">
-                                    <Icon icon="material-symbols:grade-rounded" className="text-2xl" />
-                                    <span className="text-sm font-black uppercase tracking-widest">Điểm số</span>
+                            {/* Submitted At */}
+                            {mySubmission?.submittedAt && (
+                                <div className="flex items-center gap-2 text-text-muted text-[11px] font-bold uppercase tracking-wider !px-1">
+                                    <Icon icon="material-symbols:calendar-today-outline-rounded" />
+                                    Nộp lúc: {new Date(mySubmission.submittedAt).toLocaleString('vi-VN')}
                                 </div>
-                                <span className="text-3xl font-black text-blue-700">
-                                    {mySubmission?.grade ?? '—'}
-                                    <span className="text-base font-bold text-blue-400">/{assignment.maxScore || 10}</span>
-                                </span>
-                            </div>
+                            )}
 
+                            {/* Grade */}
+                            <div className="flex flex-col gap-1 bg-blue-50 border border-blue-100 rounded-2xl !px-5 !py-4 relative overflow-hidden group">
+                                <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-blue-100/50 rounded-full blur-2xl group-hover:scale-150 transition-transform" />
+                                <div className="flex items-center justify-between relative z-10">
+                                    <div className="flex items-center gap-2 text-blue-700">
+                                        <Icon icon="material-symbols:grade-rounded" className="text-2xl" />
+                                        <span className="text-sm font-black uppercase tracking-widest">Điểm số</span>
+                                    </div>
+                                    <span className="text-3xl font-black text-blue-700">
+                                        {mySubmission?.grade ?? '—'}
+                                        <span className="text-base font-bold text-blue-400">/{assignment.maxScore || 10}</span>
+                                    </span>
+                                </div>
+                            </div>
+ 
                             {/* Feedbacks */}
                             {mySubmission?.feedbacks && mySubmission.feedbacks.length > 0 && (
-                                <div className="space-y-2">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-text-muted flex items-center gap-1">
+                                <div className="space-y-3 relative">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-text-muted flex items-center gap-1 !px-1">
                                         <Icon icon="material-symbols:comment-outline-rounded" className="text-sm" />
                                         Nhận xét của giáo viên
                                     </p>
-                                    {mySubmission.feedbacks.map((fb, idx) => (
-                                        <div key={idx} className="bg-white border border-blue-100 rounded-xl !px-4 !py-3 text-sm text-text-main font-medium flex items-start gap-2 shadow-sm">
-                                            <Icon icon="material-symbols:format-quote-rounded" className="text-blue-400 text-lg shrink-0 mt-0.5" />
-                                            <span>{fb}</span>
-                                        </div>
-                                    ))}
+                                    <div className="space-y-2">
+                                        {mySubmission.feedbacks.map((fb, idx) => (
+                                            <div key={idx} className="bg-white border border-blue-100 rounded-xl !px-4 !py-3 text-sm text-text-main font-medium flex items-start gap-2 shadow-sm relative group hover:border-blue-300 transition-colors">
+                                                <div className="absolute left-0 top-0 w-1 h-full bg-blue-400 rounded-l-xl opacity-50" />
+                                                <Icon icon="material-symbols:format-quote-rounded" className="text-blue-400 text-lg shrink-0 mt-0.5" />
+                                                <span className="leading-relaxed">
+                                                    {typeof fb === 'string' ? fb : (fb.content || fb.comment || fb.feedback || JSON.stringify(fb))}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Corrections (Teacher's annotated files) */}
+                            {mySubmission?.corrections && mySubmission.corrections.length > 0 && (
+                                <div className="space-y-3">
+                                    <p className="text-[10px] font-black uppercase  !mt-2 tracking-widest text-orange-600 flex items-center gap-1 !px-1">
+                                        <Icon icon="material-symbols:edit-document-outline-rounded" className="text-sm" />
+                                        File bài chữa từ giáo viên
+                                    </p>
+                                    <div className="grid grid-cols-1 gap-2">
+                                        {mySubmission.corrections.map((file, idx) => (
+                                            <a
+                                                key={idx}
+                                                href={file.fileURL || file.fileUrl || file.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex items-center justify-between border border-orange-200 rounded-2xl !p-3 bg-orange-50/30 group hover:border-orange-400 transition-all hover:bg-white hover:shadow-md"
+                                            >
+                                                <div className="flex items-center gap-3 overflow-hidden">
+                                                    <div className="shrink-0 text-orange-600">
+                                                        {getFileIcon(file.fileType || file.fileName || file.name)}
+                                                    </div>
+                                                    <div className="flex flex-col min-w-0">
+                                                        <span className="font-bold text-sm text-text-main truncate group-hover:text-orange-600 transition-colors">
+                                                            {file.fileName || file.name}
+                                                        </span>
+                                                        <span className="text-[10px] text-text-muted font-bold tracking-widest uppercase">
+                                                            {(file.fileSize / 1024).toFixed(1)} KB • BÀI CHỮA
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <Icon icon="material-symbols:download-rounded" className="text-orange-400 text-xl group-hover:animate-bounce" />
+                                            </a>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -318,7 +371,7 @@ const AssignmentDetailStudent = ({ assignment, onRefresh }) => {
                     {!isGraded && <div className="space-y-3 pt-4">
                         <button
                             onClick={() => fileInputRef.current?.click()}
-                            className="w-full flex items-center justify-center gap-2 border-2 border-primary/20 bg-white text-primary font-black rounded-2xl !p-4 hover:bg-primary hover:text-white hover:border-primary transition-all group shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full flex items-center justify-center gap-2 border-2 border-primary/20 bg-white text-primary font-black rounded-2xl !p-4 hover:!bg-primary hover:text-white hover:border-primary transition-all group shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                             disabled={isSubmitting}
                         >
                             <Icon icon="material-symbols:add-rounded" className="text-2xl group-hover:rotate-90 transition-transform" />
@@ -327,9 +380,9 @@ const AssignmentDetailStudent = ({ assignment, onRefresh }) => {
 
                         <button
                             onClick={handleTurnIn}
-                            className={`w-full font-black rounded-2xl !p-4 shadow-xl transition-all transform active:scale-[0.98] flex items-center justify-center gap-2 ${(localFiles.length > 0 || isSubmitted) && !isSubmitting
+                            className={`w-full !mt-2 font-black rounded-2xl !p-4 shadow-xl transition-all transform active:scale-[0.98] flex items-center justify-center gap-2 ${(localFiles.length > 0 || isSubmitted) && !isSubmitting
                                 ? '!bg-primary text-white hover:bg-primary-hover shadow-primary/20'
-                                : 'bg-border text-text-muted cursor-not-allowed'
+                                : '!bg-border text-text-muted cursor-not-allowed'
                                 }`}
                             disabled={(localFiles.length === 0 && !isSubmitted) || isSubmitting}
                         >

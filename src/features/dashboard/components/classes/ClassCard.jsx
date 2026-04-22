@@ -167,9 +167,9 @@ const ClassCard = ({
                 <h3 className="text-lg font-bold text-text-main font-['Outfit'] !mb-1 group-hover:text-primary transition-colors line-clamp-2">
                     {classData.name}
                 </h3>
-                <p className="font-mono text-sm text-text-muted bg-background inline-block !px-2 !py-0.5 rounded border border-border/50 !mb-3">
+                {/* <p className="font-mono text-sm text-text-muted bg-background inline-block !px-2 !py-0.5 rounded border border-border/50 !mb-3">
                     {classData.code}
-                </p>
+                </p> */}
 
                 <div className="space-y-2 !mt-2">
                     <div className="flex items-center text-sm text-text-muted gap-2">

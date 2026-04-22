@@ -61,6 +61,18 @@ const TAClassListPage = () => {
                         console.warn(`Failed to fetch sessions for TA class ${item.classID}`, e);
                     }
 
+                    const formatSchedule = (schedules) => {
+                        if (!schedules || !Array.isArray(schedules) || schedules.length === 0) return 'Chưa có lịch';
+                        const dayMap = { 1: 'CN', 2: 'T2', 3: 'T3', 4: 'T4', 5: 'T5', 6: 'T6', 7: 'T7' };
+                        return schedules
+                            .sort((a, b) => (a.dayOfWeek === 1 ? 8 : a.dayOfWeek) - (b.dayOfWeek === 1 ? 8 : b.dayOfWeek))
+                            .map(s => {
+                                if (typeof s === 'string') return s;
+                                return `${dayMap[s.dayOfWeek] || '??'}`;
+                            })
+                            .join(', ');
+                    };
+
                     return {
                         id: item.classID,
                         name: item.className,
@@ -76,7 +88,7 @@ const TAClassListPage = () => {
                             currentSession: currentSession,
                             totalSessions: totalSessions || 10
                         },
-                        schedule: Array.isArray(item.schedules) ? item.schedules.join(', ') : 'Chưa có lịch',
+                        schedule: formatSchedule(item.schedules),
                         salary: item.salaryPerSession,
                         permission: item.permission,
                         createdAt: item.createdAt ? new Date(item.createdAt).toLocaleDateString('vi-VN') : 'Unknown'

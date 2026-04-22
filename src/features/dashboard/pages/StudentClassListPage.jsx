@@ -8,6 +8,47 @@ import studentClassService from '../api/studentClassService';
 import studentScheduleService from '../api/studentScheduleService';
 import Pagination from '../../../components/ui/Pagination';
 import useAuthStore from '../../../store/authStore';
+import { extractErrorMessage } from '../../../utils/errorHandler';
+
+const formatSchedule = (cls) => {
+    // Try all possible property names from various API versions
+    const schedules = cls.schedules || cls.Schedules || cls.classSchedules || cls.schedule || [];
+    
+    if (!Array.isArray(schedules) || schedules.length === 0) {
+        return 'Chưa có lịch cụ thể';
+    }
+
+    const dayNames = {
+        1: 'CN',
+        2: 'T2',
+        3: 'T3',
+        4: 'T4',
+        5: 'T5',
+        6: 'T6',
+        7: 'T7'
+    };
+
+    try {
+        const formatted = schedules
+            .sort((a, b) => {
+                const da = a.dayOfWeek || a.DayOfWeek || 0;
+                const db = b.dayOfWeek || b.DayOfWeek || 0;
+                return (da === 1 ? 8 : da) - (db === 1 ? 8 : db);
+            })
+            .map(s => {
+                const dow = s.dayOfWeek || s.DayOfWeek;
+                if (!dow) return null;
+                return dayNames[dow] || '??';
+            })
+            .filter(Boolean)
+            .join(', ');
+
+        return formatted || 'Chưa có lịch cụ thể';
+    } catch (err) {
+        console.error("Format schedule error for class:", cls.className, err);
+        return 'Chưa có lịch cụ thể';
+    }
+};
 
 const StudentClassListPage = () => {
     const { user } = useAuthStore();
@@ -28,8 +69,8 @@ const StudentClassListPage = () => {
             // Mapping filter status to API expected values
             let apiStatus = null;
             if (filterStatus === 'ongoing') apiStatus = 'Active';
-            else if (filterStatus === 'upcoming') apiStatus = 'Active'; // Giả định Active bao gồm cả sắp khai giảng
-            else if (filterStatus === 'completed') apiStatus = 'Past'; // Giả định Past cho đã kết thúc
+            else if (filterStatus === 'upcoming') apiStatus = 'Active'; 
+            else if (filterStatus === 'completed') apiStatus = 'Past'; 
 
             const res = await studentClassService.getMyClasses({
                 page: currentPage,
@@ -39,7 +80,10 @@ const StudentClassListPage = () => {
 
             if (res.ok) {
                 const result = await res.json();
-                const mappedClasses = await Promise.all((result.data?.items || []).map(async (cls) => {
+                console.log("Student Classes API Raw Result:", result);
+                
+                const items = result.data?.items || result.items || [];
+                const mappedClasses = await Promise.all(items.map(async (cls) => {
                     // Fetch sessions to calculate progress for this class
                     let currentSession = 0;
                     let totalSessions = 0;
@@ -63,13 +107,13 @@ const StudentClassListPage = () => {
                     }
 
                     return {
-                        id: cls.classID,
+                        id: cls.classID || cls.id,
                         name: cls.className,
-                        code: cls.className.split(' ').pop() || 'CLASS',
+                        code: cls.className?.split(' ').pop() || 'CLASS',
                         status: cls.enrollmentStatus?.toLowerCase() === 'active' ? 'ongoing' : 
                                 cls.enrollmentStatus?.toLowerCase() === 'past' ? 'completed' : 'ongoing',
                         createdAt: cls.startDate ? new Date(cls.startDate).toLocaleDateString('vi-VN') : 'Chưa xác định',
-                        schedule: 'Chưa có lịch cụ thể',
+                        schedule: formatSchedule(cls),
                         progress: {
                             currentSession: currentSession,
                             totalSessions: totalSessions || 1
@@ -83,7 +127,8 @@ const StudentClassListPage = () => {
                 setClasses(mappedClasses);
                 setTotalItems(result.data?.totalCount || result.data?.totalItems || result.totalCount || mappedClasses.length);
             } else {
-                toast.error('Không thể tải danh sách lớp học');
+                const errData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errData, 'Không thể tải danh sách lớp học'));
             }
         } catch (error) {
             console.error('Fetch classes error:', error);

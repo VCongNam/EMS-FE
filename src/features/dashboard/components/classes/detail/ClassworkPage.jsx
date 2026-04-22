@@ -6,7 +6,9 @@ import { assignmentService } from '../../../api/assignmentService';
 import { studentAssignmentService } from '../../../api/studentAssignmentService';
 import { toast } from 'react-toastify';
 import ConfirmModal from '../../../../../components/ui/ConfirmModal';
+import Pagination from '../../../../../components/ui/Pagination';
 import { useTAPermission } from '../../../../dashboard/context/TAPermissionContext';
+import { extractErrorMessage } from '../../../../../utils/errorHandler';
 
 const ClassworkPage = () => {
     const { user } = useAuthStore();
@@ -21,41 +23,56 @@ const ClassworkPage = () => {
 
     const [assignments, setAssignments] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [totalItems, setTotalItems] = useState(0);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8;
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, assignmentId: null });
 
-    useEffect(() => {
-        const fetchAssignments = async () => {
-            if (!classId) return;
-            try {
-                setIsLoading(true);
-                let res;
-                if (isTeacherOrTA) {
-                    res = await assignmentService.getAssignmentsByClass(classId, user?.token);
-                } else {
-                    res = await studentAssignmentService.getAssignments(classId, user?.token);
+    const fetchAssignments = async () => {
+        if (!classId) return;
+        try {
+            setIsLoading(true);
+            let res;
+            if (isTeacherOrTA) {
+                res = await assignmentService.getAssignmentsByClass(classId, user?.token, currentPage, itemsPerPage);
+            } else {
+                res = await studentAssignmentService.getAssignments(classId, user?.token, currentPage, itemsPerPage);
+            }
+
+            if (res.ok) {
+                const result = await res.json();
+                
+                // Handle different response structures
+                let items = [];
+                let total = 0;
+
+                if (Array.isArray(result)) {
+                    items = result;
+                    total = result.length;
+                } else if (result.data?.items) {
+                    items = result.data.items;
+                    total = result.data.totalCount || result.data.totalItems || items.length;
+                } else if (result.data) {
+                    items = Array.isArray(result.data) ? result.data : [result.data];
+                    total = items.length;
                 }
 
-                if (res.ok) {
-                    const result = await res.json();
-                    // Handle different response structures
-                    if (Array.isArray(result)) {
-                        setAssignments(result);
-                    } else if (result.data?.items) {
-                        setAssignments(result.data.items);
-                    } else if (result.data) {
-                        setAssignments(Array.isArray(result.data) ? result.data : [result.data]);
-                    }
-                } else {
-                    console.error("Lỗi API khi tải bài tập:", res.status);
-                }
-            } catch (err) {
-                console.error("Lỗi mạng khi tải bài tập:", err);
-            } finally {
-                setIsLoading(false);
+                setAssignments(items);
+                setTotalItems(total);
+            } else {
+                const errData = await res.json().catch(() => ({}));
+                console.error("Lỗi API khi tải bài tập:", extractErrorMessage(errData, `Status: ${res.status}`));
             }
-        };
+        } catch (err) {
+            console.error("Lỗi mạng khi tải bài tập:", err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
         fetchAssignments();
-    }, [classId, user?.token, isTeacherOrTA]);
+    }, [classId, user?.token, isTeacherOrTA, currentPage]);
 
     const handleDeleteClick = (e, id) => {
         e.stopPropagation();
@@ -70,9 +87,10 @@ const ClassworkPage = () => {
             const res = await assignmentService.deleteAssignment(id, user?.token);
             if (res.ok) {
                 toast.success('Xóa bài tập thành công!');
-                setAssignments(prev => prev.filter(a => (a.assignmentId || a.id) !== id));
+                fetchAssignments();
             } else {
-                toast.error('Có lỗi xảy ra khi xóa bài tập.');
+                const errData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errData, 'Có lỗi xảy ra khi xóa bài tập.'));
             }
         } catch (err) {
             console.error(err);
@@ -97,7 +115,8 @@ const ClassworkPage = () => {
                     return a;
                 }));
             } else {
-                toast.error('Có lỗi xảy ra khi giao bài tập.');
+                const errData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errData, 'Có lỗi xảy ra khi giao bài tập.'));
             }
         } catch (err) {
             console.error(err);
@@ -246,6 +265,18 @@ const ClassworkPage = () => {
                         {isTeacherOrTA ? 'Nhấp vào nút "Tạo bài tập" để giao bài cho lớp.' : 'Giáo viên chưa giao bài tập nào cho lớp.'}
                     </p>
                  </div>
+            )}
+
+            {/* Pagination */}
+            {!isLoading && totalItems > itemsPerPage && (
+                <div className="flex justify-center !mt-8">
+                    <Pagination
+                        currentPage={currentPage}
+                        totalItems={totalItems}
+                        itemsPerPage={itemsPerPage}
+                        onPageChange={(page) => setCurrentPage(page)}
+                    />
+                </div>
             )}
 
             <ConfirmModal 
