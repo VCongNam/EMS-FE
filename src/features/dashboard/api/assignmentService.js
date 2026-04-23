@@ -62,14 +62,44 @@ export const assignmentService = {
       }
     });
   },
-  gradeSubmission: async (submissionId, grade, token) => {
+  gradeSubmission: async (submissionId, gradePayload, token) => {
+    let body;
+    let headers = {
+      'Authorization': `Bearer ${token}`
+    };
+    
+    // If payload is already FormData (containing Score and Files)
+    if (gradePayload instanceof FormData) {
+        body = gradePayload;
+    } else {
+        // Fallback for current string/number grade
+        body = new FormData();
+        body.append('grade', gradePayload);
+        // Do not set Content-Type for FormData, fetch does it automatically with boundary
+    }
+
     return fetch(getApiUrl(`/api/Assignment/submissions/${submissionId}/grade`), {
       method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+      headers: headers,
+      body: body
+    });
+  },
+  createOfflineTest: async (payloadFormData, token) => {
+    return fetch(getApiUrl('/api/Assignment/offline-test'), {
+      method: 'POST',
+      headers: { 
+        'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({ grade: parseFloat(grade) })
+      body: payloadFormData
+    });
+  },
+  createOfflineSubmission: async (assignmentId, payloadFormData, token) => {
+    return fetch(getApiUrl(`/api/Assignment/${assignmentId}/offline-submission`), {
+      method: 'POST',
+      headers: { 
+        'Authorization': `Bearer ${token}`
+      },
+      body: payloadFormData
     });
   },
   giveFeedback: async (submissionId, content, token) => {

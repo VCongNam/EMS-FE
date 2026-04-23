@@ -128,7 +128,7 @@ const AddGradeCategoryModal = ({ isOpen, onClose, classId, onSuccess }) => {
                         <button 
                             type="submit"
                             disabled={isSubmitting}
-                            className="flex-1 !py-3 rounded-xl bg-primary text-white font-bold hover:bg-primary-hover transition-colors shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 !py-3 rounded-xl !bg-primary text-white font-bold hover:bg-primary-hover transition-colors shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isSubmitting ? (
                                 <Icon icon="line-md:loading-twotone-loop" className="text-xl" />

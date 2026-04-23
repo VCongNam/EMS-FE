@@ -21,6 +21,7 @@ const CreateAssignmentPage = () => {
     const [dueDate, setDueDate] = useState('');
     const [dueTime, setDueTime] = useState('');
     const [isGraded, setIsGraded] = useState(true);
+    const [isOfflineMode, setIsOfflineMode] = useState(false);
     const [currentStatus, setCurrentStatus] = useState('Published');
     const [allowLateSubmission, setAllowLateSubmission] = useState(true);
     const [attachments, setAttachments] = useState([]);
@@ -60,6 +61,13 @@ const CreateAssignmentPage = () => {
             setGradeCategoryId(newCategory.id || newCategory.gradeCategoryId);
         }
     };
+
+    // Force isGraded to true when in offline mode
+    useEffect(() => {
+        if (isOfflineMode) {
+            setIsGraded(true);
+        }
+    }, [isOfflineMode]);
 
     useEffect(() => {
         const fetchAssignmentInfo = async () => {
@@ -152,15 +160,24 @@ const CreateAssignmentPage = () => {
             if (isGraded && gradeCategoryId) {
                 formData.append('GradeCategoryId', gradeCategoryId);
             }
-            formData.append('Isgraded', isGraded ? "True" : "False");
+            if (!isOfflineMode) {
+                formData.append('Isgraded', isGraded ? "True" : "False");
+            }
             formData.append('Title', title);
             formData.append('Description', description || '');
             
-            // Format DueDate: YYYY-MM-DDTHH:mm:ss
-            formData.append('DueDate', dueDate + (dueTime ? `T${dueTime}:00` : 'T23:59:59'));
-            
-            const allowLateStr = allowLateSubmission ? "True" : "False";
-            formData.append('AllowLateSubmission', allowLateStr);
+            if (isOfflineMode) {
+                // Format TestDate properly (e.g. 2026-03-28)
+                const testDateFormatted = dueDate;
+                formData.append('TestDate', testDateFormatted);
+                formData.append('ClassId', classId);
+                // Offline test explicitly uses these API fields
+            } else {
+                // Online test logic
+                formData.append('DueDate', dueDate + (dueTime ? `T${dueTime}:00` : 'T23:59:59'));
+                const allowLateStr = allowLateSubmission ? "True" : "False";
+                formData.append('AllowLateSubmission', allowLateStr);
+            }
 
             attachments.forEach(att => {
                 if (att.file) {
@@ -191,11 +208,16 @@ const CreateAssignmentPage = () => {
                     res = updateRes; // Success from update
                 }
             } else {
-                // Creation: Include status in POST
-                console.log(">>> [Assignment] Creating new assignment with status:", targetStatus);
-                formData.append('Status', targetStatus);
-                formData.append('ClassId', classId);
-                res = await assignmentService.createAssignment(formData, token);
+                // Creation
+                if (isOfflineMode) {
+                    console.log(">>> [Assignment] Creating offline test...");
+                    res = await assignmentService.createOfflineTest(formData, token);
+                } else {
+                    console.log(">>> [Assignment] Creating new assignment with status:", targetStatus);
+                    formData.append('Status', targetStatus);
+                    formData.append('ClassId', classId);
+                    res = await assignmentService.createAssignment(formData, token);
+                }
             }
 
             if (!res.ok) {
@@ -221,16 +243,44 @@ const CreateAssignmentPage = () => {
     return (
         <div className="mx-auto animate-fade-in-up !pb-8">
 
-            {/* Header */}
-            <div className="flex bg-surface rounded-2xl border border-border !p-4 sm:!p-6 shadow-sm items-center gap-3 border-b-2 border-primary/20 !mb-6">
-                <button
-                    onClick={() => navigate(-1)}
-                    className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-surface-hover text-text-muted transition-colors shrink-0"
-                >
-                    <Icon icon="material-symbols:close-rounded" className="text-2xl" />
-                </button>
-                <Icon icon={isEditMode ? "material-symbols:edit-document-outline-rounded" : "material-symbols:assignment-add-outline-rounded"} className="text-2xl sm:text-3xl text-primary shrink-0" />
-                <h2 className="text-xl sm:text-2xl font-bold text-text-main">{isEditMode ? 'Chỉnh sửa bài tập' : 'Tạo bài tập mới'}</h2>
+            <div className="flex !bg-surface rounded-2xl border border-border !p-4 sm:!p-6 shadow-sm shadow-sm flex-col md:flex-row items-start md:items-center justify-between border-b-2 border-primary/20 !mb-6 gap-4">
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-surface-hover text-text-muted transition-colors shrink-0"
+                    >
+                        <Icon icon="material-symbols:close-rounded" className="text-2xl" />
+                    </button>
+                    <Icon icon={isEditMode ? "material-symbols:edit-document-outline-rounded" : "material-symbols:assignment-add-outline-rounded"} className="text-2xl sm:text-3xl text-primary shrink-0" />
+                    <h2 className="text-xl sm:text-2xl font-bold text-text-main">{isEditMode ? 'Chỉnh sửa bài tập' : 'Tạo bài tập / bài thi mới'}</h2>
+                </div>
+                
+                {!isEditMode && (
+                    <div className="flex !p-1.5 !bg-background border border-border rounded-2xl shrink-0 w-full md:w-auto shadow-inner relative overflow-hidden">
+                        <button
+                            onClick={() => setIsOfflineMode(false)}
+                            className={`flex-1 md:flex-none flex items-center justify-center gap-2 !px-5 !py-2.5 rounded-xl text-sm font-bold transition-all duration-300 z-10 ${
+                                !isOfflineMode 
+                                    ? '!bg-white shadow-[0_2px_8px_-2px_rgba(0,0,0,0.1)] text-primary ring-1 ring-border' 
+                                    : 'text-text-muted hover:text-text-main cursor-pointer'
+                            }`}
+                        >
+                            <Icon icon="material-symbols:cloud-done-outline-rounded" className="text-[18px]" />
+                            Bài Tập Online
+                        </button>
+                        <button
+                            onClick={() => setIsOfflineMode(true)}
+                            className={`flex-1 md:flex-none flex items-center justify-center gap-2 !px-5 !py-2.5 rounded-xl text-sm font-bold transition-all duration-300 z-10 ${
+                                isOfflineMode 
+                                    ? '!bg-white shadow-[0_2px_8px_-2px_rgba(0,0,0,0.1)] text-primary ring-1 ring-border' 
+                                    : 'text-text-muted hover:text-text-main cursor-pointer'
+                            }`}
+                        >
+                            <Icon icon="material-symbols:edit-document-outline-rounded" className="text-[18px]" />
+                            Bài Thi Tại Lớp
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Body */}
@@ -314,16 +364,19 @@ const CreateAssignmentPage = () => {
                     <div className="bg-surface rounded-2xl border border-border !p-5 sm:!p-6 shadow-sm space-y-5">
 
                         {/* Toggle Graded */}
-                        <div className="flex items-center justify-between !mb-4 pb-4 border-b border-border">
+                        <div className={`flex items-center justify-between !mb-4 pb-4 border-b border-border ${isOfflineMode ? 'opacity-60' : ''}`}>
                             <div>
                                 <label className="block text-sm font-semibold text-text-main">Có tính điểm bài tập</label>
-                                <span className="text-xs text-text-muted">Chọn nếu bài tập này có chấm điểm</span>
+                                <span className="text-xs text-text-muted">
+                                    {isOfflineMode ? 'Bài thi tại lớp bắt buộc phải có điểm' : 'Chọn nếu bài tập này có chấm điểm'}
+                                </span>
                             </div>
-                            <label className="relative inline-flex items-center cursor-pointer">
+                            <label className={`relative inline-flex items-center ${isOfflineMode ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
                                 <input 
                                     type="checkbox" 
                                     checked={isGraded}
-                                    onChange={(e) => setIsGraded(e.target.checked)}
+                                    onChange={(e) => !isOfflineMode && setIsGraded(e.target.checked)}
+                                    disabled={isOfflineMode}
                                     className="sr-only peer"
                                 />
                                 <div className="w-11 h-6 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
@@ -371,7 +424,7 @@ const CreateAssignmentPage = () => {
                         )}
 
                         <div>
-                            <label className="block text-sm font-semibold text-text-main !mb-2">Hạn nộp</label>
+                            <label className="block text-sm font-semibold text-text-main !mb-2">{isOfflineMode ? 'Ngày làm bài' : 'Hạn nộp'}</label>
                             <div className="flex gap-2">
                                 <input
                                     type="date"
@@ -380,31 +433,35 @@ const CreateAssignmentPage = () => {
                                     required
                                     className="flex-1 min-w-0 bg-background border border-border rounded-xl !p-3 focus:outline-none focus:border-primary text-text-main"
                                 />
-                                <input
-                                    type="time"
-                                    value={dueTime}
-                                    onChange={(e) => setDueTime(e.target.value)}
-                                    className="w-[110px] shrink-0 bg-background border border-border rounded-xl !p-3 focus:outline-none focus:border-primary text-text-main"
-                                />
+                                {!isOfflineMode && (
+                                    <input
+                                        type="time"
+                                        value={dueTime}
+                                        onChange={(e) => setDueTime(e.target.value)}
+                                        className="w-[110px] shrink-0 bg-background border border-border rounded-xl !p-3 focus:outline-none focus:border-primary text-text-main"
+                                    />
+                                )}
                             </div>
                         </div>
 
                         {/* Thay "Chủ đề" bằng "Cho phép nộp muộn" cờ boolean */}
-                        <div className="flex items-center justify-between !mt-4 border-t border-border !pt-4">
-                            <div>
-                                <label className="block text-sm font-semibold text-text-main">Cho phép nộp muộn</label>
-                                <span className="text-xs text-text-muted">Học viên vẫn có thể nộp sau hạn</span>
+                        {!isOfflineMode && (
+                            <div className="flex items-center justify-between !mt-4 border-t border-border !pt-4">
+                                <div>
+                                    <label className="block text-sm font-semibold text-text-main">Cho phép nộp muộn</label>
+                                    <span className="text-xs text-text-muted">Học viên vẫn có thể nộp sau hạn</span>
+                                </div>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input 
+                                        type="checkbox" 
+                                        checked={allowLateSubmission}
+                                        onChange={(e) => setAllowLateSubmission(e.target.checked)}
+                                        className="sr-only peer"
+                                    />
+                                    <div className="w-11 h-6 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                                </label>
                             </div>
-                            <label className="relative inline-flex items-center cursor-pointer">
-                                <input 
-                                    type="checkbox" 
-                                    checked={allowLateSubmission}
-                                    onChange={(e) => setAllowLateSubmission(e.target.checked)}
-                                    className="sr-only peer"
-                                />
-                                <div className="w-11 h-6 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                            </label>
-                        </div>
+                        )}
 
                     </div>
                 </div>
@@ -420,7 +477,7 @@ const CreateAssignmentPage = () => {
                     Hủy
                 </button>
                 
-                {(!isEditMode || currentStatus === 'Draft') && (
+                {(!isEditMode && !isOfflineMode && currentStatus === 'Draft') && (
                     <button
                         onClick={() => handleSave('Draft')}
                         disabled={isSubmitting || !title.trim()}
@@ -445,7 +502,7 @@ const CreateAssignmentPage = () => {
                     ) : (
                         <Icon icon={isEditMode && currentStatus === 'Published' ? "material-symbols:save-rounded" : "material-symbols:assignment-turned-in-rounded"} className="text-lg" />
                     )}
-                    {isEditMode && currentStatus === 'Published' ? 'Lưu thay đổi' : (currentStatus === 'Draft' ? 'Giao bài' : 'Giao bài')}
+                    {isEditMode && currentStatus === 'Published' ? 'Lưu thay đổi' : (isOfflineMode ? 'Tạo bài thi' : 'Giao bài')}
                 </button>
             </div>
 
