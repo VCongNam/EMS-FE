@@ -110,7 +110,7 @@ export const tuitionService = {
         return response;
     },
 
-    // Tạo hóa đơn cho lớp (Thường dùng cho lớp Trả Sau)
+    // Tạo hóa đơn cho lớp (Thường dùng cho lớp Trả Sau) - Chờ Deprecated
     generateClassInvoices: async (classId, data, token) => {
         const response = await fetch(getApiUrl(`/api/TuitionFee/class/${classId}/generate-invoices`), {
             method: 'POST',
@@ -119,6 +119,55 @@ export const tuitionService = {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(data) // { periodMonth, periodYear, dueDate }
+        });
+        return response;
+    },
+
+    // Preview Hóa Đơn (Mới)
+    previewInvoices: async (classId, month, year, token) => {
+        const response = await fetch(getApiUrl(`/api/TuitionFee/class/${classId}/preview-invoices?month=${month}&year=${year}`), {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        return response;
+    },
+
+    // Confirm Hóa Đơn (Mới)
+    confirmInvoices: async (classId, data, token) => {
+        const response = await fetch(getApiUrl(`/api/TuitionFee/class/${classId}/confirm-invoices`), {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        return response;
+    },
+
+    // --- TẤT TOÁN LẺ (FINAL BILL) ---
+    previewFinalInvoice: async (classId, studentId, month, year, token) => {
+        const response = await fetch(getApiUrl(`/api/TuitionFee/class/${classId}/student/${studentId}/preview-final-invoice?month=${month}&year=${year}`), {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        return response;
+    },
+
+    confirmFinalInvoice: async (classId, studentId, data, token) => {
+        const response = await fetch(getApiUrl(`/api/TuitionFee/class/${classId}/student/${studentId}/confirm-final-invoice`), {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
         });
         return response;
     },

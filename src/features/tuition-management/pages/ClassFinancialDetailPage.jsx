@@ -7,6 +7,8 @@ import StudentPaymentTable from '../components/StudentPaymentTable';
 import ConfirmModal from '../../../components/ui/ConfirmModal';
 import PromptModal from '../../../components/ui/PromptModal';
 import TuitionFeeModal from '../components/TuitionFeeModal';
+import PreviewInvoiceModal from '../components/PreviewInvoiceModal';
+import FinalBillModal from '../components/FinalBillModal';
 import { tuitionService } from '../api/tuitionService';
 import useAuthStore from '../../../store/authStore';
 
@@ -25,8 +27,22 @@ const ClassFinancialDetailPage = () => {
     const [studentsData, setStudentsData] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(true);
-    const [isGenerating, setIsGenerating] = useState(false);
     const [invoiceStats, setInvoiceStats] = useState({ expectedRevenue: 0, actualRevenue: 0, debtAmount: 0 });
+
+    // Preview & Confirm Flow States
+    const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+    const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+    const [previewData, setPreviewData] = useState([]);
+    const [dueDate, setDueDate] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Final Bill (Tất toán lẻ) States
+    const [targetStudentId, setTargetStudentId] = useState(null);
+    const [isLoadingFinalPreview, setIsLoadingFinalPreview] = useState(false);
+    const [isFinalModalOpen, setIsFinalModalOpen] = useState(false);
+    const [finalPreviewData, setFinalPreviewData] = useState(null);
+    const [finalDueDate, setFinalDueDate] = useState('');
+    const [isFinalSubmitting, setIsFinalSubmitting] = useState(false);
     
     // Pagination
     const [currentPage, setCurrentPage] = useState(1);
@@ -140,7 +156,9 @@ const ClassFinancialDetailPage = () => {
                         students: count || prev.students,
                         billingMethod: classConfig.billingMethod || 'Prepaid',
                         tuitionFee: classConfig.tuitionFee,
-                        paymentDeadlineDays: classConfig.paymentDeadlineDays
+                        paymentDeadlineDays: classConfig.paymentDeadlineDays,
+                        startDate: classConfig.startDate,
+                        endDate: classConfig.endDate
                     }));
                 } catch(e) {}
             } else {
@@ -151,7 +169,9 @@ const ClassFinancialDetailPage = () => {
                     students: realStudentCount,
                     billingMethod: classConfig.billingMethod || 'Prepaid',
                     tuitionFee: classConfig.tuitionFee,
-                    paymentDeadlineDays: classConfig.paymentDeadlineDays || 5
+                    paymentDeadlineDays: classConfig.paymentDeadlineDays || 5,
+                    startDate: classConfig.startDate,
+                    endDate: classConfig.endDate
                 });
                 setStudentsData([]);
                 toast.error("Hệ thống chưa có bảng chi tiết cho lớp này hoặc cấu trúc API lỗi!");
@@ -206,64 +226,139 @@ const ClassFinancialDetailPage = () => {
         }
     };
 
-    const handleGenerateInvoice = () => {
-        // Find if this period has already been processed based on some flag if available
-        // Or just let the prompt handle it
-        const next7Days = new Date();
-        next7Days.setDate(next7Days.getDate() + 7);
-        const dd = String(next7Days.getDate()).padStart(2, '0');
-        const mm = String(next7Days.getMonth() + 1).padStart(2, '0');
-        const yyyy = next7Days.getFullYear();
-        const defaultDueDate = `${dd}-${mm}-${yyyy}`;
-
-        setPromptModal({
-            isOpen: true,
-            title: 'Phát hành hóa đơn',
-            message: `Nhập ngày hạn nộp cho các hóa đơn tháng ${selectedMonth}/${selectedYear} (Định dạng: DD-MM-YYYY):`,
-            defaultValue: defaultDueDate,
-            confirmText: 'Phát hành',
-            action: async (dueDate) => {
-                setPromptModal({ isOpen: false });
-                if (!dueDate) return;
-
-                // Validate DD-MM-YYYY format
-                const regex = /^\d{2}-\d{2}-\d{4}$/;
-                if (!regex.test(dueDate.trim())) {
-                    toast.error('Định dạng ngày không hợp lệ. Vui lòng nhập theo định dạng DD-MM-YYYY (ví dụ: 22-04-2026).');
-                    return;
-                }
-
-                const [day, month, year] = dueDate.trim().split('-').map(Number);
-                const dateObj = new Date(year, month - 1, day);
-
-                if (dateObj.getFullYear() !== year || dateObj.getMonth() + 1 !== month || dateObj.getDate() !== day) {
-                    toast.error('Ngày không hợp lệ.');
-                    return;
-                }
-
-                setIsGenerating(true);
-                try {
-                    const payload = {
-                        periodMonth: selectedMonth,
-                        periodYear: selectedYear,
-                        dueDate: dateObj.toISOString()
-                    };
-                    const res = await tuitionService.generateInvoices(classId, payload, user.token);
-                    if (res.ok) {
-                        toast.success("Phát hành hóa đơn thành công!");
-                        fetchData();
-                    } else {
-                        const err = await res.json().catch(() => ({}));
-                        toast.error(err?.title || err?.message || "Phát hành thất bại.");
-                    }
-                } catch (error) {
-                    toast.error("Lỗi khi phát hành hóa đơn.");
-                } finally {
-                    setIsGenerating(false);
-                }
+    const handlePreviewClick = async () => {
+        setIsLoadingPreview(true);
+        try {
+            const res = await tuitionService.previewInvoices(classId, selectedMonth, selectedYear, user.token);
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                toast.error(errorData?.message || `Không thể tải dữ liệu nháp của tháng ${selectedMonth}/${selectedYear}`);
+                setIsLoadingPreview(false);
+                return;
             }
-        });
+            const data = await res.json();
+            setPreviewData(data);
+
+            // Tính toán ngày dueDate mặc định = CurrentDate + 5 ngày
+            const defaultDate = new Date();
+            defaultDate.setDate(defaultDate.getDate() + 5);
+            setDueDate(defaultDate.toISOString().split('T')[0]); // YYYY-MM-DD for date input
+
+            setIsPreviewModalOpen(true);
+        } catch (error) {
+            console.error(error);
+            toast.error('Có lỗi xảy ra khi lấy dữ liệu phát hành!');
+        } finally {
+            setIsLoadingPreview(false);
+        }
     };
+
+    const handleConfirmPublish = async () => {
+        if (!dueDate) {
+            toast.error('Vui lòng chọn ngày hạn nộp tiền.');
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            // Cấu trúc payload theo yêu cầu
+            const payload = {
+                periodMonth: Number(selectedMonth),
+                periodYear: Number(selectedYear),
+                dueDate: new Date(`${dueDate}T23:59:59Z`).toISOString(),
+                invoices: previewData.map(item => ({
+                    studentId: item.studentId,
+                    attendedSessions: item.attendedSessions
+                }))
+            };
+
+            const res = await tuitionService.confirmInvoices(classId, payload, user.token);
+            if (res.ok) {
+                toast.success('Đã phát hành thành công!');
+                setIsPreviewModalOpen(false);
+                fetchData(); // Load lại 3 thẻ thống kê và bảng chi tiết
+            } else {
+                const errorData = await res.json().catch(() => ({}));
+                toast.error(errorData?.message || 'Xác nhận phát hành thất bại.');
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error('Có lỗi xảy ra trong quá trình phát hành.');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    // --- TẤT TOÁN LẺ (FINAL BILL) ---
+    const handleFinalBillPreview = async (student) => {
+        setTargetStudentId(student.studentId || student.id);
+        setIsLoadingFinalPreview(true);
+        try {
+            const res = await tuitionService.previewFinalInvoice(
+                classId, 
+                student.studentId || student.id, 
+                selectedMonth, 
+                selectedYear, 
+                user.token
+            );
+            
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                toast.error(errorData?.message || "Học sinh này đã được chốt hóa đơn hoặc dữ liệu không hợp lệ.");
+                return;
+            }
+
+            const data = await res.json();
+            setFinalPreviewData(data);
+            
+            const defaultDate = new Date();
+            defaultDate.setDate(defaultDate.getDate() + 5);
+            setFinalDueDate(defaultDate.toISOString().split('T')[0]);
+            
+            setIsFinalModalOpen(true);
+        } catch (error) {
+            console.error(error);
+            toast.error("Có lỗi xảy ra khi xem trước tất toán.");
+        } finally {
+            setIsLoadingFinalPreview(false);
+        }
+    };
+
+    const handleFinalBillConfirm = async () => {
+        if (!finalDueDate || !finalPreviewData) return;
+        
+        setIsFinalSubmitting(true);
+        try {
+            const payload = {
+                periodMonth: selectedMonth,
+                periodYear: selectedYear,
+                dueDate: new Date(`${finalDueDate}T23:59:59Z`).toISOString(),
+                attendedSessions: finalPreviewData.attendedSessions
+            };
+
+            const res = await tuitionService.confirmFinalInvoice(
+                classId, 
+                finalPreviewData.studentId, 
+                payload, 
+                user.token
+            );
+
+            if (res.ok) {
+                toast.success(`Đã tất toán thành công cho học sinh ${finalPreviewData.studentName}`);
+                setIsFinalModalOpen(false);
+                fetchData(); // Cập nhật lại danh sách và thống kê
+            } else {
+                const errorData = await res.json().catch(() => ({}));
+                toast.error(errorData?.message || "Tất toán thất bại.");
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error("Lỗi khi xác nhận tất toán.");
+        } finally {
+            setIsFinalSubmitting(false);
+        }
+    };
+
 
     const handleReconcileAbsences = async () => {
         setConfirmModal({
@@ -322,11 +417,49 @@ const ClassFinancialDetailPage = () => {
         });
     };
 
+    // Tính toán range tháng/năm dựa vào startDate và endDate của lớp
+    const availablePeriods = useMemo(() => {
+        const periods = [];
+        if (classInfo.startDate && classInfo.endDate) {
+            const start = new Date(classInfo.startDate);
+            const end = new Date(classInfo.endDate);
+            if (!isNaN(start) && !isNaN(end)) {
+                let current = new Date(start.getFullYear(), start.getMonth(), 1);
+                const last = new Date(end.getFullYear(), end.getMonth(), 1);
+                
+                while (current <= last) {
+                    periods.push({
+                        month: current.getMonth() + 1,
+                        year: current.getFullYear()
+                    });
+                    current.setMonth(current.getMonth() + 1);
+                }
+            }
+        }
+        
+        // Nếu không có startDate/endDate hoặc mảng trống thì để dự phòng 6 tháng trước và sau
+        if (periods.length === 0) {
+            for (let i = -6; i <= 6; i++) {
+                const d = new Date(currentDate.getFullYear(), currentDate.getMonth() + i, 1);
+                periods.push({ month: d.getMonth() + 1, year: d.getFullYear() });
+            }
+        }
+        return periods;
+    }, [classInfo.startDate, classInfo.endDate, currentDate]);
+
+    // Format tiền tệ
     const formatVND = (amount) => amount?.toLocaleString('vi-VN') + ' ₫';
 
-    // Tạo range tháng và năm cho dropdown
-    const months = Array.from({ length: 12 }, (_, i) => i + 1);
-    const years = [currentDate.getFullYear() - 1, currentDate.getFullYear(), currentDate.getFullYear() + 1];
+    // Đảm bảo selectedMonth và selectedYear luôn hợp lệ
+    useEffect(() => {
+        if (availablePeriods.length > 0) {
+            const isValid = availablePeriods.some(p => p.month === selectedMonth && p.year === selectedYear);
+            if (!isValid) {
+                setSelectedMonth(availablePeriods[0].month);
+                setSelectedYear(availablePeriods[0].year);
+            }
+        }
+    }, [availablePeriods, selectedMonth, selectedYear]);
 
     return (
         <div className="!min-h-full sm:!p-8 !space-y-8 !animate-fade-in custom-scrollbar">
@@ -359,7 +492,7 @@ const ClassFinancialDetailPage = () => {
                             <div className="!w-1 !h-1 !rounded-full !bg-border" />
                             <div className="!flex !items-center !gap-1.5 !text-sm !font-bold !text-text-muted">
                                 <Icon icon="solar:wallet-money-bold" className="!text-primary" />
-                                Hình thức: {classInfo.billingMethod === 'Prepaid' ? 'Trả trước' : 'Trả sau'}
+                                Hình thức: Trả sau
                             </div>
                             <div className="!w-1 !h-1 !rounded-full !bg-border" />
                             <div className="!flex !items-center !gap-1.5 !text-sm !font-bold !text-text-muted">
@@ -388,24 +521,25 @@ const ClassFinancialDetailPage = () => {
 
             {/* Actions & Filters Row */}
             <div className="!flex !flex-col sm:!flex-row sm:!items-center !justify-between !gap-4 !bg-transparent">
-                <div className="!flex !items-center !gap-2 !bg-white !px-4 !py-3 !rounded-2xl !border !border-border !shadow-sm">
+                <div className="!relative !flex !items-center !gap-2 !bg-white !pl-4 !pr-2 !py-2 !rounded-2xl !border !border-border !shadow-sm !cursor-pointer">
                     <Icon icon="solar:calendar-bold-duotone" className="!text-primary !text-lg" />
                     <span className="!text-sm !font-bold !text-text-muted">Kỳ thu:</span>
                     <select 
-                        value={selectedMonth} 
-                        onChange={e => setSelectedMonth(Number(e.target.value))}
-                        className="!bg-transparent !border-none !text-sm !font-black !text-text-main focus:!outline-none"
+                        value={`${selectedMonth}-${selectedYear}`}
+                        onChange={e => {
+                            const [m, y] = e.target.value.split('-').map(Number);
+                            setSelectedMonth(m);
+                            setSelectedYear(y);
+                        }}
+                        className="!bg-transparent !border-none !text-sm !font-black !text-text-main focus:!outline-none !appearance-none !pr-6 !py-1 !cursor-pointer"
                     >
-                        {months.map(m => <option key={m} value={m}>Tháng {m}</option>)}
+                        {availablePeriods.map(p => (
+                            <option key={`${p.month}-${p.year}`} value={`${p.month}-${p.year}`}>
+                                Tháng {p.month}/{p.year}
+                            </option>
+                        ))}
                     </select>
-                    <span className="!text-text-muted font-black">/</span>
-                    <select 
-                        value={selectedYear} 
-                        onChange={e => setSelectedYear(Number(e.target.value))}
-                        className="!bg-transparent !border-none !text-sm !font-black !text-text-main focus:!outline-none"
-                    >
-                        {years.map(y => <option key={y} value={y}>{y}</option>)}
-                    </select>
+                    <Icon icon="material-symbols:keyboard-arrow-down-rounded" className="!absolute !right-3 !top-1/2 !-translate-y-1/2 !text-text-muted !text-xl !pointer-events-none" />
                 </div>
 
                 <div className="!flex !items-center !gap-3 !flex-wrap">
@@ -424,27 +558,17 @@ const ClassFinancialDetailPage = () => {
                         <Icon icon="solar:alt-arrow-right-bold" className="!text-blue-500 !text-base !ml-1 group-hover:!translate-x-1 !transition-transform" />
                     </button>
 
-                    {classInfo.billingMethod === 'Prepaid' ? (
-                        <button
-                            onClick={handleReconcileAbsences}
-                            className="!flex !items-center !gap-2 !px-5 !py-3 !rounded-2xl !bg-emerald-50 !text-emerald-700 !border !border-emerald-200 !font-black hover:!bg-emerald-100 !transition-all shadow-sm"
-                        >
-                            <Icon icon="solar:clipboard-check-bold-duotone" className="!text-lg" />
-                            <span>Chốt sổ vắng phép</span>
-                        </button>
-                    ) : (
-                        <div className="!flex !items-center !gap-2 !px-5 !py-3 !rounded-2xl !bg-amber-50 !text-amber-700 !border !border-amber-200 !font-black !text-[10px] !max-w-[200px] !leading-tight">
-                            <Icon icon="solar:info-circle-bold-duotone" className="!text-lg !shrink-0" />
-                            <span>Kiểm tra điểm danh trước khi phát hành</span>
-                        </div>
-                    )}
+                    <div className="!flex !items-center !gap-2 !px-5 !py-3 !rounded-2xl !bg-amber-50 !text-amber-700 !border !border-amber-200 !font-black !text-[10px] !max-w-[200px] !leading-tight">
+                        <Icon icon="solar:info-circle-bold-duotone" className="!text-lg !shrink-0" />
+                        <span>Kiểm tra điểm danh trước khi phát hành</span>
+                    </div>
 
                     <button
-                        onClick={handleGenerateInvoice}
-                        disabled={isGenerating}
+                        onClick={handlePreviewClick}
+                        disabled={isLoadingPreview}
                         className="!bg-primary !text-white !px-5 !py-3 !rounded-2xl !flex !items-center !justify-center !gap-2 !font-black !shadow-lg !shadow-primary/20 hover:!scale-[1.02] active:!scale-[0.98] !transition-all disabled:!opacity-50 disabled:!cursor-not-allowed"
                     >
-                        {isGenerating ? (
+                        {isLoadingPreview ? (
                             <Icon icon="solar:spinner-bold-duotone" className="!text-lg !animate-spin" />
                         ) : (
                             <Icon icon="solar:document-add-bold-duotone" className="!text-lg" />
@@ -465,9 +589,7 @@ const ClassFinancialDetailPage = () => {
                     </div>
                     {isLoading ? <div className="!h-8 !w-32 !bg-border !animate-pulse !rounded-md"></div> : <h3 className="!text-2xl !font-black !text-text-main !tracking-tight">{formatVND(invoiceStats.expectedRevenue)}</h3>}
                     <p className="!text-xs !font-bold !text-text-muted !mt-2">
-                        {classInfo.billingMethod === 'Prepaid' 
-                            ? 'Dựa trên Số buổi dự kiến có trong tháng'
-                            : 'Dựa trên Số buổi Thực tế học sinh đi học'}
+                        Dựa trên Số buổi Thực tế học sinh đi học
                     </p>
                 </div>
 
@@ -512,8 +634,10 @@ const ClassFinancialDetailPage = () => {
                     <div className="!mt-8">
                         <StudentPaymentTable 
                             students={studentsData} 
-                            billingMethod={classInfo.billingMethod}
                             onExtendClick={handleExtendClick}
+                            onFinalBillClick={handleFinalBillPreview}
+                            isLoadingFinal={isLoadingFinalPreview}
+                            targetStudentId={targetStudentId}
                             currentPage={currentPage}
                             totalPages={Math.ceil(totalStudents / rowsPerPage)}
                             onPageChange={setCurrentPage}
@@ -553,6 +677,29 @@ const ClassFinancialDetailPage = () => {
                 onSave={handleSaveFeeConfig}
                 editData={feeModal.editData}
                 classes={allClasses.length > 0 ? allClasses : [classInfo]}
+            />
+
+            <PreviewInvoiceModal 
+                isOpen={isPreviewModalOpen}
+                onClose={() => setIsPreviewModalOpen(false)}
+                previewData={previewData}
+                dueDate={dueDate}
+                setDueDate={setDueDate}
+                isSubmitting={isSubmitting}
+                onConfirm={handleConfirmPublish}
+                month={selectedMonth}
+                year={selectedYear}
+            />
+
+            <FinalBillModal 
+                isOpen={isFinalModalOpen}
+                onClose={() => setIsFinalModalOpen(false)}
+                previewData={finalPreviewData}
+                dueDate={finalDueDate}
+                setDueDate={setFinalDueDate}
+                isSubmitting={isFinalSubmitting}
+                onConfirm={handleFinalBillConfirm}
+                month={selectedMonth}
             />
         </div>
     );

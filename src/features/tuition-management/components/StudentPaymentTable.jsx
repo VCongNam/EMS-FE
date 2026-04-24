@@ -16,9 +16,11 @@ const formatDate = (dateStr) => {
 
 const StudentPaymentTable = ({ 
     students = [], 
-    billingMethod = 'Postpaid', 
     onExtendClick, 
     onRemindClick,
+    onFinalBillClick,
+    isLoadingFinal,
+    targetStudentId,
     currentPage: externalPage,
     totalPages: externalTotalPages,
     onPageChange
@@ -50,8 +52,6 @@ const StudentPaymentTable = ({
     
     // If external pagination is used, provided students array IS the current page.
     const paginatedStudents = onPageChange ? filteredStudents : filteredStudents.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
-
-    const isPrepaid = billingMethod === 'Prepaid';
 
     return (
         <div className="!space-y-4">
@@ -95,10 +95,6 @@ const StudentPaymentTable = ({
                             <tr className="!bg-[#F8FAFC] !border-b !border-border">
                                 <th className="!px-6 !py-5 !text-[11px] !font-black !text-text-muted !uppercase !tracking-widest">Học sinh</th>
                                 <th className="!px-6 !py-5 !text-[11px] !font-black !text-text-muted !uppercase !tracking-widest">Đơn giá</th>
-                                <th className="!px-6 !py-5 !text-[11px] !font-black !text-text-muted !uppercase !tracking-widest text-center">Học phí gốc</th>
-                                {isPrepaid && (
-                                    <th className="!px-6 !py-5 !text-[11px] !font-black !text-text-muted !uppercase !tracking-widest text-center">Ví học phí</th>
-                                )}
                                 <th className="!px-6 !py-5 !text-[11px] !font-black !text-text-muted !uppercase !tracking-widest">Cần nộp</th>
                                 <th className="!px-6 !py-5 !text-[11px] !font-black !text-text-muted !uppercase !tracking-widest">Trạng thái</th>
                                 <th className="!px-6 !py-5 !text-[11px] !font-black !text-text-muted !uppercase !tracking-widest">Hạn nộp</th>
@@ -108,7 +104,7 @@ const StudentPaymentTable = ({
                         <tbody className="!divide-y !divide-border">
                             {filteredStudents.length === 0 ? (
                                 <tr>
-                                    <td colSpan={isPrepaid ? 8 : 7} className="!py-20 !text-center">
+                                    <td colSpan={6} className="!py-20 !text-center">
                                         <div className="!flex !flex-col !items-center !gap-2 !opacity-40">
                                             <Icon icon="solar:folder-error-bold" className="!text-5xl" />
                                             <p className="!font-bold">Chưa có dữ liệu học sinh</p>
@@ -137,7 +133,7 @@ const StudentPaymentTable = ({
                                                      <p className="!text-sm !font-bold !text-text-main">{student.studentName || student.name}</p>
                                                      <div className="!flex !items-center !gap-2 !mt-0.5">
                                                          <span className="!text-[9px] !font-black !px-1.5 !rounded !bg-slate-100 !text-slate-500 !uppercase">
-                                                             {sessions} buổi {isPrepaid ? 'dự kiến' : 'thực tế'}
+                                                             {sessions} buổi thực tế
                                                          </span>
                                                          {student.phoneNumber && <p className="!text-[10px] !text-text-muted">{student.phoneNumber}</p>}
                                                      </div>
@@ -147,30 +143,12 @@ const StudentPaymentTable = ({
                                          <td className="!px-6 !py-5">
                                              <span className="!text-xs !font-bold !text-text-muted">{formatVND(unitPrice)}</span>
                                          </td>
-                                         <td className="!px-6 !py-5 text-center">
-                                             <div className="!flex !flex-col">
-                                                 <span className="!text-sm !font-bold !text-text-muted">{formatVND(theoreticalFee)}</span>
-                                                 <span className="!text-[9px] !font-bold !text-slate-400 uppercase">
-                                                     {isPrepaid ? 'Lý thuyết' : 'Theo điểm danh'}
-                                                 </span>
-                                             </div>
-                                         </td>
-                                         {isPrepaid && (
-                                             <td className="!px-6 !py-5 text-center">
-                                                 <div className="!flex !flex-col !items-center !gap-1">
-                                                     <span className={`!px-3 !py-1 !rounded-lg !text-xs !font-black ${creditBalance > 0 ? '!bg-emerald-50 !text-emerald-600' : '!bg-slate-50 !text-slate-400'}`}>
-                                                         {formatVND(creditBalance)}
-                                                     </span>
-                                                     {creditBalance > 0 && <span className="!text-[8px] !font-black !text-emerald-500 !uppercase">Hoàn vắng tháng trước</span>}
-                                                 </div>
-                                             </td>
-                                         )}
+
                                          <td className="!px-6 !py-5">
                                             <div className="!flex !flex-col">
                                                 <span className="!text-sm !font-black !text-text-main">
                                                     {formatVND(amountToPay)}
                                                 </span>
-                                                {isPrepaid && creditBalance > 0 && <span className="!text-[9px] !font-bold !text-emerald-500 italic">Đã trừ ví</span>}
                                             </div>
                                          </td>
                                          <td className="!px-6 !py-5">
@@ -186,6 +164,23 @@ const StudentPaymentTable = ({
                                          </td>
                                             <td className="!px-6 !py-5">
                                                 <div className="!flex !items-center !justify-end !gap-2">
+                                                    {/* Nút Tất Toán Lẻ - Chỉ hiện nếu chưa có hóa đơn */}
+                                                    {!student.invoiceId && (
+                                                        <button
+                                                            onClick={() => onFinalBillClick && onFinalBillClick(student)}
+                                                            disabled={isLoadingFinal && (targetStudentId === (student.studentId || student.id))}
+                                                            className="!p-2 !rounded-xl !bg-blue-50 !text-blue-600 hover:!bg-blue-600 hover:!text-white !transition-all !flex !items-center !justify-center"
+                                                            title="Tất toán học phí (Ghi nghỉ học/Tất toán sớm)"
+                                                        >
+                                                            {isLoadingFinal && (targetStudentId === (student.studentId || student.id)) ? (
+                                                                <Icon icon="line-md:loading-loop" className="!text-lg" />
+                                                            ) : (
+                                                                <Icon icon="solar:bill-list-bold-duotone" className="!text-lg" />
+                                                            )}
+                                                            <span className="!text-[10px] !font-black !ml-1 hidden lg:inline">Tất toán</span>
+                                                        </button>
+                                                    )}
+
                                                     {(student.status === 'Overdue' || student.status === 'Pending') && student.invoiceId && (
                                                         <button 
                                                             onClick={() => onExtendClick && onExtendClick(student)}
