@@ -35,7 +35,7 @@ export const NotificationProvider = ({ children }) => {
             }
             
             const data = await keyResponse.json();
-            console.log("5. [DEBUG-PUSH] Dữ liệu Key từ BE:", data);
+            // console.log("5. [DEBUG-PUSH] Dữ liệu Key từ BE:", data);
             const publicKey = data.publicKey;
 
             if (!publicKey) {
@@ -45,11 +45,11 @@ export const NotificationProvider = ({ children }) => {
 
             console.log("7. [DEBUG-PUSH] Đang gọi Push Service (Chờ Service Worker ready)...");
             const subscription = await pushService.subscribeUser(publicKey);
-            console.log("8. [DEBUG-PUSH] Đăng ký Push Service thành công:", subscription);
+            // console.log("8. [DEBUG-PUSH] Đăng ký Push Service thành công:", subscription);
 
             console.log("9. [DEBUG-PUSH] Đang lưu subscription vào Backend...");
             const saveRes = await notificationService.saveSubscription(subscription, token);
-            console.log("10. [DEBUG-PUSH] Kết quả lưu Backend:", saveRes.status);
+            // console.log("10. [DEBUG-PUSH] Kết quả lưu Backend:", saveRes.status);
             
             if (saveRes.ok) {
                 setIsPushSubscribed(true);

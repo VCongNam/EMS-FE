@@ -12,7 +12,7 @@ const connection = new signalR.HubConnectionBuilder()
     .withUrl(HUB_URL, {
         accessTokenFactory: () => {
             const token = useAuthStore.getState().user?.token;
-            console.log("SignalR sending token:", token); 
+            // console.log("SignalR sending token:", token); 
             return token;
         },
         skipNegotiation: false, 

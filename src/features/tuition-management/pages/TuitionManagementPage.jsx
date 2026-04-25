@@ -446,7 +446,9 @@ const TuitionManagementPage = () => {
                                         <td className="!px-6 !py-4 text-center">
                                             <div className="!flex !flex-col !items-center">
                                                 <span className="!text-xs !font-bold !text-text-main">{c.studentCount} học sinh</span>
-                                                <span className="!text-[10px] !font-black !text-emerald-600">{formatVND(c.tuitionFee || c.pricePerSession)}</span>
+                                                <span className={`!text-[10px] !font-black ${(c.tuitionFee > 0 || c.pricePerSession > 0) ? '!text-emerald-600' : '!text-amber-500'}`}>
+                                                    {(c.tuitionFee > 0 || c.pricePerSession > 0) ? formatVND(c.tuitionFee || c.pricePerSession) : 'Chưa cài đặt'}
+                                                </span>
                                             </div>
                                         </td>
                                         <td className="!px-6 !py-4 text-center">
@@ -474,13 +476,13 @@ const TuitionManagementPage = () => {
                                         </td>
                                         <td className="!px-6 !py-4 text-center">
                                             <div className="!flex !items-center !justify-center !gap-2">
-                                                <button onClick={() => handleGenerateInvoices(c)} 
+                                                {/* <button onClick={() => handleGenerateInvoices(c)} 
                                                     disabled={!c.isIssuable}
                                                     className={`!px-4 !py-2 !rounded-xl !text-xs !font-black !transition-all !flex !items-center !gap-2 
                                                         ${c.isIssuable ? '!bg-primary !text-white hover:!shadow-lg hover:!shadow-primary/20' : '!bg-slate-100 !text-slate-400 !cursor-not-allowed'}`}>
                                                     <Icon icon={isPrepaid ? "solar:reorder-bold" : "solar:document-add-bold"} />
                                                     {isPrepaid ? 'Chốt sổ' : 'Tạo hóa đơn'}
-                                                </button>
+                                                </button> */}
                                                 <button onClick={() => navigate(`/tuition/reports/${c.classId}`)} className="!p-2 !rounded-xl !bg-slate-100 !text-slate-500 hover:!bg-primary hover:!text-white transition-all">
                                                     <Icon icon="solar:eye-bold-duotone" className="!text-lg" />
                                                 </button>
@@ -710,8 +712,8 @@ const TuitionManagementPage = () => {
                                             {c.billingMethod === 'Prepaid' ? 'Trả trước' : 'Trả sau'}
                                         </span>
                                     </td>
-                                    <td className="!px-6 !py-4 text-center font-black text-sm text-text-main">
-                                        {isConfigured ? formatVND(c.tuitionFee || c.pricePerSession) : '--'}
+                                    <td className={`!px-6 !py-4 text-center font-black text-sm ${isConfigured ? 'text-text-main' : 'text-amber-500'}`}>
+                                        {isConfigured ? formatVND(c.tuitionFee || c.pricePerSession) : 'Chưa cài đặt'}
                                     </td>
                                     <td className="!px-6 !py-4 text-center font-bold text-sm text-text-main">{c.paymentDeadlineDays || 5} ngày</td>
                                     <td className="!px-6 !py-4 text-center">
