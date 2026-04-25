@@ -26,9 +26,9 @@ const parseTime = (timeStr) => {
 };
 
 const mapDaysToIso = (daysArr) => {
-    // Mapping: Sunday=1, Monday=2, ..., Saturday=7 (Vietnamese convention)
-    const map = { 'CN': 1, 'T2': 2, 'T3': 3, 'T4': 4, 'T5': 5, 'T6': 6, 'T7': 7 };
-    return daysArr.map(d => map[d] !== undefined ? map[d] : 2); // Default to Monday if not found
+    // Mapping: Sunday=0, Monday=1, ..., Saturday=6 (Standard convention)
+    const map = { 'CN': 0, 'T2': 1, 'T3': 2, 'T4': 3, 'T5': 4, 'T6': 5, 'T7': 6 };
+    return daysArr.map(d => map[d] !== undefined ? map[d] : 1); // Default to Monday if not found
 };
 
 const TeacherClassListPage = () => {
@@ -90,9 +90,9 @@ const TeacherClassListPage = () => {
                 // Format schedule string from API schedules array if available
                 let scheduleDisplay = 'Chưa có lịch';
                 if (apiClass.schedules && apiClass.schedules.length > 0) {
-                    const dayMap = { 1: 'CN', 2: 'T2', 3: 'T3', 4: 'T4', 5: 'T5', 6: 'T6', 7: 'T7' };
+                    const dayMap = { 0: 'CN', 1: 'T2', 2: 'T3', 3: 'T4', 4: 'T5', 5: 'T6', 6: 'T7' };
                     scheduleDisplay = apiClass.schedules
-                        .sort((a, b) => (a.dayOfWeek === 1 ? 8 : a.dayOfWeek) - (b.dayOfWeek === 1 ? 8 : b.dayOfWeek))
+                        .sort((a, b) => (a.dayOfWeek === 0 ? 7 : a.dayOfWeek) - (b.dayOfWeek === 0 ? 7 : b.dayOfWeek))
                         .map(s => {
                             return `${dayMap[s.dayOfWeek] || '??'}`;
                         })

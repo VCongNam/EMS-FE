@@ -88,13 +88,13 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
     }, [isOpen, initialData]);
 
     const mapDayToNumber = (dayKey) => {
-        // Mapping: Sunday=1, Monday=2, ..., Saturday=7 (Vietnamese convention)
-        const map = { 'CN': 1, 'T2': 2, 'T3': 3, 'T4': 4, 'T5': 5, 'T6': 6, 'T7': 7 };
+        // Mapping: Sunday=0, Monday=1, ..., Saturday=6 (Standard JS/ISO convention)
+        const map = { 'CN': 0, 'T2': 1, 'T3': 2, 'T4': 3, 'T5': 4, 'T6': 5, 'T7': 6 };
         return map[dayKey];
     };
 
     const mapNumberToDay = (num) => {
-        const map = { 1: 'CN', 2: 'T2', 3: 'T3', 4: 'T4', 5: 'T5', 6: 'T6', 7: 'T7' };
+        const map = { 0: 'CN', 1: 'T2', 2: 'T3', 3: 'T4', 4: 'T5', 5: 'T6', 6: 'T7' };
         return map[num];
     };
 
