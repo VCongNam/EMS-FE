@@ -39,9 +39,7 @@ const TuitionManagementPage = () => {
     const currentDate = new Date();
     const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
     const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
-    const [selectedBillingMethod, setSelectedBillingMethod] = useState('All');
     const [opStatusFilter, setOpStatusFilter] = useState('All'); // 'All', 'NeedToHandle', 'Completed'
-    const [settingsMethodFilter, setSettingsMethodFilter] = useState('All');
     const [settingsStatusFilter, setSettingsStatusFilter] = useState('All');
 
     // API Data
@@ -99,7 +97,7 @@ const TuitionManagementPage = () => {
                 }
                 if (resReminders.ok) setReminders(await resReminders.json() || []);
             } else if (activeTab === 'operations') {
-                const res = await tuitionService.getClassesOverview(selectedMonth, selectedYear, opPage, ITEMS_PER_PAGE, user.token);
+                const res = await tuitionService.getClassesOverview(selectedMonth, selectedYear, 1, 1000, user.token);
                 if (res.ok) {
                     const data = await res.json();
                     if (data.items) {
@@ -111,7 +109,7 @@ const TuitionManagementPage = () => {
                     }
                 }
             } else if (activeTab === 'transactions') {
-                const res = await tuitionService.getFullTransactionHistory(txPage, ITEMS_PER_PAGE, user.token);
+                const res = await tuitionService.getFullTransactionHistory(1, 1000, user.token);
                 if (res.ok) {
                     const data = await res.json();
                     if (data.items) {
@@ -123,7 +121,7 @@ const TuitionManagementPage = () => {
                     }
                 }
             } else if (activeTab === 'settings') {
-                const res = await tuitionService.getTuitionConfigs(configPage, ITEMS_PER_PAGE, user.token);
+                const res = await tuitionService.getTuitionConfigs(1, 1000, user.token);
                 if (res.ok) {
                     const data = await res.json();
                     if (data.items) {
@@ -150,12 +148,12 @@ const TuitionManagementPage = () => {
             setSelectedTx(null);
             setReviewNote('');
         }
-    }, [activeTab, selectedMonth, selectedYear, user?.token, opPage, txPage, configPage]);
+    }, [activeTab, selectedMonth, selectedYear, user?.token]);
 
     // Reset pages when filters change
-    useEffect(() => { setOpPage(1); }, [selectedMonth, selectedYear, selectedBillingMethod, opStatusFilter]);
+    useEffect(() => { setOpPage(1); }, [selectedMonth, selectedYear, opStatusFilter]);
     useEffect(() => { setTxPage(1); }, [activeTransactionSubTab]);
-    useEffect(() => { setConfigPage(1); }, [settingsMethodFilter, settingsStatusFilter]);
+    useEffect(() => { setConfigPage(1); }, [settingsStatusFilter]);
     useEffect(() => {
         setOpPage(1);
         setTxPage(1);
@@ -241,17 +239,16 @@ const TuitionManagementPage = () => {
 
     const filteredOperations = useMemo(() => {
         return overviewData.filter(cls => {
-            const matchesMethod = selectedBillingMethod === 'All' || cls.billingMethod === selectedBillingMethod;
-            if (opStatusFilter === 'All') return matchesMethod;
+            if (opStatusFilter === 'All') return true;
             
             // logic: ISSUED means completed for this period
             if (opStatusFilter === 'Completed') {
-                return matchesMethod && cls.conditionCode === 'ISSUED';
+                return cls.conditionCode === 'ISSUED';
             } else {
-                return matchesMethod && cls.conditionCode !== 'ISSUED';
+                return cls.conditionCode !== 'ISSUED';
             }
         });
-    }, [overviewData, selectedBillingMethod, opStatusFilter]);
+    }, [overviewData, opStatusFilter]);
 
     const filteredTransactions = useMemo(() => {
         return transactions.filter(tx => {
@@ -265,23 +262,22 @@ const TuitionManagementPage = () => {
 
     const filteredSettings = useMemo(() => {
         return configData.filter(cls => {
-            const matchesMethod = settingsMethodFilter === 'All' || cls.billingMethod === settingsMethodFilter;
             const isConfigured = (cls.tuitionFee > 0 || cls.pricePerSession > 0);
             const matchesStatus = settingsStatusFilter === 'All' 
                 ? true 
                 : settingsStatusFilter === 'Configured' ? isConfigured : !isConfigured;
-            return matchesMethod && matchesStatus;
+            return matchesStatus;
         });
-    }, [configData, settingsMethodFilter, settingsStatusFilter]);
+    }, [configData, settingsStatusFilter]);
 
-    const totalOpsPages = Math.ceil(totalOps / ITEMS_PER_PAGE);
-    const paginatedOperations = filteredOperations;
+    const totalOpsPages = Math.max(1, Math.ceil(filteredOperations.length / ITEMS_PER_PAGE));
+    const paginatedOperations = filteredOperations.slice((opPage - 1) * ITEMS_PER_PAGE, opPage * ITEMS_PER_PAGE);
 
-    const totalTxPages = Math.ceil(totalTx / ITEMS_PER_PAGE);
-    const paginatedTransactions = filteredTransactions;
+    const totalTxPages = Math.max(1, Math.ceil(filteredTransactions.length / ITEMS_PER_PAGE));
+    const paginatedTransactions = filteredTransactions.slice((txPage - 1) * ITEMS_PER_PAGE, txPage * ITEMS_PER_PAGE);
 
-    const totalConfigPages = Math.ceil(totalConfigs / ITEMS_PER_PAGE);
-    const paginatedSettings = filteredSettings;
+    const totalConfigPages = Math.max(1, Math.ceil(filteredSettings.length / ITEMS_PER_PAGE));
+    const paginatedSettings = filteredSettings.slice((configPage - 1) * ITEMS_PER_PAGE, configPage * ITEMS_PER_PAGE);
 
     // ─── Renderers ────────────────────────────────────────────────────────────
 
@@ -390,26 +386,15 @@ const TuitionManagementPage = () => {
             <div className="!flex !flex-col md:!flex-row !items-center !justify-between !gap-4 !bg-white !p-5 !rounded-[2rem] !border !border-border !shadow-sm">
                 <div className="!flex !items-center !gap-6">
                     <div className="!flex !items-center !gap-1.5 !bg-slate-100 !p-1 !rounded-xl">
-                        <button onClick={() => {setOpStatusFilter('All'); setCurrentPage(1);}} className={`!px-4 !py-1.5 !rounded-lg !text-xs !font-black !transition-colors ${opStatusFilter === 'All' ? '!bg-white !text-blue-500 !shadow-sm' : '!text-text-muted hover:!text-text-main'}`}>
+                        <button onClick={() => {setOpStatusFilter('All'); setOpPage(1);}} className={`!px-4 !py-1.5 !rounded-lg !text-xs !font-black !transition-colors ${opStatusFilter === 'All' ? '!bg-white !text-blue-500 !shadow-sm' : '!text-text-muted hover:!text-text-main'}`}>
                             Tất cả
                         </button>
-                        <button onClick={() => {setOpStatusFilter('NeedToHandle'); setCurrentPage(1);}} className={`!px-4 !py-1.5 !rounded-lg !text-xs !font-black !transition-colors ${opStatusFilter === 'NeedToHandle' ? '!bg-white !text-primary !shadow-sm' : '!text-text-muted hover:!text-text-main'}`}>
+                        <button onClick={() => {setOpStatusFilter('NeedToHandle'); setOpPage(1);}} className={`!px-4 !py-1.5 !rounded-lg !text-xs !font-black !transition-colors ${opStatusFilter === 'NeedToHandle' ? '!bg-white !text-primary !shadow-sm' : '!text-text-muted hover:!text-text-main'}`}>
                             Cần xử lý
                         </button>
-                        <button onClick={() => {setOpStatusFilter('Completed'); setCurrentPage(1);}} className={`!px-4 !py-1.5 !rounded-lg !text-xs !font-black !transition-colors ${opStatusFilter === 'Completed' ? '!bg-white !text-emerald-500 !shadow-sm' : '!text-text-muted hover:!text-text-main'}`}>
+                        <button onClick={() => {setOpStatusFilter('Completed'); setOpPage(1);}} className={`!px-4 !py-1.5 !rounded-lg !text-xs !font-black !transition-colors ${opStatusFilter === 'Completed' ? '!bg-white !text-emerald-500 !shadow-sm' : '!text-text-muted hover:!text-text-main'}`}>
                             Đã hoàn tất
                         </button>
-                    </div>
-                </div>
-
-                <div className="!flex !items-center !gap-2">
-                    <span className="!text-xs !font-black !text-text-muted !uppercase !mr-1">Loại hình:</span>
-                    <div className="!flex !items-center !gap-1.5">
-                        {['All', 'Prepaid', 'Postpaid'].map(m => (
-                            <button key={m} onClick={() => setSelectedBillingMethod(m)} className={`!px-4 !py-2 !rounded-xl !text-xs !font-black !border !transition-all ${selectedBillingMethod === m ? '!bg-primary !text-white !border-primary' : '!bg-white !text-text-muted !border-border hover:!border-primary/30'}`}>
-                                {m === 'All' ? 'Tất cả' : m === 'Prepaid' ? 'Thu trước' : 'Thu sau'}
-                            </button>
-                        ))}
                     </div>
                 </div>
             </div>
@@ -421,7 +406,7 @@ const TuitionManagementPage = () => {
                         {/* Table headers and body... */}
                         <thead>
                             <tr className="!bg-[#F8FAFC] !border-b !border-border">
-                                <th className="!px-6 !py-5 text-[11px] font-black text-text-muted uppercase tracking-widest">Tên Lớp & Hình thức</th>
+                                <th className="!px-6 !py-5 text-[11px] font-black text-text-muted uppercase tracking-widest">Tên Lớp</th>
                                 <th className="!px-6 !py-5 text-[11px] font-black text-text-muted uppercase tracking-widest text-center">Sĩ số & Đơn giá</th>
                                 <th className="!px-6 !py-5 text-[11px] font-black text-text-muted uppercase tracking-widest text-center">Điều kiện phát hành</th>
                                 <th className="!px-6 !py-5 text-[11px] font-black text-text-muted uppercase tracking-widest">Tiến độ thu</th>
@@ -509,7 +494,7 @@ const TuitionManagementPage = () => {
                 </div>
 
                 {/* Pagination Controls */}
-                {totalOpsPages > 1 && (
+                {totalOpsPages > 0 && (
                     <div className="!flex !items-center !justify-between !p-6 !border-t !border-border !bg-[#F8FAFC]">
                         <span className="!text-sm !font-bold !text-text-muted">Trang {opPage} / {totalOpsPages}</span>
                         <div className="!flex !items-center !gap-2">
@@ -573,7 +558,7 @@ const TuitionManagementPage = () => {
                 </div>
 
                 {/* Pagination Controls */}
-                {totalTxPages > 1 && (
+                {totalTxPages > 0 && (
                     <div className="!p-4 !border-t !border-border !bg-slate-50 !flex !items-center !justify-between !shrink-0">
                         <span className="!text-[10px] !font-bold !text-text-muted">Trang {txPage} / {totalTxPages}</span>
                         <div className="!flex !items-center !gap-1">
@@ -675,27 +660,6 @@ const TuitionManagementPage = () => {
                 <div className="!flex !flex-wrap !items-center !gap-4">
                     <div className="!flex !items-center !gap-2 !bg-background !p-1 !rounded-xl !border !border-border">
                         <button 
-                            onClick={() => setSettingsMethodFilter('All')} 
-                            className={`!px-4 !py-1.5 !rounded-lg !text-[11px] !font-black !transition-all ${settingsMethodFilter === 'All' ? '!bg-white !text-primary !shadow-sm' : '!text-text-muted hover:!text-text-main'}`}
-                        >
-                            Tất cả loại
-                        </button>
-                        <button 
-                            onClick={() => setSettingsMethodFilter('Prepaid')} 
-                            className={`!px-4 !py-1.5 !rounded-lg !text-[11px] !font-black !transition-all ${settingsMethodFilter === 'Prepaid' ? '!bg-white !text-emerald-500 !shadow-sm' : '!text-text-muted hover:!text-text-main'}`}
-                        >
-                            Thu trước
-                        </button>
-                        <button 
-                            onClick={() => setSettingsMethodFilter('Postpaid')} 
-                            className={`!px-4 !py-1.5 !rounded-lg !text-[11px] !font-black !transition-all ${settingsMethodFilter === 'Postpaid' ? '!bg-white !text-purple-500 !shadow-sm' : '!text-text-muted hover:!text-text-main'}`}
-                        >
-                            Thu sau
-                        </button>
-                    </div>
-
-                    <div className="!flex !items-center !gap-2 !bg-background !p-1 !rounded-xl !border !border-border">
-                        <button 
                             onClick={() => setSettingsStatusFilter('All')} 
                             className={`!px-4 !py-1.5 !rounded-lg !text-[11px] !font-black !transition-all ${settingsStatusFilter === 'All' ? '!bg-white !text-primary !shadow-sm' : '!text-text-muted hover:!text-text-main'}`}
                         >
@@ -762,7 +726,7 @@ const TuitionManagementPage = () => {
                 </table>
 
                 {/* Pagination Controls */}
-                {totalConfigPages > 1 && (
+                {totalConfigPages > 0 && (
                     <div className="!flex !items-center !justify-between !p-6 !border-t !border-border !bg-[#F8FAFC]">
                         <span className="!text-sm !font-bold !text-text-muted">Trang {configPage} / {totalConfigPages}</span>
                         <div className="!flex !items-center !gap-2">

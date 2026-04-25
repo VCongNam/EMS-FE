@@ -49,7 +49,13 @@ const ClassReportsPage = () => {
                     }
                 } else {
                     setReports(data.reports || []);
-                    setClassInfo(data.classInfo || null);
+                    // Ensure classInfo has the necessary fields like startDate/endDate if they are at the top level
+                    setClassInfo(data.classInfo || {
+                        className: data.className,
+                        room: data.room,
+                        startDate: data.startDate,
+                        endDate: data.endDate
+                    });
                 }
             }
         } catch (error) {
@@ -70,6 +76,39 @@ const ClassReportsPage = () => {
     const classRoom = classInfo?.room || '';
 
     const classReports = reports;
+
+    // Calculate available periods based on startDate and endDate
+    const availablePeriods = React.useMemo(() => {
+        const periods = [];
+        if (classInfo?.startDate && classInfo?.endDate) {
+            const start = new Date(classInfo.startDate);
+            const end = new Date(classInfo.endDate);
+            if (!isNaN(start) && !isNaN(end)) {
+                let current = new Date(start.getFullYear(), start.getMonth(), 1);
+                const last = new Date(end.getFullYear(), end.getMonth(), 1);
+                
+                while (current <= last) {
+                    periods.push({
+                        month: current.getMonth() + 1,
+                        year: current.getFullYear()
+                    });
+                    current.setMonth(current.getMonth() + 1);
+                }
+            }
+        }
+        
+        // Fallback: 6 months before and after if no dates available
+        if (periods.length === 0) {
+            for (let i = -6; i <= 6; i++) {
+                const d = new Date(new Date().getFullYear(), new Date().getMonth() + i, 1);
+                periods.push({
+                    month: d.getMonth() + 1,
+                    year: d.getFullYear()
+                });
+            }
+        }
+        return periods;
+    }, [classInfo?.startDate, classInfo?.endDate]);
 
     const toggleSelectAll = () => {
         if (selectedReports.length === classReports.length) {
@@ -296,16 +335,11 @@ const ClassReportsPage = () => {
                             }}
                             className="!w-full !px-4 !py-2.5 !bg-background !border !border-border !rounded-xl !text-sm !font-black focus:!outline-none focus:!border-primary !transition-all !shadow-sm cursor-pointer !appearance-none"
                         >
-                            {Array.from({ length: 13 }, (_, i) => {
-                                const d = new Date(new Date().getFullYear(), new Date().getMonth() - 6 + i, 1);
-                                const m = d.getMonth() + 1;
-                                const y = d.getFullYear();
-                                return (
-                                    <option key={`${m}-${y}`} value={`${m}-${y}`}>
-                                        Tháng {m}/{y}
-                                    </option>
-                                );
-                            })}
+                            {availablePeriods.map(p => (
+                                <option key={`${p.month}-${p.year}`} value={`${p.month}-${p.year}`}>
+                                    Tháng {p.month}/{p.year}
+                                </option>
+                            ))}
                         </select>
                         <Icon icon="material-symbols:keyboard-arrow-down-rounded" className="!absolute !right-3 !top-1/2 !-translate-y-1/2 !text-text-muted !text-xl !pointer-events-none" />
                     </div>
