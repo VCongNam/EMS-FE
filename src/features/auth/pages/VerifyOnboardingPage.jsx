@@ -63,6 +63,9 @@ const VerifyOnboardingPage = () => {
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
+                console.log("[VerifyOnboarding] Error Status:", response.status);
+                console.log("[VerifyOnboarding] Error Data:", errorData);
+
                 // Parse validation errors from BE
                 if (errorData.errors && typeof errorData.errors === 'object') {
                     const translateMsg = (msg) => {

@@ -129,5 +129,13 @@ export const assignmentService = {
         'Content-Type': 'application/json'
       }
     });
+  },
+  downloadAllSubmissions: async (assignmentId, token) => {
+    return fetch(getApiUrl(`/api/Assignment/${assignmentId}/download-all-submissions`), {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
   }
 };
