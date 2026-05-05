@@ -41,6 +41,7 @@ const TuitionManagementPage = () => {
     const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
     const [opStatusFilter, setOpStatusFilter] = useState('All'); // 'All', 'NeedToHandle', 'Completed'
     const [settingsStatusFilter, setSettingsStatusFilter] = useState('All');
+    const [classSearchQuery, setClassSearchQuery] = useState('');
 
     // API Data
     const [overviewData, setOverviewData] = useState([]);
@@ -109,7 +110,7 @@ const TuitionManagementPage = () => {
                     }
                 }
             } else if (activeTab === 'transactions') {
-                const res = await tuitionService.getFullTransactionHistory(1, 1000, user.token);
+                const res = await tuitionService.getFullTransactionHistory(selectedMonth, selectedYear, 1, 1000, user.token);
                 if (res.ok) {
                     const data = await res.json();
                     if (data.items) {
@@ -151,9 +152,9 @@ const TuitionManagementPage = () => {
     }, [activeTab, selectedMonth, selectedYear, user?.token]);
 
     // Reset pages when filters change
-    useEffect(() => { setOpPage(1); }, [selectedMonth, selectedYear, opStatusFilter]);
+    useEffect(() => { setOpPage(1); }, [selectedMonth, selectedYear, opStatusFilter, classSearchQuery]);
     useEffect(() => { setTxPage(1); }, [activeTransactionSubTab]);
-    useEffect(() => { setConfigPage(1); }, [settingsStatusFilter]);
+    useEffect(() => { setConfigPage(1); }, [settingsStatusFilter, classSearchQuery]);
     useEffect(() => {
         setOpPage(1);
         setTxPage(1);
@@ -239,6 +240,12 @@ const TuitionManagementPage = () => {
 
     const filteredOperations = useMemo(() => {
         return overviewData.filter(cls => {
+            // Only show Postpaid classes
+            if (cls.billingMethod !== 'Postpaid') return false;
+
+            // Search filter
+            if (classSearchQuery && !cls.className?.toLowerCase().includes(classSearchQuery.toLowerCase())) return false;
+
             if (opStatusFilter === 'All') return true;
             
             // logic: ISSUED means completed for this period
@@ -248,7 +255,15 @@ const TuitionManagementPage = () => {
                 return cls.conditionCode !== 'ISSUED';
             }
         });
-    }, [overviewData, opStatusFilter]);
+    }, [overviewData, opStatusFilter, classSearchQuery]);
+
+    const filteredReminders = useMemo(() => {
+        return reminders.filter(rem => {
+            // Usually reminders are for Postpaid in this flow, but safe to check if billingMethod is there
+            // If the API doesn't return billingMethod in reminders, we assume they are relevant
+            return rem.billingMethod !== 'Prepaid';
+        });
+    }, [reminders]);
 
     const filteredTransactions = useMemo(() => {
         return transactions.filter(tx => {
@@ -262,6 +277,12 @@ const TuitionManagementPage = () => {
 
     const filteredSettings = useMemo(() => {
         return configData.filter(cls => {
+            // Only show Postpaid classes
+            if (cls.billingMethod !== 'Postpaid') return false;
+
+            // Search filter
+            if (classSearchQuery && !cls.className?.toLowerCase().includes(classSearchQuery.toLowerCase())) return false;
+
             const isConfigured = (cls.tuitionFee > 0 || cls.pricePerSession > 0);
             const matchesStatus = settingsStatusFilter === 'All' 
                 ? true 
@@ -325,7 +346,7 @@ const TuitionManagementPage = () => {
             </div>
 
             {/* Task Reminders - New Section */}
-            {reminders.length > 0 && (
+            {filteredReminders.length > 0 && (
                 <div className="!bg-[#FFF8F8] !border !border-red-100 !rounded-[2.5rem] !p-8 !flex !flex-col !gap-6">
                     <div className="!flex !items-center !justify-between">
                         <div className="!flex !items-center !gap-3">
@@ -334,14 +355,14 @@ const TuitionManagementPage = () => {
                             </div>
                             <div>
                                 <h3 className="!text-lg !font-black !text-red-600">Nhiệm vụ trọng tâm</h3>
-                                <p className="!text-xs !font-bold !text-red-400">Bạn có {reminders.length} lớp cần xử lý ngay</p>
+                                <p className="!text-xs !font-bold !text-red-400">Bạn có {filteredReminders.length} lớp cần xử lý ngay</p>
                             </div>
                         </div>
                         <button onClick={() => setActiveTab('operations')} className="!text-xs !font-black !text-red-500 hover:!underline">Xử lý ngay &rarr;</button>
                     </div>
 
                     <div className="!grid !grid-cols-1 md:!grid-cols-2 lg:!grid-cols-3 !gap-4">
-                        {reminders.map((rem, idx) => (
+                        {filteredReminders.map((rem, idx) => (
                             <div key={idx} className="!bg-white !p-4 !rounded-2xl !border !border-red-50 !shadow-sm !flex !gap-4 !items-start hover:!border-red-200 !transition-all">
                                 <div className={`!w-8 !h-8 !rounded-xl !shrink-0 !flex !items-center !justify-center ${rem.priority === 'High' ? '!bg-red-50 !text-red-500' : '!bg-amber-50 !text-amber-500'}`}>
                                     <Icon icon={rem.priority === 'High' ? "solar:danger-bold" : "solar:info-circle-bold"} />
@@ -384,8 +405,8 @@ const TuitionManagementPage = () => {
         <div className="!space-y-6 !animate-fade-in-up">
             {/* Context Filter Bar */}
             <div className="!flex !flex-col md:!flex-row !items-center !justify-between !gap-4 !bg-white !p-5 !rounded-[2rem] !border !border-border !shadow-sm">
-                <div className="!flex !items-center !gap-6">
-                    <div className="!flex !items-center !gap-1.5 !bg-slate-100 !p-1 !rounded-xl">
+                <div className="!flex !items-center !gap-6 !flex-1">
+                    <div className="!flex !items-center !gap-1.5 !bg-slate-100 !p-1 !rounded-xl !shrink-0">
                         <button onClick={() => {setOpStatusFilter('All'); setOpPage(1);}} className={`!px-4 !py-1.5 !rounded-lg !text-xs !font-black !transition-colors ${opStatusFilter === 'All' ? '!bg-white !text-blue-500 !shadow-sm' : '!text-text-muted hover:!text-text-main'}`}>
                             Tất cả
                         </button>
@@ -395,6 +416,17 @@ const TuitionManagementPage = () => {
                         <button onClick={() => {setOpStatusFilter('Completed'); setOpPage(1);}} className={`!px-4 !py-1.5 !rounded-lg !text-xs !font-black !transition-colors ${opStatusFilter === 'Completed' ? '!bg-white !text-emerald-500 !shadow-sm' : '!text-text-muted hover:!text-text-main'}`}>
                             Đã hoàn tất
                         </button>
+                    </div>
+
+                    <div className="!relative !flex-1 !max-w-md">
+                        <Icon icon="solar:magnifer-bold-duotone" className="!absolute !left-4 !top-1/2 !-translate-y-1/2 !text-text-muted !text-lg" />
+                        <input 
+                            type="text" 
+                            placeholder="Tìm kiếm tên lớp học..." 
+                            value={classSearchQuery}
+                            onChange={(e) => setClassSearchQuery(e.target.value)}
+                            className="!w-full !pl-11 !pr-4 !py-2.5 !bg-slate-50 !border !border-slate-100 !rounded-xl !text-sm !font-bold focus:!bg-white focus:!border-primary !outline-none !transition-all"
+                        />
                     </div>
                 </div>
             </div>
@@ -433,13 +465,11 @@ const TuitionManagementPage = () => {
                                         <td className="!px-6 !py-4">
                                             <p className="font-black text-text-main text-sm !mb-1">{c.className}</p>
                                             <div className="!flex !items-center !gap-2">
-                                                <span className={`!px-2 !py-0.5 rounded text-[9px] font-black uppercase ${isPrepaid ? '!bg-blue-100 !text-blue-700 !border !border-blue-200' : '!bg-purple-100 !text-purple-700 !border !border-purple-200'}`}>
-                                                    {isPrepaid ? 'Thu trước' : 'Thu sau'}
+                                                <span className="!px-2 !py-0.5 rounded text-[9px] font-black uppercase !bg-purple-100 !text-purple-700 !border !border-purple-200">
+                                                    Trả sau
                                                 </span>
                                                 <span className="!text-[10px] !font-bold !text-text-muted">
-                                                    Dự kiến: {isPrepaid 
-                                                        ? `Tháng ${selectedMonth === 12 ? 1 : selectedMonth + 1}/${selectedMonth === 12 ? selectedYear + 1 : selectedYear}`
-                                                        : `Tháng ${selectedMonth === 1 ? 12 : selectedMonth - 1}/${selectedMonth === 1 ? selectedYear - 1 : selectedYear}`}
+                                                    Kỳ thu: Tháng {selectedMonth}/{selectedYear}
                                                 </span>
                                             </div>
                                         </td>
@@ -655,12 +685,23 @@ const TuitionManagementPage = () => {
     const renderSettings = () => (
         <div className="!space-y-6 !animate-fade-in-up">
             <div className="!bg-white !p-8 !rounded-[2.5rem] !border !border-border !shadow-sm !flex !flex-col md:!flex-row !items-start md:!items-center !justify-between !gap-6">
-                <div>
+                <div className="!flex-1">
                      <h2 className="!text-xl !font-black !text-text-main !tracking-tight">Cấu hình học phí</h2>
                 </div>
                 
-                <div className="!flex !flex-wrap !items-center !gap-4">
-                    <div className="!flex !items-center !gap-2 !bg-background !p-1 !rounded-xl !border !border-border">
+                <div className="!flex !flex-wrap !items-center !gap-4 !flex-1 !justify-end">
+                    <div className="!relative !flex-1 !max-w-xs">
+                        <Icon icon="solar:magnifer-bold-duotone" className="!absolute !left-4 !top-1/2 !-translate-y-1/2 !text-text-muted !text-lg" />
+                        <input 
+                            type="text" 
+                            placeholder="Tìm lớp học..." 
+                            value={classSearchQuery}
+                            onChange={(e) => setClassSearchQuery(e.target.value)}
+                            className="!w-full !pl-11 !pr-4 !py-2.5 !bg-background !border !border-border !rounded-xl !text-xs !font-bold focus:!bg-white focus:!border-primary !outline-none !transition-all"
+                        />
+                    </div>
+
+                    <div className="!flex !items-center !gap-2 !bg-background !p-1 !rounded-xl !border !border-border !shrink-0">
                         <button 
                             onClick={() => setSettingsStatusFilter('All')} 
                             className={`!px-4 !py-1.5 !rounded-lg !text-[11px] !font-black !transition-all ${settingsStatusFilter === 'All' ? '!bg-white !text-primary !shadow-sm' : '!text-text-muted hover:!text-text-main'}`}
@@ -708,8 +749,8 @@ const TuitionManagementPage = () => {
                                         {!isConfigured && <span className="!text-[9px] !font-black !text-amber-500 !uppercase">Thiếu cấu hình</span>}
                                     </td>
                                     <td className="!px-6 !py-4 text-center">
-                                        <span className={`!px-2.5 !py-1 rounded-lg text-[10px] font-black ${c.billingMethod === 'Prepaid' ? 'bg-emerald-100 text-emerald-700' : 'bg-purple-100 text-purple-700'}`}>
-                                            {c.billingMethod === 'Prepaid' ? 'Trả trước' : 'Trả sau'}
+                                        <span className="!px-2.5 !py-1 rounded-lg text-[10px] font-black bg-purple-100 text-purple-700">
+                                            Trả sau
                                         </span>
                                     </td>
                                     <td className={`!px-6 !py-4 text-center font-black text-sm ${isConfigured ? 'text-text-main' : 'text-amber-500'}`}>
@@ -777,7 +818,7 @@ const TuitionManagementPage = () => {
                         <div className="!p-2 !bg-blue-50 !rounded-xl">
                             <Icon icon="solar:calendar-bold-duotone" className="!text-primary !text-xl" />
                         </div>
-                        <span className="!text-sm !font-black !text-text-main !uppercase !tracking-wider">Kỳ báo cáo & Xử lý:</span>
+                        <span className="!text-sm !font-black !text-text-main !uppercase !tracking-wider">Kỳ thu & Xử lý:</span>
                     </div>
                     <div className="!flex !items-center !gap-4 !bg-slate-50 !px-4 !py-2 !rounded-xl !border !border-slate-200">
                         <select value={selectedMonth} onChange={e => setSelectedMonth(Number(e.target.value))} className="!bg-transparent !border-none !text-sm !font-black !text-[#355872] focus:!outline-none">

@@ -35,5 +35,19 @@ export const profileService = {
       body: JSON.stringify(payload)
     });
     return response;
+  },
+
+  updateAvatar: async (file, token) => {
+    const formData = new FormData();
+    formData.append('AvatarFile', file);
+
+    const response = await fetch(getApiUrl('/api/Account/avatar'), {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
+    });
+    return response;
   }
 };

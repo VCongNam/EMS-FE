@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Icon } from '@iconify/react';
 import useAuthStore from '../../../store/authStore';
 import Button from '../../../components/ui/Button';
@@ -17,6 +17,43 @@ const ProfilePage = () => {
     // Toggle states for masking personal info
     const [showEmail, setShowEmail] = useState(false);
     const [showPhone, setShowPhone] = useState(false);
+
+    const fileInputRef = useRef(null);
+    const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+    const handleAvatarChange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Basic validation
+        if (!file.type.startsWith('image/')) {
+            toast.error("Vui lòng chọn tệp hình ảnh");
+            return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error("Kích thước ảnh không được vượt quá 5MB");
+            return;
+        }
+
+        setUploadingAvatar(true);
+        try {
+            const response = await profileService.updateAvatar(file, user.token);
+            if (response.ok) {
+                const data = await response.json();
+                updateProfile({ avatarUrl: data.avatarUrl });
+                toast.success(data.message || "Cập nhật ảnh đại diện thành công!");
+            } else {
+                throw new Error("Cập nhật ảnh đại diện thất bại");
+            }
+        } catch (error) {
+            console.error("Upload avatar failed:", error);
+            toast.error(error.message || "Có lỗi xảy ra khi tải ảnh lên");
+        } finally {
+            setUploadingAvatar(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+    };
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -168,11 +205,32 @@ const ProfilePage = () => {
                 <div className="flex flex-col sm:flex-row items-center sm:items-end justify-between gap-6 relative z-10">
                     <div className="flex flex-col sm:flex-row items-center sm:items-end gap-6 w-full sm:w-auto">
                         <div className="relative group mx-auto sm:mx-0">
+                            <input 
+                                type="file"
+                                ref={fileInputRef}
+                                className="hidden"
+                                accept="image/*"
+                                onChange={handleAvatarChange}
+                            />
                             <div className="w-40 h-40 sm:w-48 sm:h-48 rounded-[2.5rem] bg-surface flex items-center justify-center border-[6px] border-background shadow-2xl relative overflow-hidden transition-transform duration-500 group-hover:scale-[1.02]">
                                 <div className="absolute inset-0 bg-primary/5 group-hover:bg-primary/10 transition-colors"></div>
-                                <Icon icon="material-symbols:person-rounded" className="text-8xl sm:text-9xl text-primary" />
+                                {user?.avatarUrl ? (
+                                    <img src={user.avatarUrl} alt={user.fullName} className="w-full h-full object-cover" />
+                                ) : (
+                                    <Icon icon="material-symbols:person-rounded" className="text-8xl sm:text-9xl text-primary" />
+                                )}
+                                
+                                {uploadingAvatar && (
+                                    <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center z-20">
+                                        <Icon icon="svg-spinners:180-ring-with-bg" className="text-4xl text-white" />
+                                    </div>
+                                )}
+
                                 {isEditing && (
-                                    <button className="absolute inset-0 bg-black/40 backdrop-blur-[2px] text-white flex flex-col items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                    <button 
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className="absolute inset-0 bg-black/40 backdrop-blur-[2px] text-white flex flex-col items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10"
+                                    >
                                         <Icon icon="material-symbols:camera-alt-rounded" className="text-3xl" />
                                         <span className="text-xs font-bold uppercase tracking-wider">Đổi ảnh</span>
                                     </button>

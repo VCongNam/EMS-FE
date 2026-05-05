@@ -9,6 +9,8 @@ import PromptModal from '../../../components/ui/PromptModal';
 import TuitionFeeModal from '../components/TuitionFeeModal';
 import PreviewInvoiceModal from '../components/PreviewInvoiceModal';
 import FinalBillModal from '../components/FinalBillModal';
+import StudentTransactionHistoryModal from '../components/StudentTransactionHistoryModal';
+import TeacherInvoiceDetailModal from '../components/TeacherInvoiceDetailModal';
 import { tuitionService } from '../api/tuitionService';
 import useAuthStore from '../../../store/authStore';
 
@@ -43,6 +45,16 @@ const ClassFinancialDetailPage = () => {
     const [finalPreviewData, setFinalPreviewData] = useState(null);
     const [finalDueDate, setFinalDueDate] = useState('');
     const [isFinalSubmitting, setIsFinalSubmitting] = useState(false);
+    
+    // Transaction History States
+    const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+    const [historyData, setHistoryData] = useState([]);
+    const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+    const [selectedStudentName, setSelectedStudentName] = useState('');
+
+    // Teacher Invoice Detail States
+    const [isTeacherInvoiceModalOpen, setIsTeacherInvoiceModalOpen] = useState(false);
+    const [selectedInvoiceData, setSelectedInvoiceData] = useState(null);
     
     // Pagination
     const [currentPage, setCurrentPage] = useState(1);
@@ -324,6 +336,34 @@ const ClassFinancialDetailPage = () => {
         }
     };
 
+    const handleViewHistoryClick = async (student) => {
+        const studentId = student.studentId || student.id;
+        const name = student.studentName || student.name;
+        setSelectedStudentName(name);
+        setIsHistoryModalOpen(true);
+        setIsLoadingHistory(true);
+        try {
+            const res = await tuitionService.getStudentTransactionHistory(studentId, classId, user.token);
+            if (res.ok) {
+                const data = await res.json();
+                setHistoryData(data || []);
+            } else {
+                toast.error("Không thể tải lịch sử giao dịch.");
+                setHistoryData([]);
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error("Lỗi khi tải lịch sử giao dịch.");
+            setHistoryData([]);
+        } finally {
+            setIsLoadingHistory(false);
+        }
+    };
+
+    const handleViewInvoiceClick = (student) => {
+        setSelectedInvoiceData(student);
+        setIsTeacherInvoiceModalOpen(true);
+    };
     const handleFinalBillConfirm = async () => {
         if (!finalDueDate || !finalPreviewData) return;
         
@@ -636,6 +676,8 @@ const ClassFinancialDetailPage = () => {
                             students={studentsData} 
                             onExtendClick={handleExtendClick}
                             onFinalBillClick={handleFinalBillPreview}
+                            onViewHistoryClick={handleViewHistoryClick}
+                            onViewInvoiceClick={handleViewInvoiceClick}
                             isLoadingFinal={isLoadingFinalPreview}
                             targetStudentId={targetStudentId}
                             currentPage={currentPage}
@@ -700,6 +742,24 @@ const ClassFinancialDetailPage = () => {
                 isSubmitting={isFinalSubmitting}
                 onConfirm={handleFinalBillConfirm}
                 month={selectedMonth}
+            />
+
+            <StudentTransactionHistoryModal 
+                isOpen={isHistoryModalOpen}
+                onClose={() => setIsHistoryModalOpen(false)}
+                studentName={selectedStudentName}
+                historyData={historyData}
+                isLoading={isLoadingHistory}
+            />
+
+            <TeacherInvoiceDetailModal
+                isOpen={isTeacherInvoiceModalOpen}
+                onClose={() => {
+                    setIsTeacherInvoiceModalOpen(false);
+                    setSelectedInvoiceData(null);
+                }}
+                data={selectedInvoiceData}
+                onExtend={handleExtendClick}
             />
         </div>
     );

@@ -19,6 +19,8 @@ const StudentPaymentTable = ({
     onExtendClick, 
     onRemindClick,
     onFinalBillClick,
+    onViewHistoryClick,
+    onViewInvoiceClick,
     isLoadingFinal,
     targetStudentId,
     currentPage: externalPage,
@@ -113,7 +115,10 @@ const StudentPaymentTable = ({
                                 </tr>
                             ) : (
                                 paginatedStudents.map((student) => {
-                                 const config = STATUS_CONFIG[student.status] || STATUS_CONFIG['Pending'];
+                                 // Determine real-time status for UI display
+                                 const isRealOverdue = student.status !== 'Paid' && student.dueDate && new Date(student.dueDate) < new Date();
+                                 const displayStatus = isRealOverdue ? 'Overdue' : student.status;
+                                 const config = STATUS_CONFIG[displayStatus] || STATUS_CONFIG['Pending'];
                                  
                                  // New API mapping
                                  const theoreticalFee = student.originalAmount || 0;
@@ -181,7 +186,7 @@ const StudentPaymentTable = ({
                                                         </button>
                                                     )}
 
-                                                    {(student.status === 'Overdue' || student.status === 'Pending') && student.invoiceId && (
+                                                    {student.invoiceId && student.status !== 'Paid' && student.dueDate && (
                                                         <button 
                                                             onClick={() => onExtendClick && onExtendClick(student)}
                                                             className="!p-2 !rounded-xl !bg-amber-50 !text-amber-600 hover:!bg-amber-500 hover:!text-white !transition-all"
@@ -190,6 +195,26 @@ const StudentPaymentTable = ({
                                                             <Icon icon="solar:calendar-add-bold-duotone" className="!text-lg" />
                                                         </button>
                                                     )}
+
+                                                    {/* Nút Xem Chi Tiết Hóa Đơn (Giáo viên) */}
+                                                    {student.invoiceId && (
+                                                        <button 
+                                                            onClick={() => onViewInvoiceClick && onViewInvoiceClick(student)}
+                                                            className="!p-2 !rounded-xl !bg-indigo-50 !text-indigo-600 hover:!bg-indigo-600 hover:!text-white !transition-all"
+                                                            title="Xem chi tiết hóa đơn & QR"
+                                                        >
+                                                            <Icon icon="solar:bill-check-bold-duotone" className="!text-lg" />
+                                                        </button>
+                                                    )}
+
+                                                    {/* Nút Xem Lịch Sử Giao Dịch */}
+                                                    <button 
+                                                        onClick={() => onViewHistoryClick && onViewHistoryClick(student)}
+                                                        className="!p-2 !rounded-xl !bg-blue-50 !text-blue-600 hover:!bg-blue-600 hover:!text-white !transition-all"
+                                                        title="Xem lịch sử giao dịch"
+                                                    >
+                                                        <Icon icon="solar:history-bold-duotone" className="!text-lg" />
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>

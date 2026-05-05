@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 
 const BILLING_METHOD_OPTIONS = [
-    { value: 'Prepaid', label: 'Trả trước' },
-    { value: 'Postpaid', label: 'Trả sau' },
+    { value: 'Postpaid', label: 'Trả sau' }
 ];
 
 const TuitionFeeModal = ({ isOpen, onClose, onSave, editData = null, classes = [] }) => {
@@ -89,21 +88,10 @@ const TuitionFeeModal = ({ isOpen, onClose, onSave, editData = null, classes = [
                     {/* Class Select */}
                     <div className="space-y-1.5">
                         <label className="text-xs font-black text-text-muted uppercase tracking-widest !ml-0.5">Lớp học</label>
-                        <div className="relative">
-                            <select
-                                value={form.classId}
-                                onChange={e => setForm(p => ({ ...p, classId: e.target.value }))}
-                                disabled={isEdit}
-                                className={`w-full !px-4 !py-3 !bg-background border rounded-xl font-bold text-text-main outline-none transition-all appearance-none disabled:opacity-60 ${errors.classId ? 'border-red-400' : 'border-border focus:border-primary'}`}
-                            >
-                                <option value="">-- Chọn lớp --</option>
-                                {classes.map(c => (
-                                    <option key={c.classId || c.id} value={c.classId || c.id}>{c.className || c.name}</option>
-                                ))}
-                            </select>
-                            <Icon icon="material-symbols:keyboard-arrow-down-rounded" className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted text-xl pointer-events-none" />
+                        <div className="!px-4 !py-3 !bg-slate-50 border border-border rounded-xl font-bold text-text-main flex items-center gap-2 opacity-80">
+                            <Icon icon="solar:users-group-rounded-bold-duotone" className="text-primary text-lg" />
+                            <span>{editData?.className || editData?.name || classes.find(c => (c.classId || c.id) === form.classId)?.name || 'Chưa xác định'}</span>
                         </div>
-                        {errors.classId && <p className="text-xs text-red-500 !mt-1 font-medium">{errors.classId}</p>}
                     </div>
 
                     {/* Billing Method */}
@@ -112,14 +100,12 @@ const TuitionFeeModal = ({ isOpen, onClose, onSave, editData = null, classes = [
                         <div className="relative">
                             <select
                                 value={form.billingMethod}
-                                onChange={e => setForm(p => ({ ...p, billingMethod: e.target.value }))}
-                                className="w-full !px-4 !py-3 !bg-background border border-border rounded-xl font-bold text-text-main outline-none transition-all appearance-none focus:border-primary"
+                                disabled
+                                className="w-full !px-4 !py-3 !bg-slate-50 border border-border rounded-xl font-bold text-text-main outline-none appearance-none cursor-not-allowed opacity-80"
                             >
-                                {BILLING_METHOD_OPTIONS.map(o => (
-                                    <option key={o.value} value={o.value}>{o.label}</option>
-                                ))}
+                                <option value="Postpaid">Trả sau</option>
                             </select>
-                            <Icon icon="material-symbols:keyboard-arrow-down-rounded" className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted text-xl pointer-events-none" />
+                            <Icon icon="solar:lock-bold" className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted text-lg opacity-40" />
                         </div>
                     </div>
 
