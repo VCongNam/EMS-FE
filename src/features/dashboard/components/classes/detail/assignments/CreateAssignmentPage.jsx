@@ -142,14 +142,6 @@ const CreateAssignmentPage = () => {
             return;
         }
 
-        // Validate Date Time > Now
-        const dateTimeStr = `${dueDate}T${dueTime || '23:59'}`;
-        const dueDateTime = new Date(dateTimeStr);
-        if (dueDateTime < new Date()) {
-            toast.warning('Hạn nộp phải lớn hơn thời gian hiện tại');
-            return;
-        }
-
         setIsSubmitting(true);
         const token = user?.token;
 
