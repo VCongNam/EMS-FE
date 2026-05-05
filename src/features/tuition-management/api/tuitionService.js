@@ -34,8 +34,8 @@ export const tuitionService = {
     },
 
     // Lấy QR thanh toán (Cho giáo viên)
-    getPaymentQr: async (invoiceId, token) => {
-        const response = await fetch(getApiUrl(`/api/TuitionFee/invoice/${invoiceId}/paymentQr`), {
+    getPaymentQr: async (invoiceId, studentId, token) => {
+        const response = await fetch(getApiUrl(`/api/TuitionFee/${invoiceId}/paymentQr/teacher?studentId=${studentId}`), {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,

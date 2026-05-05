@@ -26,7 +26,8 @@ const TeacherInvoiceDetailModal = ({ isOpen, onClose, data, onExtend }) => {
                 }
 
                 // Fetch QR
-                const resQr = await tuitionService.getPaymentQr(data.invoiceId, user.token);
+                const studentId = data.studentId || data.id;
+                const resQr = await tuitionService.getPaymentQr(data.invoiceId, studentId, user.token);
                 if (resQr.ok) {
                     const qrResult = await resQr.json();
                     setQrData(qrResult.data || qrResult);
