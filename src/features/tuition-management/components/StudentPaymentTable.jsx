@@ -37,7 +37,10 @@ const StudentPaymentTable = ({
 
     const filteredStudents = useMemo(() => {
         return students.filter(s => {
-            const matchesFilter = filter === 'All' || s.status === filter;
+            const isRealOverdue = s.status !== 'Paid' && s.dueDate && new Date(s.dueDate) < new Date();
+            const displayStatus = isRealOverdue ? 'Overdue' : s.status;
+            
+            const matchesFilter = filter === 'All' || displayStatus === filter;
             const matchesSearch = (s.name || s.studentName || '').toLowerCase().includes(search.toLowerCase());
             return matchesFilter && matchesSearch;
         });
