@@ -10,12 +10,14 @@ import { notificationService } from '../../notifications/api/notificationService
 import { sessionService } from '../api/sessionService';
 import { classService } from '../api/classService';
 import { formatViDate } from '../../../utils/dateUtils';
+import { useNotifications } from '../../../contexts/NotificationContext';
 
 const TeacherDashboard = () => {
     const { user } = useAuthStore();
     const token = user?.token;
     const userName = (user?.fullName || 'Giáo viên').split(' ').pop();
     const navigate = useNavigate();
+    const { setUnreadCount } = useNotifications();
 
     const [notifications, setNotifications] = useState([]);
     const [schedule, setSchedule] = useState([]);
@@ -101,6 +103,7 @@ const TeacherDashboard = () => {
         // Mark as read in UI
         if (notif.isRead === false) {
             setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, isRead: true } : n));
+            setUnreadCount(prev => Math.max(0, prev - 1));
             try {
                 await notificationService.markAsRead(notif.id, token);
             } catch (error) {

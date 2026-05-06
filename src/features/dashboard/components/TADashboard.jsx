@@ -8,12 +8,14 @@ import DashboardRecentNotifications from './DashboardRecentNotifications';
 import useAuthStore from '../../../store/authStore';
 import { notificationService } from '../../notifications/api/notificationService';
 import { formatViDate } from '../../../utils/dateUtils';
+import { useNotifications } from '../../../contexts/NotificationContext';
 
 const TADashboard = () => {
     const { user } = useAuthStore();
     const token = user?.token;
     const userName = (user?.fullName || 'Trợ giảng').split(' ').pop();
     const navigate = useNavigate();
+    const { setUnreadCount } = useNotifications();
 
     const [notifications, setNotifications] = useState([]);
 
@@ -37,6 +39,7 @@ const TADashboard = () => {
         // Mark as read in UI
         if (notif.isRead === false) {
             setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, isRead: true } : n));
+            setUnreadCount(prev => Math.max(0, prev - 1));
             try {
                 await notificationService.markAsRead(notif.id, token);
             } catch (error) {

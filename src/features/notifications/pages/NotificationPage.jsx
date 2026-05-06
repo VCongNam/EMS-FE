@@ -14,7 +14,7 @@ const NotificationPage = () => {
     const navigate = useNavigate();
     const { user } = useAuthStore();
     const token = user?.token;
-    const { isPushSupported, isPushSubscribed, requestPushPermission } = useNotifications();
+    const { isPushSupported, isPushSubscribed, requestPushPermission, setUnreadCount } = useNotifications();
 
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -78,6 +78,7 @@ const NotificationPage = () => {
         // Optimistic UI update
         if (!notif.isRead) {
             setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, isRead: true } : n));
+            setUnreadCount(prev => Math.max(0, prev - 1));
             try {
                 await notificationService.markAsRead(notif.id, token);
             } catch (error) {
@@ -97,6 +98,7 @@ const NotificationPage = () => {
         if (!hasUnread) return;
 
         setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+        setUnreadCount(0);
         try {
             const response = await notificationService.markAllAsRead(token);
             if (response.ok) {

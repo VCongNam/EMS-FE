@@ -108,8 +108,11 @@ const ViewSchedulePage = () => {
     const nextClass = useMemo(() => {
         const now = new Date();
         const upcoming = scheduleData
-            .filter(i => new Date(i.date) >= now && i.status === 'Sắp diễn ra')
-            .sort((a, b) => new Date(a.date + 'T' + a.startTime) - new Date(b.date + 'T' + b.startTime))[0];
+            .filter(i => {
+                const dateStr = i.date.split('T')[0];
+                return new Date(dateStr + 'T23:59:59') >= now && i.status === 'Sắp diễn ra';
+            })
+            .sort((a, b) => new Date(a.date.split('T')[0] + 'T' + (a.startTime || '00:00')) - new Date(b.date.split('T')[0] + 'T' + (b.startTime || '00:00')))[0];
         
         if (!upcoming) return null;
 

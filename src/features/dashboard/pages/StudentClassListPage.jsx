@@ -19,25 +19,25 @@ const formatSchedule = (cls) => {
     }
 
     const dayNames = {
-        1: 'CN',
-        2: 'T2',
-        3: 'T3',
-        4: 'T4',
-        5: 'T5',
-        6: 'T6',
-        7: 'T7'
+        0: 'CN',
+        1: 'T2',
+        2: 'T3',
+        3: 'T4',
+        4: 'T5',
+        5: 'T6',
+        6: 'T7'
     };
 
     try {
         const formatted = schedules
             .sort((a, b) => {
-                const da = a.dayOfWeek || a.DayOfWeek || 0;
-                const db = b.dayOfWeek || b.DayOfWeek || 0;
-                return (da === 1 ? 8 : da) - (db === 1 ? 8 : db);
+                const da = a.dayOfWeek !== undefined ? a.dayOfWeek : (a.DayOfWeek || 0);
+                const db = b.dayOfWeek !== undefined ? b.dayOfWeek : (b.DayOfWeek || 0);
+                return (da === 0 ? 7 : da) - (db === 0 ? 7 : db);
             })
             .map(s => {
-                const dow = s.dayOfWeek || s.DayOfWeek;
-                if (!dow) return null;
+                const dow = s.dayOfWeek !== undefined ? s.dayOfWeek : s.DayOfWeek;
+                if (dow === undefined || dow === null) return null;
                 return dayNames[dow] || '??';
             })
             .filter(Boolean)
