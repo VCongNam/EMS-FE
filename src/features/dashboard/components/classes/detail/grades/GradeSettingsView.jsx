@@ -3,6 +3,7 @@ import { Icon } from '@iconify/react';
 import { toast } from 'react-toastify';
 import useAuthStore from '../../../../../../store/authStore';
 import { gradebookService } from '../../../../api/gradebookService';
+import ConfirmModal from '../../../../../../components/ui/ConfirmModal';
 
 const GradeSettingsView = ({ classId, categories, gradeTableData, onRefresh, isLoading }) => {
     const { user } = useAuthStore();
@@ -15,6 +16,7 @@ const GradeSettingsView = ({ classId, categories, gradeTableData, onRefresh, isL
     const [editName, setEditName] = useState('');
     const [editWeight, setEditWeight] = useState('');
     const [isActionSubmitting, setIsActionSubmitting] = useState(false);
+    const [deletingCategory, setDeletingCategory] = useState(null);
 
     // Filter out invalid items and sum weight
     const validCategories = Array.isArray(categories) ? categories : [];
@@ -113,9 +115,15 @@ const GradeSettingsView = ({ classId, categories, gradeTableData, onRefresh, isL
         }
     };
 
-    const handleDeleteCategory = async (id) => {
-        if (!window.confirm('Bạn có chắc chắn muốn xóa hạng mục này? Hành động này không thể hoàn tác và có thể ảnh hưởng đến điểm số.')) return;
+    const handleDeleteCategory = (id) => {
+        setDeletingCategory(id);
+    };
 
+    const executeDeleteCategory = async () => {
+        if (!deletingCategory) return;
+        const id = deletingCategory;
+        setDeletingCategory(null);
+        
         try {
             setIsActionSubmitting(true);
             const res = await gradebookService.deleteGradeCategory(classId, id, user?.token);
@@ -148,6 +156,16 @@ const GradeSettingsView = ({ classId, categories, gradeTableData, onRefresh, isL
 
     return (
         <div className="!flex-1 !p-6 !bg-surface !overflow-y-auto !animate-fade-in custom-scrollbar">
+            <ConfirmModal
+                isOpen={!!deletingCategory}
+                onClose={() => setDeletingCategory(null)}
+                onConfirm={executeDeleteCategory}
+                title="Xóa hạng mục điểm"
+                message="Bạn có chắc chắn muốn xóa hạng mục này? Hành động này không thể hoàn tác và có thể ảnh hưởng đến điểm số."
+                confirmText="Xóa hạng mục"
+                cancelText="Hủy"
+                type="danger"
+            />
             <div className="!max-w-3xl !mx-auto !space-y-6">
 
                 {/* Header Information */}

@@ -19,7 +19,7 @@ const formatSchedule = (cls) => {
     }
 
     const dayNames = {
-        0: 'CN',
+        7: 'CN',
         1: 'T2',
         2: 'T3',
         3: 'T4',

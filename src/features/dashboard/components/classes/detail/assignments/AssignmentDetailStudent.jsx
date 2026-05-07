@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import useAuthStore from '../../../../../../store/authStore';
 import { studentAssignmentService } from '../../../../api/studentAssignmentService';
 import { extractErrorMessage } from '../../../../../../utils/errorHandler';
+import ConfirmModal from '../../../../../../components/ui/ConfirmModal';
 
 const getFileIcon = (type) => {
     if (type?.includes('pdf')) return <Icon icon="vscode-icons:file-type-pdf2" className="text-3xl" />;
@@ -17,6 +18,7 @@ const AssignmentDetailStudent = ({ assignment, onRefresh }) => {
     const { user } = useAuthStore();
     const [localFiles, setLocalFiles] = useState([]); // Files selected but not yet uploaded
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showCancelConfirm, setShowCancelConfirm] = useState(false);
     const fileInputRef = useRef(null);
 
     const mySubmission = assignment.submission || null;
@@ -66,16 +68,17 @@ const AssignmentDetailStudent = ({ assignment, onRefresh }) => {
         }
     };
 
-    const handleCancelSubmit = async () => {
+    const handleCancelSubmit = () => {
         if (!isSubmitted) {
             setLocalFiles([]);
             return;
         }
 
-        if (!window.confirm('Bạn có chắc chắn muốn hủy nộp bài không? Hành động này sẽ xóa bài làm hiện tại của bạn.')) {
-            return;
-        }
+        setShowCancelConfirm(true);
+    };
 
+    const executeCancelSubmit = async () => {
+        setShowCancelConfirm(false);
         try {
             setIsSubmitting(true);
             const res = await studentAssignmentService.unsubmitAssignment(assignment.assignmentID, user?.token);
@@ -96,6 +99,16 @@ const AssignmentDetailStudent = ({ assignment, onRefresh }) => {
 
     return (
         <div className="flex flex-col lg:flex-row gap-6 animate-fade-in-up !pb-12 bg-[#F8FAFC] min-h-screen">
+            <ConfirmModal
+                isOpen={showCancelConfirm}
+                onClose={() => setShowCancelConfirm(false)}
+                onConfirm={executeCancelSubmit}
+                title="Hủy nộp bài"
+                message="Bạn có chắc chắn muốn hủy nộp bài không? Hành động này sẽ xóa bài làm hiện tại của bạn."
+                confirmText="Hủy nộp bài"
+                cancelText="Đóng"
+                type="danger"
+            />
             {/* Left Column: Assignment Content */}
             <div className="flex-1 flex flex-col gap-6">
                 {/* Sticky Top Header */}

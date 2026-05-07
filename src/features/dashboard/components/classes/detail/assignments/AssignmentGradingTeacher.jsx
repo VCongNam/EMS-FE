@@ -170,6 +170,7 @@ const AssignmentGradingTeacher = ({ assignment, onRefresh }) => {
     const [scoreInput, setScoreInput] = useState('');
     const [commentInput, setCommentInput] = useState('');
     const [previewFile, setPreviewFile] = useState(null);
+    const [correctionFile, setCorrectionFile] = useState(null);
     const [isGrading, setIsGrading] = useState(false);
     const [isFeedbackPosting, setIsFeedbackPosting] = useState(false);
     const [isDownloadingAll, setIsDownloadingAll] = useState(false);
@@ -190,6 +191,7 @@ const AssignmentGradingTeacher = ({ assignment, onRefresh }) => {
         setScoreInput(sub.grade ?? sub.score ?? '');
         setCommentInput('');
         setPreviewFile(null);
+        setCorrectionFile(null);
 
         // Gọi API lấy chi tiết bài làm
         try {
@@ -224,7 +226,9 @@ const AssignmentGradingTeacher = ({ assignment, onRefresh }) => {
             setIsGrading(true);
             const formData = new FormData();
             formData.append('Grade', scoreInput);
-            // If we had a teacher file in singular grading mode, we'd add it here
+            if (correctionFile) {
+                formData.append('CorrectionFiles', correctionFile);
+            }
             
             console.log("[Grade] SubmissionID:", selectedStudent.submissionId);
             console.log("[Grade] Form Data entries:");
@@ -454,13 +458,13 @@ const AssignmentGradingTeacher = ({ assignment, onRefresh }) => {
         <div className="flex flex-col flex-1 min-w-0 bg-surface">
             {/* Header */}
             <div className="!px-4 sm:!px-6 !py-4 border-b border-border bg-surface shrink-0">
-                {/* Mobile back */}
+                {/* Back button */}
                 <button
                     onClick={handleBack}
-                    className="md:hidden flex items-center !gap-1.5 text-sm font-semibold text-text-muted hover:text-primary transition-colors !mb-3"
+                    className="flex items-center !gap-1.5 text-[10px] font-black text-text-muted hover:text-primary transition-all !mb-4 group bg-background/50 !px-3 !py-1.5 rounded-lg w-fit border border-border hover:border-primary/30"
                 >
-                    <Icon icon="material-symbols:arrow-back-rounded" className="text-lg" />
-                    Danh sách học sinh
+                    <Icon icon="material-symbols:arrow-back-rounded" className="text-lg group-hover:-translate-x-0.5 transition-transform" />
+                    QUAY LẠI BẢNG TỔNG HỢP
                 </button>
 
                 <div className="flex flex-wrap items-center justify-between !gap-3">
@@ -476,38 +480,6 @@ const AssignmentGradingTeacher = ({ assignment, onRefresh }) => {
                             </div>
                         </div>
                     </div>
-
-                    {/* Score + action */}
-                    <div className="flex items-center !gap-2.5 shrink-0">
-                        {canGrade ? (
-                            <>
-                                <div className="flex items-center !gap-0 border border-border rounded-xl overflow-hidden focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
-                                    <input
-                                        type="number"
-                                        value={scoreInput}
-                                        onChange={(e) => setScoreInput(e.target.value)}
-                                        placeholder="--"
-                                        className="w-14 bg-transparent border-none text-center !py-2 !px-2 focus:outline-none font-bold text-primary text-sm"
-                                    />
-                                    <span className="bg-background !px-3 !py-2 text-text-muted font-medium text-sm border-l border-border">
-                                        / {assignment.maxScore ?? 10}
-                                    </span>
-                                </div>
-                                <button
-                                    onClick={handleGrade}
-                                    disabled={isGrading}
-                                    className="!bg-primary text-white font-bold !px-5 !py-2 rounded-xl hover:bg-primary/90 transition-colors text-sm shadow-sm disabled:opacity-50"
-                                >
-                                    {isGrading ? <Icon icon="solar:spinner-linear" className="animate-spin text-lg" /> : 'Trả bài'}
-                                </button>
-                            </>
-                        ) : (
-                            <div className="flex items-center gap-2 !px-3 !py-2 bg-amber-50 border border-amber-200 rounded-xl text-amber-700 text-xs font-bold">
-                                <Icon icon="material-symbols:lock-rounded" />
-                                Không có quyền chấm điểm
-                            </div>
-                        )}
-                    </div>
                 </div>
             </div>
 
@@ -515,110 +487,239 @@ const AssignmentGradingTeacher = ({ assignment, onRefresh }) => {
             <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0">
 
                 {/* Files panel */}
-                <div className="flex-1 !p-5 overflow-y-auto border-b lg:border-b-0 lg:border-r border-border bg-background/40">
-                    {selectedStudent.attachments && selectedStudent.attachments.length > 0 ? (
-                        <div className="flex flex-col !gap-4">
-                            <h4 className="font-semibold text-sm text-text-main flex items-center !gap-1.5">
-                                <Icon icon="material-symbols:attach-file-rounded" className="text-primary rotate-45" />
-                                Tệp đã nộp
-                                <span className="!ml-0.5 text-xs text-text-muted font-normal">
-                                    ({selectedStudent.attachments.length})
-                                </span>
-                            </h4>
+                <div className="flex-1 !p-5 overflow-y-auto border-b lg:border-b-0 lg:border-r border-border bg-background/40 flex flex-col !gap-6">
+                    {/* Student's Submissions */}
+                    <div>
+                        {selectedStudent.attachments && selectedStudent.attachments.length > 0 ? (
+                            <div className="flex flex-col !gap-4">
+                                <h4 className="font-semibold text-sm text-text-main flex items-center !gap-1.5">
+                                    <Icon icon="material-symbols:attach-file-rounded" className="text-primary rotate-45" />
+                                    Tệp đã nộp
+                                    <span className="!ml-0.5 text-xs text-text-muted font-normal">
+                                        ({selectedStudent.attachments.length})
+                                    </span>
+                                </h4>
 
-                            {/* File grid */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 !gap-3">
-                                {selectedStudent.attachments.map((file) => {
-                                    const isActive = previewFile?.attachmentId === file.attachmentId;
-                                    return (
-                                        <div
-                                            key={file.attachmentId}
-                                            onClick={() => setPreviewFile(file)}
-                                            className={`
-                                                relative flex items-center !gap-3 !p-3 rounded-xl border cursor-pointer
-                                                transition-all group
-                                                ${isActive
-                                                    ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
-                                                    : 'border-border bg-surface hover:border-primary/50 hover:bg-primary/5'
-                                                }
-                                            `}
-                                        >
-                                            <div className={`
-                                                w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors
-                                                ${isActive ? 'bg-primary/15 text-primary' : 'bg-background text-primary border border-border'}
-                                            `}>
-                                                <Icon icon={getFileIcon(file.fileType, file.fileName)} className="text-xl" />
-                                            </div>
-                                            <div className="flex-1 min-w-0 !pr-8">
-                                                <p className="text-sm font-semibold text-text-main truncate group-hover:text-primary transition-colors">
-                                                    {file.fileName}
-                                                </p>
-                                                <p className="text-xs text-text-muted !mt-0.5">
-                                                    {file.submittedAt || selectedStudent.submittedAt ? 
-                                                        new Date(file.submittedAt || selectedStudent.submittedAt).toLocaleString('vi-VN') : 
-                                                        'N/A'}
-                                                </p>
-                                            </div>
-                                            {/* Download btn */}
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    const link = document.createElement('a');
-                                                    link.href = file.fileUrl || '#';
-                                                    link.setAttribute('download', file.fileName || 'download');
-                                                    link.target = '_blank';
-                                                    document.body.appendChild(link);
-                                                    link.click();
-                                                    document.body.removeChild(link);
-                                                }}
-                                                className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full border border-border bg-background hover:bg-primary/10 hover:border-primary/30 hover:text-primary text-text-muted flex items-center justify-center transition-colors"
-                                                title="Tải về"
+                                <div className="grid grid-cols-1 sm:grid-cols-2 !gap-3">
+                                    {selectedStudent.attachments.map((file) => {
+                                        const isActive = previewFile?.attachmentId === file.attachmentId;
+                                        return (
+                                            <div
+                                                key={file.attachmentId}
+                                                onClick={() => setPreviewFile(file)}
+                                                className={`
+                                                    relative flex items-center !gap-3 !p-3 rounded-xl border cursor-pointer
+                                                    transition-all group
+                                                    ${isActive
+                                                        ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
+                                                        : 'border-border bg-surface hover:border-primary/50 hover:bg-primary/5'
+                                                    }
+                                                `}
                                             >
-                                                <Icon icon="material-symbols:download-rounded" className="text-lg" />
-                                            </button>
-                                        </div>
-                                    );
-                                })}
+                                                <div className={`
+                                                    w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors
+                                                    ${isActive ? 'bg-primary/15 text-primary' : 'bg-background text-primary border border-border'}
+                                                `}>
+                                                    <Icon icon={getFileIcon(file.fileType, file.fileName)} className="text-xl" />
+                                                </div>
+                                                <div className="flex-1 min-w-0 !pr-8">
+                                                    <p className="text-sm font-semibold text-text-main truncate group-hover:text-primary transition-colors">
+                                                        {file.fileName}
+                                                    </p>
+                                                    <p className="text-xs text-text-muted !mt-0.5">
+                                                        {file.submittedAt || selectedStudent.submittedAt ? 
+                                                            new Date(file.submittedAt || selectedStudent.submittedAt).toLocaleString('vi-VN') : 
+                                                            'N/A'}
+                                                    </p>
+                                                </div>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        const link = document.createElement('a');
+                                                        link.href = file.fileUrl || '#';
+                                                        link.setAttribute('download', file.fileName || 'download');
+                                                        link.target = '_blank';
+                                                        document.body.appendChild(link);
+                                                        link.click();
+                                                        document.body.removeChild(link);
+                                                    }}
+                                                    className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full border border-border bg-background hover:bg-primary/10 hover:border-primary/30 hover:text-primary text-text-muted flex items-center justify-center transition-colors"
+                                                    title="Tải về"
+                                                >
+                                                    <Icon icon="material-symbols:download-rounded" className="text-lg" />
+                                                </button>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             </div>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center !gap-3 text-text-muted !py-12 bg-surface/50 rounded-2xl border border-dashed border-border">
+                                <Icon icon="material-symbols:folder-off-outline-rounded" className="text-4xl opacity-30" />
+                                <p className="text-sm italic">Học sinh chưa nộp tệp nào.</p>
+                            </div>
+                        )}
+                    </div>
 
-                            {/* Preview area */}
-                            <div className="!mt-1">
-                                <FilePreview file={previewFile} />
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="h-full flex flex-col items-center justify-center !gap-3 text-text-muted !py-16">
-                            <Icon icon="material-symbols:folder-off-outline-rounded" className="text-5xl opacity-40" />
-                            <p className="text-base">Học sinh chưa nộp tệp nào.</p>
-                        </div>
-                    )}
+
+
+                    {/* Preview area */}
+                    <div className="!mt-auto !pt-4">
+                        <FilePreview file={previewFile} />
+                    </div>
                 </div>
 
-                {/* Comments panel */}
-                <div className="w-full lg:w-72 flex flex-col bg-surface shrink-0">
-                    <div className="!px-4 !py-3 border-b border-border bg-background/50 shrink-0">
-                        <h4 className="font-semibold text-sm text-text-main flex items-center !gap-2">
-                            <Icon icon="material-symbols:comment-rounded" className="text-primary" />
-                            Nhận xét riêng tư
-                        </h4>
+                {/* Grading & Comments Panel */}
+                <div className="w-full lg:w-80 border-l lg:border-l-0 border-t lg:border-t-0 border-border bg-surface flex flex-col shrink-0 z-10 shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)]">
+                    {/* 1. Grading & Corrections Section */}
+                    <div className="flex-1 overflow-y-auto">
+                        <div className="!p-5 border-b border-border bg-background/30">
+                            <h4 className="font-bold text-sm text-text-main flex items-center !gap-2 !mb-4">
+                                <Icon icon="material-symbols:grading-rounded" className="text-primary text-lg" />
+                                Đánh giá & Chấm điểm
+                            </h4>
+                            
+                            {/* Score Input & Button */}
+                            <div className="flex flex-col !gap-3">
+                                {canGrade ? (
+                                    <>
+                                        <div className="flex items-center justify-between !p-3 bg-white border border-border rounded-xl shadow-sm">
+                                            <span className="text-sm font-bold text-text-main">Điểm số:</span>
+                                            <div className="flex items-center !gap-0">
+                                                <input
+                                                    type="number"
+                                                    value={scoreInput}
+                                                    onChange={(e) => setScoreInput(e.target.value)}
+                                                    placeholder="--"
+                                                    className="w-16 bg-transparent border-none text-right !py-1 !px-2 focus:outline-none font-black text-primary text-lg"
+                                                />
+                                                <span className="text-text-muted font-bold text-sm !ml-1">
+                                                    / {assignment.maxScore ?? 10}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <button
+                                            onClick={handleGrade}
+                                            disabled={isGrading}
+                                            className="w-full !bg-primary text-white font-bold !py-2.5 rounded-xl hover:bg-primary/90 transition-colors text-sm shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                                        >
+                                            {isGrading ? <Icon icon="solar:spinner-linear" className="animate-spin text-lg" /> : 'Lưu kết quả chấm'}
+                                        </button>
+                                    </>
+                                ) : (
+                                    <div className="flex items-center gap-2 !px-3 !py-2 bg-amber-50 border border-amber-200 rounded-xl text-amber-700 text-xs font-bold">
+                                        <Icon icon="material-symbols:lock-rounded" />
+                                        Không có quyền chấm điểm
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Correction Files Section */}
+                            <div className="!mt-6">
+                                <h5 className="text-[11px] font-black text-text-muted uppercase tracking-widest flex items-center !gap-1.5 !mb-3">
+                                    <Icon icon="material-symbols:edit-document-outline-rounded" className="text-lg" />
+                                    Bài chữa của giáo viên
+                                </h5>
+                                
+                                {/* Upload New Correction */}
+                                {canGrade && (
+                                    <div className="!mb-3">
+                                        <label className="flex items-center !gap-2 !px-3 !py-2 bg-white border border-dashed border-border hover:border-primary/50 rounded-xl cursor-pointer transition-all overflow-hidden w-full group shadow-sm">
+                                            <Icon icon="material-symbols:cloud-upload-outline-rounded" className="text-lg text-text-muted group-hover:text-primary shrink-0 transition-colors" />
+                                            <span className="text-xs font-semibold text-text-muted group-hover:text-primary truncate transition-colors">
+                                                {correctionFile ? correctionFile.name : 'Đính kèm bài chữa mới...'}
+                                            </span>
+                                            <input 
+                                                type="file" 
+                                                className="hidden" 
+                                                onChange={(e) => setCorrectionFile(e.target.files[0])}
+                                            />
+                                        </label>
+                                        {correctionFile && (
+                                            <div className="flex items-center justify-between !mt-2 !px-3 !py-1.5 bg-orange-50 border border-orange-100 rounded-lg">
+                                                <span className="text-xs font-bold text-orange-600 truncate">{correctionFile.name}</span>
+                                                <button 
+                                                    onClick={() => setCorrectionFile(null)}
+                                                    className="p-1 hover:bg-orange-100 text-orange-400 hover:text-orange-600 rounded transition-all"
+                                                >
+                                                    <Icon icon="material-symbols:close-rounded" />
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Already Sent Corrections */}
+                                {((selectedStudent.correctionFiles && selectedStudent.correctionFiles.length > 0) || 
+                                  (selectedStudent.corrections && selectedStudent.corrections.length > 0)) && (
+                                    <div className="flex flex-col !gap-2 !mt-4">
+                                        <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider !mb-1">Đã gửi trước đó:</p>
+                                        {(selectedStudent.correctionFiles || selectedStudent.corrections).map((file, idx) => {
+                                            const attachmentId = file.attachmentId || `corr-${idx}`;
+                                            return (
+                                                <div
+                                                    key={attachmentId}
+                                                    className="flex items-center justify-between !p-2 rounded-lg bg-orange-50/50 border border-orange-100 group"
+                                                >
+                                                    <div 
+                                                        className="flex items-center !gap-2 min-w-0 cursor-pointer"
+                                                        onClick={() => setPreviewFile({ ...file, attachmentId })}
+                                                    >
+                                                        <Icon icon={getFileIcon(file.fileType, file.fileName)} className="text-lg text-orange-500 shrink-0" />
+                                                        <span className="text-xs font-bold text-orange-700 truncate group-hover:text-orange-500 transition-colors">
+                                                            {file.fileName || file.name}
+                                                        </span>
+                                                    </div>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            const link = document.createElement('a');
+                                                            link.href = file.fileUrl || file.fileURL || file.url || '#';
+                                                            link.setAttribute('download', file.fileName || file.name || 'download');
+                                                            link.target = '_blank';
+                                                            document.body.appendChild(link);
+                                                            link.click();
+                                                            document.body.removeChild(link);
+                                                        }}
+                                                        className="w-6 h-6 rounded-full flex items-center justify-center text-orange-400 hover:bg-orange-100 hover:text-orange-600 transition-colors shrink-0"
+                                                        title="Tải về"
+                                                    >
+                                                        <Icon icon="material-symbols:download-rounded" />
+                                                    </button>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Comments Section */}
+                        <div className="!px-4 !py-3 bg-surface border-b border-border shrink-0">
+                            <h4 className="font-semibold text-sm text-text-main flex items-center !gap-2">
+                                <Icon icon="material-symbols:comment-rounded" className="text-primary" />
+                                Nhận xét riêng tư
+                            </h4>
+                        </div>
+                        <div className="!p-4 flex flex-col !gap-3 min-h-[80px]">
+                            <p className="text-sm text-text-muted text-center italic !mt-2 !mb-4">Chưa có nhận xét nào.</p>
+                        </div>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto !p-4 min-h-[80px]">
-                        <p className="text-sm text-text-muted text-center italic !mt-4">Chưa có nhận xét nào.</p>
-                    </div>
-
-                    <div className="!p-4 border-t border-border bg-background/50 shrink-0 flex flex-col !gap-2">
+                    {/* Add Comment Input (Fixed at bottom) */}
+                    <div className="!p-4 border-t border-border bg-white shrink-0 flex flex-col !gap-2 mt-auto">
                         <textarea
                             value={commentInput}
                             onChange={(e) => setCommentInput(e.target.value)}
                             placeholder="Thêm nhận xét..."
-                            rows={3}
-                            className="w-full bg-surface border border-border rounded-xl !p-3 resize-none focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm transition-colors text-text-main placeholder:text-text-muted"
+                            rows={2}
+                            className="w-full bg-background border border-border rounded-xl !p-3 resize-none focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm transition-colors text-text-main placeholder:text-text-muted"
                         />
                         <button
                             onClick={handlePostFeedback}
                             disabled={!commentInput.trim() || isFeedbackPosting}
-                            className="w-full bg-primary/10 text-primary font-bold !py-2 rounded-xl hover:bg-primary hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-sm flex items-center justify-center gap-2"
+                            className="w-full !bg-primary/10 text-primary font-bold !py-2 rounded-xl hover:!bg-primary hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-sm flex items-center justify-center gap-2"
                         >
                             {isFeedbackPosting ? <Icon icon="solar:spinner-linear" className="animate-spin text-lg" /> : 'Đăng nhận xét'}
                         </button>
@@ -764,35 +865,57 @@ const AssignmentGradingTeacher = ({ assignment, onRefresh }) => {
                                                 </div>
                                             </td>
                                             <td className="!px-4 !py-4">
-                                                <div className="relative flex items-center !gap-2">
-                                                    <label className="flex items-center !gap-2 !px-3 !py-1.5 rounded-lg border border-dashed border-border hover:border-primary hover:bg-primary/5 cursor-pointer transition-all group overflow-hidden max-w-[180px]">
-                                                        <Icon icon="material-symbols:cloud-upload-outline-rounded" className="text-text-muted group-hover:text-primary shrink-0" />
-                                                        <span className="text-[11px] font-semibold text-text-muted group-hover:text-primary truncate">
-                                                            {rowState.fileName || 'Đính kèm tệp...'}
-                                                        </span>
-                                                        <input 
-                                                            type="file" 
-                                                            className="hidden"
-                                                            onChange={(e) => {
-                                                                const file = e.target.files[0];
-                                                                if (file) {
-                                                                    handleRowGradeUpdate(sub.studentId, 'file', file);
-                                                                    handleRowGradeUpdate(sub.studentId, 'fileName', file.name);
-                                                                }
-                                                            }}
-                                                        />
-                                                    </label>
-                                                    {rowState.file && (
-                                                        <button 
-                                                            onClick={() => {
-                                                                handleRowGradeUpdate(sub.studentId, 'file', null);
-                                                                handleRowGradeUpdate(sub.studentId, 'fileName', '');
-                                                            }}
-                                                            className="text-red-500 hover:text-red-700"
-                                                        >
-                                                            <Icon icon="material-symbols:close-rounded" />
-                                                        </button>
+                                                <div className="flex flex-col !gap-2">
+                                                    {/* List existing corrections if any */}
+                                                    {((sub.correctionFiles && sub.correctionFiles.length > 0) || 
+                                                      (sub.corrections && sub.corrections.length > 0)) && (
+                                                        <div className="flex flex-wrap !gap-1 mb-1">
+                                                            {(sub.correctionFiles || sub.corrections).map((file, idx) => (
+                                                                <a 
+                                                                    key={idx}
+                                                                    href={file.fileUrl || file.fileURL || file.url || '#'}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="flex items-center !gap-1 !px-2 !py-0.5 bg-orange-50 border border-orange-100 rounded text-[10px] font-bold text-orange-600 hover:bg-orange-100 transition-colors"
+                                                                    title={file.fileName || file.name}
+                                                                >
+                                                                    <Icon icon="material-symbols:description-rounded" />
+                                                                    {file.fileName || file.name}
+                                                                </a>
+                                                            ))}
+                                                        </div>
                                                     )}
+
+                                                    <div className="relative flex items-center !gap-2">
+                                                        <label className="flex items-center !gap-2 !px-3 !py-1.5 rounded-lg border border-dashed border-border hover:border-primary hover:bg-primary/5 cursor-pointer transition-all group overflow-hidden max-w-[180px]">
+                                                            <Icon icon="material-symbols:cloud-upload-outline-rounded" className="text-text-muted group-hover:text-primary shrink-0" />
+                                                            <span className="text-[11px] font-semibold text-text-muted group-hover:text-primary truncate">
+                                                                {rowState.fileName || 'Đính kèm tệp...'}
+                                                            </span>
+                                                            <input 
+                                                                type="file" 
+                                                                className="hidden"
+                                                                onChange={(e) => {
+                                                                    const file = e.target.files[0];
+                                                                    if (file) {
+                                                                        handleRowGradeUpdate(sub.studentId, 'file', file);
+                                                                        handleRowGradeUpdate(sub.studentId, 'fileName', file.name);
+                                                                    }
+                                                                }}
+                                                            />
+                                                        </label>
+                                                        {rowState.file && (
+                                                            <button 
+                                                                onClick={() => {
+                                                                    handleRowGradeUpdate(sub.studentId, 'file', null);
+                                                                    handleRowGradeUpdate(sub.studentId, 'fileName', '');
+                                                                }}
+                                                                className="text-red-500 hover:text-red-700"
+                                                            >
+                                                                <Icon icon="material-symbols:close-rounded" />
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </td>
                                             <td className="!px-6 !py-4 !text-center">
