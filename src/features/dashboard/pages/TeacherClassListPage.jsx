@@ -8,11 +8,10 @@ import CreateClassModal from '../components/classes/CreateClassModal';
 import ClassDetailsModal from '../components/classes/ClassDetailsModal';
 import ConfirmModal from '../../../components/ui/ConfirmModal';
 import Pagination from '../../../components/ui/Pagination';
-import { mockClasses } from '../data/mockClasses';
-import { getApiUrl } from '../../../config/api';
 import useAuthStore from '../../../store/authStore';
 import { classService } from '../api/classService';
 import { sessionService } from '../api/sessionService';
+import Loading from '../../../components/ui/Loading';
 
 // Helper functions for formatting Data to API shapes
 const parseDate = (dateStr) => {
@@ -190,7 +189,8 @@ const TeacherClassListPage = () => {
             if (!token) return toast.error('Vui lòng đăng nhập lại!');
 
             if (selectedClass) {
-                const response = await classService.updateClass(selectedClass.id, payload, token);
+                const targetId = selectedClass.classId || selectedClass.id;
+                const response = await classService.updateClass(targetId, payload, token);
                 if (!response.ok) throw new Error('Lỗi khi cập nhật lớp học.');
                 toast.success('Cập nhật thông tin lớp học thành công!');
             } else {
@@ -307,9 +307,8 @@ const TeacherClassListPage = () => {
 
                 {/* Class Grid */}
                 {loading ? (
-                    <div className="flex flex-col items-center justify-center !py-20">
-                        <Icon icon="material-symbols:sync-rounded" className="animate-spin text-5xl text-primary opacity-50 !mb-4" />
-                        <p className="text-text-muted font-medium">Đang đồng bộ dữ liệu lớp học từ máy chủ...</p>
+                    <div className="!py-20 flex justify-center">
+                        <Loading text="Đang đồng bộ dữ liệu lớp học..." />
                     </div>
                 ) : paginatedClasses.length > 0 ? (
                     <>

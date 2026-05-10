@@ -10,6 +10,7 @@ import { sessionService } from '../../../api/sessionService';
 import studentScheduleService from '../../../api/studentScheduleService';
 import ConfirmModal from '../../../../../components/ui/ConfirmModal';
 import { useTAPermission } from '../../../../dashboard/context/TAPermissionContext';
+import Loading from '../../../../../components/ui/Loading';
 
 const DAYS_OF_WEEK = [
     { id: 'MON', label: 'T2' }, { id: 'TUE', label: 'T3' }, { id: 'WED', label: 'T4' },
@@ -86,29 +87,29 @@ const ClassSchedulePage = () => {
                     // Helper to safely parse date & time components
                     const parseDateTime = (timeStr, dateFallback) => {
                         if (!timeStr && !dateFallback) return new Date(NaN);
-                        
+
                         // 1. If it's already a full ISO/Date string with date part
                         if (timeStr && (timeStr.includes('T') || timeStr.includes('-'))) {
                             const d = new Date(timeStr);
                             if (!isNaN(d.getTime())) return d;
                         }
-                        
+
                         // 2. If it's just a time string (HH:mm:ss) or we need fallback
                         const datePart = (dateFallback || '').split('T')[0] || new Date().toISOString().split('T')[0];
                         const timePart = (timeStr && timeStr.length >= 5) ? timeStr : '00:00:00';
-                        
+
                         // Try combining date and time parts
                         // We use a simple T separator which parses as local time in most browsers
                         const combined = new Date(`${datePart}T${timePart.substring(0, 8)}`);
                         if (!isNaN(combined.getTime())) return combined;
-                        
+
                         // Last ditch effort: raw fallback
                         return new Date(dateFallback || timeStr);
                     };
 
                     const dateObj = parseDateTime(item.startTime, item.date);
                     const endDateObj = parseDateTime(item.endTime, item.date);
-                    
+
                     // Format to GMT+7 (Asia/Ho_Chi_Minh)
                     const gmt7Formatter = new Intl.DateTimeFormat('en-GB', {
                         timeZone: 'Asia/Ho_Chi_Minh',
@@ -134,15 +135,15 @@ const ClassSchedulePage = () => {
                     }
 
                     const getPart = (type, pList) => pList.find(p => p.type === type)?.value || '??';
-                    
-                    const gmt7Date = isValidDate 
+
+                    const gmt7Date = isValidDate
                         ? `${getPart('year', parts)}-${getPart('month', parts)}-${getPart('day', parts)}`
                         : (item.date ? item.date.split('T')[0] : '????-??-??');
 
                     const gmt7StartTime = isValidDate
                         ? `${getPart('hour', parts)}:${getPart('minute', parts)}`
                         : (item.startTime ? item.startTime.substring(0, 5) : '??:??');
-                    
+
                     const gmt7EndTime = isValidEndDate
                         ? `${getPart('hour', endParts)}:${getPart('minute', endParts)}`
                         : (item.endTime ? item.endTime.substring(0, 5) : '??:??');
@@ -238,7 +239,7 @@ const ClassSchedulePage = () => {
                 toast.success('Đã xóa kết quả buổi học thành công!');
                 fetchSessions();
             } else {
-                toast.error('Có lỗi xảy ra khi xóa buổi học');
+                toast.error('Có lỗi xảy ra khi hủy buổi học');
             }
         } catch (error) {
             console.error(error);
@@ -283,6 +284,39 @@ const ClassSchedulePage = () => {
         }
     };
 
+    const handleOpenEditSession = async (lesson) => {
+        try {
+            const token = useAuthStore.getState().user?.token;
+            if (!token) return;
+
+            // Optional: Hiển thị loading toast nếu cần, hoặc dùng loading state
+            const loadingToast = toast.loading("Đang tải chi tiết buổi học...");
+            
+            const res = await sessionService.getSessionById(lesson.id, token);
+            if (res.ok) {
+                const result = await res.json();
+                const detailedData = result.data || result;
+                
+                toast.dismiss(loadingToast);
+                setSessionModalState({ 
+                    isOpen: true, 
+                    initialData: {
+                        ...lesson.raw,
+                        ...detailedData
+                    } 
+                });
+            } else {
+                toast.dismiss(loadingToast);
+                toast.error("Không thể lấy thông tin chi tiết buổi học");
+                // Fallback to basic data if detail API fails
+                setSessionModalState({ isOpen: true, initialData: lesson.raw });
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error("Lỗi khi kết nối máy chủ");
+        }
+    };
+
     const handleOpenAttendance = (lesson) => {
         setAttendanceTarget({
             lesson
@@ -300,9 +334,7 @@ const ClassSchedulePage = () => {
     return (
         <div className="!space-y-6 animate-fade-in relative min-h-[400px]">
             {isLoading && (
-                <div className="absolute z-10 inset-0 !bg-background/50 backdrop-blur-[2px] rounded-[2rem] flex items-center justify-center">
-                    <Icon icon="line-md:loading-loop" className="text-4xl text-primary" />
-                </div>
+                <Loading overlay text="Đang tải lịch học..." />
             )}
 
             {/* ── Config Summary Card ── */}
@@ -432,6 +464,22 @@ const ClassSchedulePage = () => {
                                                     <Icon icon="solar:clock-linear" className="text-primary/70" />
                                                     {lesson.date} | {lesson.startTime} – {lesson.endTime}
                                                 </span>
+                                                {(lesson.raw?.topic || lesson.raw?.note) && (
+                                                    <div className="flex items-center !gap-3">
+                                                        {lesson.raw?.topic && (
+                                                            <span className="flex items-center !gap-1 text-primary/80 font-medium">
+                                                                <Icon icon="solar:tag-horizontal-linear" />
+                                                                {lesson.raw.topic}
+                                                            </span>
+                                                        )}
+                                                        {lesson.raw?.note && (
+                                                            <span className="flex items-center !gap-1 text-orange-600/80 italic">
+                                                                <Icon icon="solar:document-text-linear" />
+                                                                {lesson.raw.note}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                )}
                                                 {lesson.raw?.meetingLink && (
                                                     <a href={lesson.raw.meetingLink} target="_blank" rel="noreferrer" className="flex items-center !gap-1 text-blue-500 hover:underline">
                                                         <Icon icon="solar:link-minimalistic-linear" /> Link Meeting
@@ -470,7 +518,7 @@ const ClassSchedulePage = () => {
                                                 )}
                                                 <button
                                                     title="Sửa thông tin"
-                                                    onClick={() => setSessionModalState({ isOpen: true, initialData: lesson.raw })}
+                                                    onClick={() => handleOpenEditSession(lesson)}
                                                     className="!p-2 text-text-muted hover:text-primary hover:!bg-primary/10 rounded-xl transition-colors border border-transparent hover:border-primary/20 !bg-background"
                                                 >
                                                     <Icon icon="solar:pen-bold-duotone" className="text-lg" />
@@ -560,9 +608,9 @@ const ClassSchedulePage = () => {
                 isOpen={confirmModal.isOpen}
                 onClose={() => setConfirmModal({ isOpen: false, sessionId: null })}
                 onConfirm={handleConfirmDelete}
-                title="Xác nhận xóa buổi học"
-                message="Bạn có chắc chắn muốn xóa buổi học này không? Hành động này không thể hoàn tác và dữ liệu điểm danh liên quan sẽ bị mất."
-                confirmText="Xóa buổi học"
+                title="Xác nhận hủy buổi học"
+                message="Bạn có chắc chắn muốn hủy buổi học này không? Hành động này không thể hoàn tác và dữ liệu điểm danh liên quan sẽ bị mất."
+                confirmText="hủy buổi học"
                 cancelText="Hủy bỏ"
                 type="danger"
             />

@@ -8,7 +8,7 @@ import { sessionService } from '../../../../api/sessionService';
 const STATUS_OPTIONS = [
     {
         key: 'present',
-        label: 'Hiện diện',
+        label: 'có mặt',
         icon: 'material-symbols:check-circle-rounded',
         activeClass: '!bg-green-500/15 border-green-500 text-green-600 ring-2 ring-green-500/20',
         dotClass: '!bg-green-500',
@@ -193,7 +193,7 @@ const AttendanceModal = ({ isOpen, lesson, existingRecord, onClose, onSave, read
                         <div className="grid grid-cols-2 sm:flex sm:flex-wrap !gap-2">
                             <div className="flex items-center !gap-2 !px-3 !py-2 !bg-green-500/10 border border-green-500/20 rounded-2xl">
                                 <span className="w-2 h-2 rounded-full !bg-green-500 shrink-0" />
-                                <span className="text-xs font-bold text-green-600">Hiện diện: {presentCount}</span>
+                                <span className="text-xs font-bold text-green-600">có mặt: {presentCount}</span>
                             </div>
                             <div className="flex items-center !gap-2 !px-3 !py-2 !bg-orange-500/10 border border-orange-500/20 rounded-2xl">
                                 <span className="w-2 h-2 rounded-full !bg-orange-500 shrink-0" />
@@ -213,27 +213,27 @@ const AttendanceModal = ({ isOpen, lesson, existingRecord, onClose, onSave, read
 
                         {/* Quick mark all — hidden in readOnly */}
                         {!readOnly && (
-                        <div className="flex items-center !gap-2 !mt-3 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-                            <span className="text-xs font-semibold text-text-muted shrink-0">Đánh dấu tất cả:</span>
-                            <button
-                                onClick={() => handleMarkAll('present')}
-                                className="text-xs font-semibold !px-3 !py-1.5 rounded-xl !bg-green-500/10 text-green-600 border border-green-500/20 hover:!bg-green-500/20 transition-colors whitespace-nowrap"
-                            >
-                                Hiện diện
-                            </button>
-                            <button
-                                onClick={() => handleMarkAll('absent')}
-                                className="text-xs font-semibold !px-3 !py-1.5 rounded-xl !bg-red-500/10 text-red-600 border border-red-500/20 hover:!bg-red-500/20 transition-colors whitespace-nowrap"
-                            >
-                                Vắng mặt
-                            </button>
-                        </div>
+                            <div className="flex items-center !gap-2 !mt-3 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+                                <span className="text-xs font-semibold text-text-muted shrink-0">Đánh dấu tất cả:</span>
+                                <button
+                                    onClick={() => handleMarkAll('present')}
+                                    className="text-xs font-semibold !px-3 !py-1.5 rounded-xl !bg-green-500/10 text-green-600 border border-green-500/20 hover:!bg-green-500/20 transition-colors whitespace-nowrap"
+                                >
+                                    có mặt
+                                </button>
+                                <button
+                                    onClick={() => handleMarkAll('absent')}
+                                    className="text-xs font-semibold !px-3 !py-1.5 rounded-xl !bg-red-500/10 text-red-600 border border-red-500/20 hover:!bg-red-500/20 transition-colors whitespace-nowrap"
+                                >
+                                    Vắng mặt
+                                </button>
+                            </div>
                         )}
                         {readOnly && (
-                        <div className="flex items-center !gap-2 !mt-3 !px-3 !py-2 bg-amber-50 border border-amber-200 rounded-xl text-amber-700 text-xs font-semibold">
-                            <Icon icon="material-symbols:lock-rounded" />
-                            Bạn chỉ có quyền xem điểm danh (không được chỉnh sửa)
-                        </div>
+                            <div className="flex items-center !gap-2 !mt-3 !px-3 !py-2 bg-amber-50 border border-amber-200 rounded-xl text-amber-700 text-xs font-semibold">
+                                <Icon icon="material-symbols:lock-rounded" />
+                                Bạn chỉ có quyền xem điểm danh (không được chỉnh sửa)
+                            </div>
                         )}
                     </div>
 
@@ -268,8 +268,8 @@ const AttendanceModal = ({ isOpen, lesson, existingRecord, onClose, onSave, read
                                                         onClick={() => !readOnly && handleStatusChange(student.id, opt.key)}
                                                         disabled={readOnly}
                                                         className={`flex items-center !gap-1.5 !px-3 !py-1.5 rounded-xl border text-xs font-semibold transition-all whitespace-nowrap ${readOnly ? 'cursor-not-allowed opacity-80' : ''} ${student.status === opt.key
-                                                                ? opt.activeClass
-                                                                : `!bg-surface border-border text-text-muted ${readOnly ? '' : opt.borderHover}`
+                                                            ? opt.activeClass
+                                                            : `!bg-surface border-border text-text-muted ${readOnly ? '' : opt.borderHover}`
                                                             }`}
                                                     >
                                                         <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${student.status === opt.key ? opt.dotClass : '!bg-border'}`} />
@@ -297,8 +297,8 @@ const AttendanceModal = ({ isOpen, lesson, existingRecord, onClose, onSave, read
                                                         onClick={() => !readOnly && handleStatusChange(student.id, opt.key)}
                                                         disabled={readOnly}
                                                         className={`flex-1 flex items-center justify-center !gap-1.5 !py-2 rounded-xl border text-xs font-semibold transition-all ${readOnly ? 'cursor-not-allowed opacity-80' : ''} ${student.status === opt.key
-                                                                ? opt.activeClass
-                                                                : `!bg-surface border-border text-text-muted ${readOnly ? '' : opt.borderHover}`
+                                                            ? opt.activeClass
+                                                            : `!bg-surface border-border text-text-muted ${readOnly ? '' : opt.borderHover}`
                                                             }`}
                                                     >
                                                         <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${student.status === opt.key ? opt.dotClass : '!bg-border'}`} />

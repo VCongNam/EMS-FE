@@ -25,6 +25,15 @@ const getInitials = (name = '') =>
         .map((w) => w[0].toUpperCase())
         .join('');
 
+const formatBytes = (bytes, decimals = 2) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+};
+
 const StatusBadge = ({ status }) => {
     const map = {
         'In Time': { bg: 'bg-green-100', text: 'text-green-700', label: 'Đã nộp' },
@@ -206,7 +215,9 @@ const AssignmentGradingTeacher = ({ assignment, onRefresh }) => {
                     // Map studentFullName -> fullName
                     fullName: prev.fullName || detailedData.studentFullName || detailedData.fullName,
                     studentName: prev.studentName || detailedData.studentFullName || detailedData.studentName,
-                    status: detailedData.status || prev.status
+                    status: detailedData.status || prev.status,
+                    assignmentTitle: detailedData.assignmentTitle || prev.assignmentTitle,
+                    feedbacks: detailedData.feedbacks || []
                 }));
             }
         } catch (error) {
@@ -472,11 +483,22 @@ const AssignmentGradingTeacher = ({ assignment, onRefresh }) => {
                     <div className="flex items-center !gap-3 min-w-0">
                         <AvatarCircle name={selectedStudent.fullName || selectedStudent.studentName} status={selectedStudent.status} size="md" />
                         <div className="min-w-0">
-                            <h3 className="text-base font-bold text-text-main truncate leading-tight">
+                            <h3 className="text-base font-bold text-text-main truncate leading-tight flex items-center gap-2">
                                 {selectedStudent.fullName || selectedStudent.studentName}
+                                {selectedStudent.assignmentTitle && (
+                                    <span className="text-xs font-normal text-text-muted bg-surface border border-border !px-2 !py-0.5 rounded-lg">
+                                        Bài: {selectedStudent.assignmentTitle}
+                                    </span>
+                                )}
                             </h3>
-                            <div className="!mt-0.5">
+                            <div className="!mt-1 flex items-center gap-3">
                                 <StatusBadge status={selectedStudent.gradeStatus === 'Graded' ? 'Graded' : selectedStudent.status} />
+                                {selectedStudent.submittedAt && (
+                                    <span className="text-[11px] text-text-muted flex items-center gap-1">
+                                        <Icon icon="material-symbols:schedule-rounded" />
+                                        Nộp lúc: {new Date(selectedStudent.submittedAt).toLocaleString('vi-VN')}
+                                    </span>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -526,11 +548,15 @@ const AssignmentGradingTeacher = ({ assignment, onRefresh }) => {
                                                     <p className="text-sm font-semibold text-text-main truncate group-hover:text-primary transition-colors">
                                                         {file.fileName}
                                                     </p>
-                                                    <p className="text-xs text-text-muted !mt-0.5">
-                                                        {file.submittedAt || selectedStudent.submittedAt ? 
-                                                            new Date(file.submittedAt || selectedStudent.submittedAt).toLocaleString('vi-VN') : 
-                                                            'N/A'}
-                                                    </p>
+                                                    <div className="flex items-center gap-2 text-[10px] text-text-muted !mt-0.5">
+                                                        <span>{file.fileSize ? formatBytes(file.fileSize) : 'N/A'}</span>
+                                                        <span className="w-1 h-1 rounded-full bg-border" />
+                                                        <span>
+                                                            {file.submittedAt || selectedStudent.submittedAt ? 
+                                                                new Date(file.submittedAt || selectedStudent.submittedAt).toLocaleString('vi-VN') : 
+                                                                'N/A'}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                                 <button
                                                     onClick={(e) => {
@@ -667,9 +693,20 @@ const AssignmentGradingTeacher = ({ assignment, onRefresh }) => {
                                                         onClick={() => setPreviewFile({ ...file, attachmentId })}
                                                     >
                                                         <Icon icon={getFileIcon(file.fileType, file.fileName)} className="text-lg text-orange-500 shrink-0" />
-                                                        <span className="text-xs font-bold text-orange-700 truncate group-hover:text-orange-500 transition-colors">
-                                                            {file.fileName || file.name}
-                                                        </span>
+                                                        <div className="min-w-0">
+                                                            <p className="text-xs font-bold text-orange-700 truncate group-hover:text-orange-500 transition-colors">
+                                                                {file.fileName || file.name}
+                                                            </p>
+                                                            <div className="flex items-center gap-2 text-[9px] text-orange-400 font-medium">
+                                                                <span>{file.fileSize ? formatBytes(file.fileSize) : ''}</span>
+                                                                {file.createdAt && (
+                                                                    <>
+                                                                        <span className="w-0.5 h-0.5 rounded-full bg-orange-200" />
+                                                                        <span>{new Date(file.createdAt).toLocaleDateString('vi-VN')}</span>
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                     <button
                                                         onClick={(e) => {
@@ -702,8 +739,19 @@ const AssignmentGradingTeacher = ({ assignment, onRefresh }) => {
                                 Nhận xét riêng tư
                             </h4>
                         </div>
-                        <div className="!p-4 flex flex-col !gap-3 min-h-[80px]">
-                            <p className="text-sm text-text-muted text-center italic !mt-2 !mb-4">Chưa có nhận xét nào.</p>
+                        <div className="!p-4 flex flex-col !gap-4 min-h-[80px] overflow-y-auto">
+                            {selectedStudent.feedbacks && selectedStudent.feedbacks.length > 0 ? (
+                                selectedStudent.feedbacks.map((fb, idx) => (
+                                    <div key={idx} className="bg-background !p-3 rounded-xl border border-border shadow-sm">
+                                        <p className="text-sm text-text-main leading-relaxed">{fb.content}</p>
+                                        <p className="text-[10px] text-text-muted !mt-2 text-right font-medium">
+                                            {new Date(fb.createdAt).toLocaleString('vi-VN')}
+                                        </p>
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="text-sm text-text-muted text-center italic !mt-2 !mb-4">Chưa có nhận xét nào.</p>
+                            )}
                         </div>
                     </div>
 

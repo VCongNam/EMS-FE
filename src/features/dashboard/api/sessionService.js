@@ -17,6 +17,12 @@ export const sessionService = {
     });
   },
 
+  getSessionById: async (sessionId, token) => {
+    return fetch(getApiUrl(`/api/session/${sessionId}`), {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+  },
+
   createSession: async (payload, token) => {
     return fetch(getApiUrl('/api/session'), {
       method: 'POST',

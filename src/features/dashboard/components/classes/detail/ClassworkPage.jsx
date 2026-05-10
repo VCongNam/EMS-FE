@@ -9,6 +9,7 @@ import ConfirmModal from '../../../../../components/ui/ConfirmModal';
 import Pagination from '../../../../../components/ui/Pagination';
 import { useTAPermission } from '../../../../dashboard/context/TAPermissionContext';
 import { extractErrorMessage } from '../../../../../utils/errorHandler';
+import Loading from '../../../../../components/ui/Loading';
 
 const ClassworkPage = () => {
     const { user } = useAuthStore();
@@ -156,7 +157,13 @@ const ClassworkPage = () => {
             isSubmitted: a.isSubmitted || false,
             grade: a.grade,
             isOverdue: isOverdue,
-            isDraft: statusRaw.toLowerCase() === 'draft'
+            isDraft: statusRaw.toLowerCase() === 'draft',
+            // New fields from API
+            totalSubmissions: a.totalSubmissions || 0,
+            totalStudents: a.totalStudents || 0,
+            gradeCategoryName: a.gradeCategoryName,
+            isOffline: a.isOffline || false,
+            isGraded: a.isGraded ?? a.isgraded ?? false
         };
     });
 
@@ -197,8 +204,8 @@ const ClassworkPage = () => {
 
             {/* Assignments List */}
             {isLoading ? (
-                <div className="flex justify-center items-center py-10">
-                    <Icon icon="solar:spinner-linear" className="animate-spin text-3xl text-primary" />
+                <div className="!py-20 flex justify-center">
+                    <Loading text="Đang tải danh sách bài tập..." />
                 </div>
             ) : formattedAssignments.length > 0 ? (
                 <div className="!space-y-4">
@@ -214,23 +221,50 @@ const ClassworkPage = () => {
                                         <Icon icon="material-symbols:assignment-rounded" className="text-2xl text-primary group-hover:text-white" />
                                     </div>
                                     <div>
-                                        <h4 className="font-bold text-text-main text-lg group-hover:text-primary transition-colors">{assignment.title}</h4>
-                                        <div className="flex items-center gap-2 mt-1">
+                                        <h4 className="font-bold text-text-main text-lg group-hover:text-primary transition-colors flex items-center gap-2">
+                                            {assignment.title}
+                                            {assignment.isOffline && (
+                                                <span className="!bg-amber-100 text-amber-700 text-[10px] !px-2 !py-0.5 rounded-md border border-amber-200 flex items-center gap-1">
+                                                    <Icon icon="material-symbols:edit-document-outline-rounded" />
+                                                    Offline
+                                                </span>
+                                            )}
+                                        </h4>
+                                        <div className="flex flex-wrap items-center gap-2 mt-1">
                                             <span className={`text-[10px] font-bold uppercase tracking-wider !px-2 !py-0.5 rounded-lg border ${assignment.statusColor}`}>
                                                 {assignment.statusLabel}
                                             </span>
+                                            {assignment.gradeCategoryName && (
+                                                <span className="text-[10px] font-medium text-text-muted bg-background border border-border !px-2 !py-0.5 rounded-lg flex items-center gap-1">
+                                                    <Icon icon="material-symbols:category-outline-rounded" />
+                                                    {assignment.gradeCategoryName}
+                                                </span>
+                                            )}
+                                            {!assignment.isGraded && (
+                                                <span className="text-[10px] font-medium text-text-muted italic">
+                                                    (Không tính điểm)
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
                                 
-                                <div className="flex items-center justify-between sm:justify-end gap-6 sm:w-1/3">
+                                <div className="flex items-center justify-between sm:justify-end gap-6 sm:w-1/2">
+                                    {isTeacherOrTA && (
+                                        <div className="text-center px-4 border-r border-border hidden md:block">
+                                            <p className="text-xs text-text-muted font-medium !mb-0.5">Nộp bài</p>
+                                            <p className="text-sm font-bold text-text-main">
+                                                {assignment.totalSubmissions}<span className="text-text-muted font-normal">/{assignment.totalStudents}</span>
+                                            </p>
+                                        </div>
+                                    )}
                                     {!isTeacherOrTA && (
                                         <span className={`text-xs font-bold !px-3 !py-1.5 rounded-xl border ${assignment.statusColor}`}>
                                             {assignment.statusLabel}
                                         </span>
                                     )}
                                     <div className="text-right flex-shrink-0">
-                                        <p className="text-sm text-text-main font-semibold">Đến hạn</p>
+                                        <p className="text-sm text-text-main font-semibold">{assignment.isOffline ? 'Ngày thi' : 'Đến hạn'}</p>
                                         <p className={`text-sm ${assignment.isOverdue ? 'text-red-500 font-bold' : 'text-text-muted'}`}>{assignment.dueDateDisplay}</p>
                                     </div>
                                     <div className="flex items-center gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity mt-2 sm:mt-0">

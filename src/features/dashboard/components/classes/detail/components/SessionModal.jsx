@@ -47,14 +47,20 @@ const SessionModal = ({ isOpen, onClose, onSave, initialData = null }) => {
             const startInfo = getGMT7Value(initialData.startTime, initialData.date);
             const endInfo = getGMT7Value(initialData.endTime, initialData.date);
 
+            const getValue = (key, altKey) => {
+                if (initialData[key] !== undefined && initialData[key] !== null && initialData[key] !== '') return initialData[key];
+                if (initialData[altKey] !== undefined && initialData[altKey] !== null && initialData[altKey] !== '') return initialData[altKey];
+                return initialData[key] || initialData[altKey] || '';
+            };
+
             setFormData({
-                title: initialData.title || '',
+                title: getValue('title', 'Title'),
                 date: startInfo.date,
                 startTime: startInfo.time,
                 endTime: endInfo.time,
-                meetingLink: initialData.meetingLink || '',
-                topic: initialData.topic || '',
-                note: initialData.note || ''
+                meetingLink: getValue('meetingLink', 'MeetingLink'),
+                topic: getValue('topic', 'Topic'),
+                note: getValue('note', 'Note')
             });
         } else {
             setFormData({
@@ -135,14 +141,14 @@ const SessionModal = ({ isOpen, onClose, onSave, initialData = null }) => {
                                 <div className="!space-y-1 group">
                                     <label className={labelClasses}>Giờ bắt đầu <span className="text-red-500">*</span></label>
                                     <div className="relative">
-                                        <Icon icon="solar:clock-linear" className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted/70 text-lg group-focus-within:text-primary transition-colors pointer-events-none" />
+                                        <Icon icon="solar:alarm-add-linear" className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted/70 text-lg group-focus-within:text-primary transition-colors pointer-events-none" />
                                         <input type="time" name="startTime" step="1" required value={formData.startTime} onChange={handleChange} className={`${inputClasses} !pl-11`} />
                                     </div>
                                 </div>
                                 <div className="!space-y-1 group">
                                     <label className={labelClasses}>Giờ kết thúc <span className="text-red-500">*</span></label>
                                     <div className="relative">
-                                        <Icon icon="solar:clock-linear" className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted/70 text-lg group-focus-within:text-primary transition-colors pointer-events-none" />
+                                        <Icon icon="solar:alarm-turn-off-line-duotone" className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted/70 text-lg group-focus-within:text-primary transition-colors pointer-events-none" />
                                         <input type="time" name="endTime" step="1" required value={formData.endTime} onChange={handleChange} className={`${inputClasses} !pl-11`} />
                                     </div>
                                 </div>

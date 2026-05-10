@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Icon } from '@iconify/react';
 import { toast } from 'react-toastify';
 import useAuthStore from '../../../store/authStore';
@@ -6,6 +7,7 @@ import { sessionService } from '../../dashboard/api/sessionService';
 import studentScheduleService from '../../dashboard/api/studentScheduleService';
 import SessionModal from '../../dashboard/components/classes/detail/components/SessionModal';
 import ConfirmModal from '../../../components/ui/ConfirmModal';
+import Loading from '../../../components/ui/Loading';
 
 const COLOR_OPTIONS = ['blue', 'purple', 'green', 'orange'];
 const COLOR_MAP = {
@@ -89,8 +91,8 @@ const StudentLessonCard = ({ lesson }) => {
             </div>
 
             <div className={`px-2 py-1.5 text-center text-[10px] font-bold ${isUpcoming ? 'bg-blue-50 text-blue-600' :
-                    isEnded ? 'bg-gray-50 text-gray-500' :
-                        'bg-red-50 text-red-500'
+                isEnded ? 'bg-gray-50 text-gray-500' :
+                    'bg-red-50 text-red-500'
                 }`}>
                 {STATUS_LABEL[lesson.status?.toLowerCase()] || lesson.status || '—'}
             </div>
@@ -98,8 +100,97 @@ const StudentLessonCard = ({ lesson }) => {
     );
 };
 
-// --- Teacher Lesson Card (with edit/delete) ---
-const TeacherLessonCard = ({ lesson, onEdit, onDelete }) => {
+// --- Quick View Modal ---
+const SessionDetailModal = ({ isOpen, onClose, data }) => {
+    if (!isOpen || !data) return null;
+
+    const getValue = (key, altKey) => {
+        if (data[key] !== undefined && data[key] !== null && data[key] !== '') return data[key];
+        if (data[altKey] !== undefined && data[altKey] !== null && data[altKey] !== '') return data[altKey];
+        return data[key] || data[altKey] || 'Chưa cập nhật';
+    };
+
+    return createPortal(
+        <>
+            <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[9999] animate-fade-in" onClick={onClose} />
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center !p-4 pointer-events-none">
+                <div className="bg-surface rounded-[2rem] shadow-2xl w-full max-w-lg animate-fade-in-up pointer-events-auto overflow-hidden relative" onClick={e => e.stopPropagation()}>
+                    <div className="!p-6 border-b border-border flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center">
+                                <Icon icon="solar:eye-bold-duotone" className="text-xl" />
+                            </div>
+                            <h2 className="text-lg font-bold text-text-main font-['Outfit']">Chi tiết buổi học</h2>
+                        </div>
+                        <button onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-red-50 text-text-muted hover:text-red-500 transition-colors flex items-center justify-center">
+                            <Icon icon="material-symbols:close-rounded" className="text-xl" />
+                        </button>
+                    </div>
+
+                    <div className="!p-6 !space-y-5">
+                        <div className="!space-y-1">
+                            <p className="text-xs font-bold text-text-muted uppercase tracking-wider">Tiêu đề</p>
+                            <p className="text-sm font-bold text-text-main">{getValue('title', 'Title')}</p>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="!space-y-1">
+                                <p className="text-xs font-bold text-text-muted uppercase tracking-wider">Ngày học</p>
+                                <p className="text-sm font-semibold text-text-main flex items-center gap-2">
+                                    <Icon icon="solar:calendar-linear" className="text-primary" />
+                                    {data.date}
+                                </p>
+                            </div>
+                            <div className="!space-y-1">
+                                <p className="text-xs font-bold text-text-muted uppercase tracking-wider">Thời gian</p>
+                                <p className="text-sm font-semibold text-text-main flex items-center gap-2">
+                                    <Icon icon="solar:clock-linear" className="text-primary" />
+                                    {data.startTime?.substring(0, 5)} - {data.endTime?.substring(0, 5)}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="!space-y-1">
+                            <p className="text-xs font-bold text-text-muted uppercase tracking-wider">Chủ đề (Topic)</p>
+                            <div className="!p-3 bg-primary/5 rounded-xl border border-primary/10">
+                                <p className="text-sm text-text-main leading-relaxed">
+                                    {getValue('topic', 'Topic')}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="!space-y-1">
+                            <p className="text-xs font-bold text-text-muted uppercase tracking-wider">Ghi chú (Note)</p>
+                            <div className="!p-3 bg-orange-500/5 rounded-xl border border-orange-500/10">
+                                <p className="text-sm text-text-main leading-relaxed italic">
+                                    {getValue('note', 'Note')}
+                                </p>
+                            </div>
+                        </div>
+
+                        {data.meetingLink && (
+                            <div className="!pt-2">
+                                <a href={data.meetingLink} target="_blank" rel="noreferrer" 
+                                    className="w-full flex items-center justify-center gap-2 !py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20">
+                                    <Icon icon="solar:link-minimalistic-linear" className="text-lg" />
+                                    Tham gia buổi học
+                                </a>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="!p-4 bg-surface/50 border-t border-border flex justify-end">
+                        <button onClick={onClose} className="!px-6 !py-2 rounded-xl border border-border font-bold text-sm hover:bg-background transition-all">Đóng</button>
+                    </div>
+                </div>
+            </div>
+        </>
+        , document.body
+    );
+};
+
+// --- Teacher Lesson Card (with view/edit/delete) ---
+const TeacherLessonCard = ({ lesson, onView, onEdit, onDelete }) => {
     const isCancelled = lesson.status === 'cancelled' || lesson.status === 'canceled';
     const c = COLOR_MAP[isCancelled ? 'red' : lesson.color];
 
@@ -116,7 +207,22 @@ const TeacherLessonCard = ({ lesson, onEdit, onDelete }) => {
                 <p className={`font-semibold text-[11px] sm:text-xs leading-snug line-clamp-2 ${isCancelled ? 'text-red-500 line-through' : 'text-text-main'}`} title={lesson.className}>
                     {lesson.className}
                 </p>
-                {lesson.topic && <p className="text-[10px] text-text-muted truncate">CĐ: {lesson.topic}</p>}
+                {(lesson.topic || lesson.note) && (
+                    <div className="!space-y-0.5">
+                        {lesson.topic && (
+                            <p className="text-[10px] text-text-muted truncate flex items-center gap-1">
+                                <Icon icon="solar:tag-horizontal-linear" className="text-[8px] shrink-0" />
+                                {lesson.topic}
+                            </p>
+                        )}
+                        {lesson.note && (
+                            <p className="text-[10px] text-text-muted truncate flex items-center gap-1 italic">
+                                <Icon icon="solar:document-text-linear" className="text-[8px] shrink-0" />
+                                {lesson.note}
+                            </p>
+                        )}
+                    </div>
+                )}
                 {lesson.raw.meetingLink && (
                     <a href={lesson.raw.meetingLink} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}
                         className="flex inline-flex items-center !gap-1 text-[10px] text-blue-500 hover:text-blue-700 bg-blue-50 !px-1.5 !py-0.5 rounded-md hover:underline truncate">
@@ -125,15 +231,20 @@ const TeacherLessonCard = ({ lesson, onEdit, onDelete }) => {
                 )}
             </div>
 
-            <div className="flex gap-1.5 p-1.5 bg-surface shrink-0">
+            <div className="flex gap-1 p-1.5 bg-surface shrink-0">
+                <button onClick={(e) => { e.stopPropagation(); onView(lesson); }}
+                    className="flex flex-1 items-center justify-center !p-1 sm:!px-0 sm:!py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-500 hover:text-white transition-colors"
+                    title="Xem nhanh chi tiết">
+                    <Icon icon="solar:eye-bold-duotone" className="text-sm sm:text-base cursor-pointer" />
+                </button>
                 <button onClick={(e) => { e.stopPropagation(); onEdit(lesson); }}
-                    className="flex flex-1 items-center justify-center !p-1 sm:!px-0 sm:!py-1.5 bg-orange-100 text-orange-600 rounded-lg hover:bg-orange-500 hover:text-white transition-colors"
+                    className="flex flex-1 items-center justify-center !p-1 sm:!px-0 sm:!py-1.5 bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-500 hover:text-white transition-colors"
                     title="Chỉnh sửa buổi học">
                     <Icon icon="solar:pen-bold-duotone" className="text-sm sm:text-base cursor-pointer" />
                 </button>
                 <button onClick={(e) => { e.stopPropagation(); onDelete(lesson.id); }}
-                    className="flex flex-1 items-center justify-center !p-1 sm:!px-0 sm:!py-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-500 hover:text-white transition-colors"
-                    title="Xóa buổi học">
+                    className="flex flex-1 items-center justify-center !p-1 sm:!px-0 sm:!py-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-500 hover:text-white transition-colors"
+                    title="hủy buổi học">
                     <Icon icon="solar:trash-bin-trash-bold-duotone" className="text-sm sm:text-base cursor-pointer" />
                 </button>
             </div>
@@ -142,7 +253,7 @@ const TeacherLessonCard = ({ lesson, onEdit, onDelete }) => {
 };
 
 // --- Week View ---
-const WeekView = ({ weekStart, lessons, onEdit, onDelete, isStudent }) => {
+const WeekView = ({ weekStart, lessons, onView, onEdit, onDelete, isStudent }) => {
     const today = toDateStr(new Date());
     const [selectedDateStr, setSelectedDateStr] = useState(today);
 
@@ -175,8 +286,8 @@ const WeekView = ({ weekStart, lessons, onEdit, onDelete, isStudent }) => {
                     return (
                         <button key={`tab-${i}`} onClick={() => setSelectedDateStr(ds)}
                             className={`flex flex-col items-center justify-center !py-3 sm:!py-4 rounded-xl border transition-all ${isSelected
-                                    ? '!bg-primary border-primary shadow-lg shadow-primary/30 transform scale-[1.02] relative z-10'
-                                    : 'bg-surface border-border hover:border-primary/40 hover:bg-background'
+                                ? '!bg-primary border-primary shadow-lg shadow-primary/30 transform scale-[1.02] relative z-10'
+                                : 'bg-surface border-border hover:border-primary/40 hover:bg-background'
                                 }`}>
                             <p className={`text-[10px] sm:text-xs font-bold uppercase tracking-wider !mb-1 ${isSelected ? 'text-white/90' : isToday ? 'text-primary' : 'text-text-muted'}`}>
                                 {WEEKDAYS_VN[i]}
@@ -218,7 +329,7 @@ const WeekView = ({ weekStart, lessons, onEdit, onDelete, isStudent }) => {
                         {selectedLessons.map(lesson => (
                             isStudent
                                 ? <StudentLessonCard key={lesson.id} lesson={lesson} />
-                                : <TeacherLessonCard key={lesson.id} lesson={lesson} onEdit={onEdit} onDelete={onDelete} />
+                                : <TeacherLessonCard key={lesson.id} lesson={lesson} onView={onView} onEdit={onEdit} onDelete={onDelete} />
                         ))}
                     </div>
                 ) : (
@@ -233,7 +344,7 @@ const WeekView = ({ weekStart, lessons, onEdit, onDelete, isStudent }) => {
 };
 
 // --- Month View ---
-const MonthView = ({ year, month, lessons, onEdit, onDelete, isStudent }) => {
+const MonthView = ({ year, month, lessons, onView, onEdit, onDelete, isStudent }) => {
     const today = toDateStr(new Date());
     const [selectedDateStr, setSelectedDateStr] = useState(today);
 
@@ -288,8 +399,8 @@ const MonthView = ({ year, month, lessons, onEdit, onDelete, isStudent }) => {
                                 return (
                                     <button key={`day-${di}`} onClick={() => setSelectedDateStr(ds)}
                                         className={`flex flex-col min-h-[60px] sm:min-h-[80px] rounded-xl border !p-2 items-center transition-all ${isSelected
-                                                ? 'border-primary ring-2 ring-primary/20 bg-primary/5 shadow-sm transform scale-[1.02] relative z-10'
-                                                : 'border-border bg-surface hover:border-primary/50 hover:bg-background'
+                                            ? 'border-primary ring-2 ring-primary/20 bg-primary/5 shadow-sm transform scale-[1.02] relative z-10'
+                                            : 'border-border bg-surface hover:border-primary/50 hover:bg-background'
                                             }`}>
                                         <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold ${isSelected ? 'bg-primary text-white shadow-md' : isToday ? 'text-primary bg-primary/10' : 'text-text-main'
                                             }`}>
@@ -333,7 +444,7 @@ const MonthView = ({ year, month, lessons, onEdit, onDelete, isStudent }) => {
                             {selectedLessons.map(lesson => (
                                 isStudent
                                     ? <StudentLessonCard key={lesson.id} lesson={lesson} />
-                                    : <TeacherLessonCard key={lesson.id} lesson={lesson} onEdit={onEdit} onDelete={onDelete} />
+                                    : <TeacherLessonCard key={lesson.id} lesson={lesson} onView={onView} onEdit={onEdit} onDelete={onDelete} />
                             ))}
                         </div>
                     ) : (
@@ -407,6 +518,7 @@ const ScheduleManagementPage = () => {
     const [loading, setLoading] = useState(true);
 
     const [sessionModalState, setSessionModalState] = useState({ isOpen: false, initialData: null });
+    const [viewModalState, setViewModalState] = useState({ isOpen: false, data: null });
     const [deletingId, setDeletingId] = useState(null);
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, sessionId: null });
 
@@ -501,7 +613,55 @@ const ScheduleManagementPage = () => {
     }, [isStudent, fetchStudentSchedule, fetchTeacherSchedule]);
 
     // --- Teacher handlers ---
-    const handleEditLesson = (lesson) => setSessionModalState({ isOpen: true, initialData: lesson.raw });
+    const handleViewLesson = async (lesson) => {
+        try {
+            if (!token) return;
+            const loadingToast = toast.loading("Đang tải chi tiết...");
+            const res = await sessionService.getSessionById(lesson.id, token);
+            if (res.ok) {
+                const result = await res.json();
+                const detailedData = result.data || result;
+                toast.dismiss(loadingToast);
+                setViewModalState({ isOpen: true, data: { ...lesson.raw, ...detailedData } });
+            } else {
+                toast.dismiss(loadingToast);
+                toast.error("Không thể tải chi tiết");
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error("Lỗi kết nối");
+        }
+    };
+
+    const handleEditLesson = async (lesson) => {
+        try {
+            if (!token) return;
+
+            const loadingToast = toast.loading("Đang tải chi tiết buổi học...");
+            const res = await sessionService.getSessionById(lesson.id, token);
+            
+            if (res.ok) {
+                const result = await res.json();
+                const detailedData = result.data || result;
+                
+                toast.dismiss(loadingToast);
+                setSessionModalState({ 
+                    isOpen: true, 
+                    initialData: {
+                        ...lesson.raw,
+                        ...detailedData
+                    } 
+                });
+            } else {
+                toast.dismiss(loadingToast);
+                toast.error("Không thể lấy thông tin chi tiết");
+                setSessionModalState({ isOpen: true, initialData: lesson.raw });
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error("Lỗi kết nối máy chủ");
+        }
+    };
     const handleDeleteLesson = (id) => setConfirmModal({ isOpen: true, sessionId: id });
 
     const handleConfirmDelete = async () => {
@@ -511,7 +671,7 @@ const ScheduleManagementPage = () => {
             setDeletingId(id);
             const res = await sessionService.deleteSession(id, token);
             if (res.ok) {
-                toast.success('Đã xóa buổi học thành công!');
+                toast.success('Đã hủy buổi học thành công!');
                 fetchTeacherSchedule();
             } else {
                 toast.error('Lỗi khi xóa!');
@@ -614,9 +774,7 @@ const ScheduleManagementPage = () => {
     return (
         <div className="w-full !space-y-6 animate-fade-in relative min-h-[400px]">
             {loading && (
-                <div className="absolute inset-0 bg-background/50 backdrop-blur-sm z-10 flex items-center justify-center rounded-[2rem]">
-                    <Icon icon="line-md:loading-loop" className="text-4xl text-primary" />
-                </div>
+                <Loading overlay text="Đang tải lịch học..." />
             )}
 
             {/* ── Header ── */}
@@ -690,8 +848,8 @@ const ScheduleManagementPage = () => {
 
                     <div className="min-w-[800px]">
                         {viewMode === 'week'
-                            ? <WeekView weekStart={weekStart} lessons={lessons} onEdit={handleEditLesson} onDelete={handleDeleteLesson} isStudent={isStudent} />
-                            : <MonthView year={currentYear} month={currentMonth} lessons={lessons} onEdit={handleEditLesson} onDelete={handleDeleteLesson} isStudent={isStudent} />
+                            ? <WeekView weekStart={weekStart} lessons={lessons} onView={handleViewLesson} onEdit={handleEditLesson} onDelete={handleDeleteLesson} isStudent={isStudent} />
+                            : <MonthView year={currentYear} month={currentMonth} lessons={lessons} onView={handleViewLesson} onEdit={handleEditLesson} onDelete={handleDeleteLesson} isStudent={isStudent} />
                         }
                     </div>
                 </div>
@@ -716,6 +874,11 @@ const ScheduleManagementPage = () => {
             {/* Modals (Teacher only) */}
             {!isStudent && (
                 <>
+                    <SessionDetailModal
+                        isOpen={viewModalState.isOpen}
+                        onClose={() => setViewModalState({ isOpen: false, data: null })}
+                        data={viewModalState.data}
+                    />
                     <SessionModal
                         isOpen={sessionModalState.isOpen}
                         onClose={() => setSessionModalState({ isOpen: false, initialData: null })}
@@ -726,9 +889,9 @@ const ScheduleManagementPage = () => {
                         isOpen={confirmModal.isOpen}
                         onClose={() => setConfirmModal({ isOpen: false, sessionId: null })}
                         onConfirm={handleConfirmDelete}
-                        title="Xác nhận xóa buổi học"
-                        message="Bạn có chắc chắn muốn xóa buổi học này không? Hành động này không thể hoàn tác."
-                        confirmText="Xóa buổi học"
+                        title="Xác nhận hủy buổi học"
+                        message="Bạn có chắc chắn muốn hủy buổi học này không? Hành động này không thể hoàn tác."
+                        confirmText="hủy buổi học"
                         cancelText="Hủy bỏ"
                         type="danger"
                     />

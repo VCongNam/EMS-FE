@@ -10,9 +10,9 @@ import { formatViDate } from '../../../../../utils/dateUtils';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const STATUS_CFG = {
-    present: { label: 'Hiện diện', badge: '!bg-green-500/10 text-green-600 border-green-500/20',  dot: '!bg-green-500'  },
-    late:    { label: 'Đi muộn',   badge: '!bg-orange-500/10 text-orange-600 border-orange-500/20', dot: '!bg-orange-500' },
-    absent:  { label: 'Vắng mặt', badge: '!bg-red-500/10 text-red-600 border-red-500/20',          dot: '!bg-red-500'    },
+    present: { label: 'có mặt', badge: '!bg-green-500/10 text-green-600 border-green-500/20', dot: '!bg-green-500' },
+    late: { label: 'Đi muộn', badge: '!bg-orange-500/10 text-orange-600 border-orange-500/20', dot: '!bg-orange-500' },
+    absent: { label: 'Vắng mặt', badge: '!bg-red-500/10 text-red-600 border-red-500/20', dot: '!bg-red-500' },
     'not taken': { label: 'Chưa điểm danh', badge: '!bg-text-muted/10 text-text-muted border-border', dot: '!bg-text-muted' },
 };
 
@@ -28,9 +28,9 @@ const ClassAttendancePage = () => {
     const { user } = useAuthStore();
     const isTeacherOrTA = ['TEACHER', 'TA'].includes(user?.role?.toUpperCase());
 
-    const [viewMode, setViewMode]     = useState(isTeacherOrTA ? 'by-session' : 'by-student'); 
+    const [viewMode, setViewMode] = useState(isTeacherOrTA ? 'by-session' : 'by-student');
     const [searchQuery, setSearchQuery] = useState('');
-    const [statusFilter, setStatusFilter] = useState('all'); 
+    const [statusFilter, setStatusFilter] = useState('all');
     const [expandedSession, setExpandedSession] = useState(null);
 
     const [sessionsData, setSessionsData] = useState([]);
@@ -47,16 +47,16 @@ const ClassAttendancePage = () => {
 
         try {
             setIsLoading(true);
-            
+
             // 1. Fetch Basic Sessions List
-            const sessRes = (role === 'STUDENT') 
+            const sessRes = (role === 'STUDENT')
                 ? await studentScheduleService.getSchedule({ FromDate: '01/01/2025', ToDate: '01/01/2027', ClassId: classId }, token)
                 : await sessionService.getClassSessions(classId, token);
 
             if (sessRes?.ok) {
                 const sessionJson = await sessRes.json();
                 const rawSessions = Array.isArray(sessionJson) ? sessionJson : sessionJson.data || [];
-                
+
                 const mapped = rawSessions.map((item, index) => {
                     const dateObj = new Date(item.date);
                     const dayLabels = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
@@ -85,7 +85,7 @@ const ClassAttendancePage = () => {
                 // Students fetch their own history or we use the sessions to fetch details
                 // For simplicity, we'll fetch attendance for recorded sessions like before
             }
-        } catch(error) {
+        } catch (error) {
             console.error('Error:', error);
         } finally {
             setIsLoading(false);
@@ -97,7 +97,7 @@ const ClassAttendancePage = () => {
         if (historyData && isTeacherOrTA) {
             const newRecords = {};
             const stMap = {};
-            
+
             historyData.forEach(student => {
                 stMap[student.studentId] = { id: student.studentId, name: student.fullName };
                 student.attendances.forEach(att => {
@@ -110,7 +110,7 @@ const ClassAttendancePage = () => {
                     });
                 });
             });
-            
+
             setRecordsData(newRecords);
             setStudentsData(Object.values(stMap));
         }
@@ -122,15 +122,15 @@ const ClassAttendancePage = () => {
 
     const recordedSessions = useMemo(() => {
         if (!isTeacherOrTA) return sessionsData.filter(s => recordsData[s.id] && recordsData[s.id].length > 0);
-        return sessionsData; 
+        return sessionsData;
     }, [sessionsData, recordsData, isTeacherOrTA]);
 
     const sessionRows = useMemo(() => {
         return recordedSessions.map(session => {
             const rec = recordsData[session.id] || [];
             const present = rec.filter(r => (r.status || '').includes('present')).length;
-            const late    = rec.filter(r => (r.status || '').includes('late')).length;
-            const absent  = rec.filter(r => (r.status || '').includes('absent')).length;
+            const late = rec.filter(r => (r.status || '').includes('late')).length;
+            const absent = rec.filter(r => (r.status || '').includes('absent')).length;
             return { ...session, rec, present, late, absent, total: rec.length };
         });
     }, [recordedSessions, recordsData]);
@@ -160,20 +160,20 @@ const ClassAttendancePage = () => {
                     return { session, status: entry?.status || null };
                 });
                 const present = entries.filter(e => e.status === 'present').length;
-                const late    = entries.filter(e => e.status === 'late').length;
-                const absent  = entries.filter(e => e.status === 'absent').length;
-                return { 
-                    ...student, 
-                    entries, 
-                    present, late, absent, 
-                    rate: recordedSessions.length > 0 ? Math.round(((present + late) / recordedSessions.length) * 100) : 0 
+                const late = entries.filter(e => e.status === 'late').length;
+                const absent = entries.filter(e => e.status === 'absent').length;
+                return {
+                    ...student,
+                    entries,
+                    present, late, absent,
+                    rate: recordedSessions.length > 0 ? Math.round(((present + late) / recordedSessions.length) * 100) : 0
                 };
             });
         }
 
         return sourceData.filter(s => {
             const matchSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                                s.id.toLowerCase().includes(searchQuery.toLowerCase());
+                s.id.toLowerCase().includes(searchQuery.toLowerCase());
             if (!matchSearch) return false;
             if (statusFilter === 'all') return true;
             return s.status === statusFilter || (s.entries && s.entries.some(e => e.status === statusFilter));
@@ -197,7 +197,7 @@ const ClassAttendancePage = () => {
         const totalP = sessionRows.reduce((a, s) => a + s.present, 0);
         const totalL = sessionRows.reduce((a, s) => a + s.late, 0);
         const totalA = sessionRows.reduce((a, s) => a + s.absent, 0);
-        const total  = totalP + totalL + totalA;
+        const total = totalP + totalL + totalA;
         return {
             present: totalP,
             late: totalL,
@@ -218,7 +218,7 @@ const ClassAttendancePage = () => {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
                     { label: 'Tỷ lệ đi học', value: `${stats.rate}%`, icon: 'solar:chart-bold-duotone', color: 'text-primary !bg-primary/10' },
-                    { label: 'Hiện diện', value: stats.present, icon: 'material-symbols:check-circle-rounded', color: 'text-green-600 !bg-green-500/10' },
+                    { label: 'có mặt', value: stats.present, icon: 'material-symbols:check-circle-rounded', color: 'text-green-600 !bg-green-500/10' },
                     { label: 'Đi muộn', value: stats.late, icon: 'material-symbols:schedule-rounded', color: 'text-orange-500 !bg-orange-500/10' },
                     { label: 'Vắng mặt', value: stats.absent, icon: 'material-symbols:cancel-rounded', color: 'text-red-500 !bg-red-500/10' },
                 ].map((stat, i) => (
@@ -252,9 +252,8 @@ const ClassAttendancePage = () => {
                         <button
                             key={s}
                             onClick={() => setStatusFilter(s)}
-                            className={`!px-3 !py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
-                                statusFilter === s ? '!bg-primary text-white shadow-sm' : 'text-text-muted hover:text-text-main'
-                            }`}
+                            className={`!px-3 !py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${statusFilter === s ? '!bg-primary text-white shadow-sm' : 'text-text-muted hover:text-text-main'
+                                }`}
                         >
                             {s === 'all' ? 'Tất cả' : STATUS_CFG[s].label}
                         </button>
@@ -265,17 +264,15 @@ const ClassAttendancePage = () => {
                     <div className="flex items-center !gap-1 !bg-background border border-border rounded-xl !p-1 shrink-0">
                         <button
                             onClick={() => setViewMode('by-session')}
-                            className={`flex items-center !gap-1.5 !px-3 !py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                                viewMode === 'by-session' ? '!bg-primary text-white shadow-sm' : 'text-text-muted hover:text-text-main'
-                            }`}
+                            className={`flex items-center !gap-1.5 !px-3 !py-1.5 rounded-lg text-xs font-semibold transition-all ${viewMode === 'by-session' ? '!bg-primary text-white shadow-sm' : 'text-text-muted hover:text-text-main'
+                                }`}
                         >
                             <Icon icon="solar:list-bold-duotone" className="text-base" /> Theo buổi
                         </button>
                         <button
                             onClick={() => setViewMode('by-student')}
-                            className={`flex items-center !gap-1.5 !px-3 !py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                                viewMode === 'by-student' ? '!bg-primary text-white shadow-sm' : 'text-text-muted hover:text-text-main'
-                            }`}
+                            className={`flex items-center !gap-1.5 !px-3 !py-1.5 rounded-lg text-xs font-semibold transition-all ${viewMode === 'by-student' ? '!bg-primary text-white shadow-sm' : 'text-text-muted hover:text-text-main'
+                                }`}
                         >
                             <Icon icon="solar:history-bold-duotone" className="text-base" /> Lịch sử
                         </button>
@@ -329,148 +326,146 @@ const BySessionView = ({ rows, expandedSession, setExpandedSession, statusFilter
         <div className="space-y-4">
             <div className="space-y-3">
                 {paginatedRows.map(session => {
-                const isExpanded = expandedSession === session.id;
-                const filteredRec = statusFilter === 'all'
-                    ? session.rec
-                    : session.rec.filter(r => r.status === statusFilter);
+                    const isExpanded = expandedSession === session.id;
+                    const filteredRec = statusFilter === 'all'
+                        ? session.rec
+                        : session.rec.filter(r => r.status === statusFilter);
 
-                return (
-                    <div key={session.id} className="!bg-surface border border-border rounded-2xl overflow-hidden">
-                        {/* Session header row */}
-                        <button
-                            onClick={() => setExpandedSession(isExpanded ? null : session.id)}
-                            className="w-full flex flex-col sm:flex-row items-start sm:items-center !gap-4 !p-4 hover:!bg-primary/5 transition-colors text-left"
-                        >
-                            {/* Session badge */}
-                            <div className="flex items-center !gap-3 flex-1 min-w-0">
-                                <div className="flex flex-col items-center justify-center min-w-[52px] !px-2 !py-2 !bg-primary/10 rounded-xl text-primary border border-primary/20 shrink-0">
-                                    <span className="text-[9px] font-bold uppercase tracking-wide opacity-70">Buổi</span>
-                                    <span className="text-lg font-extrabold leading-none">{session.session}</span>
+                    return (
+                        <div key={session.id} className="!bg-surface border border-border rounded-2xl overflow-hidden">
+                            {/* Session header row */}
+                            <button
+                                onClick={() => setExpandedSession(isExpanded ? null : session.id)}
+                                className="w-full flex flex-col sm:flex-row items-start sm:items-center !gap-4 !p-4 hover:!bg-primary/5 transition-colors text-left"
+                            >
+                                {/* Session badge */}
+                                <div className="flex items-center !gap-3 flex-1 min-w-0">
+                                    <div className="flex flex-col items-center justify-center min-w-[52px] !px-2 !py-2 !bg-primary/10 rounded-xl text-primary border border-primary/20 shrink-0">
+                                        <span className="text-[9px] font-bold uppercase tracking-wide opacity-70">Buổi</span>
+                                        <span className="text-lg font-extrabold leading-none">{session.session}</span>
+                                    </div>
+                                    <div>
+                                        <p className="font-bold text-sm text-text-main">{session.day}, {fmtDate(session.date)}</p>
+                                        <p className="text-xs text-text-muted flex items-center !gap-1 mt-0.5">
+                                            <Icon icon="solar:clock-circle-linear" className="text-primary/70" />
+                                            {session.startTime} – {session.endTime}
+                                        </p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="font-bold text-sm text-text-main">{session.day}, {fmtDate(session.date)}</p>
-                                    <p className="text-xs text-text-muted flex items-center !gap-1 mt-0.5">
-                                        <Icon icon="solar:clock-circle-linear" className="text-primary/70" />
-                                        {session.startTime} – {session.endTime}
-                                    </p>
+
+                                {/* Mini stats */}
+                                <div className="flex items-center !gap-2 flex-wrap">
+                                    <StatPill value={session.present} label="có mặt" color="text-green-600 !bg-green-500/10 border-green-500/20" />
+                                    <StatPill value={session.late} label="Đi muộn" color="text-orange-500 !bg-orange-500/10 border-orange-500/20" />
+                                    <StatPill value={session.absent} label="Vắng mặt" color="text-red-500 !bg-red-500/10 border-red-500/20" />
+                                    {isTeacherOrTA && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                const now = new Date();
+                                                now.setHours(0, 0, 0, 0);
+                                                const lessonDate = new Date(session.date + 'T00:00:00');
+                                                const diffDays = Math.floor((lessonDate - now) / (1000 * 60 * 60 * 24));
+
+                                                const tooEarly = diffDays > 0;
+                                                const isLocked = diffDays < -7;
+
+                                                if (tooEarly) {
+                                                    toast.info("Buổi học này chưa đến lúc điểm danh");
+                                                    return;
+                                                }
+                                                onOpenAttendance({ ...session, isLocked });
+                                            }}
+                                            className="!ml-2 flex items-center !gap-1.5 !px-3 !py-1.5 text-[11px] font-bold !bg-primary text-white rounded-xl hover:!bg-primary/90 shadow-sm transition-all shadow-primary/20 shrink-0"
+                                        >
+                                            <Icon icon="solar:pen-bold" className="text-sm" />
+                                            Sửa
+                                        </button>
+                                    )}
+                                    <Icon
+                                        icon="material-symbols:keyboard-arrow-down-rounded"
+                                        className={`text-xl text-text-muted transition-transform duration-200 ml-1 ${isExpanded ? 'rotate-180' : ''}`}
+                                    />
                                 </div>
-                            </div>
+                            </button>
 
-                            {/* Mini stats */}
-                            <div className="flex items-center !gap-2 flex-wrap">
-                                <StatPill value={session.present} label="Hiện diện" color="text-green-600 !bg-green-500/10 border-green-500/20" />
-                                <StatPill value={session.late}    label="Đi muộn"   color="text-orange-500 !bg-orange-500/10 border-orange-500/20" />
-                                <StatPill value={session.absent}  label="Vắng mặt"  color="text-red-500 !bg-red-500/10 border-red-500/20" />
-                                {isTeacherOrTA && (
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            const now = new Date();
-                                            now.setHours(0, 0, 0, 0);
-                                            const lessonDate = new Date(session.date + 'T00:00:00');
-                                            const diffDays = Math.floor((lessonDate - now) / (1000 * 60 * 60 * 24));
-                                            
-                                            const tooEarly = diffDays > 0;
-                                            const isLocked = diffDays < -7;
-
-                                            if (tooEarly) {
-                                                toast.info("Buổi học này chưa đến lúc điểm danh");
-                                                return;
-                                            }
-                                            onOpenAttendance({ ...session, isLocked });
-                                        }}
-                                        className="!ml-2 flex items-center !gap-1.5 !px-3 !py-1.5 text-[11px] font-bold !bg-primary text-white rounded-xl hover:!bg-primary/90 shadow-sm transition-all shadow-primary/20 shrink-0"
-                                    >
-                                        <Icon icon="solar:pen-bold" className="text-sm" />
-                                        Sửa
-                                    </button>
-                                )}
-                                <Icon
-                                    icon="material-symbols:keyboard-arrow-down-rounded"
-                                    className={`text-xl text-text-muted transition-transform duration-200 ml-1 ${isExpanded ? 'rotate-180' : ''}`}
-                                />
-                            </div>
-                        </button>
-
-                        {/* Expanded student detail */}
-                        {isExpanded && (
-                            <div className="border-t border-border !bg-background/50">
-                                {/* Desktop table */}
-                                <table className="hidden sm:table w-full text-left">
-                                    <thead>
-                                        <tr className="border-b border-border/50">
-                                            <th className="!px-5 !py-2.5 text-[11px] font-semibold text-text-muted uppercase tracking-wider">Mã HS</th>
-                                            <th className="!px-5 !py-2.5 text-[11px] font-semibold text-text-muted uppercase tracking-wider">Họ và Tên</th>
-                                            <th className="!px-5 !py-2.5 text-[11px] font-semibold text-text-muted uppercase tracking-wider text-center">Trạng thái</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-border/30">
-                                        {filteredRec.map(student => (
-                                            <tr key={student.id} className="hover:!bg-primary/5 transition-colors">
-                                                <td className="!px-5 !py-3">
-                                                    <div className="flex items-center !gap-2">
-                                                        <div className="w-7 h-7 rounded-full !bg-primary/10 text-primary flex items-center justify-center text-xs font-bold uppercase shrink-0">
-                                                            {student.name.charAt(0)}
-                                                        </div>
-                                                        <span className="font-semibold text-sm text-text-main">{student.name}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="!px-5 !py-3 text-center">
-                                                    <StatusBadge status={student.status} />
-                                                </td>
+                            {/* Expanded student detail */}
+                            {isExpanded && (
+                                <div className="border-t border-border !bg-background/50">
+                                    {/* Desktop table */}
+                                    <table className="hidden sm:table w-full text-left">
+                                        <thead>
+                                            <tr className="border-b border-border/50">
+                                                <th className="!px-5 !py-2.5 text-[11px] font-semibold text-text-muted uppercase tracking-wider">Mã HS</th>
+                                                <th className="!px-5 !py-2.5 text-[11px] font-semibold text-text-muted uppercase tracking-wider">Họ và Tên</th>
+                                                <th className="!px-5 !py-2.5 text-[11px] font-semibold text-text-muted uppercase tracking-wider text-center">Trạng thái</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody className="divide-y divide-border/30">
+                                            {filteredRec.map(student => (
+                                                <tr key={student.id} className="hover:!bg-primary/5 transition-colors">
+                                                    <td className="!px-5 !py-3">
+                                                        <div className="flex items-center !gap-2">
+                                                            <div className="w-7 h-7 rounded-full !bg-primary/10 text-primary flex items-center justify-center text-xs font-bold uppercase shrink-0">
+                                                                {student.name.charAt(0)}
+                                                            </div>
+                                                            <span className="font-semibold text-sm text-text-main">{student.name}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="!px-5 !py-3 text-center">
+                                                        <StatusBadge status={student.status} />
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
 
-                                {/* Mobile card list */}
-                                <div className="sm:hidden divide-y divide-border/30">
-                                    {filteredRec.map(student => (
-                                        <div key={student.id} className="flex items-center justify-between !px-4 !py-3">
-                                            <div className="flex items-center !gap-2.5">
-                                                <div className="w-8 h-8 rounded-full !bg-primary/10 text-primary flex items-center justify-center text-xs font-bold uppercase shrink-0">
-                                                    {student.name.charAt(0)}
+                                    {/* Mobile card list */}
+                                    <div className="sm:hidden divide-y divide-border/30">
+                                        {filteredRec.map(student => (
+                                            <div key={student.id} className="flex items-center justify-between !px-4 !py-3">
+                                                <div className="flex items-center !gap-2.5">
+                                                    <div className="w-8 h-8 rounded-full !bg-primary/10 text-primary flex items-center justify-center text-xs font-bold uppercase shrink-0">
+                                                        {student.name.charAt(0)}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-sm text-text-main">{student.name}</p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <p className="font-bold text-sm text-text-main">{student.name}</p>
-                                                </div>
+                                                <StatusBadge status={student.status} />
                                             </div>
-                                            <StatusBadge status={student.status} />
-                                        </div>
-                                    ))}
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
-                        )}
-                    </div>
-                );
-            })}
+                            )}
+                        </div>
+                    );
+                })}
             </div>
-            
+
             {/* Pagination Controls */}
             {totalPages > 1 && (
                 <div className="flex justify-center items-center gap-2 mt-6">
                     <button
                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                         disabled={currentPage === 1}
-                        className={`p-2 rounded-xl border transition-colors ${
-                            currentPage === 1 
-                                ? 'border-border text-border !bg-background cursor-not-allowed' 
+                        className={`p-2 rounded-xl border transition-colors ${currentPage === 1
+                                ? 'border-border text-border !bg-background cursor-not-allowed'
                                 : 'border-border text-text-main hover:!bg-primary/5 hover:border-primary/30 !bg-background'
-                        }`}
+                            }`}
                     >
                         <Icon icon="solar:alt-arrow-left-linear" className="text-lg" />
                     </button>
-                    
+
                     <div className="flex items-center gap-1">
                         {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
                             <button
                                 key={page}
                                 onClick={() => setCurrentPage(page)}
-                                className={`w-9 h-9 rounded-xl text-sm font-bold transition-all ${
-                                    currentPage === page
+                                className={`w-9 h-9 rounded-xl text-sm font-bold transition-all ${currentPage === page
                                         ? '!bg-primary text-white shadow-md shadow-primary/30'
                                         : 'text-text-muted hover:!bg-primary/5 hover:text-text-main'
-                                }`}
+                                    }`}
                             >
                                 {page}
                             </button>
@@ -480,11 +475,10 @@ const BySessionView = ({ rows, expandedSession, setExpandedSession, statusFilter
                     <button
                         onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                         disabled={currentPage === totalPages}
-                        className={`p-2 rounded-xl border transition-colors ${
-                            currentPage === totalPages 
-                                ? 'border-border text-border !bg-background cursor-not-allowed' 
+                        className={`p-2 rounded-xl border transition-colors ${currentPage === totalPages
+                                ? 'border-border text-border !bg-background cursor-not-allowed'
                                 : 'border-border text-text-main hover:!bg-primary/5 hover:border-primary/30 !bg-background'
-                        }`}
+                            }`}
                     >
                         <Icon icon="solar:alt-arrow-right-linear" className="text-lg" />
                     </button>
@@ -593,9 +587,8 @@ const ByStudentView = ({ rows, sessions }) => {
                                     return (
                                         <div
                                             key={i}
-                                            className={`flex flex-col items-center justify-center !py-2 rounded-xl border transition-all ${
-                                                entry.status ? cfg.badge : '!bg-background border-border/50 text-text-muted/30'
-                                            }`}
+                                            className={`flex flex-col items-center justify-center !py-2 rounded-xl border transition-all ${entry.status ? cfg.badge : '!bg-background border-border/50 text-text-muted/30'
+                                                }`}
                                         >
                                             <span className="text-[9px] font-bold mb-1">B{sessions[i]?.session}</span>
                                             {entry.status ? (
@@ -611,32 +604,30 @@ const ByStudentView = ({ rows, sessions }) => {
                     ))}
                 </div>
             </div>
-            
+
             {/* Pagination Controls */}
             {totalPages > 1 && (
                 <div className="flex justify-center items-center gap-2 mt-2">
                     <button
                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                         disabled={currentPage === 1}
-                        className={`!p-2.5 rounded-xl border transition-all ${
-                            currentPage === 1 
-                                ? 'border-border text-border !bg-background cursor-not-allowed opacity-50' 
+                        className={`!p-2.5 rounded-xl border transition-all ${currentPage === 1
+                                ? 'border-border text-border !bg-background cursor-not-allowed opacity-50'
                                 : '!bg-surface border-border text-text-main hover:border-primary hover:text-primary active:scale-95 shadow-sm'
-                        }`}
+                            }`}
                     >
                         <Icon icon="solar:alt-arrow-left-linear" className="text-lg" />
                     </button>
-                    
+
                     <div className="flex items-center gap-1.5">
                         {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
                             <button
                                 key={page}
                                 onClick={() => setCurrentPage(page)}
-                                className={`w-10 h-10 rounded-xl text-sm font-bold transition-all ${
-                                    currentPage === page
+                                className={`w-10 h-10 rounded-xl text-sm font-bold transition-all ${currentPage === page
                                         ? '!bg-primary text-white shadow-lg shadow-primary/30'
                                         : '!bg-surface text-text-muted hover:!bg-primary/5 hover:text-text-main border border-border shadow-sm'
-                                }`}
+                                    }`}
                             >
                                 {page}
                             </button>
@@ -646,11 +637,10 @@ const ByStudentView = ({ rows, sessions }) => {
                     <button
                         onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                         disabled={currentPage === totalPages}
-                        className={`!p-2.5 rounded-xl border transition-all ${
-                            currentPage === totalPages 
-                                ? 'border-border text-border !bg-background cursor-not-allowed opacity-50' 
+                        className={`!p-2.5 rounded-xl border transition-all ${currentPage === totalPages
+                                ? 'border-border text-border !bg-background cursor-not-allowed opacity-50'
                                 : '!bg-surface border-border text-text-main hover:border-primary hover:text-primary active:scale-95 shadow-sm'
-                        }`}
+                            }`}
                     >
                         <Icon icon="solar:alt-arrow-right-linear" className="text-lg" />
                     </button>

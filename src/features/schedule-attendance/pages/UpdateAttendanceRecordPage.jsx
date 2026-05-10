@@ -25,7 +25,7 @@ const UpdateAttendanceRecordPage = () => {
     };
 
     const StatusBadge = ({ status }) => {
-        if (status === 'present') return <span className="px-3 py-1 bg-green-100 text-green-700 rounded text-xs font-bold uppercase tracking-wider">Hiện diện</span>;
+        if (status === 'present') return <span className="px-3 py-1 bg-green-100 text-green-700 rounded text-xs font-bold uppercase tracking-wider">có mặt</span>;
         if (status === 'absent') return <span className="px-3 py-1 bg-red-100 text-red-700 rounded text-xs font-bold uppercase tracking-wider">Vắng mặt</span>;
         if (status === 'late') return <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded text-xs font-bold uppercase tracking-wider">Đi muộn</span>;
     };
@@ -42,8 +42,8 @@ const UpdateAttendanceRecordPage = () => {
                     <p className="text-text-muted mt-1">Lớp: Toán Cao Cấp (MATH101)</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <input 
-                        type="date" 
+                    <input
+                        type="date"
                         className="px-4 py-2 bg-background border border-border rounded-xl font-medium text-text-main focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                     />
                     <button className="px-4 py-2 bg-primary text-white rounded-xl font-semibold hover:bg-primary/90 shadow-md transition-all flex items-center gap-2">
@@ -57,7 +57,7 @@ const UpdateAttendanceRecordPage = () => {
                 <div className="p-4 border-b border-border bg-background/50 flex justify-between items-center">
                     <h3 className="font-semibold text-text-main">Ngày học: {selectedDate}</h3>
                     {!isEditing ? (
-                        <button 
+                        <button
                             onClick={() => setIsEditing(true)}
                             className="px-4 py-2 bg-primary/10 text-primary border border-primary/20 rounded-xl font-bold hover:bg-primary/20 transition-all flex items-center gap-2 text-sm"
                         >
@@ -65,13 +65,13 @@ const UpdateAttendanceRecordPage = () => {
                         </button>
                     ) : (
                         <div className="flex gap-2">
-                            <button 
+                            <button
                                 onClick={() => setIsEditing(false)}
                                 className="px-4 py-2 bg-background text-text-muted border border-border rounded-xl font-bold hover:bg-border/50 transition-all text-sm"
                             >
                                 Hủy
                             </button>
-                            <button 
+                            <button
                                 onClick={handleSave}
                                 className="px-4 py-2 bg-primary text-white rounded-xl font-bold flex items-center gap-2 text-sm shadow-md"
                             >
@@ -104,14 +104,13 @@ const UpdateAttendanceRecordPage = () => {
                                         {!isEditing ? (
                                             <StatusBadge status={student.currentStatus} />
                                         ) : (
-                                            <select 
+                                            <select
                                                 value={student.currentStatus}
                                                 onChange={(e) => handleStatusChange(student.id, e.target.value)}
-                                                className={`px-3 py-1.5 rounded-lg border focus:ring-2 outline-none font-bold text-sm ${
-                                                    student.currentStatus !== student.originalStatus ? 'border-primary ring-1 ring-primary/50 text-primary bg-primary/5' : 'border-border text-text-main bg-background'
-                                                }`}
+                                                className={`px-3 py-1.5 rounded-lg border focus:ring-2 outline-none font-bold text-sm ${student.currentStatus !== student.originalStatus ? 'border-primary ring-1 ring-primary/50 text-primary bg-primary/5' : 'border-border text-text-main bg-background'
+                                                    }`}
                                             >
-                                                <option value="present">Hiện diện</option>
+                                                <option value="present">có mặt</option>
                                                 <option value="absent">Vắng mặt</option>
                                                 <option value="late">Đi muộn</option>
                                             </select>
@@ -121,8 +120,8 @@ const UpdateAttendanceRecordPage = () => {
                                         {!isEditing ? (
                                             <span className="text-sm text-text-muted italic">{student.currentStatus !== student.originalStatus ? 'Đã sửa đổi bởi Admin' : '--'}</span>
                                         ) : (
-                                            <input 
-                                                type="text" 
+                                            <input
+                                                type="text"
                                                 disabled={student.currentStatus === student.originalStatus}
                                                 placeholder={student.currentStatus !== student.originalStatus ? 'Lý do sửa...' : ''}
                                                 className="w-full px-3 py-1.5 bg-background border border-border rounded text-sm focus:border-primary outline-none disabled:opacity-50 disabled:bg-surface"
