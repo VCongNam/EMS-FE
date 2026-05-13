@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
+import ReCAPTCHA from 'react-google-recaptcha';
 import { Link, useNavigate } from 'react-router-dom';
 import Button from '../../../components/ui/Button';
 import AuthLayout from '../components/AuthLayout';
 import { authService } from '../api/authService';
 const RegisterPage = () => {
     const navigate = useNavigate();
+
+    const recaptchaRef = useRef(null);
 
     // State cho việc chọn Role MOCKUP: 'teacher' | 'ta'
     const [role, setRole] = useState('teacher');
@@ -14,6 +17,10 @@ const RegisterPage = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+
+
+    // State lưu mã token của Captcha sau khi người dùng hoàn thành captcha
+    const [captchaToken, setCaptchaToken] = useState(null);
 
     // UI states
     const [showPassword, setShowPassword] = useState(false);
@@ -30,6 +37,13 @@ const RegisterPage = () => {
             return;
         }
 
+        //Kiểm tra nếu chưa có token captcha (người dùng chưa hoàn thành captcha)
+        if (!captchaToken) {
+            setError('Vui lòng hoàn thành captcha để xác nhận bạn không phải là robot.');
+            return;
+        }
+
+
         setLoading(true);
 
         try {
@@ -37,7 +51,8 @@ const RegisterPage = () => {
                 email: email.trim(), 
                 password, 
                 fullName: fullName.trim(), 
-                roleName: role === 'teacher' ? 'Teacher' : 'TA' 
+                roleName: role === 'teacher' ? 'Teacher' : 'TA' ,
+                captchaToken: captchaToken // gửi token captcha lên backend để xác thực
             });
 
             if (!response.ok) {
@@ -67,6 +82,13 @@ const RegisterPage = () => {
             navigate('/verify-email', { state: { email: email.trim() } });
         } catch (err) {
             setError(err.message);
+
+
+            // QUAN TRỌNG: Nếu đăng ký lỗi (trùng mail, mk yếu...), phải reset Captcha để user tick lại
+            if (recaptchaRef.current) {
+                recaptchaRef.current.reset();
+                setCaptchaToken(null);
+            }
         } finally {
             setLoading(false);
         }
@@ -181,6 +203,15 @@ const RegisterPage = () => {
                                     {showConfirmPassword ? "Ẩn" : "Hiện"}
                                 </button>
                             </div>
+                        </div>
+
+                        {/* VÙNG CHỨA RECAPTCHA */}
+                        <div className="flex justify-center !my-4">
+                            <ReCAPTCHA
+                                ref={recaptchaRef}
+                                sitekey="6Lc5xuQsAAAAAAGnZfNyUmasRdXunlU1wnWOLZGh" // Đổi thành Site Key lấy từ Google
+                                onChange={(token) => setCaptchaToken(token)}
+                            />
                         </div>
 
                         <div className="!pt-2">
