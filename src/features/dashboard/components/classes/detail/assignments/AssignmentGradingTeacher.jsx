@@ -645,7 +645,7 @@ const AssignmentGradingTeacher = ({ assignment, onRefresh }) => {
                             <div className="!mt-6">
                                 <h5 className="text-[11px] font-black text-text-muted uppercase tracking-widest flex items-center !gap-1.5 !mb-3">
                                     <Icon icon="material-symbols:edit-document-outline-rounded" className="text-lg" />
-                                    Bài chữa của giáo viên
+                                    {assignment.isOffline ? 'Bài nộp của học sinh' : 'Bài chữa của giáo viên'}
                                 </h5>
                                 
                                 {/* Upload New Correction */}
@@ -654,7 +654,7 @@ const AssignmentGradingTeacher = ({ assignment, onRefresh }) => {
                                         <label className="flex items-center !gap-2 !px-3 !py-2 bg-white border border-dashed border-border hover:border-primary/50 rounded-xl cursor-pointer transition-all overflow-hidden w-full group shadow-sm">
                                             <Icon icon="material-symbols:cloud-upload-outline-rounded" className="text-lg text-text-muted group-hover:text-primary shrink-0 transition-colors" />
                                             <span className="text-xs font-semibold text-text-muted group-hover:text-primary truncate transition-colors">
-                                                {correctionFile ? correctionFile.name : 'Đính kèm bài chữa mới...'}
+                                                {correctionFile ? correctionFile.name : (assignment.isOffline ? 'Đính kèm bài nộp của học sinh...' : 'Đính kèm bài chữa mới...')}
                                             </span>
                                             <input 
                                                 type="file" 
@@ -864,7 +864,9 @@ const AssignmentGradingTeacher = ({ assignment, onRefresh }) => {
                                     <th className="!text-left !px-4 !py-4 text-[11px] font-bold text-text-muted uppercase tracking-wider">Bài nộp</th>
                                     <th className="!text-center !px-4 !py-4 text-[11px] font-bold text-text-muted uppercase tracking-wider">Trạng thái</th>
                                     <th className="!text-center !px-4 !py-4 text-[11px] font-bold text-text-muted uppercase tracking-wider">Điểm</th>
-                                    <th className="!text-left !px-4 !py-4 text-[11px] font-bold text-text-muted uppercase tracking-wider">File sửa bài</th>
+                                    <th className="!text-left !px-4 !py-4 text-[11px] font-bold text-text-muted uppercase tracking-wider">
+                                        {assignment.isOffline ? 'Bài nộp của học sinh' : 'File sửa bài'}
+                                    </th>
                                     <th className="!text-center !px-6 !py-4 text-[11px] font-bold text-text-muted uppercase tracking-wider">Thao tác</th>
                                 </tr>
                             </thead>
