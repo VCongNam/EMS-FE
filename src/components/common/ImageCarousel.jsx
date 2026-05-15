@@ -42,7 +42,7 @@ const ImageCarousel = ({ images, title, subtitle, autoPlayInterval = 4000 }) => 
             {/* Carousel Container */}
             <div className="relative group">
                 {/* Main Image */}
-                <div className="overflow-hidden rounded-[32px] shadow-[0_30px_60px_-15px_rgba(53,88,114,0.2)] aspect-video w-full">
+                <div className="overflow-hidden rounded-[32px] shadow-[0_30px_60px_-15px_rgba(53,88,114,0.2)] aspect-video w-full border border-gray-100">
                     <img
                         key={current}
                         src={images[current].src}
@@ -94,8 +94,8 @@ const ImageCarousel = ({ images, title, subtitle, autoPlayInterval = 4000 }) => 
                     <button
                         key={i}
                         onClick={() => goTo(i)}
-                        className={`flex-shrink-0 w-28 h-16 rounded-xl overflow-hidden transition-all duration-300 ${i === current
-                            ? 'ring-2 ring-primary ring-offset-2 scale-105'
+                        className={`flex-shrink-0 w-28 h-16 rounded-xl overflow-hidden transition-all duration-300 border border-gray-100 ${i === current
+                            ? 'ring-2 ring-primary ring-offset-2 scale-105 border-primary'
                             : 'opacity-50 hover:opacity-80'
                             }`}
                     >

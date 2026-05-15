@@ -15,6 +15,7 @@ import report from '../../../assets/images/report.png';
 import finance from '../../../assets/images/finance.png';
 import FeatureCard from '../components/FeatureCard';
 import StepCard from '../components/StepCard';
+import classManagement from '../../../assets/images/classManagement.png';
 import CTASection from '../../../components/common/CTASection';
 import ImageCarousel from '../../../components/common/ImageCarousel';
 
@@ -75,7 +76,7 @@ const LandingPage = () => {
             caption: 'Bảng điều khiển tổng quan — theo dõi mọi thứ trong một màn hình'
         },
         {
-            src: 'https://placehold.co/1280x720/2D3142/ffffff?text=Quản+Lý+Lớp+Học',
+            src: classManagement,
             alt: 'Quản lý lớp học',
             caption: 'Quản lý lớp học — sắp xếp lịch học và phân công giáo viên dễ dàng'
         },
