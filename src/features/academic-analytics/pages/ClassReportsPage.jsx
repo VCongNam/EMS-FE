@@ -7,6 +7,7 @@ import ReportSendConfirmModal from '../../dashboard/components/classes/detail/co
 import { toast } from 'react-toastify';
 import { progressReportService } from '../../dashboard/api/progressReportService';
 import useAuthStore from '../../../store/authStore';
+import { extractErrorMessage } from '../../../utils/errorHandler';
 
 // Mock constants removed
 
@@ -174,7 +175,7 @@ const ClassReportsPage = () => {
 
             if (!saveRes.ok) {
                 const err = await saveRes.json().catch(() => ({}));
-                toast.error(err.message || 'Lỗi khi lưu bản nháp trước khi gửi.');
+                toast.error(extractErrorMessage(err, 'Lỗi khi lưu bản nháp trước khi gửi.'));
                 return;
             }
 

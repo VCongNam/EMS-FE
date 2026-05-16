@@ -39,6 +39,9 @@ const TuitionFeeModal = ({ isOpen, onClose, onSave, editData = null, classes = [
         if (!form.classId) newErrors.classId = 'Vui lòng chọn lớp học.';
         if (!form.tuitionFee || isNaN(Number(form.tuitionFee)) || Number(form.tuitionFee) <= 0)
             newErrors.tuitionFee = 'Đơn giá phải là số dương hợp lệ.';
+        if (Number(form.tuitionFee) <= 10000) {
+            newErrors.tuitionFee = 'Đơn giá phải lớn hơn 10,000 đồng.';
+        }
         if (!form.paymentDeadlineDays || isNaN(Number(form.paymentDeadlineDays)) || Number(form.paymentDeadlineDays) < 0)
             newErrors.paymentDeadlineDays = 'Số ngày hạn nộp không hợp lệ.';
         return newErrors;

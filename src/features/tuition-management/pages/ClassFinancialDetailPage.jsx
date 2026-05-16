@@ -13,6 +13,7 @@ import StudentTransactionHistoryModal from '../components/StudentTransactionHist
 import TeacherInvoiceDetailModal from '../components/TeacherInvoiceDetailModal';
 import { tuitionService } from '../api/tuitionService';
 import useAuthStore from '../../../store/authStore';
+import { extractErrorMessage } from '../../../utils/errorHandler';
 
 const ClassFinancialDetailPage = () => {
     const { classId } = useParams();
@@ -205,16 +206,6 @@ const ClassFinancialDetailPage = () => {
         setCurrentPage(1);
     }, [selectedMonth, selectedYear]);
 
-    const extractApiError = (errorData, defaultMessage) => {
-        if (errorData?.errors && typeof errorData.errors === 'object') {
-            const firstErrorField = Object.keys(errorData.errors)[0];
-            if (firstErrorField && errorData.errors[firstErrorField].length > 0) {
-                return errorData.errors[firstErrorField][0];
-            }
-        }
-        return errorData?.title || errorData?.message || defaultMessage;
-    };
-
     const handleSaveFeeConfig = async (data) => {
         try {
             const payload = {
@@ -233,7 +224,7 @@ const ClassFinancialDetailPage = () => {
             setFeeModal({ isOpen: false, editData: null });
             fetchData(); // Reload class info
         } catch (error) {
-            const errorMessage = extractApiError(error, 'Lỗi khi cập nhật học phí');
+            const errorMessage = extractErrorMessage(error, 'Lỗi khi cập nhật học phí');
             toast.error(errorMessage);
         }
     };
@@ -244,7 +235,7 @@ const ClassFinancialDetailPage = () => {
             const res = await tuitionService.previewInvoices(classId, selectedMonth, selectedYear, user.token);
             if (!res.ok) {
                 const errorData = await res.json().catch(() => ({}));
-                toast.error(errorData?.message || `Không thể tải dữ liệu nháp của tháng ${selectedMonth}/${selectedYear}`);
+                toast.error(extractErrorMessage(errorData, `Không thể tải dữ liệu nháp của tháng ${selectedMonth}/${selectedYear}`));
                 setIsLoadingPreview(false);
                 return;
             }
@@ -291,7 +282,7 @@ const ClassFinancialDetailPage = () => {
                 fetchData(); // Load lại 3 thẻ thống kê và bảng chi tiết
             } else {
                 const errorData = await res.json().catch(() => ({}));
-                toast.error(errorData?.message || 'Xác nhận phát hành thất bại.');
+                toast.error(extractErrorMessage(errorData, 'Xác nhận phát hành thất bại.'));
             }
         } catch (error) {
             console.error(error);
@@ -316,7 +307,7 @@ const ClassFinancialDetailPage = () => {
             
             if (!res.ok) {
                 const errorData = await res.json().catch(() => ({}));
-                toast.error(errorData?.message || "Học sinh này đã được chốt hóa đơn hoặc dữ liệu không hợp lệ.");
+                toast.error(extractErrorMessage(errorData, "Học sinh này đã được chốt hóa đơn hoặc dữ liệu không hợp lệ."));
                 return;
             }
 
@@ -389,7 +380,7 @@ const ClassFinancialDetailPage = () => {
                 fetchData(); // Cập nhật lại danh sách và thống kê
             } else {
                 const errorData = await res.json().catch(() => ({}));
-                toast.error(errorData?.message || "Tất toán thất bại.");
+                toast.error(extractErrorMessage(errorData, "Tất toán thất bại."));
             }
         } catch (error) {
             console.error(error);

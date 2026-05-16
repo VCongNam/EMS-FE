@@ -43,7 +43,7 @@ const LoginPage = () => {
                 password, 
                 selectedRole: roleConfig?.apiRole || 'Student' 
             };
-            console.log("[Login] Sending Payload:", loginPayload);
+            // console.log("[Login] Sending Payload:", loginPayload);
 
             const response = await authService.login(loginPayload);
 
@@ -58,11 +58,11 @@ const LoginPage = () => {
                 // Check if account needs onboarding (verification)
                 if (needsActivation) {
                     if (selectedRole === 'student') {
-                        console.log("[Login] Student needs activation. Redirecting to /verify-onboarding");
+                        // console.log("[Login] Student needs activation. Redirecting to /verify-onboarding");
                         toast.info("Tài khoản của bạn cần được kích hoạt trước khi sử dụng.");
                         navigate('/verify-onboarding');
                     } else {
-                        console.log("[Login] Staff/Teacher needs OTP. Redirecting to /verify-email");
+                        // console.log("[Login] Staff/Teacher needs OTP. Redirecting to /verify-email");
                         toast.info("Tài khoản của bạn cần được xác thực mã OTP.");
                         navigate('/verify-email', { state: { email: identifier } });
                     }

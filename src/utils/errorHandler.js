@@ -12,14 +12,21 @@ export const extractErrorMessage = (errData, defaultMessage = 'Hệ thống đan
         return errData.error;
     }
 
-    // 2. Format thường thấy ở các API chung (dùng "message")
+    // 2. Format thường thấy ở các API chung (dùng "message" hoặc "Message")
     if (errData.message && typeof errData.message === 'string') {
         return errData.message;
+    }
+    if (errData.Message && typeof errData.Message === 'string') {
+        return errData.Message;
     }
 
     // 3. Format chuẩn Problem Details / Validation Errors của .NET C#
     if (errData.errors && typeof errData.errors === 'object') {
         const errorMessages = Object.values(errData.errors).flat();
+        if (errorMessages.length > 0) return errorMessages.join('; ');
+    }
+    if (errData.Errors && typeof errData.Errors === 'object') {
+        const errorMessages = Object.values(errData.Errors).flat();
         if (errorMessages.length > 0) return errorMessages.join('; ');
     }
 
