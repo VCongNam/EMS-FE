@@ -3,6 +3,7 @@ import { Icon } from '@iconify/react';
 import { toast } from 'react-toastify';
 import { adminService } from '../api/adminService';
 import FeedbackDetailDrawer from '../components/FeedbackDetailDrawer';
+import { extractErrorMessage } from '../../../utils/errorHandler';
 
 const FeedbackCenterPage = () => {
     const [feedbacks, setFeedbacks] = useState([]);
@@ -28,7 +29,7 @@ const FeedbackCenterPage = () => {
             const data = await adminService.getFeedbacks(typeFilter, statusFilter);
             setFeedbacks(data);
         } catch (error) {
-            toast.error(error.message);
+            toast.error(extractErrorMessage(error));
         } finally {
             setLoading(false);
         }

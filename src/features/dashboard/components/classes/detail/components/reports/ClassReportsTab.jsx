@@ -12,6 +12,7 @@ import AcademicReportModal from '../../../../../../academic-analytics/components
 import ConfirmModal from '../../../../../../../components/ui/ConfirmModal';
 import ReportSendConfirmModal from './ReportSendConfirmModal';
 import Pagination from '../../../../../../../components/ui/Pagination';
+import { extractErrorMessage } from '../../../../../../../utils/errorHandler';
 
 const ClassReportsTab = () => {
     const { classId } = useParams();
@@ -87,6 +88,9 @@ const ClassReportsTab = () => {
                 }
                 
                 setReports(fetchedReports);
+            } else {
+                const errData = await reportsRes.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errData, 'Lỗi khi tải dữ liệu báo cáo'));
             }
 
             if (classRes.ok) {
@@ -95,7 +99,7 @@ const ClassReportsTab = () => {
             }
         } catch (error) {
             console.error('Error fetching reports data:', error);
-            toast.error('Lỗi khi tải dữ liệu báo cáo');
+            toast.error(extractErrorMessage(error, 'Lỗi khi tải dữ liệu báo cáo'));
         } finally {
             setIsLoading(false);
         }
@@ -121,10 +125,11 @@ const ClassReportsTab = () => {
                     toast.success('Đã xóa báo cáo thành công.');
                     fetchData();
                 } else {
-                    toast.error('Không thể xóa báo cáo.');
+                    const errData = await res.json().catch(() => ({}));
+                    toast.error(extractErrorMessage(errData, 'Không thể xóa báo cáo.'));
                 }
             } catch (err) {
-                toast.error('Có lỗi xảy ra khi xóa báo cáo.');
+                toast.error(extractErrorMessage(err, 'Có lỗi xảy ra khi xóa báo cáo.'));
             }
         } else if (confirmModal.type === 'send') {
             try {
@@ -133,10 +138,11 @@ const ClassReportsTab = () => {
                     toast.success('Báo cáo đã được gửi đến Phụ huynh!');
                     fetchData();
                 } else {
-                    toast.error('Gửi báo cáo thất bại.');
+                    const errData = await res.json().catch(() => ({}));
+                    toast.error(extractErrorMessage(errData, 'Gửi báo cáo thất bại.'));
                 }
             } catch (err) {
-                toast.error('Có lỗi xảy ra khi gửi báo cáo.');
+                toast.error(extractErrorMessage(err, 'Có lỗi xảy ra khi gửi báo cáo.'));
             }
         }
         setConfirmModal({ isOpen: false, report: null, type: 'delete' });
@@ -169,20 +175,22 @@ const ClassReportsTab = () => {
                         if (sendRes.ok) {
                             toast.success('Báo cáo đã được gửi thành công!');
                         } else {
-                            toast.warning('Báo cáo đã lưu nhưng chưa gửi được. Vui lòng gửi thủ công.');
+                            const errData = await sendRes.json().catch(() => ({}));
+                            toast.warning(extractErrorMessage(errData, 'Báo cáo đã lưu nhưng chưa gửi được. Vui lòng gửi thủ công.'));
                         }
                     } catch (e) {
-                        toast.warning('Báo cáo đã lưu nhưng có lỗi khi gửi. Vui lòng kiểm tra lại.');
+                        toast.warning(extractErrorMessage(e, 'Báo cáo đã lưu nhưng có lỗi khi gửi. Vui lòng kiểm tra lại.'));
                     }
                     fetchData();
                 } else {
                     toast.success(data.reportId ? 'Cập nhật thành công!' : 'Tạo mới thành công!');
                 }
             } else {
-                toast.error('Lỗi khi lưu báo cáo.');
+                const errData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errData, 'Lỗi khi lưu báo cáo.'));
             }
         } catch (err) {
-            toast.error('Có lỗi xảy ra khi kết nối server.');
+            toast.error(extractErrorMessage(err, 'Có lỗi xảy ra khi kết nối server.'));
         }
     };
 

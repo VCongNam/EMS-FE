@@ -61,6 +61,7 @@ const inputBase =
 const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
     const [form, setForm] = useState(initialForm);
     const [errors, setErrors] = useState({});
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
@@ -84,6 +85,7 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
                 setForm(initialForm);
             }
             setErrors({});
+            setIsSubmitting(false);
         }
     }, [isOpen, initialData]);
 
@@ -178,7 +180,9 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
         return newErrors;
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
+        if (isSubmitting) return;
+
         const newErrors = validate();
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
@@ -203,9 +207,20 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
             }))
         };
 
-        if (onSubmit) onSubmit(payload);
-        else console.log('Create Class Payload:', payload);
-        onClose();
+        setIsSubmitting(true);
+        try {
+            if (onSubmit) {
+                await onSubmit(payload);
+            } else {
+                console.log('Create Class Payload:', payload);
+            }
+            onClose();
+        } catch (error) {
+            console.error('Lỗi khi gửi form lớp học:', error);
+            // modal retains values and stays open
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return createPortal(
@@ -213,7 +228,7 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
             {/* Backdrop */}
             <div
                 className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] animate-fade-in"
-                onClick={onClose}
+                onClick={isSubmitting ? undefined : onClose}
             />
 
             {/* Modal wrapper */}
@@ -251,7 +266,8 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
                         </div>
                         <button
                             onClick={onClose}
-                            className="w-9 h-9 rounded-xl bg-background border border-border flex items-center justify-center text-text-muted hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-all shrink-0 !ml-3"
+                            disabled={isSubmitting}
+                            className="w-9 h-9 rounded-xl bg-background border border-border flex items-center justify-center text-text-muted hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-all shrink-0 !ml-3 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <Icon icon="material-symbols:close-rounded" className="text-lg" />
                         </button>
@@ -268,7 +284,8 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
                                         placeholder="Ví dụ: Toán nâng cao 12"
                                         value={form.className}
                                         onChange={e => handleChange('className', e.target.value)}
-                                        className={`${inputBase} !my-1 ${errors.className ? 'border-red-400 ring-2 ring-red-100' : 'border-border'}`}
+                                        disabled={isSubmitting}
+                                        className={`${inputBase} !my-1 ${errors.className ? 'border-red-400 ring-2 ring-red-100' : 'border-border'} ${isSubmitting ? 'opacity-60 cursor-not-allowed bg-background-muted' : ''}`}
                                     />
                                 </InputField>
                                 <InputField label="Môn học" required error={errors.subjectName}>
@@ -277,7 +294,8 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
                                         placeholder="Ví dụ: Toán"
                                         value={form.subjectName}
                                         onChange={e => handleChange('subjectName', e.target.value)}
-                                        className={`${inputBase} !my-1 ${errors.subjectName ? 'border-red-400 ring-2 ring-red-100' : 'border-border'}`}
+                                        disabled={isSubmitting}
+                                        className={`${inputBase} !my-1 ${errors.subjectName ? 'border-red-400 ring-2 ring-red-100' : 'border-border'} ${isSubmitting ? 'opacity-60 cursor-not-allowed bg-background-muted' : ''}`}
                                     />
                                 </InputField>
                             </div>
@@ -289,7 +307,8 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
                                         placeholder="Ví dụ: 12"
                                         value={form.gradeLevel}
                                         onChange={e => handleChange('gradeLevel', e.target.value)}
-                                        className={`${inputBase} !my-1 ${errors.gradeLevel ? 'border-red-400 ring-2 ring-red-100' : 'border-border'}`}
+                                        disabled={isSubmitting}
+                                        className={`${inputBase} !my-1 ${errors.gradeLevel ? 'border-red-400 ring-2 ring-red-100' : 'border-border'} ${isSubmitting ? 'opacity-60 cursor-not-allowed bg-background-muted' : ''}`}
                                     />
                                 </InputField>
                             </div>
@@ -301,7 +320,8 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
                                     type="date"
                                     value={form.startDate}
                                     onChange={e => handleChange('startDate', e.target.value)}
-                                    className={`w-full !my-1 !px-4 !py-3 bg-background border rounded-xl outline-none transition-all text-text-main font-medium focus:border-primary focus:ring-4 focus:ring-primary/5 ${errors.startDate ? 'border-red-400 ring-2 ring-red-100' : 'border-border'}`}
+                                    disabled={isSubmitting}
+                                    className={`w-full !my-1 !px-4 !py-3 bg-background border rounded-xl outline-none transition-all text-text-main font-medium focus:border-primary focus:ring-4 focus:ring-primary/5 ${errors.startDate ? 'border-red-400 ring-2 ring-red-100' : 'border-border'} ${isSubmitting ? 'opacity-60 cursor-not-allowed' : ''}`}
                                 />
                             </InputField>
                             <InputField label="Ngày kết thúc" required error={errors.endDate}>
@@ -309,7 +329,8 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
                                     type="date"
                                     value={form.endDate}
                                     onChange={e => handleChange('endDate', e.target.value)}
-                                    className={`w-full !my-1 !px-4 !py-3 bg-background border rounded-xl outline-none transition-all text-text-main font-medium focus:border-primary focus:ring-4 focus:ring-primary/5 ${errors.endDate ? 'border-red-400 ring-2 ring-red-100' : 'border-border'}`}
+                                    disabled={isSubmitting}
+                                    className={`w-full !my-1 !px-4 !py-3 bg-background border rounded-xl outline-none transition-all text-text-main font-medium focus:border-primary focus:ring-4 focus:ring-primary/5 ${errors.endDate ? 'border-red-400 ring-2 ring-red-100' : 'border-border'} ${isSubmitting ? 'opacity-60 cursor-not-allowed' : ''}`}
                                 />
                             </InputField>
                         </div>
@@ -322,7 +343,8 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
                                     placeholder="Ví dụ: P.201"
                                     value={form.room}
                                     onChange={e => handleChange('room', e.target.value)}
-                                    className={`w-full !my-1 !px-4 !py-3 bg-background border rounded-xl outline-none transition-all text-text-main font-medium placeholder:font-normal placeholder:text-text-muted/50 focus:border-primary focus:ring-4 focus:ring-primary/5 ${errors.room ? 'border-red-400 ring-2 ring-red-100' : 'border-border'}`}
+                                    disabled={isSubmitting}
+                                    className={`w-full !my-1 !px-4 !py-3 bg-background border rounded-xl outline-none transition-all text-text-main font-medium placeholder:font-normal placeholder:text-text-muted/50 focus:border-primary focus:ring-4 focus:ring-primary/5 ${errors.room ? 'border-red-400 ring-2 ring-red-100' : 'border-border'} ${isSubmitting ? 'opacity-60 cursor-not-allowed' : ''}`}
                                 />
                             </InputField>
                             <InputField label="Sĩ số tối đa (Không bắt buộc)" error={errors.maxCapacity}>
@@ -332,7 +354,8 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
                                     placeholder="Ví dụ: 30"
                                     value={form.maxCapacity}
                                     onChange={e => handleChange('maxCapacity', e.target.value)}
-                                    className={`w-full !my-1 !px-4 !py-3 bg-background border rounded-xl outline-none transition-all text-text-main font-medium placeholder:font-normal placeholder:text-text-muted/50 focus:border-primary focus:ring-4 focus:ring-primary/5 ${errors.maxCapacity ? 'border-red-400 ring-2 ring-red-100' : 'border-border'}`}
+                                    disabled={isSubmitting}
+                                    className={`w-full !my-1 !px-4 !py-3 bg-background border rounded-xl outline-none transition-all text-text-main font-medium placeholder:font-normal placeholder:text-text-muted/50 focus:border-primary focus:ring-4 focus:ring-primary/5 ${errors.maxCapacity ? 'border-red-400 ring-2 ring-red-100' : 'border-border'} ${isSubmitting ? 'opacity-60 cursor-not-allowed' : ''}`}
                                 />
                             </InputField>
                         </div>
@@ -345,7 +368,8 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
                                 placeholder="Ví dụ: 1500000"
                                 value={form.tuitionFee}
                                 onChange={e => handleChange('tuitionFee', e.target.value)}
-                                className={`w-full !my-1 !px-4 !py-3 bg-background border rounded-xl outline-none transition-all text-text-main font-medium placeholder:font-normal placeholder:text-text-muted/50 focus:border-primary focus:ring-4 focus:ring-primary/5 ${errors.tuitionFee ? 'border-red-400 ring-2 ring-red-100' : 'border-border'}`}
+                                disabled={isSubmitting}
+                                className={`w-full !my-1 !px-4 !py-3 bg-background border rounded-xl outline-none transition-all text-text-main font-medium placeholder:font-normal placeholder:text-text-muted/50 focus:border-primary focus:ring-4 focus:ring-primary/5 ${errors.tuitionFee ? 'border-red-400 ring-2 ring-red-100' : 'border-border'} ${isSubmitting ? 'opacity-60 cursor-not-allowed' : ''}`}
                             />
                         </InputField>
 
@@ -363,11 +387,12 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
                                                 key={day.key}
                                                 type="button"
                                                 onClick={() => toggleDay(day.key)}
+                                                disabled={isSubmitting}
                                                 className={`w-10 h-10 !my-1 rounded-xl text-sm font-bold transition-all border ${
                                                     isSelected
                                                         ? ' text-primary border-primary shadow-md shadow-primary/20'
                                                         : '!bg-background border-border text-text-muted hover:border-primary hover:text-primary'
-                                                }`}
+                                                } ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
                                             >
                                                 {day.label}
                                             </button>
@@ -393,7 +418,8 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
                                                             type="time"
                                                             value={schedule.startTime}
                                                             onChange={e => handleScheduleTimeChange(schedule.day, 'startTime', e.target.value)}
-                                                            className={`w-full !px-3 !py-2 bg-white border rounded-xl outline-none text-sm transition-all text-text-main font-medium focus:border-primary focus:ring-4 focus:ring-primary/5 ${errors[`startTime_${schedule.day}`] ? 'border-red-400 ring-2 ring-red-100' : 'border-border'}`}
+                                                            disabled={isSubmitting}
+                                                            className={`w-full !px-3 !py-2 bg-white border rounded-xl outline-none text-sm transition-all text-text-main font-medium focus:border-primary focus:ring-4 focus:ring-primary/5 ${errors[`startTime_${schedule.day}`] ? 'border-red-400 ring-2 ring-red-100' : 'border-border'} ${isSubmitting ? 'opacity-60 cursor-not-allowed' : ''}`}
                                                         />
                                                     </InputField>
                                                     <InputField error={errors[`endTime_${schedule.day}`]}>
@@ -401,7 +427,8 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
                                                             type="time"
                                                             value={schedule.endTime}
                                                             onChange={e => handleScheduleTimeChange(schedule.day, 'endTime', e.target.value)}
-                                                            className={`w-full !px-3 !py-2 bg-white border rounded-xl outline-none text-sm transition-all text-text-main font-medium focus:border-primary focus:ring-4 focus:ring-primary/5 ${errors[`endTime_${schedule.day}`] ? 'border-red-400 ring-2 ring-red-100' : 'border-border'}`}
+                                                            disabled={isSubmitting}
+                                                            className={`w-full !px-3 !py-2 bg-white border rounded-xl outline-none text-sm transition-all text-text-main font-medium focus:border-primary focus:ring-4 focus:ring-primary/5 ${errors[`endTime_${schedule.day}`] ? 'border-red-400 ring-2 ring-red-100' : 'border-border'} ${isSubmitting ? 'opacity-60 cursor-not-allowed' : ''}`}
                                                         />
                                                     </InputField>
                                                 </div>
@@ -418,19 +445,21 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
                     <div className="shrink-0 flex items-center !gap-3 !px-6 !py-5 sm:!px-8 border-t border-border bg-surface/95 backdrop-blur-md">
                         <button
                             onClick={onClose}
-                            className="flex-1 !px-4 !py-3 rounded-xl border border-border bg-background text-text-muted text-sm font-semibold hover:bg-surface hover:text-text-main transition-all"
+                            disabled={isSubmitting}
+                            className="flex-1 !px-4 !py-3 rounded-xl border border-border bg-background text-text-muted text-sm font-semibold hover:bg-surface hover:text-text-main transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             Hủy bỏ
                         </button>
                         <button
                             onClick={handleSubmit}
-                            className="flex-1 !px-4 !py-3 rounded-xl !bg-primary text-white text-sm font-semibold hover:bg-primary-hover transition-all shadow-lg shadow-primary/25 flex items-center justify-center !gap-2"
+                            disabled={isSubmitting}
+                            className="flex-1 !px-4 !py-3 rounded-xl !bg-primary text-white text-sm font-semibold hover:bg-primary-hover transition-all shadow-lg shadow-primary/25 flex items-center justify-center !gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                         >
                             <Icon
-                                icon={initialData ? 'material-symbols:save-rounded' : 'material-symbols:add-circle-rounded'}
+                                icon={isSubmitting ? 'line-md:loading-twotone-loop' : (initialData ? 'material-symbols:save-rounded' : 'material-symbols:add-circle-rounded')}
                                 className="text-lg"
                             />
-                            {initialData ? 'Lưu thay đổi' : 'Tạo lớp học'}
+                            {isSubmitting ? (initialData ? 'Đang lưu...' : 'Đang xử lý...') : (initialData ? 'Lưu thay đổi' : 'Tạo lớp học')}
                         </button>
                     </div>
                 </div>

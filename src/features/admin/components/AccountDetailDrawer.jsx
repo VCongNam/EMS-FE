@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Icon } from '@iconify/react';
 import { adminService } from '../api/adminService';
 import { toast } from 'react-toastify';
+import { extractErrorMessage } from '../../../utils/errorHandler';
 
 const AccountDetailDrawer = ({ accountId, isOpen, onClose, onUpdateSuccess }) => {
     const [account, setAccount] = useState(null);
@@ -25,7 +26,7 @@ const AccountDetailDrawer = ({ accountId, isOpen, onClose, onUpdateSuccess }) =>
             setNewStatus(data.status || 'Active');
             setReason('');
         } catch (error) {
-            toast.error(error.message);
+            toast.error(extractErrorMessage(error, 'Lỗi khi tải thông tin tài khoản'));
             onClose();
         } finally {
             setLoading(false);
@@ -49,7 +50,7 @@ const AccountDetailDrawer = ({ accountId, isOpen, onClose, onUpdateSuccess }) =>
             onUpdateSuccess();
             onClose();
         } catch (error) {
-            toast.error(error.message);
+            toast.error(extractErrorMessage(error, 'Cập nhật trạng thái thất bại'));
         } finally {
             setUpdating(false);
         }

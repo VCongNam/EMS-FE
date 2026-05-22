@@ -3,6 +3,7 @@ import { Icon } from '@iconify/react';
 import { toast } from 'react-toastify';
 import { adminService } from '../api/adminService';
 import AccountDetailDrawer from '../components/AccountDetailDrawer';
+import { extractErrorMessage } from '../../../utils/errorHandler';
 
 const AccountListPage = () => {
     const [accounts, setAccounts] = useState([]);
@@ -28,7 +29,7 @@ const AccountListPage = () => {
             const data = await adminService.getAccounts();
             setAccounts(data);
         } catch (error) {
-            toast.error(error.message);
+            toast.error(extractErrorMessage(error));
         } finally {
             setLoading(false);
         }

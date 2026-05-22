@@ -4,6 +4,7 @@ import { Icon } from '@iconify/react';
 import { toast } from 'react-toastify';
 import useAuthStore from '../../../../../../store/authStore';
 import { sessionService } from '../../../../api/sessionService';
+import { extractErrorMessage } from '../../../../../../utils/errorHandler';
 
 const STATUS_OPTIONS = [
     {
@@ -59,10 +60,11 @@ const AttendanceModal = ({ isOpen, lesson, existingRecord, onClose, onSave, read
                         }));
                         setStudents(mapped);
                     } else {
-                        toast.error('Lỗi khi tải danh sách điểm danh');
+                        const errData = await res.json().catch(() => ({}));
+                        toast.error(extractErrorMessage(errData, 'Lỗi khi tải danh sách điểm danh'));
                     }
                 } catch (err) {
-                    toast.error('Lỗi kết nối máy chủ');
+                    toast.error(extractErrorMessage(err, 'Lỗi kết nối máy chủ'));
                 } finally {
                     setIsLoading(false);
                 }
@@ -114,10 +116,11 @@ const AttendanceModal = ({ isOpen, lesson, existingRecord, onClose, onSave, read
                 toast.success(`Đã lưu điểm danh Buổi ${lesson.session} thành công!`);
                 onSave(lesson.id, students);
             } else {
-                toast.error('Có lỗi xảy ra khi lưu điểm danh');
+                const errData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errData, 'Có lỗi xảy ra khi lưu điểm danh'));
             }
         } catch (err) {
-            toast.error('Lỗi kết nối máy chủ');
+            toast.error(extractErrorMessage(err, 'Lỗi kết nối máy chủ'));
         } finally {
             setIsSubmitting(false);
         }

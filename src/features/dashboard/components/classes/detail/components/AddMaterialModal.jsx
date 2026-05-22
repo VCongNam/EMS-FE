@@ -4,6 +4,7 @@ import { Icon } from '@iconify/react';
 import { toast } from 'react-toastify';
 import useAuthStore from '../../../../../../store/authStore';
 import learningMaterialService from '../../../../api/learningMaterialService';
+import { extractErrorMessage } from '../../../../../../utils/errorHandler';
 
 const AddMaterialModal = ({ isOpen, onClose, classId, onSuccess, materialToEdit = null }) => {
     const { user } = useAuthStore();
@@ -121,7 +122,7 @@ const AddMaterialModal = ({ isOpen, onClose, classId, onSuccess, materialToEdit 
             if (!res.ok) {
                 const errorData = await res.json().catch(() => ({}));
                 console.error('>>> API Error Details:', errorData);
-                throw new Error(errorData.message || `Không thể ${isEditMode ? 'cập nhật' : 'tải lên'} tài liệu`);
+                throw new Error(extractErrorMessage(errorData, `Không thể ${isEditMode ? 'cập nhật' : 'tải lên'} tài liệu`));
             }
 
 
@@ -130,7 +131,7 @@ const AddMaterialModal = ({ isOpen, onClose, classId, onSuccess, materialToEdit 
             onClose();
         } catch (error) {
             console.error('Error handling material:', error);
-            toast.error(error.message || 'Có lỗi xảy ra');
+            toast.error(extractErrorMessage(error, 'Có lỗi xảy ra'));
         } finally {
             setIsSubmitting(false);
         }

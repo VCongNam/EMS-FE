@@ -5,6 +5,7 @@ import Button from '../../../components/ui/Button';
 import { profileService } from '../api/profileService';
 import { toast } from 'react-toastify';
 import ChangePasswordModal from '../components/profile/ChangePasswordModal';
+import { extractErrorMessage } from '../../../utils/errorHandler';
 
 const ProfilePage = () => {
     const { user, updateProfile } = useAuthStore();
@@ -44,11 +45,12 @@ const ProfilePage = () => {
                 updateProfile({ avatarUrl: data.avatarUrl });
                 toast.success(data.message || "Cập nhật ảnh đại diện thành công!");
             } else {
-                throw new Error("Cập nhật ảnh đại diện thất bại");
+                const errData = await response.json().catch(() => ({}));
+                throw errData;
             }
         } catch (error) {
             console.error("Upload avatar failed:", error);
-            toast.error(error.message || "Có lỗi xảy ra khi tải ảnh lên");
+            toast.error(extractErrorMessage(error, "Có lỗi xảy ra khi tải ảnh lên"));
         } finally {
             setUploadingAvatar(false);
             if (fileInputRef.current) fileInputRef.current.value = '';
@@ -168,15 +170,8 @@ const ProfilePage = () => {
             const response = await profileService.updateProfile(rolePath, payload, user.token);
 
             if (!response.ok) {
-                let errorMsg = 'Cập nhật hồ sơ thất bại';
-                try {
-                    const errData = await response.json();
-                    errorMsg = errData.message || (errData.errors ? Object.values(errData.errors).flat().join(', ') : errorMsg);
-                } catch {
-                    const text = await response.text();
-                    errorMsg = text || errorMsg;
-                }
-                throw new Error(errorMsg);
+                const errData = await response.json().catch(() => ({}));
+                throw errData;
             }
 
             // Sync with local Zustand store only if successful
@@ -185,8 +180,7 @@ const ProfilePage = () => {
             toast.success("Cập nhật hồ sơ thành công!");
         } catch (error) {
             console.error("Save profile error:", error);
-            const msg = error.message === '[object Object]' ? 'Dữ liệu không hợp lệ. Vui lòng kiểm tra lại.' : error.message;
-            toast.error(msg);
+            toast.error(extractErrorMessage(error, "Cập nhật hồ sơ thất bại"));
         } finally {
             setSaving(false);
         }

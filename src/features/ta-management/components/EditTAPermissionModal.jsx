@@ -4,6 +4,7 @@ import { Icon } from '@iconify/react';
 import { toast } from 'react-toastify';
 import useAuthStore from '../../../store/authStore';
 import { taService } from '../api/taService';
+import { extractErrorMessage } from '../../../utils/errorHandler';
 
 const PERMISSION_OPTIONS = [
     { key: 'Attendance', label: 'Điểm danh học sinh', icon: 'solar:calendar-check-bold-duotone', desc: 'Cho phép TA thực hiện điểm danh trong lớp học.' },
@@ -73,8 +74,8 @@ const EditTAPermissionModal = ({ isOpen, onClose, assistant, onUpdate }) => {
                 onUpdate();
                 onClose();
             } else {
-                const error = await res.json();
-                toast.error(error.message || 'Lỗi khi cập nhật quyền');
+                const error = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(error, 'Lỗi khi cập nhật quyền'));
             }
         } catch (error) {
             console.error(error);

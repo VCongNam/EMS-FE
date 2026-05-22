@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { toast } from 'react-toastify';
 import { feedbackService } from '../api/feedbackService';
+import { extractErrorMessage } from '../../../utils/errorHandler';
 
 const TeacherFeedbackPage = () => {
     const [history, setHistory] = useState([]);
@@ -25,7 +26,7 @@ const TeacherFeedbackPage = () => {
             // Data could be returning [{feedbackId, title, type, status, adminReply, createdAt}] based on mock
             setHistory(data || []);
         } catch (error) {
-            toast.error(error.message);
+            toast.error(extractErrorMessage(error, 'Lỗi khi tải lịch sử phản hồi'));
         } finally {
             setLoading(false);
         }
@@ -53,7 +54,7 @@ const TeacherFeedbackPage = () => {
             setFormData({ title: '', type: 'General', content: '' });
             fetchHistory(); // Refresh
         } catch (error) {
-            toast.error(error.message);
+            toast.error(extractErrorMessage(error, 'Lỗi khi gửi phản hồi'));
         } finally {
             setSubmitting(false);
         }

@@ -7,6 +7,7 @@ import RevenueDistributionChart from '../components/charts/RevenueDistributionCh
 import { tuitionService } from '../api/tuitionService';
 import useAuthStore from '../../../store/authStore';
 import TuitionFeeModal from '../components/TuitionFeeModal';
+import { extractErrorMessage } from '../../../utils/errorHandler';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const ITEMS_PER_PAGE = 10;
@@ -176,7 +177,8 @@ const TuitionManagementPage = () => {
                 setIsConfigModalOpen(false);
                 fetchData();
             } else {
-                toast.error('Lỗi khi cập nhật cấu hình!');
+                const errData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errData, 'Lỗi khi cập nhật cấu hình!'));
             }
         } catch (error) {
             toast.error('Có lỗi xảy ra, vui lòng thử lại!');
@@ -201,7 +203,8 @@ const TuitionManagementPage = () => {
                 setReviewNote('');
                 fetchData(); // Reload list
             } else {
-                toast.error("Xử lý thất bại, vui lòng thử lại.");
+                const errData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errData, "Xử lý thất bại, vui lòng thử lại."));
             }
         } catch (error) {
             toast.error("Đã xảy ra lỗi.");
@@ -222,7 +225,8 @@ const TuitionManagementPage = () => {
                     toast.success(`Đã chốt sổ và tạo bill đối soát lớp ${cls.className}`);
                     fetchData();
                 } else {
-                    toast.error("Không thể chốt sổ lớp Trả trước.");
+                    const errData = await res.json().catch(() => ({}));
+                    toast.error(extractErrorMessage(errData, "Không thể chốt sổ lớp Trả trước."));
                 }
             } catch (error) {
                 toast.error("Lỗi khi chốt sổ.");

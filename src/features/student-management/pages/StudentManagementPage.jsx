@@ -6,6 +6,7 @@ import CreateStudentModal from '../components/CreateStudentModal';
 import AssignClassModal from '../components/AssignClassModal';
 import { studentService } from '../api/studentService';
 import useAuthStore from '../../../store/authStore';
+import { extractErrorMessage } from '../../../utils/errorHandler';
 
 const StudentManagementPage = () => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -26,7 +27,10 @@ const StudentManagementPage = () => {
     const handleCreateStudent = async (newStudentData) => {
         try {
             const token = useAuthStore.getState().user?.token;
-            if (!token) return toast.error('Vui lòng đăng nhập lại!');
+            if (!token) {
+                toast.error('Vui lòng đăng nhập lại!');
+                return false;
+            }
 
             // Format YYYY-MM-DD input to ISO 8601 string for C# backend
             let isoDob = new Date().toISOString(); 
@@ -49,15 +53,14 @@ const StudentManagementPage = () => {
             const response = await studentService.createStudentAccount(payload, token);
 
             if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(errorText || 'Hệ thống Backend từ chối tạo học sinh!');
+                const errorData = await response.json().catch(() => ({}));
+                throw errorData;
             }
 
             const responseData = await response.json();
             const realStudentId = responseData.studentId;
 
             toast.success('Khởi tạo tài khoản Học sinh thành công!');
-            setIsCreateModalOpen(false);
 
             // Cập nhật mảng tĩnh Local bằng ID Thật để UI có thể tái sử dụng ngay (Vd: AssignClass)
             const newStudent = {
@@ -70,10 +73,12 @@ const StudentManagementPage = () => {
                 class: 'Chưa có lớp'
             };
             setStudents([newStudent, ...students]);
+            return true;
 
         } catch (error) {
             console.error('Create Student API Error:', error);
-            toast.error(error.message);
+            toast.error(extractErrorMessage(error, 'Khởi tạo tài khoản Học sinh thất bại!'));
+            return false;
         }
     };
 

@@ -9,6 +9,7 @@ import { showNotification } from '../utils/toastUtils';
 import { toast } from 'react-toastify';
 import Pagination from '../../../components/ui/Pagination';
 import { useNotifications } from '../../../contexts/NotificationContext';
+import { extractErrorMessage } from '../../../utils/errorHandler';
 
 const NotificationPage = () => {
     const navigate = useNavigate();
@@ -34,11 +35,12 @@ const NotificationPage = () => {
                 const data = await response.json();
                 setNotifications(data);
             } else {
-                toast.error('Không thể tải thông báo');
+                const errorData = await response.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errorData, 'Không thể tải thông báo'));
             }
         } catch (error) {
             console.error('Fetch notifications error:', error);
-            toast.error('Lỗi kết nối máy chủ');
+            toast.error(extractErrorMessage(error, 'Lỗi kết nối máy chủ'));
         } finally {
             setLoading(false);
         }
@@ -106,7 +108,7 @@ const NotificationPage = () => {
             }
         } catch (error) {
             console.error('Mark all read error:', error);
-            toast.error('Không thể cập nhật trạng thái');
+            toast.error(extractErrorMessage(error, 'Không thể cập nhật trạng thái'));
         }
     };
 

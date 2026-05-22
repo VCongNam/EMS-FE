@@ -4,6 +4,7 @@ import { Icon } from '@iconify/react';
 import { toast } from 'react-toastify';
 import { classService } from '../../../../api/classService';
 import useAuthStore from '../../../../../../store/authStore';
+import { extractErrorMessage } from '../../../../../../utils/errorHandler';
 
 // ── Tạo mật khẩu ngẫu nhiên đủ điều kiện ──────────────────────────────────
 const UPPER = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -89,11 +90,11 @@ const SetPasswordStep = ({ studentName, studentId, onSuccess, onClose }) => {
             const res = await classService.resetStudentPassword(studentId, password, token);
             if (!res.ok) {
                 const errData = await res.json().catch(() => ({}));
-                throw new Error(errData.message || 'Không thể reset mật khẩu.');
+                throw new Error(extractErrorMessage(errData, 'Không thể reset mật khẩu.'));
             }
             onSuccess(password);
         } catch (err) {
-            toast.error(err.message || 'Lỗi hệ thống.');
+            toast.error(extractErrorMessage(err, 'Lỗi hệ thống.'));
         } finally {
             setIsSaving(false);
         }

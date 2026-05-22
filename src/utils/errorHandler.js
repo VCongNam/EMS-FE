@@ -7,17 +7,17 @@
 export const extractErrorMessage = (errData, defaultMessage = 'Hệ thống đang bận, vui lòng thử lại sau.') => {
     if (!errData || typeof errData !== 'object') return defaultMessage;
 
-    // 1. Chuẩn riêng biệt (ví dụ: Student Portal API trả về "error")
-    if (errData.error && typeof errData.error === 'string') {
-        return errData.error;
-    }
-
-    // 2. Format thường thấy ở các API chung (dùng "message" hoặc "Message")
+    // 1. Format thường thấy ở các API chung (dùng "message" hoặc "Message")
     if (errData.message && typeof errData.message === 'string') {
         return errData.message;
     }
     if (errData.Message && typeof errData.Message === 'string') {
         return errData.Message;
+    }
+
+    // 2. Chuẩn riêng biệt (ví dụ: Student Portal API trả về "error")
+    if (errData.error && typeof errData.error === 'string') {
+        return errData.error;
     }
 
     // 3. Format chuẩn Problem Details / Validation Errors của .NET C#

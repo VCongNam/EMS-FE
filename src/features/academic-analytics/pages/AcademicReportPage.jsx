@@ -6,6 +6,7 @@ import { growthReportService } from '../api/growthReportService';
 import StatCard from '../components/StatCard';
 import ClassBreakdownTable from '../components/ClassBreakdownTable';
 import { GradingDonutChart, GrowthTrendsChart } from '../components/PerformanceCharts';
+import { extractErrorMessage } from '../../../utils/errorHandler';
 
 const AcademicReportPage = () => {
     const { user } = useAuthStore();
@@ -84,7 +85,7 @@ const AcademicReportPage = () => {
             }
         } catch (error) {
             console.error('Lỗi lấy báo cáo:', error);
-            toast.error('Không thể lấy dữ liệu báo cáo');
+            toast.error(extractErrorMessage(error, 'Không thể lấy dữ liệu báo cáo'));
         } finally {
             setIsLoading(false);
         }

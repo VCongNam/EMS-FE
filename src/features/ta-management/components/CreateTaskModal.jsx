@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import Button from '../../../components/ui/Button';
 
 const CreateTaskModal = ({ isOpen, onClose, onAssign, tas = [], classes = [] }) => {
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [taskData, setTaskData] = useState({
         title: '',
         assignedTo: '',
@@ -14,7 +15,7 @@ const CreateTaskModal = ({ isOpen, onClose, onAssign, tas = [], classes = [] }) 
 
     if (!isOpen) return null;
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         // Validate deadline: must be after today
@@ -27,18 +28,28 @@ const CreateTaskModal = ({ isOpen, onClose, onAssign, tas = [], classes = [] }) 
             return;
         }
 
-        onAssign({
-            ...taskData,
-            id: `TASK-${Date.now()}`,
-            status: 'todo'
-        });
-        onClose();
+        setIsSubmitting(true);
+        try {
+            const success = await onAssign({
+                ...taskData,
+                id: `TASK-${Date.now()}`,
+                status: 'todo'
+            });
+            if (success) {
+                onClose();
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center animate-fade-in">
             {/* Backdrop */}
-            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose}></div>
+            {/* Backdrop */}
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => !isSubmitting && onClose()}></div>
 
             {/* Modal */}
             <div className="relative w-full max-w-2xl bg-surface border border-border rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-scale-up">
@@ -55,7 +66,8 @@ const CreateTaskModal = ({ isOpen, onClose, onAssign, tas = [], classes = [] }) 
                     </div>
                     <button 
                         onClick={onClose}
-                        className="w-8 h-8 flex items-center justify-center rounded-full bg-background hover:bg-red-500/10 hover:text-red-500 text-text-muted transition-colors"
+                        disabled={isSubmitting}
+                        className="w-8 h-8 flex items-center justify-center rounded-full bg-background hover:bg-red-500/10 hover:text-red-500 text-text-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <Icon icon="solar:close-circle-bold" className="text-xl" />
                     </button>
@@ -69,10 +81,11 @@ const CreateTaskModal = ({ isOpen, onClose, onAssign, tas = [], classes = [] }) 
                             <input
                                 type="text"
                                 required
+                                disabled={isSubmitting}
                                 value={taskData.title}
                                 onChange={e => setTaskData({...taskData, title: e.target.value})}
                                 placeholder="Ví dụ: Chấm điểm bài tập giữa kỳ"
-                                className="w-full !px-4 !py-3 rounded-xl bg-background border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium text-text-main outline-none"
+                                className="w-full !px-4 !py-3 rounded-xl bg-background border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium text-text-main outline-none disabled:opacity-50"
                             />
                         </div>
 
@@ -81,9 +94,10 @@ const CreateTaskModal = ({ isOpen, onClose, onAssign, tas = [], classes = [] }) 
                                 <label className="block text-sm font-semibold text-text-main">Giao cho Trợ giảng <span className="text-red-500">*</span></label>
                                 <select
                                     required
+                                    disabled={isSubmitting}
                                     value={taskData.assignedTo}
                                     onChange={e => setTaskData({...taskData, assignedTo: e.target.value})}
-                                    className="w-full !px-4 !py-3 rounded-xl bg-background border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium text-text-main outline-none appearance-none"
+                                    className="w-full !px-4 !py-3 rounded-xl bg-background border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium text-text-main outline-none appearance-none disabled:opacity-50"
                                 >
                                     <option value="">-- Chọn Trợ giảng --</option>
                                     {tas.map(ta => (
@@ -99,10 +113,11 @@ const CreateTaskModal = ({ isOpen, onClose, onAssign, tas = [], classes = [] }) 
                                 <input
                                     type="date"
                                     required
+                                    disabled={isSubmitting}
                                     min={new Date().toISOString().split('T')[0]}
                                     value={taskData.deadline}
                                     onChange={e => setTaskData({...taskData, deadline: e.target.value})}
-                                    className="w-full !px-4 !py-3 rounded-xl bg-background border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium text-text-main outline-none"
+                                    className="w-full !px-4 !py-3 rounded-xl bg-background border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium text-text-main outline-none disabled:opacity-50"
                                 />
                             </div>
 
@@ -110,9 +125,10 @@ const CreateTaskModal = ({ isOpen, onClose, onAssign, tas = [], classes = [] }) 
                                 <label className="block text-sm font-semibold text-text-main">Loại công việc <span className="text-red-500">*</span></label>
                                 <select
                                     required
+                                    disabled={isSubmitting}
                                     value={taskData.type}
                                     onChange={e => setTaskData({...taskData, type: e.target.value})}
-                                    className="w-full !px-4 !py-3 rounded-xl bg-background border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium text-text-main outline-none appearance-none"
+                                    className="w-full !px-4 !py-3 rounded-xl bg-background border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium text-text-main outline-none appearance-none disabled:opacity-50"
                                 >
                                     <option value="Grade">Chấm điểm </option>
                                 </select>
@@ -124,12 +140,18 @@ const CreateTaskModal = ({ isOpen, onClose, onAssign, tas = [], classes = [] }) 
 
                 {/* Footer */}
                 <div className="!px-6 !py-4 border-t border-border/50 bg-background/50 flex items-center justify-end !gap-3">
-                    <Button variant="outline" onClick={onClose} className="!px-6 !py-2.5 rounded-xl font-semibold">
+                    <Button variant="outline" onClick={onClose} disabled={isSubmitting} className="!px-6 !py-2.5 rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
                         Hủy
                     </Button>
-                    <Button type="submit" form="create-task-form" variant="!primary" className="!px-6 !py-2.5 rounded-xl font-semibold flex items-center !gap-2 shadow-lg shadow-primary/20">
-                        <Icon icon="material-symbols:send-rounded" className="text-lg" />
-                        Giao việc
+                    <Button 
+                        type="submit" 
+                        form="create-task-form" 
+                        variant="!primary" 
+                        disabled={isSubmitting}
+                        className="!px-6 !py-2.5 rounded-xl font-semibold flex items-center !gap-2 shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <Icon icon={isSubmitting ? "line-md:loading-twotone-loop" : "material-symbols:send-rounded"} className="text-lg" />
+                        {isSubmitting ? "Đang xử lý..." : "Giao việc"}
                     </Button>
                 </div>
             </div>

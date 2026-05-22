@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import Button from "../../../components/ui/Button";
 import { taService } from '../api/taService';
 import useAuthStore from '../../../store/authStore';
+import { extractErrorMessage } from '../../../utils/errorHandler';
 
 const AddTAModal = ({ isOpen, onClose, onAdd, classId }) => {
     const { user } = useAuthStore();
@@ -13,7 +14,7 @@ const AddTAModal = ({ isOpen, onClose, onAdd, classId }) => {
     const [email, setEmail] = useState('');
     const [isSearching, setIsSearching] = useState(false);
     const [foundTA, setFoundTA] = useState(null);
-    
+
     // Permission constants
     const PERMISSION_OPTIONS = [
         { key: 'Attendance', label: 'Điểm danh học sinh', icon: 'solar:calendar-check-bold-duotone' },
@@ -22,16 +23,16 @@ const AddTAModal = ({ isOpen, onClose, onAdd, classId }) => {
         { key: 'Assignment', label: 'Quản lý bài tập', icon: 'solar:document-add-bold-duotone' },
         { key: 'Feedback', label: 'Nhận xét & Phản hồi', icon: 'solar:chat-round-dots-bold-duotone' },
     ];
-    
+
     // Assignment fields
     const [selectedPermissions, setSelectedPermissions] = useState(['Attendance']);
     const [salaryPerSession, setSalaryPerSession] = useState(50000);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleTogglePermission = (key) => {
-        setSelectedPermissions(prev => 
-            prev.includes(key) 
-                ? prev.filter(p => p !== key) 
+        setSelectedPermissions(prev =>
+            prev.includes(key)
+                ? prev.filter(p => p !== key)
                 : [...prev, key]
         );
     };
@@ -54,7 +55,8 @@ const AddTAModal = ({ isOpen, onClose, onAdd, classId }) => {
                 setFoundTA(data);
                 toast.success('Đã tìm thấy trợ giảng!');
             } else {
-                toast.error('Không tìm thấy trợ giảng với email này');
+                const errorData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errorData, 'Không tìm thấy trợ giảng với email này'));
             }
         } catch (error) {
             console.error(error);
@@ -66,7 +68,7 @@ const AddTAModal = ({ isOpen, onClose, onAdd, classId }) => {
 
     const handleAssign = async () => {
         if (!foundTA) return;
-        
+
         // Validate Salary
         const salary = Number(salaryPerSession);
         if (isNaN(salary) || salary <= 10000) {
@@ -93,7 +95,7 @@ const AddTAModal = ({ isOpen, onClose, onAdd, classId }) => {
                 onClose();
             } else {
                 const errorData = await res.json().catch(() => ({}));
-                toast.error(errorData.message || 'Phân công thất bại');
+                toast.error(extractErrorMessage(errorData, 'Phân công thất bại'));
             }
         } catch (error) {
             console.error(error);
@@ -111,7 +113,7 @@ const AddTAModal = ({ isOpen, onClose, onAdd, classId }) => {
             {/* Backdrop */}
             <div
                 className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] animate-fade-in"
-                onClick={onClose}
+                onClick={isSubmitting ? undefined : onClose}
             />
 
             {/* Modal */}
@@ -131,10 +133,11 @@ const AddTAModal = ({ isOpen, onClose, onAdd, classId }) => {
                                 <p className="text-xs sm:text-sm text-text-muted mt-1 uppercase tracking-wider font-bold">Gán trợ giảng vào lớp học</p>
                             </div>
                         </div>
-                        <button 
+                        <button
                             type="button"
                             onClick={onClose}
-                            className="w-10 h-10 rounded-xl bg-background border border-border flex items-center justify-center text-text-muted hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-all shrink-0"
+                            disabled={isSubmitting}
+                            className="w-10 h-10 rounded-xl bg-background border border-border flex items-center justify-center text-text-muted hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-all shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <Icon icon="material-symbols:close-rounded" className="text-xl" />
                         </button>
@@ -152,13 +155,14 @@ const AddTAModal = ({ isOpen, onClose, onAdd, classId }) => {
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                         placeholder="Nhập email trợ giảng..."
-                                        className={inputClasses}
+                                        disabled={isSearching || isSubmitting}
+                                        className={`${inputClasses} ${isSearching || isSubmitting ? 'opacity-60 cursor-not-allowed bg-background-muted' : ''}`}
                                         required
                                     />
                                 </div>
-                                <Button 
-                                    type="submit" 
-                                    disabled={isSearching}
+                                <Button
+                                    type="submit"
+                                    disabled={isSearching || isSubmitting}
                                     variant="!primary"
                                     className="!p-3 !px-6 !rounded-xl shadow-lg shadow-primary/20 shrink-0"
                                 >
@@ -200,18 +204,16 @@ const AddTAModal = ({ isOpen, onClose, onAdd, classId }) => {
                                             {PERMISSION_OPTIONS.map((opt) => {
                                                 const isSelected = selectedPermissions.includes(opt.key);
                                                 return (
-                                                    <div 
+                                                    <div
                                                         key={opt.key}
-                                                        onClick={() => handleTogglePermission(opt.key)}
-                                                        className={`flex items-center gap-2.5 !p-3 rounded-xl border transition-all cursor-pointer select-none ${
-                                                            isSelected 
-                                                                ? 'bg-primary/10 border-primary text-primary shadow-sm' 
-                                                                : 'bg-background border-border text-text-muted hover:border-primary/50'
-                                                        }`}
+                                                        onClick={isSubmitting ? undefined : () => handleTogglePermission(opt.key)}
+                                                        className={`flex items-center gap-2.5 !p-3 rounded-xl border transition-all cursor-pointer select-none ${isSelected
+                                                            ? 'bg-primary/10 border-primary text-primary shadow-sm'
+                                                            : 'bg-background border-border text-text-muted hover:border-primary/50'
+                                                            } ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
                                                     >
-                                                        <div className={`w-5 h-5 rounded flex items-center justify-center border transition-all ${
-                                                            isSelected ? 'bg-primary border-primary text-white' : 'bg-white border-border'
-                                                        }`}>
+                                                        <div className={`w-5 h-5 rounded flex items-center justify-center border transition-all ${isSelected ? 'bg-primary border-primary text-white' : 'bg-white border-border'
+                                                            }`}>
                                                             {isSelected && <Icon icon="material-symbols:check-small-rounded" className="text-lg" />}
                                                         </div>
                                                         <div className="flex items-center gap-2 overflow-hidden">
@@ -224,7 +226,7 @@ const AddTAModal = ({ isOpen, onClose, onAdd, classId }) => {
                                         </div>
                                     </div>
 
-                                    <div className="!space-y-1.5 group">
+                                    {/* <div className="!space-y-1.5 group">
                                         <label className={labelClasses}>Lương mỗi buổi học (đ) <span className="text-red-500">*</span></label>
                                         <div className="relative">
                                             <Icon icon="solar:wad-of-money-linear" className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted/70 text-lg group-focus-within:text-primary transition-colors" />
@@ -239,7 +241,7 @@ const AddTAModal = ({ isOpen, onClose, onAdd, classId }) => {
                                             />
                                             <div className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted font-bold text-xs uppercase opacity-70">VND</div>
                                         </div>
-                                    </div>
+                                    </div> */}
                                 </div>
 
                                 {foundTA.bio && (
@@ -256,15 +258,15 @@ const AddTAModal = ({ isOpen, onClose, onAdd, classId }) => {
 
                     {/* Footer Actions */}
                     <div className="!p-6 border-t border-border flex flex-col-reverse sm:flex-row justify-end !gap-3 sm:!gap-4 shrink-0 bg-background/20">
-                        <Button type="button" variant="outline" onClick={onClose} className="w-full sm:w-auto justify-center">
+                        <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting} className="w-full sm:w-auto justify-center disabled:opacity-50 disabled:cursor-not-allowed">
                             Hủy bỏ
                         </Button>
-                        <Button 
-                            type="button" 
-                            variant="!primary" 
+                        <Button
+                            type="button"
+                            variant="!primary"
                             disabled={!foundTA || isSubmitting}
                             onClick={handleAssign}
-                            className={`w-full sm:w-auto !p-3 justify-center shadow-lg group transition-all ${!foundTA ? 'opacity-50 cursor-not-allowed' : 'shadow-primary/30'}`}
+                            className={`w-full sm:w-auto !p-3 justify-center shadow-lg group transition-all ${!foundTA || isSubmitting ? 'opacity-50 cursor-not-allowed' : 'shadow-primary/30'}`}
                         >
                             {isSubmitting ? (
                                 <Icon icon="solar:spinner-linear" className="animate-spin text-xl text-white mr-2" />

@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import { useNavigate, useParams } from 'react-router-dom';
 import { tuitionService } from '../api/tuitionService';
 import useAuthStore from '../../../store/authStore';
+import { extractErrorMessage } from '../../../utils/errorHandler';
 
 const ClassTransactionsPage = () => {
     const navigate = useNavigate();
@@ -43,7 +44,8 @@ const ClassTransactionsPage = () => {
                     setClassName(data[0].className);
                 }
             } else {
-                toast.error("Không thể lấy danh sách giao dịch.");
+                const errData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errData, "Không thể lấy danh sách giao dịch."));
             }
         } catch (error) {
             console.error("Lỗi:", error);
@@ -78,7 +80,8 @@ const ClassTransactionsPage = () => {
                 setReviewNote('');
                 fetchTransactions();
             } else {
-                toast.error("Xử lý thất bại, vui lòng thử lại.");
+                const errData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errData, "Xử lý thất bại, vui lòng thử lại."));
             }
         } catch (error) {
             toast.error("Đã xảy ra lỗi.");

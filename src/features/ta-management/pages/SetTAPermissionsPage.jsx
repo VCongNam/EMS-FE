@@ -3,6 +3,7 @@ import { Icon } from '@iconify/react';
 import { toast } from 'react-toastify';
 import useAuthStore from '../../../store/authStore';
 import { taService } from '../api/taService';
+import { extractErrorMessage } from '../../../utils/errorHandler';
 
 const PERMISSION_MAP = {
     takeAttendance: 'Attendance',
@@ -42,7 +43,8 @@ const SetTAPermissionsPage = ({ classId }) => {
                     if (current) parsePermissions(current.permission || '');
                 }
             } else {
-                toast.error('Không thể tải danh sách trợ giảng');
+                const errData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errData, 'Không thể tải danh sách trợ giảng'));
             }
         } catch (error) {
             console.error(error);
@@ -101,8 +103,8 @@ const SetTAPermissionsPage = ({ classId }) => {
                 // Update local state to reflect new permission
                 setTas(tas.map(ta => ta.taid === selectedTA ? { ...ta, permission: payload.permission } : ta));
             } else {
-                const error = await res.json();
-                toast.error(error.message || 'Có lỗi xảy ra khi cập nhật quyền');
+                const errorData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errorData, 'Có lỗi xảy ra khi cập nhật quyền'));
             }
         } catch (error) {
             console.error(error);

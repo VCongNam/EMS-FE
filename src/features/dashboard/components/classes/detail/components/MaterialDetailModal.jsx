@@ -4,6 +4,7 @@ import { Icon } from '@iconify/react';
 import { toast } from 'react-toastify';
 import useAuthStore from '../../../../../../store/authStore';
 import learningMaterialService from '../../../../api/learningMaterialService';
+import { extractErrorMessage } from '../../../../../../utils/errorHandler';
 
 const MaterialDetailModal = ({ isOpen, onClose, materialId }) => {
     const { user } = useAuthStore();
@@ -20,11 +21,12 @@ const MaterialDetailModal = ({ isOpen, onClose, materialId }) => {
                     const data = await res.json();
                     setMaterial(data);
                 } else {
-                    throw new Error('Không thể tải chi tiết tài liệu');
+                    const errData = await res.json().catch(() => ({}));
+                    throw errData;
                 }
             } catch (error) {
                 console.error('Error fetching material detail:', error);
-                toast.error(error.message);
+                toast.error(extractErrorMessage(error, 'Không thể tải chi tiết tài liệu'));
             } finally {
                 setLoading(false);
             }

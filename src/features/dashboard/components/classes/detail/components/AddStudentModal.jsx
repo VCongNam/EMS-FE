@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import Button from "../../../../../../components/ui/Button";
 import { classService } from '../../../../api/classService';
 import useAuthStore from '../../../../../../store/authStore';
+import { extractErrorMessage } from '../../../../../../utils/errorHandler';
 
 const AddStudentModal = ({ isOpen, onClose, onAdd, classId }) => {
     const [formData, setFormData] = useState({
@@ -87,8 +88,8 @@ const AddStudentModal = ({ isOpen, onClose, onAdd, classId }) => {
             // Bước 1: Tạo tài khoản học sinh
             const createRes = await classService.createStudentAccount(payload, token);
             if (!createRes.ok) {
-                const errorText = await createRes.text();
-                throw new Error(errorText || 'Không thể tạo tài khoản học sinh');
+                const errorData = await createRes.json().catch(() => ({}));
+                throw new Error(extractErrorMessage(errorData, 'Không thể tạo tài khoản học sinh'));
             }
 
             const createData = await createRes.json();
@@ -97,7 +98,10 @@ const AddStudentModal = ({ isOpen, onClose, onAdd, classId }) => {
 
             // Bước 2: Gán vào lớp
             const assignRes = await classService.assignStudent(classId, newStudentId, token);
-            if (!assignRes.ok) throw new Error('Không thể gán học sinh vào lớp');
+            if (!assignRes.ok) {
+                const errorData = await assignRes.json().catch(() => ({}));
+                throw new Error(extractErrorMessage(errorData, 'Không thể gán học sinh vào lớp'));
+            }
 
             // Lưu kết quả và chuyển về màn hình kết quả
             setCreateResult({ ...createData, fullName: formData.fullName, phoneNumber: formData.phoneNumber });
@@ -106,7 +110,7 @@ const AddStudentModal = ({ isOpen, onClose, onAdd, classId }) => {
 
         } catch (error) {
             console.error(error);
-            toast.error(error.message || 'Lỗi hệ thống');
+            toast.error(extractErrorMessage(error, 'Lỗi hệ thống'));
         } finally {
             setIsSubmitting(false);
         }

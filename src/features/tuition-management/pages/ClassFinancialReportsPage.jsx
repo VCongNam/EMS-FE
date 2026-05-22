@@ -4,6 +4,7 @@ import { Icon } from '@iconify/react';
 import { toast } from 'react-toastify';
 import { tuitionService } from '../api/tuitionService';
 import useAuthStore from '../../../store/authStore';
+import { extractErrorMessage } from '../../../utils/errorHandler';
 
 const ClassFinancialReportsPage = () => {
     const navigate = useNavigate();
@@ -22,7 +23,8 @@ const ClassFinancialReportsPage = () => {
                     const data = await res.json();
                     setClasses(data || []);
                 } else {
-                    toast.error("Không thể tải danh sách báo cáo các lớp");
+                    const errData = await res.json().catch(() => ({}));
+                    toast.error(extractErrorMessage(errData, "Không thể tải danh sách báo cáo các lớp"));
                 }
             } catch (error) {
                 console.error("Lỗi:", error);

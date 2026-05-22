@@ -4,6 +4,7 @@ import { Icon } from '@iconify/react';
 import { toast } from 'react-toastify';
 import useAuthStore from '../../../../../../store/authStore';
 import { gradebookService } from '../../../../api/gradebookService';
+import { extractErrorMessage } from '../../../../../../utils/errorHandler';
 
 const AddGradeCategoryModal = ({ isOpen, onClose, classId, onSuccess }) => {
     const { user } = useAuthStore();
@@ -44,12 +45,12 @@ const AddGradeCategoryModal = ({ isOpen, onClose, classId, onSuccess }) => {
                 }
                 onClose();
             } else {
-                const result = await res.json();
-                toast.error(result.message || result.error || 'Có lỗi xảy ra khi thêm hạng mục');
+                const result = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(result, 'Có lỗi xảy ra khi thêm hạng mục'));
             }
         } catch (error) {
             console.error('Add category error:', error);
-            toast.error('Lỗi kết nối đến máy chủ');
+            toast.error(extractErrorMessage(error, 'Lỗi kết nối đến máy chủ'));
         } finally {
             setIsSubmitting(false);
         }

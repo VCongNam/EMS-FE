@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Icon } from '@iconify/react';
 import { toast } from 'react-toastify';
 import { adminService } from '../api/adminService';
+import { extractErrorMessage } from '../../../utils/errorHandler';
 
 const FeedbackDetailDrawer = ({ feedbackData, isOpen, onClose, onUpdateSuccess }) => {
     const [updating, setUpdating] = useState(false);
@@ -34,7 +35,7 @@ const FeedbackDetailDrawer = ({ feedbackData, isOpen, onClose, onUpdateSuccess }
             onUpdateSuccess();
             onClose();
         } catch (error) {
-            toast.error(error.message);
+            toast.error(extractErrorMessage(error, 'Cập nhật trạng thái thất bại'));
         } finally {
             setUpdating(false);
         }

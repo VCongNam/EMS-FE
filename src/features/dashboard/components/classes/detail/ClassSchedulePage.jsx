@@ -11,6 +11,7 @@ import studentScheduleService from '../../../api/studentScheduleService';
 import ConfirmModal from '../../../../../components/ui/ConfirmModal';
 import { useTAPermission } from '../../../../dashboard/context/TAPermissionContext';
 import Loading from '../../../../../components/ui/Loading';
+import { extractErrorMessage } from '../../../../../utils/errorHandler';
 
 const DAYS_OF_WEEK = [
     { id: 'MON', label: 'T2' }, { id: 'TUE', label: 'T3' }, { id: 'WED', label: 'T4' },
@@ -239,11 +240,12 @@ const ClassSchedulePage = () => {
                 toast.success('Đã xóa kết quả buổi học thành công!');
                 fetchSessions();
             } else {
-                toast.error('Có lỗi xảy ra khi hủy buổi học');
+                const errorData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errorData, 'Có lỗi xảy ra khi hủy buổi học'));
             }
         } catch (error) {
             console.error(error);
-            toast.error('Lỗi kết nối máy chủ');
+            toast.error(extractErrorMessage(error, 'Lỗi kết nối máy chủ'));
         } finally {
             setDeletingId(null);
             setConfirmModal({ isOpen: false, sessionId: null });
@@ -252,7 +254,7 @@ const ClassSchedulePage = () => {
 
     const handleSaveSessionAPI = async (formData) => {
         const token = useAuthStore.getState().user?.token;
-        if (!token) return;
+        if (!token) return false;
 
         try {
             const payload = {
@@ -273,14 +275,17 @@ const ClassSchedulePage = () => {
 
             if (res.ok) {
                 toast.success(isEdit ? 'Cập nhật lịch buổi học thành công' : 'Thêm buổi học thành công');
-                setSessionModalState({ isOpen: false, initialData: null });
                 fetchSessions();
+                return true;
             } else {
-                toast.error('Lỗi khi lưu thông tin buổi học');
+                const errorData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errorData, 'Lỗi khi lưu thông tin buổi học'));
+                return false;
             }
         } catch (error) {
             console.error(error);
-            toast.error('Lỗi kết nối máy chủ');
+            toast.error(extractErrorMessage(error, 'Lỗi kết nối máy chủ'));
+            return false;
         }
     };
 
@@ -307,13 +312,14 @@ const ClassSchedulePage = () => {
                 });
             } else {
                 toast.dismiss(loadingToast);
-                toast.error("Không thể lấy thông tin chi tiết buổi học");
+                const errorData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errorData, "Không thể lấy thông tin chi tiết buổi học"));
                 // Fallback to basic data if detail API fails
                 setSessionModalState({ isOpen: true, initialData: lesson.raw });
             }
         } catch (error) {
             console.error(error);
-            toast.error("Lỗi khi kết nối máy chủ");
+            toast.error(extractErrorMessage(error, "Lỗi khi kết nối máy chủ"));
         }
     };
 

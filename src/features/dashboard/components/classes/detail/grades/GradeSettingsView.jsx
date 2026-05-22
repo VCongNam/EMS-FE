@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import useAuthStore from '../../../../../../store/authStore';
 import { gradebookService } from '../../../../api/gradebookService';
 import ConfirmModal from '../../../../../../components/ui/ConfirmModal';
+import { extractErrorMessage } from '../../../../../../utils/errorHandler';
 
 const GradeSettingsView = ({ classId, categories, gradeTableData, onRefresh, isLoading }) => {
     const { user } = useAuthStore();
@@ -44,7 +45,7 @@ const GradeSettingsView = ({ classId, categories, gradeTableData, onRefresh, isL
             };
 
             const res = await gradebookService.addGradeCategory(classId, payload, user?.token);
-            const result = await res.json();
+            const result = await res.json().catch(() => ({}));
 
             if (res.ok) {
                 toast.success('Đã thêm hạng mục mới thành công!');
@@ -52,18 +53,11 @@ const GradeSettingsView = ({ classId, categories, gradeTableData, onRefresh, isL
                 setNewWeight('');
                 if (onRefresh) onRefresh();
             } else {
-                // If it's a 400 Bad Request directly from backend showing error
-                if (result.error) {
-                    toast.error(result.error);
-                } else if (result.message) {
-                    toast.error(result.message);
-                } else {
-                    toast.error('Có lỗi xảy ra khi thêm hạng mục');
-                }
+                toast.error(extractErrorMessage(result, 'Có lỗi xảy ra khi thêm hạng mục'));
             }
         } catch (error) {
             console.error('Add category error:', error);
-            toast.error('Lỗi kết nối đến máy chủ');
+            toast.error(extractErrorMessage(error, 'Lỗi kết nối đến máy chủ'));
         } finally {
             setIsSubmitting(false);
         }
@@ -96,20 +90,18 @@ const GradeSettingsView = ({ classId, categories, gradeTableData, onRefresh, isL
             };
 
             const res = await gradebookService.updateGradeCategory(classId, payload, user?.token);
+            const result = await res.json().catch(() => ({}));
 
             if (res.ok) {
                 toast.success('Cập nhật hạng mục thành công!');
                 setEditingCategoryId(null);
                 if (onRefresh) onRefresh();
             } else {
-                const result = await res.json();
-                if (result.error) toast.error(result.error);
-                else if (result.message) toast.error(result.message);
-                else toast.error('Có lỗi xảy ra khi cập nhật hạng mục');
+                toast.error(extractErrorMessage(result, 'Có lỗi xảy ra khi cập nhật hạng mục'));
             }
         } catch (error) {
             console.error('Update category error:', error);
-            toast.error('Lỗi kết nối đến máy chủ');
+            toast.error(extractErrorMessage(error, 'Lỗi kết nối đến máy chủ'));
         } finally {
             setIsActionSubmitting(false);
         }
@@ -127,19 +119,17 @@ const GradeSettingsView = ({ classId, categories, gradeTableData, onRefresh, isL
         try {
             setIsActionSubmitting(true);
             const res = await gradebookService.deleteGradeCategory(classId, id, user?.token);
+            const result = await res.json().catch(() => ({}));
 
             if (res.ok) {
                 toast.success('Đã xóa hạng mục thành công!');
                 if (onRefresh) onRefresh();
             } else {
-                const result = await res.json();
-                if (result.error) toast.error(result.error);
-                else if (result.message) toast.error(result.message);
-                else toast.error('Có lỗi xảy ra khi xóa hạng mục');
+                toast.error(extractErrorMessage(result, 'Có lỗi xảy ra khi xóa hạng mục'));
             }
         } catch (error) {
             console.error('Delete category error:', error);
-            toast.error('Lỗi kết nối đến máy chủ');
+            toast.error(extractErrorMessage(error, 'Lỗi kết nối đến máy chủ'));
         } finally {
             setIsActionSubmitting(false);
         }

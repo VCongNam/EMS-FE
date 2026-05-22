@@ -3,6 +3,7 @@ import { Icon } from '@iconify/react';
 import Button from '../../../../components/ui/Button';
 import { profileService } from '../../api/profileService';
 import { toast } from 'react-toastify';
+import { extractErrorMessage } from '../../../../utils/errorHandler';
 
 const ChangePasswordModal = ({ isOpen, onClose, token }) => {
     const [oldPassword, setOldPassword] = useState('');
@@ -33,7 +34,7 @@ const ChangePasswordModal = ({ isOpen, onClose, token }) => {
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || "Đổi mật khẩu thất bại. Vui lòng kiểm tra lại mật khẩu cũ!");
+                throw new Error(extractErrorMessage(errorData, "Đổi mật khẩu thất bại. Vui lòng kiểm tra lại mật khẩu cũ!"));
             }
 
             toast.success("Đổi mật khẩu thành công!");
@@ -52,7 +53,7 @@ const ChangePasswordModal = ({ isOpen, onClose, token }) => {
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <div 
                 className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in"
-                onClick={onClose}
+                onClick={() => !loading && onClose()}
             ></div>
             
             <div className="relative w-full max-w-md bg-surface rounded-[2.5rem] border border-border shadow-2xl overflow-hidden animate-scale-in">
@@ -69,7 +70,8 @@ const ChangePasswordModal = ({ isOpen, onClose, token }) => {
                     </div>
                     <button 
                         onClick={onClose}
-                        className="!p-2 text-text-muted hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                        disabled={loading}
+                        className="!p-2 text-text-muted hover:text-red-500 hover:bg-red-50 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <Icon icon="solar:close-circle-bold-duotone" className="text-2xl" />
                     </button>
@@ -90,10 +92,11 @@ const ChangePasswordModal = ({ isOpen, onClose, token }) => {
                             <input
                                 type="password"
                                 required
+                                disabled={loading}
                                 value={oldPassword}
                                 onChange={(e) => setOldPassword(e.target.value)}
                                 placeholder="••••••••"
-                                className="w-full !pl-12 !pr-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all text-text-main font-mono"
+                                className="w-full !pl-12 !pr-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all text-text-main font-mono disabled:opacity-50"
                             />
                         </div>
                     </div>
@@ -105,10 +108,11 @@ const ChangePasswordModal = ({ isOpen, onClose, token }) => {
                             <input
                                 type="password"
                                 required
+                                disabled={loading}
                                 value={newPassword}
                                 onChange={(e) => setNewPassword(e.target.value)}
                                 placeholder="••••••••"
-                                className="w-full !pl-12 !pr-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all text-text-main font-mono"
+                                className="w-full !pl-12 !pr-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all text-text-main font-mono disabled:opacity-50"
                             />
                         </div>
                     </div>
@@ -120,10 +124,11 @@ const ChangePasswordModal = ({ isOpen, onClose, token }) => {
                             <input
                                 type="password"
                                 required
+                                disabled={loading}
                                 value={confirmNewPassword}
                                 onChange={(e) => setConfirmNewPassword(e.target.value)}
                                 placeholder="••••••••"
-                                className="w-full !pl-12 !pr-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all text-text-main font-mono"
+                                className="w-full !pl-12 !pr-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all text-text-main font-mono disabled:opacity-50"
                             />
                         </div>
                     </div>
@@ -133,14 +138,15 @@ const ChangePasswordModal = ({ isOpen, onClose, token }) => {
                             type="button"
                             variant="outline"
                             onClick={onClose}
-                            className="flex-1 !py-4 !rounded-2xl !font-bold"
+                            disabled={loading}
+                            className="flex-1 !py-4 !rounded-2xl !font-bold disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             Hủy
                         </Button>
                         <Button
                             type="submit"
                             disabled={loading}
-                            className="flex-[2] !py-4 !rounded-2xl !font-black !shadow-lg !shadow-primary/20"
+                            className="flex-[2] !py-4 !rounded-2xl !font-black !shadow-lg !shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {loading ? (
                                 <Icon icon="svg-spinners:180-ring-with-bg" className="text-xl" />

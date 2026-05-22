@@ -4,6 +4,7 @@ import { gradebookService } from '../../../../api/gradebookService';
 import useAuthStore from '../../../../../../store/authStore';
 import { toast } from 'react-toastify';
 import { useTAPermission } from '../../../../../dashboard/context/TAPermissionContext';
+import { extractErrorMessage } from '../../../../../../utils/errorHandler';
 
 const GradeMasterView = ({ classId, gradeTableData, onRefresh }) => {
     const { user } = useAuthStore();
@@ -53,10 +54,11 @@ const GradeMasterView = ({ classId, gradeTableData, onRefresh }) => {
                 toast.success("Đã lưu bảng điểm thành công!");
                 if (onRefresh) onRefresh();
             } else {
-                toast.error("Lỗi khi lưu bảng điểm");
+                const errData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errData, "Lỗi khi lưu bảng điểm"));
             }
         } catch (error) {
-            toast.error("Lỗi mạng khi lưu bảng điểm");
+            toast.error(extractErrorMessage(error, "Lỗi mạng khi lưu bảng điểm"));
         } finally {
             setIsSaving(false);
         }

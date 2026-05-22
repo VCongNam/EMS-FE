@@ -7,6 +7,7 @@ import TaskDetailModal from '../components/TaskDetailModal';
 import Pagination from '../../../components/ui/Pagination';
 import useAuthStore from '../../../store/authStore';
 import { taService } from '../api/taService';
+import { extractErrorMessage } from '../../../utils/errorHandler';
 
 const TATaskManagementTab = ({ classId }) => {
     const { user } = useAuthStore();
@@ -85,7 +86,7 @@ const TATaskManagementTab = ({ classId }) => {
 
         } catch (error) {
             console.error('Lỗi khi tải dữ liệu công việc:', error);
-            toast.error('Lỗi kết nối máy chủ khi tải danh sách công việc');
+            toast.error(extractErrorMessage(error, 'Lỗi kết nối máy chủ khi tải danh sách công việc'));
         } finally {
             setIsLoading(false);
         }
@@ -110,12 +111,12 @@ const TATaskManagementTab = ({ classId }) => {
                 setIsDetailModalOpen(false);
                 loadData(); // Re-fetch to get new status and feedback
             } else {
-                const err = await res.json();
-                toast.error(err.message || 'Lỗi khi xử lý yêu cầu');
+                const errData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errData, 'Lỗi khi xử lý yêu cầu'));
             }
         } catch (e) {
             console.error(e);
-            toast.error('Lỗi kết nối máy chủ');
+            toast.error(extractErrorMessage(e, 'Lỗi kết nối máy chủ'));
         }
     };
 
@@ -136,7 +137,7 @@ const TATaskManagementTab = ({ classId }) => {
                 case 'overdue':
                     return "bg-red-500/10 text-red-600 border-red-200/50";
                 default:
-                    return "bg-slate-500/10 text-slate-600 border-slate-200/50";
+                    return "bg-slate-500/10 text-slate-600 border-slate-500/50";
             }
         };
 
@@ -296,15 +297,17 @@ const TATaskManagementTab = ({ classId }) => {
                             const res = await taService.createTask(payload, user.token);
                             if (res.ok) {
                                 toast.success('Giao việc thành công!');
-                                setIsCreateModalOpen(false);
                                 loadData();
+                                return true;
                             } else {
-                                const error = await res.json();
-                                toast.error(error.message || 'Lỗi khi giao việc');
+                                const errorData = await res.json().catch(() => ({}));
+                                toast.error(extractErrorMessage(errorData, 'Lỗi khi giao việc'));
+                                return false;
                             }
                         } catch (e) {
                             console.error(e);
-                            toast.error('Lỗi kết nối máy chủ');
+                            toast.error(extractErrorMessage(e, 'Lỗi kết nối máy chủ'));
+                            return false;
                         }
                     }}
                     tas={tas}

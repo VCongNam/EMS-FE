@@ -12,6 +12,7 @@ import useAuthStore from '../../../store/authStore';
 import { classService } from '../api/classService';
 import { sessionService } from '../api/sessionService';
 import Loading from '../../../components/ui/Loading';
+import { extractErrorMessage } from '../../../utils/errorHandler';
 
 // Helper functions for formatting Data to API shapes
 const parseDate = (dateStr) => {
@@ -107,8 +108,8 @@ const TeacherClassListPage = () => {
                         const sessions = await sessionRes.json();
                         const sessionList = Array.isArray(sessions) ? sessions : (sessions.data || []);
                         totalSessions = sessionList.length;
-                        currentSession = sessionList.filter(s => 
-                            (s.status || '').toLowerCase().includes('completed') || 
+                        currentSession = sessionList.filter(s =>
+                            (s.status || '').toLowerCase().includes('completed') ||
                             (s.status || '').toLowerCase().includes('đã kết thúc')
                         ).length;
                     }
@@ -126,7 +127,7 @@ const TeacherClassListPage = () => {
                     createdAt: apiClass.startDate || 'N/A',
                     schedule: scheduleDisplay,
                     students: {
-                        count: apiClass.currentStudents || 0, 
+                        count: apiClass.currentStudents || 0,
                         max: apiClass.maxStudents || 30
                     },
                     progress: {
@@ -160,12 +161,13 @@ const TeacherClassListPage = () => {
             if (!token) return toast.error('Vui lòng đăng nhập lại!');
 
             const loadingToast = toast.loading("Đang lấy thông tin chi tiết...");
-            
+
             const response = await classService.getClassById(classData.id, token);
-            
+
             if (!response.ok) {
                 toast.dismiss(loadingToast);
-                throw new Error('Không thể lấy thông tin chi tiết lớp học.');
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(extractErrorMessage(errorData, 'Không thể lấy thông tin chi tiết lớp học.'));
             }
 
             const fullDetail = await response.json();
@@ -186,22 +188,33 @@ const TeacherClassListPage = () => {
     const handleSaveClass = async (payload) => {
         try {
             const token = useAuthStore.getState().user?.token;
-            if (!token) return toast.error('Vui lòng đăng nhập lại!');
+            if (!token) {
+                toast.error('Vui lòng đăng nhập lại!');
+                return false;
+            }
 
             if (selectedClass) {
                 const targetId = selectedClass.classId || selectedClass.id;
                 const response = await classService.updateClass(targetId, payload, token);
-                if (!response.ok) throw new Error('Lỗi khi cập nhật lớp học.');
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(extractErrorMessage(errorData, 'Lỗi khi cập nhật lớp học.'));
+                }
                 toast.success('Cập nhật thông tin lớp học thành công!');
             } else {
                 const response = await classService.createClass(payload, token);
-                if (!response.ok) throw new Error('Lỗi khi cắm Lớp Mới');
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(extractErrorMessage(errorData, 'Lỗi khi tạo lớp học mới.'));
+                }
                 toast.success('Tạo lớp học thành công!');
             }
             setIsModalOpen(false);
             fetchClasses();
+            return true;
         } catch (error) {
             toast.error(error.message);
+            throw error;
         }
     };
 
@@ -223,11 +236,17 @@ const TeacherClassListPage = () => {
 
             if (type === 'archive') {
                 const res = await classService.archiveClass(classId, token);
-                if (!res.ok) throw new Error('Không thể lưu trữ lớp học!');
+                if (!res.ok) {
+                    const errorData = await res.json().catch(() => ({}));
+                    throw new Error(extractErrorMessage(errorData, 'Không thể lưu trữ lớp học!'));
+                }
                 toast.success('Đã đưa lớp học vào mục Lưu trữ.');
             } else if (type === 'unarchive') {
                 const res = await classService.restoreClass(classId, token);
-                if (!res.ok) throw new Error('Không thể khôi phục lớp học!');
+                if (!res.ok) {
+                    const errorData = await res.json().catch(() => ({}));
+                    throw new Error(extractErrorMessage(errorData, 'Không thể khôi phục lớp học!'));
+                }
                 toast.success('Đã khôi phục lớp học thành công.');
             }
             setConfirmModal({ isOpen: false, type: '', classId: null });

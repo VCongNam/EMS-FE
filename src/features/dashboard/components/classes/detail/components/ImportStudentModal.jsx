@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import Button from '../../../../../../components/ui/Button';
 import { classService } from '../../../../api/classService';
 import useAuthStore from '../../../../../../store/authStore';
+import { extractErrorMessage } from '../../../../../../utils/errorHandler';
 
 const ImportStudentModal = ({ isOpen, onClose, onImportSuccess, classId }) => {
     const { user } = useAuthStore();
@@ -58,11 +59,11 @@ const ImportStudentModal = ({ isOpen, onClose, onImportSuccess, classId }) => {
                 setCurrentStep(1); // Chuyển sang màn hình kết quả tạo tài khoản
                 toast.success(`Khởi tạo tài khoản thành công!`);
             } else {
-                toast.error(data.message || "Đã xảy ra lỗi khi upload file.");
+                toast.error(extractErrorMessage(data, "Đã xảy ra lỗi khi upload file."));
             }
         } catch (error) {
             console.error(error);
-            toast.error("Lỗi kết nối máy chủ.");
+            toast.error(extractErrorMessage(error, "Lỗi kết nối máy chủ."));
         } finally {
             setIsLoading(false);
         }
@@ -93,12 +94,14 @@ const ImportStudentModal = ({ isOpen, onClose, onImportSuccess, classId }) => {
                 toast.success(`Gán học sinh vào lớp thành công!`);
                 if (onImportSuccess) onImportSuccess();
             } else {
-                setAssignmentError("Không thể gán học sinh vào lớp. Có thể do lớp đã đạt sĩ số tối đa.");
-                toast.error("Thêm học sinh vào lớp thất bại. Vui lòng kiểm tra lại sĩ số!");
+                const assignErrData = await assignRes.json().catch(() => ({}));
+                const backendMsg = extractErrorMessage(assignErrData, "Thêm học sinh vào lớp thất bại. Vui lòng kiểm tra lại sĩ số!");
+                setAssignmentError(backendMsg);
+                toast.error(backendMsg);
             }
         } catch (error) {
             console.error(error);
-            toast.error("Lỗi hệ thống khi gán lớp.");
+            toast.error(extractErrorMessage(error, "Lỗi hệ thống khi gán lớp."));
         } finally {
             setIsLoading(false);
         }
@@ -127,7 +130,7 @@ const ImportStudentModal = ({ isOpen, onClose, onImportSuccess, classId }) => {
             document.body.removeChild(a);
         } catch (error) {
             console.error("Download Error:", error);
-            toast.error("Không thể tải xuống file kết quả.");
+            toast.error(extractErrorMessage(error, "Không thể tải xuống file kết quả."));
         }
     };
 

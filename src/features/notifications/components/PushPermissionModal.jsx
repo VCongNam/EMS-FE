@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { useNotifications } from '../../../contexts/NotificationContext';
 import { toast } from 'react-toastify';
+import { extractErrorMessage } from '../../../utils/errorHandler';
 
 const PushPermissionModal = () => {
     const { isPushSupported, isPushSubscribed, requestPushPermission } = useNotifications();
@@ -41,6 +42,7 @@ const PushPermissionModal = () => {
             }
         } catch (error) {
             console.error("Lỗi xin quyền:", error);
+            toast.error(extractErrorMessage(error, 'Có lỗi xảy ra khi bật thông báo.'));
         }
     };
 

@@ -6,6 +6,7 @@ import { taService } from '../api/taService';
 import AddTAModal from '../components/AddTAModal';
 import EditTAPermissionModal from '../components/EditTAPermissionModal';
 import ConfirmModal from '../../../components/ui/ConfirmModal';
+import { extractErrorMessage } from '../../../utils/errorHandler';
 
 const ViewTAListPage = ({ classId }) => {
     const { user } = useAuthStore();
@@ -54,7 +55,8 @@ const ViewTAListPage = ({ classId }) => {
                     setAssistants([]);
                 }
             } else {
-                toast.error('Không thể tải danh sách trợ giảng');
+                const errorData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errorData, 'Không thể tải danh sách trợ giảng'));
             }
         } catch (error) {
             console.error(error);
@@ -81,7 +83,8 @@ const ViewTAListPage = ({ classId }) => {
                         toast.success('Đã gỡ trợ giảng khỏi lớp thành công.');
                         fetchAssistants();
                     } else {
-                        toast.error('Có lỗi xảy ra khi thực hiện thao tác.');
+                        const errorData = await res.json().catch(() => ({}));
+                        toast.error(extractErrorMessage(errorData, 'Có lỗi xảy ra khi thực hiện thao tác.'));
                     }
                 } catch (error) {
                     console.error(error);
@@ -111,8 +114,8 @@ const ViewTAListPage = ({ classId }) => {
                         toast.success('Đã khôi phục trợ giảng thành công.');
                         fetchAssistants();
                     } else {
-                        const errorData = await res.json();
-                        toast.error(errorData.message || 'Có lỗi xảy ra khi thực hiện thao tác.');
+                        const errorData = await res.json().catch(() => ({}));
+                        toast.error(extractErrorMessage(errorData, 'Có lỗi xảy ra khi thực hiện thao tác.'));
                     }
                 } catch (error) {
                     console.error(error);

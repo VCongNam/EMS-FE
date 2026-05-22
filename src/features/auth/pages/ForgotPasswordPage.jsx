@@ -4,71 +4,73 @@ import { toast } from 'react-toastify';
 import Button from '../../../components/ui/Button';
 import AuthLayout from '../components/AuthLayout';
 import { authService } from '../api/authService';
+import { extractErrorMessage } from '../../../utils/errorHandler';
+
 const ForgotPasswordPage = () => {
     const navigate = useNavigate();
     const [step, setStep] = useState(1);
     const [email, setEmail] = useState('');
     const [formData, setFormData] = useState({ code: '', password: '', confirmPassword: '' });
-
+ 
     // Toggle password visibility
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
+ 
     // UI states
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-
+ 
     const handleEmailSubmit = async (e) => {
         e.preventDefault();
         setError(null);
         setLoading(true);
-
+ 
         try {
             const response = await authService.forgotPassword(email);
-
+ 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || 'Gửi yêu cầu thất bại. Vui lòng thử lại!');
+                throw new Error(extractErrorMessage(errorData, 'Gửi yêu cầu thất bại. Vui lòng thử lại!'));
             }
-
+ 
             // Call API to send reset link/code
             setStep(2);
         } catch (err) {
-            setError(err.message);
+            setError(extractErrorMessage(err));
         } finally {
             setLoading(false);
         }
     };
-
+ 
     const handlePasswordSubmit = async (e) => {
         e.preventDefault();
         setError(null);
-
+ 
         if (formData.password !== formData.confirmPassword) {
             toast.error('Mật khẩu xác nhận không khớp!');
             return;
         }
-
+ 
         setLoading(true);
-
+ 
         try {
             const response = await authService.resetPassword({
                 email: email,
                 otpCode: formData.code,
                 newPassword: formData.password
             });
-
+ 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || 'Mã xác nhận không hợp lệ hoặc đã hết hạn.');
+                throw new Error(extractErrorMessage(errorData, 'Mã xác nhận không hợp lệ hoặc đã hết hạn.'));
             }
-
+ 
             setStep(3);
             setTimeout(() => {
                 navigate('/login');
             }, 3000);
         } catch (err) {
-            setError(err.message);
+            setError(extractErrorMessage(err));
         } finally {
             setLoading(false);
         }

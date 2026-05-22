@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import useAuthStore from '../../../store/authStore';
 import { taService } from '../api/taService';
 import EditTAPermissionModal from '../components/EditTAPermissionModal';
+import { extractErrorMessage } from '../../../utils/errorHandler';
 
 const PERMISSION_MAP = {
     'Attendance': 'Điểm danh',
@@ -42,7 +43,8 @@ const GlobalTAManagementPage = () => {
                     setAssistants([]);
                 }
             } else {
-                toast.error('Không thể tải danh sách trợ giảng');
+                const errData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errData, 'Không thể tải danh sách trợ giảng'));
             }
         } catch (error) {
             console.error(error);

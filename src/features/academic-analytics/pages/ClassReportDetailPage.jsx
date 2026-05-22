@@ -6,6 +6,7 @@ import useAuthStore from '../../../store/authStore';
 import { growthReportService } from '../api/growthReportService';
 import StatCard from '../components/StatCard';
 import { GradingDonutChart, GrowthTrendsChart } from '../components/PerformanceCharts';
+import { extractErrorMessage } from '../../../utils/errorHandler';
 
 const ClassReportDetailPage = () => {
     const { classId } = useParams();
@@ -55,7 +56,7 @@ const ClassReportDetailPage = () => {
             }
         } catch (error) {
             console.error('Lỗi lấy báo cáo chi tiết:', error);
-            toast.error('Không thể lấy dữ liệu chi tiết lớp học');
+            toast.error(extractErrorMessage(error, 'Không thể lấy dữ liệu chi tiết lớp học'));
         } finally {
             setIsLoading(false);
         }

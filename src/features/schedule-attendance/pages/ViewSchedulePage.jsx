@@ -7,6 +7,7 @@ import ScheduleTimelineView from '../components/ScheduleTimelineView';
 import ScheduleGridView from '../components/ScheduleGridView';
 import studentScheduleService from '../../dashboard/api/studentScheduleService';
 import { toast } from 'react-toastify';
+import { extractErrorMessage } from '../../../utils/errorHandler';
 
 const DAY_NAME_MAP = {
     '02': 'Thứ 2', '03': 'Thứ 3', '04': 'Thứ 4', '05': 'Thứ 5', '06': 'Thứ 6', '07': 'Thứ 7', '08': 'CN'
@@ -44,11 +45,12 @@ const ViewSchedulePage = () => {
                 const result = await response.json();
                 setScheduleData(result.data || []);
             } else {
-                toast.error("Không thể tải lịch học");
+                const errorData = await response.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errorData, "Không thể tải lịch học"));
             }
         } catch (error) {
             console.error("Fetch schedule failed:", error);
-            toast.error("Lỗi khi kết nối máy chủ");
+            toast.error(extractErrorMessage(error, "Lỗi khi kết nối máy chủ"));
         } finally {
             setIsLoading(false);
         }

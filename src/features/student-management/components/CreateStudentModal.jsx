@@ -4,6 +4,7 @@ import { Icon } from '@iconify/react';
 import Button from "../../../components/ui/Button";
 
 const CreateStudentModal = ({ isOpen, onClose, onCreate }) => {
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState({
         fullName: '',
         email: '',
@@ -23,21 +24,28 @@ const CreateStudentModal = ({ isOpen, onClose, onCreate }) => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        onCreate(formData);
-        setFormData({
-            fullName: '',
-            email: '',
-            phoneNumber: '',
-            password: '',
-            parentName: '',
-            parentPhone: '',
-            parentEmail: '',
-            address: '',
-            dob: ''
-        });
-        onClose();
+        setIsSubmitting(true);
+        try {
+            const success = await onCreate(formData);
+            if (success) {
+                setFormData({
+                    fullName: '',
+                    email: '',
+                    phoneNumber: '',
+                    password: '',
+                    parentName: '',
+                    parentPhone: '',
+                    parentEmail: '',
+                    address: '',
+                    dob: ''
+                });
+                onClose();
+            }
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const inputClasses = "w-full !pl-11 !pr-4 !py-3 bg-background border border-border rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium text-text-main hover:border-text-muted/30 placeholder:text-text-muted/50";
@@ -48,7 +56,7 @@ const CreateStudentModal = ({ isOpen, onClose, onCreate }) => {
             {/* Backdrop */}
             <div
                 className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] animate-fade-in"
-                onClick={onClose}
+                onClick={() => !isSubmitting && onClose()}
             />
 
             {/* Modal */}
@@ -70,8 +78,9 @@ const CreateStudentModal = ({ isOpen, onClose, onCreate }) => {
                         </div>
                         <button 
                             type="button"
+                            disabled={isSubmitting}
                             onClick={onClose}
-                            className="w-10 h-10 rounded-xl bg-background border border-border flex items-center justify-center text-text-muted hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-all shrink-0"
+                            className="w-10 h-10 rounded-xl bg-background border border-border flex items-center justify-center text-text-muted hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-all shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <Icon icon="material-symbols:close-rounded" className="text-xl" />
                         </button>
@@ -248,12 +257,20 @@ const CreateStudentModal = ({ isOpen, onClose, onCreate }) => {
 
                         {/* Footer Actions */}
                         <div className="!pt-6 border-t border-border flex flex-col-reverse sm:flex-row justify-end !gap-3 sm:!gap-4 w-full mt-auto shrink-0">
-                            <Button type="button" variant="outline" onClick={onClose} className="w-full sm:w-auto justify-center">
+                            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting} className="w-full sm:w-auto justify-center disabled:opacity-50 disabled:cursor-not-allowed">
                                 Hủy bỏ
                             </Button>
-                            <Button type="submit" variant="!primary" className="w-full sm:w-auto !p-3 justify-center shadow-primary/30 shadow-lg group">
-                                <Icon icon="solar:diskette-bold-duotone" className="text-xl text-primary !mr-2 group-hover:scale-110 transition-transform" />
-                                Tạo tài khoản
+                            <Button 
+                                type="submit" 
+                                variant="!primary" 
+                                disabled={isSubmitting}
+                                className="w-full sm:w-auto !p-3 justify-center shadow-primary/30 shadow-lg group disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <Icon 
+                                    icon={isSubmitting ? "line-md:loading-twotone-loop" : "solar:diskette-bold-duotone"} 
+                                    className="text-xl text-primary !mr-2 group-hover:scale-110 transition-transform" 
+                                />
+                                {isSubmitting ? "Đang xử lý..." : "Tạo tài khoản"}
                             </Button>
                         </div>
                     </form>

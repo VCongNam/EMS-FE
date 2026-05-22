@@ -7,6 +7,7 @@ import RevenueDistributionChart from '../components/charts/RevenueDistributionCh
 import RevenueComparisonChart from '../components/charts/RevenueComparisonChart';
 import { tuitionService } from '../api/tuitionService';
 import useAuthStore from '../../../store/authStore';
+import { extractErrorMessage } from '../../../utils/errorHandler';
 
 const formatVND = (amount) => amount?.toLocaleString('vi-VN') + ' ₫';
 
@@ -34,7 +35,8 @@ const TotalRevenuePage = () => {
                     const result = await res.json();
                     setData(result);
                 } else {
-                    toast.error("Không thể tải báo cáo doanh thu");
+                    const errData = await res.json().catch(() => ({}));
+                    toast.error(extractErrorMessage(errData, "Không thể tải báo cáo doanh thu"));
                 }
             } catch (error) {
                 console.error("Lỗi lấy báo cáo:", error);

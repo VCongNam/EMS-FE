@@ -8,6 +8,7 @@ import studentScheduleService from '../../dashboard/api/studentScheduleService';
 import SessionModal from '../../dashboard/components/classes/detail/components/SessionModal';
 import ConfirmModal from '../../../components/ui/ConfirmModal';
 import Loading from '../../../components/ui/Loading';
+import { extractErrorMessage } from '../../../utils/errorHandler';
 
 const COLOR_OPTIONS = ['blue', 'purple', 'green', 'orange'];
 const COLOR_MAP = {
@@ -553,10 +554,12 @@ const ScheduleManagementPage = () => {
                 });
                 setLessons(mapped);
             } else {
-                toast.error('Không thể tải thời khóa biểu');
+                const errorData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errorData, 'Không thể tải thời khóa biểu'));
             }
         } catch (err) {
             console.error(err);
+            toast.error(extractErrorMessage(err, 'Lỗi kết nối thời khóa biểu'));
         } finally {
             setLoading(false);
         }
@@ -598,10 +601,12 @@ const ScheduleManagementPage = () => {
                 });
                 setLessons(mapped);
             } else {
-                toast.error('Không thể tải Lịch dạy');
+                const errorData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errorData, 'Không thể tải Lịch dạy'));
             }
         } catch (err) {
             console.error(err);
+            toast.error(extractErrorMessage(err, 'Lỗi kết nối lịch dạy'));
         } finally {
             setLoading(false);
         }
@@ -614,9 +619,10 @@ const ScheduleManagementPage = () => {
 
     // --- Teacher handlers ---
     const handleViewLesson = async (lesson) => {
+        let loadingToast;
         try {
             if (!token) return;
-            const loadingToast = toast.loading("Đang tải chi tiết...");
+            loadingToast = toast.loading("Đang tải chi tiết...");
             const res = await sessionService.getSessionById(lesson.id, token);
             if (res.ok) {
                 const result = await res.json();
@@ -625,19 +631,22 @@ const ScheduleManagementPage = () => {
                 setViewModalState({ isOpen: true, data: { ...lesson.raw, ...detailedData } });
             } else {
                 toast.dismiss(loadingToast);
-                toast.error("Không thể tải chi tiết");
+                const errorData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errorData, "Không thể tải chi tiết"));
             }
         } catch (error) {
+            if (loadingToast) toast.dismiss(loadingToast);
             console.error(error);
-            toast.error("Lỗi kết nối");
+            toast.error(extractErrorMessage(error, "Lỗi kết nối"));
         }
     };
 
     const handleEditLesson = async (lesson) => {
+        let loadingToast;
         try {
             if (!token) return;
 
-            const loadingToast = toast.loading("Đang tải chi tiết buổi học...");
+            loadingToast = toast.loading("Đang tải chi tiết buổi học...");
             const res = await sessionService.getSessionById(lesson.id, token);
             
             if (res.ok) {
@@ -654,12 +663,14 @@ const ScheduleManagementPage = () => {
                 });
             } else {
                 toast.dismiss(loadingToast);
-                toast.error("Không thể lấy thông tin chi tiết");
+                const errorData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errorData, "Không thể lấy thông tin chi tiết"));
                 setSessionModalState({ isOpen: true, initialData: lesson.raw });
             }
         } catch (error) {
+            if (loadingToast) toast.dismiss(loadingToast);
             console.error(error);
-            toast.error("Lỗi kết nối máy chủ");
+            toast.error(extractErrorMessage(error, "Lỗi kết nối máy chủ"));
         }
     };
     const handleDeleteLesson = (id) => setConfirmModal({ isOpen: true, sessionId: id });
@@ -674,10 +685,11 @@ const ScheduleManagementPage = () => {
                 toast.success('Đã hủy buổi học thành công!');
                 fetchTeacherSchedule();
             } else {
-                toast.error('Lỗi khi xóa!');
+                const errorData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errorData, 'Lỗi khi xóa!'));
             }
-        } catch {
-            toast.error('Lỗi mạng!');
+        } catch (error) {
+            toast.error(extractErrorMessage(error, 'Lỗi mạng!'));
         } finally {
             setDeletingId(null);
             setConfirmModal({ isOpen: false, sessionId: null });
@@ -706,10 +718,11 @@ const ScheduleManagementPage = () => {
                 setSessionModalState({ isOpen: false, initialData: null });
                 fetchTeacherSchedule();
             } else {
-                toast.error('Lưu thất bại!');
+                const errorData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errorData, 'Lưu thất bại!'));
             }
-        } catch {
-            toast.error('Lỗi hệ thống!');
+        } catch (error) {
+            toast.error(extractErrorMessage(error, 'Lỗi hệ thống!'));
         }
     };
 
