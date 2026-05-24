@@ -80,7 +80,7 @@ const StudentClassListPage = () => {
 
             if (res.ok) {
                 const result = await res.json();
-                console.log("Student Classes API Raw Result:", result);
+                // console.log("Student Classes API Raw Result:", result);
                 
                 const items = result.data?.items || result.items || [];
                 const mappedClasses = await Promise.all(items.map(async (cls) => {

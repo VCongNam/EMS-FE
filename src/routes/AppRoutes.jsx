@@ -183,9 +183,11 @@ export const AppRoutes = () => {
                         </Route>
 
                         {/* Mixed Role Routes (Attendance/Schedule) */}
-                        <Route element={<ProtectedRoute allowedRoles={['teacher', 'ta', 'assistant', 'teachingassistant', 'admin']} />}>
+                        <Route element={<ProtectedRoute allowedRoles={['teacher', 'ta', 'assistant', 'teachingassistant', 'admin', 'student']} />}>
                             <Route path="schedule" element={<ScheduleManagementPage />} />
                             <Route path="schedule-management" element={<ScheduleManagementPage />} />
+                        </Route>
+                        <Route element={<ProtectedRoute allowedRoles={['teacher', 'ta', 'assistant', 'teachingassistant', 'admin']} />}>
                             <Route path="attendance/take" element={<TakeAttendancePage />} />
                             <Route path="attendance/update" element={<UpdateAttendanceRecordPage />} />
                         </Route>
