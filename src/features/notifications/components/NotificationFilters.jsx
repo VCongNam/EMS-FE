@@ -1,7 +1,7 @@
 import React from 'react';
 import { Icon } from '@iconify/react';
 
-const NotificationFilters = ({ activeFilter, onFilterChange, onMarkAllRead, searchQuery, onSearchChange }) => {
+const NotificationFilters = ({ isStudent, activeFilter, onFilterChange, onMarkAllRead, searchQuery, onSearchChange }) => {
     const filters = [
         { id: 'all', label: 'Tất cả', icon: 'solar:library-bold-duotone' },
         { id: 'teacher', label: 'Giáo viên', icon: 'solar:user-speak-bold-duotone' },
@@ -9,24 +9,26 @@ const NotificationFilters = ({ activeFilter, onFilterChange, onMarkAllRead, sear
     ];
 
     return (
-        <div className="!flex !flex-col md:!flex-row !justify-between !items-start md:!items-center !gap-6 !bg-white !p-8 !rounded-[2.5rem] !border !border-border !shadow-sm">
-            <div className="!flex !items-center !gap-2 !p-1.5 !bg-background !rounded-2xl !border !border-border !w-full md:!w-auto">
-                {filters.map((filter) => (
-                    <button
-                        key={filter.id}
-                        onClick={() => onFilterChange(filter.id)}
-                        className={`!flex-1 md:!flex-none !px-5 !py-2.5 !rounded-xl !text-sm !font-black !flex !items-center !gap-2 !transition-all ${
-                            activeFilter === filter.id ? '!bg-white !text-primary !shadow-sm' : '!text-text-muted hover:!text-text-main'
-                        }`}
-                    >
-                        <Icon icon={filter.icon} className="!text-lg" />
-                        {filter.label}
-                    </button>
-                ))}
-            </div>
+        <div className="!flex !flex-col md:!flex-row !items-start md:!items-center !justify-between !gap-6 !bg-white !p-8 !rounded-[2.5rem] !border !border-border !shadow-sm !w-full">
+            {!isStudent && (
+                <div className="!flex !items-center !gap-2 !p-1.5 !bg-background !rounded-2xl !border !border-border !w-full md:!w-auto">
+                    {filters.map((filter) => (
+                        <button
+                            key={filter.id}
+                            onClick={() => onFilterChange(filter.id)}
+                            className={`!flex-1 md:!flex-none !px-5 !py-2.5 !rounded-xl !text-sm !font-black !flex !items-center !gap-2 !transition-all ${
+                                activeFilter === filter.id ? '!bg-white !text-primary !shadow-sm' : '!text-text-muted hover:!text-text-main'
+                            }`}
+                        >
+                            <Icon icon={filter.icon} className="!text-lg" />
+                            {filter.label}
+                        </button>
+                    ))}
+                </div>
+            )}
 
-            <div className="!flex !items-center !gap-3 !w-full md:!w-auto">
-                <div className="!relative !flex-1 md:!w-64">
+            <div className={`!flex !items-center !gap-3 !w-full ${isStudent ? '' : 'md:!w-auto'}`}>
+                <div className={`!relative !flex-1 ${isStudent ? '' : 'md:!w-64'}`}>
                     <Icon icon="solar:magnifer-linear" className="!absolute !left-3.5 !top-1/2 !-translate-y-1/2 !text-text-muted !text-lg" />
                     <input 
                         type="text" 

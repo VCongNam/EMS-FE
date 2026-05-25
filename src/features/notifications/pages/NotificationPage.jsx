@@ -164,6 +164,7 @@ const NotificationPage = () => {
 
             {/* Navigation & Filters */}
             <NotificationFilters 
+                isStudent={user?.role?.toLowerCase() === 'student'}
                 activeFilter={filter} 
                 onFilterChange={setFilter} 
                 onMarkAllRead={handleMarkAllRead}
