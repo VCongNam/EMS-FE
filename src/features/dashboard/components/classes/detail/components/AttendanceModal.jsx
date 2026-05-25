@@ -16,14 +16,6 @@ const STATUS_OPTIONS = [
         borderHover: 'hover:border-green-400',
     },
     {
-        key: 'late',
-        label: 'Đi muộn',
-        icon: 'material-symbols:schedule-rounded',
-        activeClass: '!bg-orange-500/15 border-orange-500 text-orange-600 ring-2 ring-orange-500/20',
-        dotClass: '!bg-orange-500',
-        borderHover: 'hover:border-orange-400',
-    },
-    {
         key: 'absent',
         label: 'Vắng mặt',
         icon: 'material-symbols:cancel-rounded',
@@ -50,14 +42,17 @@ const AttendanceModal = ({ isOpen, lesson, existingRecord, onClose, onSave, read
                     const res = await sessionService.getAttendance(lesson.id, token);
                     if (res.ok) {
                         const data = await res.json();
-                        const mapped = data.map(item => ({
-                            id: item.studentId,
-                            name: item.fullName,
-                            attendanceId: item.attendanceId,
-                            status: item.status ? item.status.toLowerCase() : 'none',
-                            isExcused: item.isExcused || false,
-                            note: item.note || ''
-                        }));
+                        const mapped = data.map(item => {
+                            const rawStatus = item.status ? item.status.toLowerCase() : 'none';
+                            return {
+                                id: item.studentId,
+                                name: item.fullName,
+                                attendanceId: item.attendanceId,
+                                status: rawStatus === 'late' ? 'present' : rawStatus,
+                                isExcused: item.isExcused || false,
+                                note: item.note || ''
+                            };
+                        });
                         setStudents(mapped);
                     } else {
                         const errData = await res.json().catch(() => ({}));
@@ -94,15 +89,15 @@ const AttendanceModal = ({ isOpen, lesson, existingRecord, onClose, onSave, read
     };
 
     const handleSubmit = async () => {
-        const unchecked = students.filter(s => s.status === 'none');
-        if (unchecked.length > 0) {
-            toast.warning(`Còn ${unchecked.length} học sinh chưa được điểm danh!`);
+        const markedStudents = students.filter(s => s.status === 'present' || s.status === 'absent');
+        if (markedStudents.length === 0) {
+            toast.warning("Vui lòng chọn trạng thái điểm danh cho ít nhất 1 học sinh!");
             return;
         }
 
         setIsSubmitting(true);
         const token = useAuthStore.getState().user?.token;
-        const payload = students.map(s => ({
+        const payload = markedStudents.map(s => ({
             studentId: s.id,
             status: s.status.charAt(0).toUpperCase() + s.status.slice(1), // "present" -> "Present", "absent" -> "Absent"
             isExcused: s.isExcused,
@@ -127,7 +122,6 @@ const AttendanceModal = ({ isOpen, lesson, existingRecord, onClose, onSave, read
     };
 
     const presentCount = students.filter(s => s.status === 'present').length;
-    const lateCount = students.filter(s => s.status === 'late').length;
     const absentCount = students.filter(s => s.status === 'absent').length;
     const noneCount = students.filter(s => s.status === 'none').length;
 
@@ -197,10 +191,6 @@ const AttendanceModal = ({ isOpen, lesson, existingRecord, onClose, onSave, read
                             <div className="flex items-center !gap-2 !px-3 !py-2 !bg-green-500/10 border border-green-500/20 rounded-2xl">
                                 <span className="w-2 h-2 rounded-full !bg-green-500 shrink-0" />
                                 <span className="text-xs font-bold text-green-600">có mặt: {presentCount}</span>
-                            </div>
-                            <div className="flex items-center !gap-2 !px-3 !py-2 !bg-orange-500/10 border border-orange-500/20 rounded-2xl">
-                                <span className="w-2 h-2 rounded-full !bg-orange-500 shrink-0" />
-                                <span className="text-xs font-bold text-orange-600">Đi muộn: {lateCount}</span>
                             </div>
                             <div className="flex items-center !gap-2 !px-3 !py-2 !bg-red-500/10 border border-red-500/20 rounded-2xl">
                                 <span className="w-2 h-2 rounded-full !bg-red-500 shrink-0" />
@@ -311,8 +301,8 @@ const AttendanceModal = ({ isOpen, lesson, existingRecord, onClose, onSave, read
                                             </div>
                                         </div>
 
-                                        {/* Add Note & isExcused section for absent or late */}
-                                        {(student.status === 'absent' || student.status === 'late') && (
+                                        {/* Add Note & isExcused section for absent */}
+                                        {student.status === 'absent' && (
                                             <div className="!px-4 !pb-3 sm:!pl-[5.5rem] !pt-0 flex flex-col sm:flex-row items-start sm:items-center !gap-3 animate-fade-in mt-1 sm:mt-0">
                                                 <label className="flex items-center !gap-2 cursor-pointer group shrink-0">
                                                     <input
@@ -329,7 +319,7 @@ const AttendanceModal = ({ isOpen, lesson, existingRecord, onClose, onSave, read
                                                         type="text"
                                                         value={student.note}
                                                         onChange={(e) => handleNoteChange(student.id, e.target.value)}
-                                                        placeholder="Ghi chú (Lý do nghỉ / muộn...)"
+                                                        placeholder="Ghi chú (Lý do nghỉ...)"
                                                         className="w-full text-xs !pl-9 !pr-3 !py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all font-medium placeholder:text-text-muted/50"
                                                     />
                                                 </div>

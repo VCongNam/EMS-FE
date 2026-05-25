@@ -10,7 +10,7 @@ const UpdateAttendanceRecordPage = () => {
     const records = [
         { id: 'STU001', name: 'Nguyễn Văn A', originalStatus: 'present', currentStatus: 'present' },
         { id: 'STU002', name: 'Trần Thị B', originalStatus: 'absent', currentStatus: 'absent' },
-        { id: 'STU003', name: 'Lê Văn C', originalStatus: 'late', currentStatus: 'late' },
+        { id: 'STU003', name: 'Lê Văn C', originalStatus: 'absent', currentStatus: 'absent' },
     ];
 
     const [students, setStudents] = useState(records);
@@ -27,7 +27,6 @@ const UpdateAttendanceRecordPage = () => {
     const StatusBadge = ({ status }) => {
         if (status === 'present') return <span className="px-3 py-1 bg-green-100 text-green-700 rounded text-xs font-bold uppercase tracking-wider">có mặt</span>;
         if (status === 'absent') return <span className="px-3 py-1 bg-red-100 text-red-700 rounded text-xs font-bold uppercase tracking-wider">Vắng mặt</span>;
-        if (status === 'late') return <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded text-xs font-bold uppercase tracking-wider">Đi muộn</span>;
     };
 
     return (
@@ -112,7 +111,6 @@ const UpdateAttendanceRecordPage = () => {
                                             >
                                                 <option value="present">có mặt</option>
                                                 <option value="absent">Vắng mặt</option>
-                                                <option value="late">Đi muộn</option>
                                             </select>
                                         )}
                                     </td>

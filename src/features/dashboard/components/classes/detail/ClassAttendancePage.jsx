@@ -11,7 +11,6 @@ import { formatViDate } from '../../../../../utils/dateUtils';
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const STATUS_CFG = {
     present: { label: 'có mặt', badge: '!bg-green-500/10 text-green-600 border-green-500/20', dot: '!bg-green-500' },
-    late: { label: 'Đi muộn', badge: '!bg-orange-500/10 text-orange-600 border-orange-500/20', dot: '!bg-orange-500' },
     absent: { label: 'Vắng mặt', badge: '!bg-red-500/10 text-red-600 border-red-500/20', dot: '!bg-red-500' },
     'not taken': { label: 'Chưa điểm danh', badge: '!bg-text-muted/10 text-text-muted border-border', dot: '!bg-text-muted' },
 };
@@ -102,10 +101,12 @@ const ClassAttendancePage = () => {
                 stMap[student.studentId] = { id: student.studentId, name: student.fullName };
                 student.attendances.forEach(att => {
                     if (!newRecords[att.sessionId]) newRecords[att.sessionId] = [];
+                    const rawStatus = att.status ? att.status.toLowerCase() : 'absent';
+                    const normalizedStatus = rawStatus === 'late' ? 'present' : rawStatus;
                     newRecords[att.sessionId].push({
                         id: student.studentId,
                         name: student.fullName,
-                        status: att.status ? att.status.toLowerCase() : 'absent',
+                        status: normalizedStatus,
                         note: att.note
                     });
                 });
@@ -129,44 +130,50 @@ const ClassAttendancePage = () => {
         return recordedSessions.map(session => {
             const rec = recordsData[session.id] || [];
             const present = rec.filter(r => (r.status || '').includes('present')).length;
-            const late = rec.filter(r => (r.status || '').includes('late')).length;
             const absent = rec.filter(r => (r.status || '').includes('absent')).length;
-            return { ...session, rec, present, late, absent, total: rec.length };
+            return { ...session, rec, present, absent, total: rec.length };
         });
     }, [recordedSessions, recordsData]);
 
     const studentRows = useMemo(() => {
         let sourceData = [];
         if (isTeacherOrTA && historyData) {
-            sourceData = historyData.map(s => ({
-                id: s.studentId,
-                name: s.fullName,
-                entries: s.attendances.map(a => ({
-                    session: { id: a.sessionId, session: sessionsData.find(sd => sd.id === a.sessionId)?.session || '?' },
-                    status: a.status ? a.status.toLowerCase() : null
-                })),
-                present: s.attendances.filter(a => (a.status || '').toLowerCase().includes('present')).length,
-                late: s.attendances.filter(a => (a.status || '').toLowerCase().includes('late')).length,
-                absent: s.attendances.filter(a => (a.status || '').toLowerCase().includes('absent')).length,
-            })).map(s => ({
+            sourceData = historyData.map(s => {
+                const mappedEntries = s.attendances.map(a => {
+                    const rawStatus = a.status ? a.status.toLowerCase() : null;
+                    return {
+                        session: { id: a.sessionId, session: sessionsData.find(sd => sd.id === a.sessionId)?.session || '?' },
+                        status: rawStatus === 'late' ? 'present' : rawStatus
+                    };
+                });
+                const present = mappedEntries.filter(e => e.status === 'present').length;
+                const absent = mappedEntries.filter(e => e.status === 'absent').length;
+                return {
+                    id: s.studentId,
+                    name: s.fullName,
+                    entries: mappedEntries,
+                    present,
+                    absent,
+                };
+            }).map(s => ({
                 ...s,
-                rate: s.entries.length > 0 ? Math.round(((s.present + s.late) / s.entries.length) * 100) : 0
+                rate: s.entries.length > 0 ? Math.round((s.present / s.entries.length) * 100) : 0
             }));
         } else {
             sourceData = studentsData.map(student => {
                 const entries = recordedSessions.map(session => {
                     const rec = recordsData[session.id] || [];
                     const entry = rec.find(r => r.id === student.id);
-                    return { session, status: entry?.status || null };
+                    const rawStatus = entry?.status || null;
+                    return { session, status: rawStatus === 'late' ? 'present' : rawStatus };
                 });
                 const present = entries.filter(e => e.status === 'present').length;
-                const late = entries.filter(e => e.status === 'late').length;
                 const absent = entries.filter(e => e.status === 'absent').length;
                 return {
                     ...student,
                     entries,
-                    present, late, absent,
-                    rate: recordedSessions.length > 0 ? Math.round(((present + late) / recordedSessions.length) * 100) : 0
+                    present, absent,
+                    rate: recordedSessions.length > 0 ? Math.round((present / recordedSessions.length) * 100) : 0
                 };
             });
         }
@@ -195,14 +202,12 @@ const ClassAttendancePage = () => {
 
     const stats = useMemo(() => {
         const totalP = sessionRows.reduce((a, s) => a + s.present, 0);
-        const totalL = sessionRows.reduce((a, s) => a + s.late, 0);
         const totalA = sessionRows.reduce((a, s) => a + s.absent, 0);
-        const total = totalP + totalL + totalA;
+        const total = totalP + totalA;
         return {
             present: totalP,
-            late: totalL,
             absent: totalA,
-            rate: total > 0 ? Math.round(((totalP + totalL) / total) * 100) : 0
+            rate: total > 0 ? Math.round((totalP / total) * 100) : 0
         };
     }, [sessionRows]);
 
@@ -215,11 +220,10 @@ const ClassAttendancePage = () => {
             )}
 
             {/* ── Summary Stats ── */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {[
                     { label: 'Tỷ lệ đi học', value: `${stats.rate}%`, icon: 'solar:chart-bold-duotone', color: 'text-primary !bg-primary/10' },
-                    { label: 'có mặt', value: stats.present, icon: 'material-symbols:check-circle-rounded', color: 'text-green-600 !bg-green-500/10' },
-                    { label: 'Đi muộn', value: stats.late, icon: 'material-symbols:schedule-rounded', color: 'text-orange-500 !bg-orange-500/10' },
+                    { label: 'Có mặt', value: stats.present, icon: 'material-symbols:check-circle-rounded', color: 'text-green-600 !bg-green-500/10' },
                     { label: 'Vắng mặt', value: stats.absent, icon: 'material-symbols:cancel-rounded', color: 'text-red-500 !bg-red-500/10' },
                 ].map((stat, i) => (
                     <div key={i} className="!bg-surface border border-border rounded-2xl !p-4 flex items-center !gap-3">
@@ -248,7 +252,7 @@ const ClassAttendancePage = () => {
                 </div>
 
                 <div className="flex items-center !gap-1 !bg-background border border-border rounded-xl !p-1 shrink-0">
-                    {['all', 'present', 'late', 'absent'].map(s => (
+                    {['all', 'present', 'absent'].map(s => (
                         <button
                             key={s}
                             onClick={() => setStatusFilter(s)}
@@ -355,8 +359,7 @@ const BySessionView = ({ rows, expandedSession, setExpandedSession, statusFilter
 
                                 {/* Mini stats */}
                                 <div className="flex items-center !gap-2 flex-wrap">
-                                    <StatPill value={session.present} label="có mặt" color="text-green-600 !bg-green-500/10 border-green-500/20" />
-                                    <StatPill value={session.late} label="Đi muộn" color="text-orange-500 !bg-orange-500/10 border-orange-500/20" />
+                                    <StatPill value={session.present} label="Có mặt" color="text-green-600 !bg-green-500/10 border-green-500/20" />
                                     <StatPill value={session.absent} label="Vắng mặt" color="text-red-500 !bg-red-500/10 border-red-500/20" />
                                     {isTeacherOrTA && (
                                         <button

@@ -456,11 +456,9 @@ const ClassReportsTab = () => {
                                                                                     </td>
                                                                                     <td className="!p-3 text-center">
                                                                                         <span className={`px-2 py-0.5 rounded-md font-bold uppercase text-[10px] ${
-                                                                                            att.status === 'Present' ? 'bg-emerald-100 text-emerald-700' : 
-                                                                                            att.status === 'Absent' ? 'bg-red-100 text-red-700' : 
-                                                                                            'bg-amber-100 text-amber-700'
+                                                                                            att.status === 'Absent' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'
                                                                                         }`}>
-                                                                                            {att.status === 'Present' ? 'Đi học' : att.status === 'Absent' ? 'Vắng mặt' : 'Muộn'}
+                                                                                            {att.status === 'Absent' ? 'Vắng mặt' : 'Đi học'}
                                                                                         </span>
                                                                                     </td>
                                                                                     <td className="!p-3 text-right text-text-muted italic truncate max-w-[100px]" title={att.topic}>

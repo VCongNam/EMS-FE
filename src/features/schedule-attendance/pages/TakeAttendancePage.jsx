@@ -15,7 +15,7 @@ const TakeAttendancePage = () => {
     const initialStudents = [
         { id: 'STU001', name: 'Nguyễn Văn A', status: 'present' },
         { id: 'STU002', name: 'Trần Thị B', status: 'absent' },
-        { id: 'STU003', name: 'Lê Văn C', status: 'late' },
+        { id: 'STU003', name: 'Lê Văn C', status: 'absent' },
         { id: 'STU004', name: 'Phạm Văn D', status: 'none' },
     ];
 
@@ -26,9 +26,9 @@ const TakeAttendancePage = () => {
     };
 
     const handleSubmit = () => {
-        const unchecked = students.filter(s => s.status === 'none');
-        if (unchecked.length > 0) {
-            toast.warning(`Còn ${unchecked.length} học sinh chưa được điểm danh!`);
+        const markedStudents = students.filter(s => s.status === 'present' || s.status === 'absent');
+        if (markedStudents.length === 0) {
+            toast.warning("Vui lòng chọn trạng thái điểm danh cho ít nhất 1 học sinh!");
             return;
         }
         toast.success('Đã lưu dữ liệu điểm danh thành công!');
@@ -37,7 +37,6 @@ const TakeAttendancePage = () => {
     // Calculate stats
     const presentCount = students.filter(s => s.status === 'present').length;
     const absentCount = students.filter(s => s.status === 'absent').length;
-    const lateCount = students.filter(s => s.status === 'late').length;
 
     return (
         <div className="w-full mx-auto space-y-6 animate-fade-in">
@@ -67,10 +66,6 @@ const TakeAttendancePage = () => {
                         <div className="flex flex-col items-center justify-center min-w-[80px] bg-background border border-border rounded-2xl p-3">
                             <span className="text-2xl font-extrabold text-red-500">{absentCount}</span>
                             <span className="text-xs uppercase tracking-wider font-bold text-text-muted mt-1">Vắng mặt</span>
-                        </div>
-                        <div className="flex flex-col items-center justify-center min-w-[80px] bg-background border border-border rounded-2xl p-3">
-                            <span className="text-2xl font-extrabold text-orange-500">{lateCount}</span>
-                            <span className="text-xs uppercase tracking-wider font-bold text-text-muted mt-1">Đi muộn</span>
                         </div>
                     </div>
                 </div>
@@ -113,19 +108,7 @@ const TakeAttendancePage = () => {
                                                 <span className="hidden sm:inline">có mặt</span>
                                             </button>
 
-                                            {/* Late */}
-                                            <button
-                                                onClick={() => handleStatusChange(student.id, 'late')}
-                                                className={`flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl border transition-all font-semibold text-sm ${student.status === 'late'
-                                                        ? 'bg-orange-100 border-orange-500 text-orange-700 shadow-sm ring-2 ring-orange-200'
-                                                        : 'bg-background border-border text-text-muted hover:border-orange-300'
-                                                    }`}
-                                            >
-                                                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${student.status === 'late' ? 'border-orange-500' : 'border-gray-400'}`}>
-                                                    {student.status === 'late' && <div className="w-2 h-2 rounded-full bg-orange-500"></div>}
-                                                </div>
-                                                <span className="hidden sm:inline">Đi muộn</span>
-                                            </button>
+
 
                                             {/* Absent */}
                                             <button
