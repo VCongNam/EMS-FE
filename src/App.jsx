@@ -9,6 +9,10 @@ function App() {
       <ToastContainer 
         position="top-right" 
         autoClose={3000} 
+        newestOnTop
+        closeOnClick
+        pauseOnHover
+        draggable
         style={{ zIndex: 10001 }}
         toastClassName="!rounded-2xl !shadow-2xl"
       />

@@ -787,15 +787,15 @@ const TuitionManagementPage = () => {
     );
 
     return (
-        <div className="!min-h-screen !bg-[#fbfcfd] !pb-20 !px-4 sm:!px-10">
-            {/* Main Header */}
-            <header className="!pt-12 !pb-8 !flex !flex-col sm:!flex-row sm:!items-end !justify-between !gap-6">
+        <div className="w-full !mx-auto animate-fade-in space-y-6 !pb-12 h-screen overflow-y-auto !pr-2 custom-scrollbar">
+            {/* Main Header (Sticky top card style) */}
+            <header className="sticky top-0 z-20 !bg-white/80 backdrop-blur-md border border-slate-200 rounded-[var(--radius-xl)] !p-6 shadow-sm !mb-6 !flex !flex-col sm:!flex-row sm:!items-center !justify-between !gap-6">
                 <div>
-                    <h1 className="!text-4xl !font-black !text-text-main !tracking-tight font-['Outfit']">Quản lý Học phí</h1>
+                    <h1 className="!text-2xl !font-black !text-text-main !tracking-tight font-['Outfit']">Quản lý Học phí</h1>
                 </div>
                 
                 {/* Global Tab Switcher */}
-                <div className="!flex !items-center !gap-2 !bg-white !p-2 !rounded-[2rem] !shadow-xl !shadow-slate-200/50 !border !border-slate-100">
+                <div className="!flex !items-center !gap-2 !bg-white/90 !p-1.5 !rounded-2xl !border !border-slate-200 shadow-sm">
                     {[
                         { id: 'dashboard', label: 'Tổng quan', icon: 'solar:chart-2-bold-duotone' },
                         { id: 'operations', label: 'Lớp & Công nợ', icon: 'solar:bill-list-bold-duotone' },
@@ -817,7 +817,7 @@ const TuitionManagementPage = () => {
 
             {/* Global Period Filter - Synchronized between Dashboard & Operations */}
             {(activeTab === 'dashboard' || activeTab === 'operations') && (
-                <div className="!mb-8 !flex !flex-col sm:!flex-row !items-start sm:!items-center !gap-4 !bg-white !w-full sm:!w-fit !px-6 !py-4 !rounded-[2rem] !border !border-border !shadow-sm">
+                <div className="!mb-6 !flex !flex-col sm:!flex-row !items-start sm:!items-center !gap-4 !bg-white !w-full sm:!w-fit !px-6 !py-4 !rounded-[2rem] !border !border-border !shadow-sm">
                     <div className="!flex !items-center !gap-3">
                         <div className="!p-2 !bg-blue-50 !rounded-xl">
                             <Icon icon="solar:calendar-bold-duotone" className="!text-primary !text-xl" />

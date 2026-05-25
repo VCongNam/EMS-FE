@@ -1,8 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { MainLayout, BlankLayout, DashboardLayout } from '../layouts';
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 
 // Feature Pages
 import LandingPage from '../features/landing-page/pages/LandingPage';
@@ -74,16 +72,6 @@ export const AppRoutes = () => {
 
     return (
         <BrowserRouter>
-            <ToastContainer
-                position="top-right"
-                autoClose={3000}
-                hideProgressBar={false}
-                newestOnTop
-                closeOnClick
-                pauseOnHover
-                draggable
-                theme="colored"
-            />
             <Routes>
                 {/* Public Layout (Header + Footer) */}
                 <Route element={<MainLayout />}>

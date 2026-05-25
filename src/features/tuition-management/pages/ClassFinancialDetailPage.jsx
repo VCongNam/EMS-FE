@@ -165,6 +165,7 @@ const ClassFinancialDetailPage = () => {
                     
                     setClassInfo(prev => ({
                         ...prev,
+                        classId: classId,
                         name: classConfig.className || `Lớp ${classId}`,
                         students: count || prev.students,
                         billingMethod: classConfig.billingMethod || 'Prepaid',

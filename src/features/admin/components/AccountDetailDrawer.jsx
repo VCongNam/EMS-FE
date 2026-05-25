@@ -8,10 +8,6 @@ import { extractErrorMessage } from '../../../utils/errorHandler';
 const AccountDetailDrawer = ({ accountId, isOpen, onClose, onUpdateSuccess }) => {
     const [account, setAccount] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [updating, setUpdating] = useState(false);
-    const [newStatus, setNewStatus] = useState('');
-    const [reason, setReason] = useState('');
-
     useEffect(() => {
         if (isOpen && accountId) {
             fetchAccountDetails();
@@ -23,36 +19,11 @@ const AccountDetailDrawer = ({ accountId, isOpen, onClose, onUpdateSuccess }) =>
         try {
             const data = await adminService.getAccountById(accountId);
             setAccount(data);
-            setNewStatus(data.status || 'Active');
-            setReason('');
         } catch (error) {
             toast.error(extractErrorMessage(error, 'Lỗi khi tải thông tin tài khoản'));
             onClose();
         } finally {
             setLoading(false);
-        }
-    };
-
-    const handleUpdateStatus = async () => {
-        if (newStatus === account.status) {
-            toast.info('Trạng thái không thay đổi');
-            return;
-        }
-        if (!reason.trim()) {
-            toast.warning('Vui lòng nhập lý do thay đổi trạng thái');
-            return;
-        }
-
-        setUpdating(true);
-        try {
-            await adminService.updateAccountStatus(accountId, newStatus, reason);
-            toast.success('Cập nhật trạng thái thành công');
-            onUpdateSuccess();
-            onClose();
-        } catch (error) {
-            toast.error(extractErrorMessage(error, 'Cập nhật trạng thái thất bại'));
-        } finally {
-            setUpdating(false);
         }
     };
 
@@ -167,60 +138,6 @@ const AccountDetailDrawer = ({ accountId, isOpen, onClose, onUpdateSuccess }) =>
                                     </p>
                                 )}
                             </div>
-
-                            {/* Status Update Form */}
-                            <div className="!mt-10 !pt-8 border-t border-border !space-y-6 bg-background/30 rounded-3xl !p-6 border-dashed">
-                                <h3 className="text-sm font-black text-text-primary uppercase tracking-widest">Quản lý trạng thái</h3>
-                                
-                                <div className="!space-y-4">
-                                    <div>
-                                        <label className="text-[10px] font-black uppercase text-text-secondary tracking-widest !mb-2 block">Cập nhật trạng thái mới</label>
-                                        <select 
-                                            value={newStatus}
-                                            onChange={(e) => setNewStatus(e.target.value)}
-                                            className="w-full !px-4 !py-3 rounded-2xl border border-border focus:ring-2 focus:ring-primary/20 focus:border-primary font-bold text-sm bg-white"
-                                        >
-                                            <option value="Active">🟢 Đang hoạt động (Active)</option>
-                                            <option value="Banned">🔴 Khóa tài khoản (Banned)</option>
-                                            <option value="Unverified">⚪ Chưa xác minh (Unverified)</option>
-                                        </select>
-                                    </div>
-
-                                    <div>
-                                        <label className="text-[10px] font-black uppercase text-text-secondary tracking-widest !mb-2 block">Lý do thay đổi <span className="text-red-500">*</span></label>
-                                        <textarea 
-                                            value={reason}
-                                            onChange={(e) => setReason(e.target.value)}
-                                            placeholder="Ghi rõ lý do thay đổi để gửi thông báo cho người dùng..."
-                                            rows="4"
-                                            className="w-full !px-4 !py-3 rounded-2xl border border-border focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm bg-white resize-none font-medium"
-                                        ></textarea>
-                                        <p className="text-[10px] text-text-muted italic !mt-2 flex items-center gap-1">
-                                            <Icon icon="material-symbols:info-outline-rounded" /> Người dùng sẽ nhận được thông báo qua Email về thay đổi này.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Footer */}
-                        <div className="!p-6 border-t border-border !bg-white">
-                            <button 
-                                onClick={handleUpdateStatus}
-                                disabled={updating || newStatus === account.status}
-                                className={`w-full !py-4 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl transition-all flex items-center justify-center gap-3 ${
-                                    updating || newStatus === account.status
-                                    ? '!bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
-                                    : '!bg-primary text-white hover:shadow-primary/30 transform hover:-translate-y-1'
-                                }`}
-                            >
-                                {updating ? (
-                                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                ) : (
-                                    <Icon icon="solar:diskette-bold-duotone" className="text-xl" />
-                                )}
-                                {updating ? 'Đang cập nhật...' : 'Lưu thay đổi'}
-                            </button>
                         </div>
                     </div>
                 )}

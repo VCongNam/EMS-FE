@@ -185,9 +185,9 @@ const AccountListPage = () => {
                                             <button 
                                                 onClick={() => handleOpenDrawer(account.teacherId)}
                                                 className="w-10 h-10 rounded-xl !bg-primary text-white flex items-center justify-center hover:!bg-primary-dark transition-all shadow-md active:scale-95"
-                                                title="Xem và chỉnh sửa"
+                                                title="Xem chi tiết"
                                             >
-                                                <Icon icon="solar:settings-minimalistic-bold-duotone" className="text-xl" />
+                                                <Icon icon="solar:eye-bold-duotone" className="text-xl" />
                                             </button>
                                         </td>
                                     </tr>
