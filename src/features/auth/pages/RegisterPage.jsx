@@ -209,8 +209,10 @@ const RegisterPage = () => {
                         <div className="flex justify-center !my-4">
                             <ReCAPTCHA
                                 ref={recaptchaRef}
-                                sitekey="6Lc5xuQsAAAAAAGnZfNyUmasRdXunlU1wnWOLZGh" // Đổi thành Site Key lấy từ Google
+                                sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY || "6Lc5xuQsAAAAAAGnZfNyUmasRdXunlU1wnWOLZGh"}
                                 onChange={(token) => setCaptchaToken(token)}
+                                onExpired={() => setCaptchaToken(null)}
+                                onErrored={() => setCaptchaToken(null)}
                             />
                         </div>
 

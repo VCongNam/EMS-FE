@@ -116,14 +116,13 @@ const GlobalTAManagementPage = () => {
                                 <th className="!p-5 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap">Lớp hỗ trợ</th>
                                 <th className="!p-5 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap">Liên hệ</th>
                                 <th className="!p-5 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap">Quyền hiện tại</th>
-                                <th className="!p-5 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap text-center">Lương / Buổi</th>
                                 <th className="!p-5 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap text-right">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-border/50 bg-surface">
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan="6" className="!p-10 text-center text-primary">
+                                    <td colSpan="5" className="!p-10 text-center text-primary">
                                         <Icon icon="solar:spinner-linear" className="animate-spin text-3xl mx-auto mb-2" />
                                         <p className="font-medium">Đang tải danh sách...</p>
                                     </td>
@@ -164,11 +163,6 @@ const GlobalTAManagementPage = () => {
                                             <span className="text-text-muted text-xs italic">Mặc định</span>
                                         )}
                                     </td>
-                                    <td className="!p-5 text-center">
-                                        <span className="font-bold text-emerald-600 text-sm">
-                                            {assistant.salaryPerSession ? assistant.salaryPerSession.toLocaleString('vi-VN') + ' đ' : '0 đ'}
-                                        </span>
-                                    </td>
                                     <td className="!p-5 text-right">
                                         <button 
                                             onClick={() => {
@@ -185,7 +179,7 @@ const GlobalTAManagementPage = () => {
                             ))}
                             {!isLoading && filteredAssistants.length === 0 && (
                                 <tr>
-                                    <td colSpan="6" className="!p-16 text-center">
+                                    <td colSpan="5" className="!p-16 text-center">
                                         <div className="flex flex-col items-center justify-center opacity-70">
                                             <div className="w-20 h-20 bg-background rounded-full flex items-center justify-center !mb-4 border border-border">
                                                 <Icon icon="solar:ghost-smile-bold-duotone" className="text-4xl text-text-muted" />
@@ -236,10 +230,6 @@ const GlobalTAManagementPage = () => {
                                         ? assistant.permission.split(',').map(p => getPermissionLabel(p)).join(', ') 
                                         : 'Mặc định'}
                                 </span>
-                            </div>
-                            <div className="flex items-center justify-between text-xs">
-                                <span className="text-text-muted">Lương/Buổi:</span>
-                                <span className="font-bold text-emerald-600">{assistant.salaryPerSession ? assistant.salaryPerSession.toLocaleString('vi-VN') + ' đ' : '0 đ'}</span>
                             </div>
                         </div>
                     </div>

@@ -179,7 +179,6 @@ const ViewTAListPage = ({ classId }) => {
                             <tr className="bg-background/80 border-b border-border">
                                 <th className="!p-5 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap">Tên Trợ giảng</th>
                                 <th className="!p-5 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap">Quyền hiện tại</th>
-                                <th className="!p-5 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap text-center">Lương / Buổi</th>
                                 <th className="!p-5 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap text-center">Tình trạng</th>
                                 <th className="!p-5 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap text-right">Thao tác</th>
                             </tr>
@@ -187,7 +186,7 @@ const ViewTAListPage = ({ classId }) => {
                         <tbody className="divide-y divide-border/50">
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan="5" className="!p-10 text-center text-primary">
+                                    <td colSpan="4" className="!p-10 text-center text-primary">
                                         <Icon icon="solar:spinner-linear" className="animate-spin text-3xl mx-auto mb-2" />
                                         <p className="font-medium">Đang tải...</p>
                                     </td>
@@ -222,9 +221,6 @@ const ViewTAListPage = ({ classId }) => {
                                         )}
                                     </td>
                                     <td className="!p-5 text-center">
-                                        <span className="font-bold text-green-600">{assistant.salaryPerSession ? assistant.salaryPerSession.toLocaleString('vi-VN') + ' đ' : 'N/A'}</span>
-                                    </td>
-                                    <td className="!p-5 text-center">
                                         <div className="flex justify-center">
                                             {assistant.status === 'Active' ? (
                                                 <span className="inline-flex items-center !px-2.5 !py-0.5 rounded-md text-[11px] font-semibold bg-green-500/10 text-green-600 border border-green-500/20 whitespace-nowrap">Đang hỗ trợ</span>
@@ -242,7 +238,7 @@ const ViewTAListPage = ({ classId }) => {
                                                         setIsEditModalOpen(true);
                                                     }}
                                                     className="!p-1.5 text-text-muted hover:text-primary transition-colors rounded-lg hover:bg-primary/10" 
-                                                    title="Chỉnh sửa quyền & lương"
+                                                    title="Chỉnh sửa quyền"
                                                 >
                                                     <Icon icon="solar:pen-bold-duotone" className="text-lg" />
                                                 </button>
@@ -270,7 +266,7 @@ const ViewTAListPage = ({ classId }) => {
                             ))}
                             {!isLoading && filteredAssistants.length === 0 && (
                                 <tr>
-                                    <td colSpan="5" className="!p-16 text-center">
+                                    <td colSpan="4" className="!p-16 text-center">
                                         <div className="flex flex-col items-center justify-center opacity-70">
                                             <div className="w-20 h-20 bg-background rounded-full flex items-center justify-center !mb-4 border border-border">
                                                 <Icon icon="solar:ghost-smile-bold-duotone" className="text-4xl text-text-muted" />
@@ -353,10 +349,6 @@ const ViewTAListPage = ({ classId }) => {
                                 <div className="flex items-center justify-between text-sm">
                                     <span className="text-text-muted">Quyền hạn:</span>
                                     <span className="font-semibold text-primary">{translatePermission(assistant.permission)}</span>
-                                </div>
-                                <div className="flex items-center justify-between text-sm">
-                                    <span className="text-text-muted">Lương/Buổi:</span>
-                                    <span className="font-bold text-green-600">{assistant.salaryPerSession ? assistant.salaryPerSession.toLocaleString('vi-VN') + ' đ' : 'N/A'}</span>
                                 </div>
                             </div>
                         </div>

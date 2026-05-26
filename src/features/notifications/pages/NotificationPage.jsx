@@ -16,6 +16,8 @@ const NotificationPage = () => {
     const { user } = useAuthStore();
     const token = user?.token;
     const { isPushSupported, isPushSubscribed, requestPushPermission, setUnreadCount } = useNotifications();
+    
+    const isStudent = user?.role?.toLowerCase() === 'student';
 
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -164,7 +166,7 @@ const NotificationPage = () => {
 
             {/* Navigation & Filters */}
             <NotificationFilters 
-                isStudent={user?.role?.toLowerCase() === 'student'}
+                isStudent={isStudent}
                 activeFilter={filter} 
                 onFilterChange={setFilter} 
                 onMarkAllRead={handleMarkAllRead}
@@ -187,7 +189,12 @@ const NotificationPage = () => {
                             <Icon icon="solar:ghost-bold-duotone" className="!text-5xl !text-text-muted" />
                         </div>
                         <h3 className="!text-xl !font-black !text-text-main !mb-2">Ố ô! Không tìm thấy gì nhỉ?</h3>
-                        <p className="!text-sm !font-medium !text-text-muted !max-w-xs !mx-auto">Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm xem sao bạn nhé.</p>
+                        <p className="!text-sm !font-medium !text-text-muted !max-w-xs !mx-auto">
+                            {isStudent 
+                                ? "Thử thay đổi từ khóa tìm kiếm xem sao bạn nhé." 
+                                : "Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm xem sao bạn nhé."
+                            }
+                        </p>
                     </div>
                 ) : (
                     <>

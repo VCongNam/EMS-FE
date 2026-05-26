@@ -56,10 +56,6 @@ const EditTAPermissionModal = ({ isOpen, onClose, assistant, onUpdate }) => {
         }
 
         const salary = Number(salaryPerSession);
-        if (isNaN(salary) || salary <= 0) {
-            toast.warn('Vui lòng nhập lương hợp lệ (> 0)');
-            return;
-        }
 
         const payload = {
             permission: selectedPermissions.join(', ') || 'None',
@@ -114,25 +110,7 @@ const EditTAPermissionModal = ({ isOpen, onClose, assistant, onUpdate }) => {
                         {/* Divider */}
                         <div className="h-[1px] bg-border/50 w-full mb-6"></div>
 
-                        {/* Salary Field */}
-                        <div className="!mb-8 !p-5 bg-primary/5 rounded-2xl border border-primary/20">
-                            <label className="block text-sm font-bold text-text-main !mb-3 flex items-center gap-2">
-                                <Icon icon="solar:wad-of-money-bold-duotone" className="text-xl text-primary" />
-                                Lương mỗi buổi học (đ)
-                            </label>
-                            <div className="relative">
-                                <input 
-                                    type="number"
-                                    value={salaryPerSession}
-                                    onChange={(e) => setSalaryPerSession(e.target.value)}
-                                    className="w-full !px-4 !py-3 bg-background border border-border rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-bold text-primary text-lg"
-                                    placeholder="Nhập số tiền..."
-                                    min="0"
-                                    step="1000"
-                                />
-                                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted font-bold text-sm">VND</div>
-                            </div>
-                        </div>
+
 
                         <label className="block text-sm font-bold text-text-main !mb-4 flex items-center gap-2">
                             <Icon icon="solar:shield-check-bold-duotone" className="text-xl text-primary" />

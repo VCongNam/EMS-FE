@@ -26,7 +26,7 @@ const AddTAModal = ({ isOpen, onClose, onAdd, classId }) => {
 
     // Assignment fields
     const [selectedPermissions, setSelectedPermissions] = useState(['Attendance']);
-    const [salaryPerSession, setSalaryPerSession] = useState(50000);
+    const [salaryPerSession, setSalaryPerSession] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleTogglePermission = (key) => {
@@ -68,13 +68,6 @@ const AddTAModal = ({ isOpen, onClose, onAdd, classId }) => {
 
     const handleAssign = async () => {
         if (!foundTA) return;
-
-        // Validate Salary
-        const salary = Number(salaryPerSession);
-        if (isNaN(salary) || salary <= 10000) {
-            toast.warn('Lương mỗi buổi học phải lớn hơn 10.000đ');
-            return;
-        }
 
         if (selectedPermissions.length === 0) {
             toast.warn('Vui lòng chọn ít nhất một quyền hạn');
