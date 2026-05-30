@@ -42,7 +42,10 @@ const ProfilePage = () => {
             const response = await profileService.updateAvatar(file, user.token);
             if (response.ok) {
                 const data = await response.json();
-                updateProfile({ avatarUrl: data.avatarUrl });
+                const avatarUrl = data.avatarUrl || data.url || data.filePath || data.data?.avatarUrl || data.data?.url || data.data?.filePath;
+                if (avatarUrl) {
+                    updateProfile({ avatarUrl });
+                }
                 toast.success(data.message || "Cập nhật ảnh đại diện thành công!");
             } else {
                 const errData = await response.json().catch(() => ({}));
@@ -66,19 +69,40 @@ const ProfilePage = () => {
                 if (response.ok) {
                     const data = await response.json();
                     
-                    // Format DOB for HTML date input: YYYY-MM-DD
+                    let mappedData = { ...data };
                     let dobStr = '';
-                    if (data.dob && typeof data.dob === 'object') {
-                        const { year, month, day } = data.dob;
-                        if (year && month && day) {
-                            dobStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+                    if (data.roleName?.toLowerCase() === 'student' && data.roleSpecificData) {
+                        const rsd = data.roleSpecificData;
+                        
+                        // Map DOB
+                        if (rsd.dob) {
+                            dobStr = rsd.dob.split('T')[0];
                         }
-                    } else if (data.dob && typeof data.dob === 'string') {
-                        dobStr = data.dob.split('T')[0];
+                        
+                        // Map other roleSpecificData fields to our flat formData structure
+                        mappedData = {
+                            ...mappedData,
+                            fullName: rsd.studentName || '',
+                            address: rsd.address || '',
+                            parentName: data.fullName || '',
+                            parentPhone: data.phoneNumber || '',
+                            parentEmail: data.email || '',
+                        };
+                    } else {
+                        // Format DOB for HTML date input: YYYY-MM-DD
+                        if (data.dob && typeof data.dob === 'object') {
+                            const { year, month, day } = data.dob;
+                            if (year && month && day) {
+                                dobStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                            }
+                        } else if (data.dob && typeof data.dob === 'string') {
+                            dobStr = data.dob.split('T')[0];
+                        }
                     }
 
-                    setFormData(prev => ({ ...prev, ...data, dobString: dobStr }));
-                    updateProfile(data);
+                    setFormData(prev => ({ ...prev, ...mappedData, dobString: dobStr }));
+                    updateProfile(mappedData);
                 }
             } catch (error) {
                 console.error("Fetch profile failed:", error);
@@ -132,42 +156,60 @@ const ProfilePage = () => {
         setSaving(true);
 
         try {
-            // Determine endpoint based on role dynamically
-            const rolePath = user.role?.toLowerCase() || 'ta';
-            
-            // Build payload
-            let payload = {
-                fullName: formData.fullName,
-                phoneNumber: formData.phoneNumber || ""
-            };
+            let response;
+            let updatedFormData = { ...formData };
 
-            // Add role-specific data for student
             if (user.role === 'student') {
-                payload = {
-                    ...payload,
-                    parentName: formData.parentName || "",
-                    parentPhone: formData.parentPhone || "",
-                    parentEmail: formData.parentEmail || "",
-                    address: formData.address || "",
-                    dob: formData.dobString || null // System.DateOnly expects "YYYY-MM-DD"
-                };
-            }
-
-            // Add role-specific data for TA and Teacher
-            if (user.role === 'TA' || user.role === 'teacher') {
-                payload = {
-                    ...payload,
-                    bio: formData.roleSpecificData?.bio || "",
-                    bankName: formData.roleSpecificData?.bankName || "",
-                    bankAccount: formData.roleSpecificData?.bankAccount || "",
-                    bankAccountName: formData.roleSpecificData?.bankAccountName || ""
-                };
-                if (user.role === 'teacher') {
-                    payload.specialization = formData.roleSpecificData?.specialization || "";
+                const studentId = formData.roleSpecificData?.studentId;
+                if (!studentId) {
+                    throw new Error("Không tìm thấy mã học sinh!");
                 }
-            }
 
-            const response = await profileService.updateProfile(rolePath, payload, user.token);
+                const studentPayload = {
+                    studentFullName: formData.fullName,
+                    address: formData.address || "",
+                    dob: formData.dobString || null,
+                    parentFullName: formData.parentName || "",
+                    phoneNumber: formData.parentPhone || "",
+                    parentEmail: formData.parentEmail || ""
+                };
+
+                response = await profileService.updateStudentProfile(studentId, studentPayload, user.token);
+
+                // Update nested roleSpecificData in the synced local state
+                updatedFormData.roleSpecificData = {
+                    ...updatedFormData.roleSpecificData,
+                    studentName: formData.fullName,
+                    address: formData.address,
+                    dob: formData.dobString
+                };
+                // Map the new parent/account info to the root properties
+                updatedFormData.fullName = formData.fullName; // Student Name for display
+                updatedFormData.email = formData.parentEmail; // Parent Email is root email
+                updatedFormData.phoneNumber = formData.parentPhone; // Parent Phone is root phone
+            } else {
+                const rolePath = user.role?.toLowerCase() || 'ta';
+                let payload = {
+                    fullName: formData.fullName,
+                    phoneNumber: formData.phoneNumber || ""
+                };
+
+                // Add role-specific data for TA and Teacher
+                if (user.role === 'TA' || user.role === 'teacher') {
+                    payload = {
+                        ...payload,
+                        bio: formData.roleSpecificData?.bio || "",
+                        bankName: formData.roleSpecificData?.bankName || "",
+                        bankAccount: formData.roleSpecificData?.bankAccount || "",
+                        bankAccountName: formData.roleSpecificData?.bankAccountName || ""
+                    };
+                    if (user.role === 'teacher') {
+                        payload.specialization = formData.roleSpecificData?.specialization || "";
+                    }
+                }
+
+                response = await profileService.updateProfile(rolePath, payload, user.token);
+            }
 
             if (!response.ok) {
                 const errData = await response.json().catch(() => ({}));
@@ -175,7 +217,7 @@ const ProfilePage = () => {
             }
 
             // Sync with local Zustand store only if successful
-            updateProfile(formData);
+            updateProfile(updatedFormData);
             setIsEditing(false);
             toast.success("Cập nhật hồ sơ thành công!");
         } catch (error) {
@@ -360,49 +402,53 @@ const ProfilePage = () => {
                                     className="w-full !mt-2 !px-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main"
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <label className="block text-xs !mt-2 font-bold text-text-muted uppercase tracking-widest px-1">Địa chỉ Email</label>
-                                <div className="relative group">
-                                    <input
-                                        type={showEmail ? "email" : "password"}
-                                        disabled={!isEditing}
-                                        value={formData.email || ''}
-                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                        className="w-full !mt-2 !px-5 !pr-12 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowEmail(!showEmail)}
-                                        className="absolute right-4 top-[55%] -translate-y-1/2 text-text-muted hover:text-primary transition-colors focus:outline-none"
-                                        title={showEmail ? "Ẩn" : "Hiện"}
-                                        disabled={!isEditing && !formData.email}
-                                    >
-                                        <Icon icon={showEmail ? "mdi:eye-off-outline" : "mdi:eye-outline"} className="text-2xl" />
-                                    </button>
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <label className="block text-xs font-bold text-text-muted uppercase tracking-widest px-1">Số điện thoại</label>
-                                <div className="relative group">
-                                    <input
-                                        type={showPhone ? "text" : "password"}
-                                        disabled={!isEditing}
-                                        placeholder="Chưa cập nhật"
-                                        value={formData.phoneNumber || ''}
-                                        onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                                        className="w-full !mt-2 !px-5 !pr-12 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPhone(!showPhone)}
-                                        className="absolute right-4 top-[55%] -translate-y-1/2 text-text-muted hover:text-primary transition-colors focus:outline-none"
-                                        title={showPhone ? "Ẩn" : "Hiện"}
-                                        disabled={!isEditing && !formData.phoneNumber}
-                                    >
-                                        <Icon icon={showPhone ? "mdi:eye-off-outline" : "mdi:eye-outline"} className="text-2xl" />
-                                    </button>
-                                </div>
-                            </div>
+                            {user?.role !== 'student' && (
+                                <>
+                                    <div className="space-y-2">
+                                        <label className="block text-xs !mt-2 font-bold text-text-muted uppercase tracking-widest px-1">Địa chỉ Email</label>
+                                        <div className="relative group">
+                                            <input
+                                                type={showEmail ? "email" : "password"}
+                                                disabled={!isEditing}
+                                                value={formData.email || ''}
+                                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                                className="w-full !mt-2 !px-5 !pr-12 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowEmail(!showEmail)}
+                                                className="absolute right-4 top-[55%] -translate-y-1/2 text-text-muted hover:text-primary transition-colors focus:outline-none"
+                                                title={showEmail ? "Ẩn" : "Hiện"}
+                                                disabled={!isEditing && !formData.email}
+                                            >
+                                                <Icon icon={showEmail ? "mdi:eye-off-outline" : "mdi:eye-outline"} className="text-2xl" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="block text-xs font-bold text-text-muted uppercase tracking-widest px-1">Số điện thoại</label>
+                                        <div className="relative group">
+                                            <input
+                                                type={showPhone ? "text" : "password"}
+                                                disabled={!isEditing}
+                                                placeholder="Chưa cập nhật"
+                                                value={formData.phoneNumber || ''}
+                                                onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                                                className="w-full !mt-2 !px-5 !pr-12 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPhone(!showPhone)}
+                                                className="absolute right-4 top-[55%] -translate-y-1/2 text-text-muted hover:text-primary transition-colors focus:outline-none"
+                                                title={showPhone ? "Ẩn" : "Hiện"}
+                                                disabled={!isEditing && !formData.phoneNumber}
+                                            >
+                                                <Icon icon={showPhone ? "mdi:eye-off-outline" : "mdi:eye-outline"} className="text-2xl" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
                             {user?.role === 'student' && (
                                 <div className="space-y-2">
                                     <label className="block text-xs font-bold text-text-muted uppercase tracking-widest px-1">Ngày sinh</label>

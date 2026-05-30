@@ -256,9 +256,11 @@ const LoginPage = () => {
                             <label className="text-sm font-semibold text-text-main">
                                 Mật khẩu
                             </label>
-                            <Link to="/forgot-password" className="text-sm font-medium text-primary hover:text-primary-dark hover:underline transition-colors">
-                                Quên mật khẩu?
-                            </Link>
+                            {selectedRole !== 'student' && (
+                                <Link to="/forgot-password" className="text-sm font-medium text-primary hover:text-primary-dark hover:underline transition-colors">
+                                    Quên mật khẩu?
+                                </Link>
+                            )}
                         </div>
                         <div className="relative group">
                             <div className="absolute inset-y-0 left-0 !pl-4 flex items-center pointer-events-none text-text-muted group-focus-within:text-primary transition-colors">
@@ -295,14 +297,16 @@ const LoginPage = () => {
                     </Button>
                 </div>
 
-                <div className="text-center !mt-6">
-                    <p className="text-text-muted font-medium">
-                        Chưa có tài khoản?{' '}
-                        <Link to="/register" className="text-primary font-bold hover:underline transition-all">
-                            Đăng ký
-                        </Link>
-                    </p>
-                </div>
+                {selectedRole !== 'student' && (
+                    <div className="text-center !mt-6">
+                        <p className="text-text-muted font-medium">
+                            Chưa có tài khoản?{' '}
+                            <Link to="/register" className="text-primary font-bold hover:underline transition-all">
+                                Đăng ký
+                            </Link>
+                        </p>
+                    </div>
+                )}
             </form>
         </AuthLayout>
     );

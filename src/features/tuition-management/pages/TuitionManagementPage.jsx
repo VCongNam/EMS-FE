@@ -82,6 +82,18 @@ const TuitionManagementPage = () => {
         if (!user?.token) return;
         setIsLoading(true);
         try {
+            // Fetch all pending transactions to update the pending badge count
+            const resPendingCount = await tuitionService.getPendingTransactions(user.token);
+            if (resPendingCount.ok) {
+                const pendingData = await resPendingCount.json();
+                const rawPending = pendingData.items || pendingData || [];
+                const pendingItems = rawPending.map(item => ({
+                    ...item,
+                    status: 'Pending'
+                }));
+                setPendingCount(pendingItems.length);
+            }
+
             if (activeTab === 'dashboard') {
                 const [resKpi, resReminders] = await Promise.all([
                     tuitionService.getDashboardOverview(selectedMonth, selectedYear, user.token),
@@ -114,13 +126,16 @@ const TuitionManagementPage = () => {
                 const res = await tuitionService.getFullTransactionHistory(selectedMonth, selectedYear, 1, 1000, user.token);
                 if (res.ok) {
                     const data = await res.json();
-                    if (data.items) {
-                        setTransactions(data.items);
-                        setTotalTx(data.totalCount || data.total || data.items.length);
-                    } else {
-                        setTransactions(data || []);
-                        setTotalTx(data.length || 0);
-                    }
+                    const rawTx = data.items || data || [];
+                    
+                    // Normalize statuses for robust matching
+                    const mappedTx = rawTx.map(tx => ({
+                        ...tx,
+                        status: tx.status || 'Pending'
+                    }));
+                    
+                    setTransactions(mappedTx);
+                    setTotalTx(mappedTx.length);
                 }
             } else if (activeTab === 'settings') {
                 const res = await tuitionService.getTuitionConfigs(1, 1000, user.token);
@@ -247,6 +262,9 @@ const TuitionManagementPage = () => {
             // Only show Postpaid classes
             if (cls.billingMethod !== 'Postpaid') return false;
 
+            // Do not show classes with 0 students
+            if (cls.studentCount === 0 || cls.studentsCount === 0) return false;
+
             // Search filter
             if (classSearchQuery && !cls.className?.toLowerCase().includes(classSearchQuery.toLowerCase())) return false;
 
@@ -283,6 +301,9 @@ const TuitionManagementPage = () => {
         return configData.filter(cls => {
             // Only show Postpaid classes
             if (cls.billingMethod !== 'Postpaid') return false;
+
+            // Do not show classes with 0 students
+            if (cls.studentCount === 0 || cls.studentsCount === 0) return false;
 
             // Search filter
             if (classSearchQuery && !cls.className?.toLowerCase().includes(classSearchQuery.toLowerCase())) return false;
@@ -562,7 +583,12 @@ const TuitionManagementPage = () => {
                 </div>
 
                 <div className="!flex-1 !overflow-y-auto custom-scrollbar !divide-y !divide-border">
-                    {filteredTransactions.length === 0 ? (
+                    {isLoading ? (
+                        <div className="!py-20 !text-center !text-text-muted !font-black !flex !flex-col !items-center !justify-center !gap-2 animate-pulse">
+                            <Icon icon="line-md:loading-loop" className="!text-3xl !text-primary" />
+                            <p className="!text-xs">Đang tải giao dịch...</p>
+                        </div>
+                    ) : filteredTransactions.length === 0 ? (
                         <div className="!py-20 !text-center !opacity-40">
                              <Icon icon="solar:mailbox-bold-duotone" className="!text-5xl !mx-auto !mb-2" />
                              <p className="!font-bold !text-xs">Không có giao dịch</p>
@@ -640,7 +666,9 @@ const TuitionManagementPage = () => {
                                     </div>
                                     <div className="!flex !justify-between !text-xs">
                                         <span className="!text-text-muted">Phương thức:</span>
-                                        <span className="!text-text-main !font-bold">{selectedTx.paymentMethod}</span>
+                                        <span className="!text-text-main !font-bold">
+                                            {selectedTx.paymentMethod === 'Bank Transfer' ? 'Chuyển khoản' : selectedTx.paymentMethod === 'Cash' ? 'Tiền mặt' : selectedTx.paymentMethod}
+                                        </span>
                                     </div>
                                     <div className={`!p-4 !rounded-xl !border !text-center ${selectedTx.status?.toLowerCase() === 'pending' ? '!bg-amber-50 !border-amber-100' : '!bg-emerald-50 !border-emerald-100'}`}>
                                         <p className="!text-[10px] !font-black !text-text-muted !uppercase !mb-1">Số tiền thực nộp</p>
@@ -815,8 +843,8 @@ const TuitionManagementPage = () => {
                 </div>
             </header>
 
-            {/* Global Period Filter - Synchronized between Dashboard & Operations */}
-            {(activeTab === 'dashboard' || activeTab === 'operations') && (
+            {/* Global Period Filter - Synchronized between Dashboard, Operations & Transactions */}
+            {(activeTab === 'dashboard' || activeTab === 'operations' || activeTab === 'transactions') && (
                 <div className="!mb-6 !flex !flex-col sm:!flex-row !items-start sm:!items-center !gap-4 !bg-white !w-full sm:!w-fit !px-6 !py-4 !rounded-[2rem] !border !border-border !shadow-sm">
                     <div className="!flex !items-center !gap-3">
                         <div className="!p-2 !bg-blue-50 !rounded-xl">

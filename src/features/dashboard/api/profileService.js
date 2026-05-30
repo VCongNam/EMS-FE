@@ -37,12 +37,27 @@ export const profileService = {
     return response;
   },
 
+  updateStudentProfile: async (studentId, payload, token) => {
+    const response = await fetch(getApiUrl(`/api/Account/student/${studentId}/profile`), {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+    return response;
+  },
+
   updateAvatar: async (file, token) => {
     const formData = new FormData();
     formData.append('AvatarFile', file);
+    formData.append('file', file);
+    formData.append('avatar', file);
+    formData.append('image', file);
 
     const response = await fetch(getApiUrl('/api/Account/avatar'), {
-      method: 'POST',
+      method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`
       },
