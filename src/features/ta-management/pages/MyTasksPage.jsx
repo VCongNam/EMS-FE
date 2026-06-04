@@ -39,7 +39,8 @@ const MyTasksPage = () => {
                         id: t.taTaskID || t.id,
                         title: t.title,
                         assignedTo: user.taId,
-                        classId: t.className,
+                        classId: t.classID || t.classId || '',
+                        className: t.className || 'Lớp học',
                         deadline: t.dueDate,
                         status: status,
                         type: t.type,
@@ -149,7 +150,7 @@ const MyTasksPage = () => {
                                 <div className="flex flex-col !gap-2">
                                     <div className="flex items-center gap-1.5 text-[11px] font-semibold text-primary !bg-primary/5 !px-2 !py-1 rounded-lg border border-primary/10 w-fit">
                                         <Icon icon="material-symbols:school-outline-rounded" />
-                                        <span>Lớp: {task.classId}</span>
+                                        <span>Lớp: {task.className || task.classId}</span>
                                     </div>
                                     {task.type && (
                                         <div className="flex items-center gap-1.5 text-[11px] font-semibold text-purple-600 !bg-purple-500/5 !px-2 !py-1 rounded-lg border border-purple-500/10 w-fit">

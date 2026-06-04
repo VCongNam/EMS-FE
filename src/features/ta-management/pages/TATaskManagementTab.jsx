@@ -7,6 +7,7 @@ import TaskDetailModal from '../components/TaskDetailModal';
 import Pagination from '../../../components/ui/Pagination';
 import useAuthStore from '../../../store/authStore';
 import { taService } from '../api/taService';
+import { classService } from '../../dashboard/api/classService';
 import { extractErrorMessage } from '../../../utils/errorHandler';
 import { formatViFullDate } from '../../../utils/dateUtils';
 
@@ -20,6 +21,7 @@ const TATaskManagementTab = ({ classId }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [selectedTask, setSelectedTask] = useState(null);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+    const [className, setClassName] = useState('Đang tải...');
     
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
@@ -29,8 +31,23 @@ const TATaskManagementTab = ({ classId }) => {
         if (!classId || !user?.token) return;
         try {
             setIsLoading(true);
-            // 1. Fetch TAs in class
-            const taRes = await taService.getTAListByClass(classId, user.token);
+            // 1. Fetch TAs and Class Info in parallel
+            const [taRes, classRes] = await Promise.all([
+                taService.getTAListByClass(classId, user.token),
+                classService.getClassById(classId, user.token).catch(err => {
+                    console.error("Lỗi lấy thông tin lớp:", err);
+                    return { ok: false };
+                })
+            ]);
+
+            let nameOfClass = 'Lớp học';
+            if (classRes && classRes.ok) {
+                const classData = await classRes.json();
+                const info = classData.data || classData;
+                nameOfClass = info.className || 'Lớp học';
+                setClassName(nameOfClass);
+            }
+
             let taList = [];
             if (taRes.ok) {
                 const json = await taRes.json();
@@ -65,6 +82,7 @@ const TATaskManagementTab = ({ classId }) => {
                                 assignedToName: ta.fullName || ta.name,
                                 id: t.taTaskID || t.id,
                                 classId: classId,
+                                className: nameOfClass,
                                 status: status,
                                 deadline: t.dueDate || t.deadline,
                                 feedback: t.feedback || ''

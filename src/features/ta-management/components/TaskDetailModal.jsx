@@ -88,7 +88,7 @@ const TaskDetailModal = ({ isOpen, onClose, task, onUpdateStatus, onReviewTask, 
                                 Lớp học
                             </span>
                             <div className="!px-4 !py-3 bg-primary/5 rounded-2xl border border-primary/20 font-bold text-primary shadow-sm truncate">
-                                {task.classId || 'N/A'}
+                                {task.className || task.classId || 'N/A'}
                             </div>
                         </div>
                     </div>
