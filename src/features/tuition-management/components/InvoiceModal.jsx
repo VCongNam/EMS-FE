@@ -3,6 +3,8 @@ import { Icon } from '@iconify/react';
 import Modal from '../../../components/common/Modal';
 import { tuitionService } from '../api/tuitionServiceStudent';
 import useAuthStore from '../../../store/authStore';
+import { formatViFullDate } from '../../../utils/dateUtils';
+
 
 const InvoiceModal = ({ isOpen, onClose, data, onPay }) => {
     const { user } = useAuthStore();
@@ -69,7 +71,7 @@ const InvoiceModal = ({ isOpen, onClose, data, onPay }) => {
                                     <div className={`!w-1.5 !h-1.5 !rounded-full ${isPaid ? '!bg-emerald-500' : '!bg-amber-500'}`} />
                                     {displayData.statusDisplay || (isPaid ? 'Đã thanh toán' : 'Chưa thanh toán')}
                                 </span>
-                                <p className="!text-[10px] !text-text-muted !mt-2 !font-bold">Ngày {new Date().toLocaleDateString('vi-VN')}</p>
+                                <p className="!text-[10px] !text-text-muted !mt-2 !font-bold">Ngày {formatViFullDate(new Date())}</p>
                             </div>
                         </div>
 
@@ -85,7 +87,7 @@ const InvoiceModal = ({ isOpen, onClose, data, onPay }) => {
                             <div className="!space-y-3 md:!text-right">
                                 <p className="!text-[10px] !font-black !text-text-muted !uppercase !tracking-widest">Hạn thanh toán</p>
                                 <p className="!text-sm !font-black !text-red-500">
-                                    {displayData.dueDate ? new Date(displayData.dueDate).toLocaleDateString('vi-VN') : 'N/A'}
+                                    {displayData.dueDate ? formatViFullDate(displayData.dueDate) : 'N/A'}
                                 </p>
                             </div>
                         </div>

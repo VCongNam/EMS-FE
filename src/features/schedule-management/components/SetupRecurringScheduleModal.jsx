@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import ReactDOM from 'react-dom';
 import { Icon } from '@iconify/react';
 import Button from '../../../components/ui/Button';
+import { formatViFullDate } from '../../../utils/dateUtils';
+
 
 // --- Mock Data ---
 const TRANSCRIPT_TEMPLATES = [
@@ -375,7 +377,7 @@ const SetupRecurringScheduleModal = ({ isOpen, onClose, onSave }) => {
                 </p>
                 <div className="grid grid-cols-2 !gap-x-4 !gap-y-1 text-xs text-text-muted">
                     <span>📅 Ngày khai giảng:</span>
-                    <span className="font-semibold text-text-main">{formData.openingDate ? new Date(formData.openingDate).toLocaleDateString('vi-VN') : '-'}</span>
+                    <span className="font-semibold text-text-main">{formData.openingDate ? formatViFullDate(formData.openingDate) : '-'}</span>
                     <span>⏰ Ca học:</span>
                     <span className="font-semibold text-text-main">{formData.startTime} – {formData.endTime}</span>
                     <span>📆 Ngày học:</span>

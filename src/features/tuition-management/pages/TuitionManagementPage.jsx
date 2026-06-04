@@ -8,6 +8,8 @@ import { tuitionService } from '../api/tuitionService';
 import useAuthStore from '../../../store/authStore';
 import TuitionFeeModal from '../components/TuitionFeeModal';
 import { extractErrorMessage } from '../../../utils/errorHandler';
+import { formatViDate } from '../../../utils/dateUtils';
+
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const ITEMS_PER_PAGE = 10;
@@ -17,8 +19,7 @@ const formatVND = (amount) => amount?.toLocaleString('vi-VN') + ' ₫';
 
 const formatDate = (dateStr) => {
     if (!dateStr) return 'N/A';
-    const d = new Date(dateStr);
-    return d.toLocaleDateString('vi-VN', {
+    return formatViDate(dateStr, {
         hour: '2-digit',
         minute: '2-digit',
         day: '2-digit',

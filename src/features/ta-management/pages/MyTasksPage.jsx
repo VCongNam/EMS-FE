@@ -4,6 +4,8 @@ import useAuthStore from '../../../store/authStore';
 import TaskDetailModal from '../components/TaskDetailModal';
 import { taService } from '../api/taService';
 import Pagination from '../../../components/ui/Pagination';
+import { formatViDate } from '../../../utils/dateUtils';
+
 
 const MyTasksPage = () => {
     const { user } = useAuthStore();
@@ -160,7 +162,7 @@ const MyTasksPage = () => {
                                 <div className="flex items-center justify-between !pt-2 border-t border-border/50">
                                     <div className="flex items-center gap-1.5 text-xs text-text-muted font-medium !bg-background !px-2 !py-1 rounded-lg border border-border/50">
                                         <Icon icon="material-symbols:calendar-today-outline" className="text-primary/70" />
-                                        {task.deadline ? new Date(task.deadline).toLocaleDateString('vi-VN', {day:'2-digit', month:'2-digit'}) : 'Chưa có hạn'}
+                                        {task.deadline ? formatViDate(task.deadline, {day:'2-digit', month:'2-digit'}) : 'Chưa có hạn'}
                                     </div>
                                     <div className="w-7 h-7 rounded-full !bg-primary/10 flex items-center justify-center text-primary opacity-0 group-hover:opacity-100 transition-opacity">
                                         <Icon icon="material-symbols:arrow-forward-rounded" />

@@ -3,6 +3,8 @@ import { Icon } from '@iconify/react';
 import Modal from '../../../components/common/Modal';
 import { tuitionService } from '../api/tuitionService';
 import useAuthStore from '../../../store/authStore';
+import { formatViFullDate } from '../../../utils/dateUtils';
+
 
 const TeacherInvoiceDetailModal = ({ isOpen, onClose, data, onExtend }) => {
     const { user } = useAuthStore();
@@ -94,7 +96,7 @@ const TeacherInvoiceDetailModal = ({ isOpen, onClose, data, onExtend }) => {
                             <div className="!space-y-3 md:!text-right">
                                 <p className="!text-[10px] !font-black !text-text-muted !uppercase !tracking-widest">Hạn thanh toán</p>
                                 <p className="!text-sm !font-black !text-red-500">
-                                    {displayData.dueDate || data.dueDate ? new Date(displayData.dueDate || data.dueDate).toLocaleDateString('vi-VN') : 'N/A'}
+                                    {displayData.dueDate || data.dueDate ? formatViFullDate(displayData.dueDate || data.dueDate) : 'N/A'}
                                 </p>
                             </div>
                         </div>

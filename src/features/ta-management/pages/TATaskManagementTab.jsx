@@ -8,6 +8,8 @@ import Pagination from '../../../components/ui/Pagination';
 import useAuthStore from '../../../store/authStore';
 import { taService } from '../api/taService';
 import { extractErrorMessage } from '../../../utils/errorHandler';
+import { formatViFullDate } from '../../../utils/dateUtils';
+
 
 const TATaskManagementTab = ({ classId }) => {
     const { user } = useAuthStore();
@@ -192,7 +194,7 @@ const TATaskManagementTab = ({ classId }) => {
                         <span className="text-[10px] text-text-muted uppercase font-bold tracking-widest !mb-0.5">Hạn chót</span>
                         <div className="flex items-center !gap-2 text-sm font-bold text-text-main">
                             <Icon icon="solar:calendar-date-linear" className="text-primary" />
-                            {task.deadline ? new Date(task.deadline).toLocaleDateString('vi-VN', {day: '2-digit', month:'2-digit', year: 'numeric'}) : 'Không có'}
+                            {task.deadline ? formatViFullDate(task.deadline) : 'Không có'}
                         </div>
                     </div>
                     <button className="w-8 h-8 rounded-lg hover:bg-background flex items-center justify-center text-text-muted hover:text-primary transition-colors">

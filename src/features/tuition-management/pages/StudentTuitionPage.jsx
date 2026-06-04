@@ -10,6 +10,8 @@ import { tuitionService } from '../api/tuitionServiceStudent';
 import useAuthStore from '../../../store/authStore';
 import { toast } from 'react-toastify';
 import { extractErrorMessage } from '../../../utils/errorHandler';
+import { formatViDate } from '../../../utils/dateUtils';
+
 
 
 const StudentTuitionPage = () => {
@@ -89,14 +91,12 @@ const StudentTuitionPage = () => {
                 const data = await res.json();
                 // Map Backend to Frontend format
                 const mappedTransactions = data.map(tx => {
-                    const dateObj = new Date(tx.paidDate);
-                    const formattedDate = dateObj.toLocaleDateString('vi-VN', {
+                    const formattedDate = formatViDate(tx.paidDate, {
                         day: '2-digit',
                         month: '2-digit',
-                        year: 'numeric'
-                    }) + ' ' + dateObj.toLocaleTimeString('vi-VN', {
+                        year: 'numeric',
                         hour: '2-digit',
-                        minute: '2-digit',
+                        minute: '2-digit'
                     });
 
                     return {

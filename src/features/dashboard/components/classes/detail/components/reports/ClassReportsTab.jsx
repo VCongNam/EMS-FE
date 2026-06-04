@@ -24,6 +24,8 @@ const ClassReportsTab = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [reports, setReports] = useState([]);
     const [className, setClassName] = useState('Đang tải...');
+    const [classInfo, setClassInfo] = useState(null);
+    const [classLoading, setClassLoading] = useState(true);
     
     // Period selection
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
@@ -39,31 +41,82 @@ const ClassReportsTab = () => {
     const [expandedStudentId, setExpandedStudentId] = useState(null);
     const itemsPerPage = 8;
 
-    // Fetch periods (last 6 to next 6 months)
+    // Fetch class info
+    useEffect(() => {
+        const fetchClassInfo = async () => {
+            if (!classId || !token) return;
+            setClassLoading(true);
+            try {
+                const classRes = await (isStudent 
+                    ? studentClassService.getClassDetail(classId, token) 
+                    : classService.getClassById(classId, token));
+                if (classRes.ok) {
+                    const classData = await classRes.json();
+                    const info = classData.data || classData;
+                    setClassName(info.className || 'Lớp học');
+                    setClassInfo(info);
+                }
+            } catch (error) {
+                console.error('Error fetching class info:', error);
+            } finally {
+                setClassLoading(false);
+            }
+        };
+        fetchClassInfo();
+    }, [classId, token, isStudent]);
+
+    // Calculate available periods based on startDate and endDate
     const periods = React.useMemo(() => {
         const result = [];
-        const now = new Date();
-        for (let i = -6; i <= 6; i++) {
-            const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
-            result.push({
-                month: d.getMonth() + 1,
-                year: d.getFullYear(),
-                label: `Tháng ${d.getMonth() + 1}/${d.getFullYear()}`
-            });
+        if (classInfo?.startDate && classInfo?.endDate) {
+            const start = new Date(classInfo.startDate);
+            const end = new Date(classInfo.endDate);
+            if (!isNaN(start) && !isNaN(end)) {
+                let current = new Date(start.getFullYear(), start.getMonth(), 1);
+                const last = new Date(end.getFullYear(), end.getMonth(), 1);
+                while (current <= last) {
+                    result.push({
+                        month: current.getMonth() + 1,
+                        year: current.getFullYear(),
+                        label: `Tháng ${current.getMonth() + 1}/${current.getFullYear()}`
+                    });
+                    current.setMonth(current.getMonth() + 1);
+                }
+            }
+        }
+        
+        // Fallback: 6 months before and after if no dates available
+        if (result.length === 0) {
+            const now = new Date();
+            for (let i = -6; i <= 6; i++) {
+                const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+                result.push({
+                    month: d.getMonth() + 1,
+                    year: d.getFullYear(),
+                    label: `Tháng ${d.getMonth() + 1}/${d.getFullYear()}`
+                });
+            }
         }
         return result;
-    }, []);
+    }, [classInfo?.startDate, classInfo?.endDate]);
+
+    // Ensure selectedMonth and selectedYear are valid within the available periods
+    useEffect(() => {
+        if (periods.length > 0) {
+            const isValid = periods.some(p => p.month === selectedMonth && p.year === selectedYear);
+            if (!isValid) {
+                // If not valid, default to the first available period
+                setSelectedMonth(periods[0].month);
+                setSelectedYear(periods[0].year);
+            }
+        }
+    }, [periods, selectedMonth, selectedYear]);
 
     const fetchData = async () => {
         if (!classId || !token) return;
         setIsLoading(true);
         try {
-            const [reportsRes, classRes] = await Promise.all([
-                progressReportService.getClassDetail(classId, selectedMonth, selectedYear, token),
-                isStudent 
-                    ? studentClassService.getClassDetail(classId, token) 
-                    : classService.getClassById(classId, token)
-            ]);
+            const reportsRes = await progressReportService.getClassDetail(classId, selectedMonth, selectedYear, token);
 
             if (reportsRes.ok) {
                 const data = await reportsRes.json();
@@ -92,11 +145,6 @@ const ClassReportsTab = () => {
                 const errData = await reportsRes.json().catch(() => ({}));
                 toast.error(extractErrorMessage(errData, 'Lỗi khi tải dữ liệu báo cáo'));
             }
-
-            if (classRes.ok) {
-                const classData = await classRes.json();
-                setClassName(classData.data?.className || classData.className || 'Lớp học');
-            }
         } catch (error) {
             console.error('Error fetching reports data:', error);
             toast.error(extractErrorMessage(error, 'Lỗi khi tải dữ liệu báo cáo'));
@@ -106,10 +154,18 @@ const ClassReportsTab = () => {
     };
 
     useEffect(() => {
+        if (classLoading) return;
+
+        // Only fetch if the selected month/year is valid in the computed periods (if periods exist)
+        const isValid = periods.some(p => p.month === selectedMonth && p.year === selectedYear);
+        if (!isValid && periods.length > 0) {
+            return;
+        }
+
         fetchData();
         setCurrentPage(1); // Reset page when filters change
         setExpandedStudentId(null);
-    }, [classId, selectedMonth, selectedYear]);
+    }, [classId, selectedMonth, selectedYear, token, classLoading, periods]);
 
     const handleOpenModal = (reportData) => {
         setEditingReport(reportData);

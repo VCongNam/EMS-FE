@@ -8,6 +8,8 @@ import Pagination from '../../../components/ui/Pagination';
 import useAuthStore from '../../../store/authStore';
 import taService from '../../ta-management/api/taService';
 import { sessionService } from '../api/sessionService';
+import { formatViFullDate } from '../../../utils/dateUtils';
+
 
 const TAClassListPage = () => {
     const { user } = useAuthStore();
@@ -91,7 +93,7 @@ const TAClassListPage = () => {
                         schedule: formatSchedule(item.schedules),
                         salary: item.salaryPerSession,
                         permission: item.permission,
-                        createdAt: item.createdAt ? new Date(item.createdAt).toLocaleDateString('vi-VN') : 'Unknown'
+                        createdAt: item.createdAt ? formatViFullDate(item.createdAt) : 'Unknown'
                     };
                 }));
                 setClasses(mappedData);

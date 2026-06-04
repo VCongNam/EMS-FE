@@ -1,5 +1,7 @@
 import React from 'react';
 import { Icon } from '@iconify/react';
+import { formatViFullDate } from '../../../utils/dateUtils';
+
 
 const STATUS_CONFIG = {
     Paid: { label: 'Đã thanh toán', color: 'text-emerald-600', bg: 'bg-emerald-50', icon: 'solar:check-read-bold' },
@@ -39,7 +41,7 @@ const FeeCard = ({ fee, onPay, onViewInvoice }) => {
                 </div>
                 <div>
                     <span className="!text-[10px] !font-black !text-text-muted !uppercase !tracking-wider">Hạn thanh toán</span>
-                    <p className="!text-sm !font-black !text-text-main !mt-1">{fee.dueDate ? new Date(fee.dueDate).toLocaleDateString('vi-VN') : 'N/A'}</p>
+                    <p className="!text-sm !font-black !text-text-main !mt-1">{fee.dueDate ? formatViFullDate(fee.dueDate) : 'N/A'}</p>
                 </div>
             </div>
 

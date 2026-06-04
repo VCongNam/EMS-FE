@@ -3,6 +3,8 @@ import { Icon } from '@iconify/react';
 import Modal from '../../../components/common/Modal';
 import { tuitionService } from '../api/tuitionServiceStudent';
 import useAuthStore from '../../../store/authStore';
+import { formatViDate } from '../../../utils/dateUtils';
+
 
 const TransactionDetailModal = ({ isOpen, onClose, transactionId }) => {
     const { user } = useAuthStore();
@@ -90,7 +92,7 @@ const TransactionDetailModal = ({ isOpen, onClose, transactionId }) => {
                                 <div>
                                     <p className="!text-[10px] !font-black !text-text-muted !uppercase !tracking-widest !mb-1">Thời gian thanh toán</p>
                                     <p className="!text-sm !font-bold !text-text-main">
-                                        {detail.paidDate ? new Date(detail.paidDate).toLocaleString('vi-VN') : 'N/A'}
+                                        {detail.paidDate ? formatViDate(detail.paidDate) : 'N/A'}
                                     </p>
                                 </div>
                             </div>
