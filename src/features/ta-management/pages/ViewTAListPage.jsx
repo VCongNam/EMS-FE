@@ -107,7 +107,7 @@ const ViewTAListPage = ({ classId }) => {
                     const payload = {
                         taid: ta.taid,
                         permission: ta.permission || 'Attendance', // Default or existing
-                        salaryPerSession: ta.salaryPerSession || 0
+                        salaryPerSession: 0
                     };
                     const res = await taService.assignTAToClass(classId, payload, user.token);
                     if (res.ok) {

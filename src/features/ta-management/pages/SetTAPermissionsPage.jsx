@@ -132,9 +132,9 @@ const SetTAPermissionsPage = ({ classId }) => {
 
     if (tas.length === 0) {
         return (
-            <div className="bg-surface rounded-3xl border border-border !p-12 text-center animate-fade-in">
+            <div className="!bg-surface rounded-3xl border border-border !p-12 text-center animate-fade-in">
                 <div className="flex flex-col items-center justify-center opacity-70">
-                    <div className="w-20 h-20 bg-background rounded-full flex items-center justify-center !mb-4 border border-border">
+                    <div className="w-20 h-20 !bg-background rounded-full flex items-center justify-center !mb-4 border border-border">
                         <Icon icon="solar:ghost-smile-bold-duotone" className="text-4xl text-text-muted" />
                     </div>
                     <h3 className="text-lg font-bold text-text-main !mb-1">Lớp chưa có trợ giảng nào</h3>

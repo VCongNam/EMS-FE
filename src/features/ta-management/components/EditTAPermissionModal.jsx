@@ -18,7 +18,6 @@ const EditTAPermissionModal = ({ isOpen, onClose, assistant, onUpdate }) => {
     const { user } = useAuthStore();
     const [isSaving, setIsSaving] = useState(false);
     const [selectedPermissions, setSelectedPermissions] = useState([]);
-    const [salaryPerSession, setSalaryPerSession] = useState(0);
 
     useEffect(() => {
         if (assistant?.permission) {
@@ -26,12 +25,6 @@ const EditTAPermissionModal = ({ isOpen, onClose, assistant, onUpdate }) => {
             setSelectedPermissions(perms);
         } else {
             setSelectedPermissions([]);
-        }
-        
-        if (assistant?.salaryPerSession) {
-            setSalaryPerSession(assistant.salaryPerSession);
-        } else {
-            setSalaryPerSession(0);
         }
     }, [assistant]);
 
@@ -55,11 +48,9 @@ const EditTAPermissionModal = ({ isOpen, onClose, assistant, onUpdate }) => {
             return;
         }
 
-        const salary = Number(salaryPerSession);
-
         const payload = {
             permission: selectedPermissions.join(', ') || 'None',
-            salaryPerSession: salary
+            salaryPerSession: 0
         };
 
         try {
