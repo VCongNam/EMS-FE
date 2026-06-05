@@ -57,6 +57,12 @@ const ClassFinancialDetailPage = () => {
     const [isTeacherInvoiceModalOpen, setIsTeacherInvoiceModalOpen] = useState(false);
     const [selectedInvoiceData, setSelectedInvoiceData] = useState(null);
     
+    // Pay Cash States
+    const [isPayCashModalOpen, setIsPayCashModalOpen] = useState(false);
+    const [payCashForm, setPayCashForm] = useState({ invoiceId: '', amount: '', note: 'Thanh toán đủ' });
+    const [isPayCashSubmitting, setIsPayCashSubmitting] = useState(false);
+    const [isRemindingOverdue, setIsRemindingOverdue] = useState(false);
+    
     // Pagination
     const [currentPage, setCurrentPage] = useState(1);
     const [totalStudents, setTotalStudents] = useState(0);
@@ -482,6 +488,66 @@ const ClassFinancialDetailPage = () => {
     // Format tiền tệ
     const formatVND = (amount) => amount?.toLocaleString('vi-VN') + ' ₫';
 
+    const unpaidStudents = useMemo(() => {
+        return studentsData.filter(s => s.invoiceId && s.status !== 'Paid');
+    }, [studentsData]);
+
+    const handlePayCashSubmit = async () => {
+        if (!payCashForm.invoiceId || !payCashForm.amount) {
+            toast.error("Vui lòng điền đầy đủ thông tin.");
+            return;
+        }
+
+        setIsPayCashSubmitting(true);
+        try {
+            const payload = {
+                amount: Number(payCashForm.amount),
+                note: payCashForm.note.trim()
+            };
+
+            const res = await tuitionService.payCash(payCashForm.invoiceId, payload, user?.token);
+            if (res.ok) {
+                toast.success("Đã duyệt đóng tiền mặt thành công!");
+                setIsPayCashModalOpen(false);
+                fetchData(); // Reload stats and student table
+            } else {
+                const errData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errData, "Duyệt đóng tiền mặt thất bại."));
+            }
+        } catch (error) {
+            console.error("Lỗi đóng tiền mặt:", error);
+            toast.error("Lỗi hệ thống khi thực hiện giao dịch.");
+        } finally {
+            setIsPayCashSubmitting(false);
+        }
+    };
+
+    const handleRemindOverdue = () => {
+        setConfirmModal({
+            isOpen: true,
+            title: 'Nhắc đóng học phí quá hạn',
+            message: 'Hệ thống sẽ gửi thông báo nhắc nhở đóng học phí tới tất cả học sinh có phiếu thu đã quá hạn của lớp này. Bạn chắc chắn muốn gửi?',
+            action: async () => {
+                setConfirmModal({ isOpen: false });
+                setIsRemindingOverdue(true);
+                try {
+                    const res = await tuitionService.remindOverdueInvoices(classId, user?.token);
+                    if (res.ok) {
+                        toast.success("Đã gửi thông báo nhắc đóng học phí quá hạn thành công!");
+                    } else {
+                        const errData = await res.json().catch(() => ({}));
+                        toast.error(extractErrorMessage(errData, "Gửi nhắc nhở thất bại."));
+                    }
+                } catch (error) {
+                    console.error("Lỗi nhắc nợ quá hạn:", error);
+                    toast.error("Lỗi hệ thống khi gửi nhắc nhở.");
+                } finally {
+                    setIsRemindingOverdue(false);
+                }
+            }
+        });
+    };
+
     // Đảm bảo selectedMonth và selectedYear luôn hợp lệ
     useEffect(() => {
         if (availablePeriods.length > 0) {
@@ -507,7 +573,7 @@ const ClassFinancialDetailPage = () => {
             </div>
 
             {/* Header section with Class Info & Actions */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center !gap-6 bg-surface !p-8 rounded-[2.5rem] border border-border shadow-sm">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center !gap-6 !bg-surface !p-8 rounded-[2.5rem] border border-border shadow-sm">
                 <div className="!flex !items-center !gap-6">
                     <div className="!w-20 !h-20 !bg-white !rounded-3xl !border !border-border !shadow-sm !flex !items-center !justify-center !text-primary">
                         <Icon icon="solar:square-academic-cap-bold-duotone" className="!text-4xl" />
@@ -588,6 +654,44 @@ const ClassFinancialDetailPage = () => {
                             <p className="!text-sm !font-black !text-blue-900 !leading-tight">Xem lịch sử giao dịch</p>
                         </div>
                         <Icon icon="solar:alt-arrow-right-bold" className="!text-blue-500 !text-base !ml-1 group-hover:!translate-x-1 !transition-transform" />
+                    </button>
+
+                    {/* Duyệt đóng tiền mặt trực tiếp */}
+                    <button
+                        onClick={() => {
+                            setPayCashForm({ invoiceId: '', amount: '', note: 'Thanh toán đủ' });
+                            setIsPayCashModalOpen(true);
+                        }}
+                        className="!flex !items-center !gap-2.5 !px-4 !py-3 !rounded-2xl !shadow-sm !border !transition-all !group !bg-emerald-50 !border-emerald-200 !text-emerald-800 hover:!bg-emerald-100"
+                    >
+                        <div className="!w-8 !h-8 !rounded-full !bg-emerald-100 !border !border-emerald-300 !flex !items-center !justify-center">
+                            <Icon icon="solar:dollar-minimalistic-bold-duotone" className="!text-emerald-600 !text-lg" />
+                        </div>
+                        <div className="!text-left">
+                            <p className="!text-[10px] !font-black !uppercase !tracking-wider !text-emerald-600">Tiền mặt</p>
+                            <p className="!text-sm !font-black !text-emerald-950 !leading-tight font-sans">Thu tiền mặt trực tiếp</p>
+                        </div>
+                        <Icon icon="solar:alt-arrow-right-bold" className="!text-emerald-500 !text-base !ml-1 group-hover:!translate-x-1 !transition-transform" />
+                    </button>
+
+                    {/* Nhắc nhở đóng học phí quá hạn */}
+                    <button
+                        onClick={handleRemindOverdue}
+                        disabled={isRemindingOverdue}
+                        className="!flex !items-center !gap-2.5 !px-4 !py-3 !rounded-2xl !shadow-sm !border !transition-all !group !bg-rose-50 !border-rose-200 !text-rose-800 hover:!bg-rose-100 disabled:!opacity-50 disabled:!cursor-not-allowed"
+                    >
+                        <div className="!w-8 !h-8 !rounded-full !bg-rose-100 !border !border-rose-300 !flex !items-center !justify-center">
+                            {isRemindingOverdue ? (
+                                <Icon icon="line-md:loading-loop" className="!text-rose-600 !text-lg" />
+                            ) : (
+                                <Icon icon="solar:bell-bing-bold-duotone" className="!text-rose-600 !text-lg" />
+                            )}
+                        </div>
+                        <div className="!text-left">
+                            <p className="!text-[10px] !font-black !uppercase !tracking-wider !text-rose-600">Nhắc nhở</p>
+                            <p className="!text-sm !font-black !text-rose-950 !leading-tight font-sans">Nhắc nợ quá hạn</p>
+                        </div>
+                        <Icon icon="solar:alt-arrow-right-bold" className="!text-rose-500 !text-base !ml-1 group-hover:!translate-x-1 !transition-transform" />
                     </button>
 
                     <div className="!flex !items-center !gap-2 !px-5 !py-3 !rounded-2xl !bg-amber-50 !text-amber-700 !border !border-amber-200 !font-black !text-[10px] !max-w-[200px] !leading-tight">
@@ -753,6 +857,121 @@ const ClassFinancialDetailPage = () => {
                 data={selectedInvoiceData}
                 onExtend={handleExtendClick}
             />
+
+            {/* Pay Cash Modal */}
+            {isPayCashModalOpen && (
+                <div className="!fixed !inset-0 !z-[9999] !flex !items-center !justify-center !p-4 !pointer-events-none">
+                    <div
+                        className="!fixed !inset-0 !bg-black/50 !backdrop-blur-sm !z-0 !pointer-events-auto"
+                        onClick={() => !isPayCashSubmitting && setIsPayCashModalOpen(false)}
+                    />
+                    <div
+                        className="!bg-surface !rounded-3xl !shadow-2xl !w-full !max-w-md !max-h-[90vh] !overflow-y-auto !pointer-events-auto !relative !z-10 !animate-fade-in-up !border !border-border"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        {/* Header */}
+                        <div className="!flex !items-center !justify-between !p-6 !border-b !border-border">
+                            <div className="!flex !items-center !gap-3">
+                                <div className="!w-10 !h-10 !bg-emerald-50 !text-emerald-600 !rounded-xl !flex !items-center !justify-center">
+                                    <Icon icon="solar:dollar-minimalistic-bold-duotone" className="text-2xl" />
+                                </div>
+                                <div>
+                                    <h2 className="!text-lg !font-bold !text-text-main">Duyệt đóng tiền mặt trực tiếp</h2>
+                                    <p className="!text-xs !text-text-muted">Ghi nhận thanh toán tiền mặt trực tiếp cho học sinh</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setIsPayCashModalOpen(false)}
+                                disabled={isPayCashSubmitting}
+                                className="!w-9 !h-9 !rounded-xl !bg-background !border !border-border !flex !items-center !justify-center !text-text-muted hover:!text-red-500 hover:!border-red-200 hover:!bg-red-50 !transition-all !shrink-0"
+                            >
+                                <Icon icon="material-symbols:close-rounded" className="text-lg" />
+                            </button>
+                        </div>
+
+                        {/* Body */}
+                        <div className="!p-6 !space-y-4">
+                            {/* Student Select */}
+                            <div className="!flex !flex-col !gap-1.5">
+                                <label className="!block !text-xs !font-bold !text-text-muted !uppercase !tracking-widest">Chọn học sinh chưa đóng phí</label>
+                                <select
+                                    value={payCashForm.invoiceId}
+                                    onChange={(e) => {
+                                        const selectedInvId = e.target.value;
+                                        const found = unpaidStudents.find(s => s.invoiceId === selectedInvId);
+                                        setPayCashForm(prev => ({
+                                            ...prev,
+                                            invoiceId: selectedInvId,
+                                            amount: found ? String(found.totalAmount || 0) : ''
+                                        }));
+                                    }}
+                                    disabled={isPayCashSubmitting}
+                                    className="!w-full !px-4 !py-3 !bg-background !border !border-border !rounded-xl !outline-none !text-sm !text-text-main !font-medium placeholder:!font-normal placeholder:!text-text-muted/40 focus:!border-primary focus:!ring-4 focus:!ring-primary/8 !transition-all"
+                                >
+                                    <option value="">-- Chọn học sinh --</option>
+                                    {unpaidStudents.map(student => (
+                                        <option key={student.invoiceId} value={student.invoiceId}>
+                                            {student.studentName || student.name} (Cần nộp: {formatVND(student.totalAmount || 0)})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Amount */}
+                            <div className="!flex !flex-col !gap-1.5">
+                                <label className="!block !text-xs !font-bold !text-text-muted !uppercase !tracking-widest">Số tiền (VNĐ)</label>
+                                <input
+                                    type="number"
+                                    min={0}
+                                    value={payCashForm.amount}
+                                    onChange={(e) => setPayCashForm(prev => ({ ...prev, amount: e.target.value }))}
+                                    placeholder="Nhập số tiền thực tế thu..."
+                                    disabled={isPayCashSubmitting}
+                                    className="!w-full !px-4 !py-3 !bg-background !border !border-border !rounded-xl !outline-none !text-sm !text-text-main !font-medium placeholder:!font-normal placeholder:!text-text-muted/40 focus:!border-primary focus:!ring-4 focus:!ring-primary/8 !transition-all !font-mono"
+                                />
+                            </div>
+
+                            {/* Note */}
+                            <div className="!flex !flex-col !gap-1.5">
+                                <label className="!block !text-xs !font-bold !text-text-muted !uppercase !tracking-widest">Ghi chú</label>
+                                <textarea
+                                    value={payCashForm.note}
+                                    onChange={(e) => setPayCashForm(prev => ({ ...prev, note: e.target.value }))}
+                                    placeholder="Ví dụ: Thanh toán đủ, nộp tiền mặt..."
+                                    disabled={isPayCashSubmitting}
+                                    rows={3}
+                                    className="!w-full !px-4 !py-3 !bg-background !border !border-border !rounded-xl !outline-none !text-sm !text-text-main !font-medium placeholder:!font-normal placeholder:!text-text-muted/40 focus:!border-primary focus:!ring-4 focus:!ring-primary/8 !transition-all !resize-none"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="!flex !gap-3 !px-6 !pb-6 !pt-2 !border-t !border-border !mt-4">
+                            <button
+                                type="button"
+                                onClick={() => setIsPayCashModalOpen(false)}
+                                disabled={isPayCashSubmitting}
+                                className="!w-full !px-4 !py-3 !rounded-xl !bg-background !border !border-border !text-text-muted !font-semibold hover:!bg-surface hover:!text-text-main !transition-all disabled:!opacity-50"
+                            >
+                                Hủy
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handlePayCashSubmit}
+                                disabled={isPayCashSubmitting || !payCashForm.invoiceId || !payCashForm.amount}
+                                className="!w-full !px-4 !py-3 !rounded-xl !bg-emerald-600 !text-white !font-semibold hover:!bg-emerald-700 !transition-all !shadow-md !shadow-emerald-600/20 !flex !items-center !justify-center !gap-2 disabled:!opacity-50 disabled:!cursor-not-allowed"
+                            >
+                                {isPayCashSubmitting ? (
+                                    <Icon icon="line-md:loading-loop" className="text-lg" />
+                                ) : (
+                                    <Icon icon="solar:check-read-bold" className="text-lg" />
+                                )}
+                                Xác nhận thu tiền
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

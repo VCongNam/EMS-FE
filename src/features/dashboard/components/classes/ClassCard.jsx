@@ -185,7 +185,7 @@ const ClassCard = ({
                     {showStudentCount && (
                         <div className="flex items-center text-sm text-text-muted gap-2">
                             <Icon icon="material-symbols:group-outline-rounded" className="text-primary text-base" />
-                            <span>{classData.students?.count || classData.studentCount || 0} / {classData.students?.max || '--'} học viên</span>
+                            <span>{classData.students?.count || classData.studentCount || 0} học viên</span>
                         </div>
                     )}
                 </div>

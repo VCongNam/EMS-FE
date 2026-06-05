@@ -42,8 +42,8 @@ const SideMenu = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
             { name: 'Trang cá nhân', path: '/profile', icon: 'material-symbols:person-rounded' },
         ],
         admin: [
-            { name: 'Tổng quan Hệ thống', path: '/admin/dashboard', icon: 'material-symbols:dashboard-rounded' },
-            { name: 'Quản lý Tài khoản', path: '/admin/accounts', icon: 'material-symbols:manage-accounts-rounded' },
+            // { name: 'Tổng quan Hệ thống', path: '/admin/dashboard', icon: 'material-symbols:dashboard-rounded' },
+            { name: 'Danh sách giáo viên', path: '/admin/accounts', icon: 'material-symbols:manage-accounts-rounded' },
             { name: 'Quản lý Phản hồi', path: '/admin/feedback', icon: 'material-symbols:feedback-rounded' },
             { name: 'Thông báo', path: '/notifications', icon: 'material-symbols:circle-notifications-sharp', badge: unreadCount }
         ],

@@ -66,7 +66,7 @@ const TransactionHistory = ({ transactions, onViewInvoice, onResubmit }) => {
                             </div>
                             
                             <div className="!p-3 !bg-background !rounded-xl !border !border-border !border-dashed !text-[11px] !font-bold !text-text-muted !flex !items-center !justify-between !gap-2">
-                                <span className="truncate flex-1 mr-2">Nội dung: {tx.content || 'N/A'}</span>
+                                <span className="truncate flex-1 !mr-2">Nội dung: {tx.content || 'N/A'}</span>
                                 <div className="!flex !items-center !gap-2 flex-shrink-0">
                                     {isFailed && onResubmit && (
                                         <button 

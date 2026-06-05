@@ -70,7 +70,6 @@ const InvoiceModal = ({ isOpen, onClose, data, onPay }) => {
                                     <div className={`!w-1.5 !h-1.5 !rounded-full ${isPaid ? '!bg-emerald-500' : '!bg-amber-500'}`} />
                                     {displayData.statusDisplay || (isPaid ? 'Đã thanh toán' : 'Chưa thanh toán')}
                                 </span>
-                                <p className="!text-[10px] !text-text-muted !mt-2 !font-bold">Ngày {formatViFullDate(new Date())}</p>
                             </div>
                         </div>
 

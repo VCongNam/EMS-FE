@@ -94,9 +94,9 @@ const TuitionDeadlineModal = ({ isOpen, onClose, onSave, editData = null, classe
                 </div>
 
                 {/* Body */}
-                <div className="!p-6 space-y-5 overflow-y-auto max-h-[65vh] custom-scrollbar">
+                <div className="!p-6 !space-y-5 overflow-y-auto max-h-[65vh] custom-scrollbar">
                     {/* Class */}
-                    <div className="space-y-1.5">
+                    <div className="!space-y-1.5">
                         <label className="text-xs font-black text-text-muted uppercase tracking-widest !ml-0.5">Lớp học</label>
                         <div className="relative">
                             <select
@@ -115,7 +115,7 @@ const TuitionDeadlineModal = ({ isOpen, onClose, onSave, editData = null, classe
                     </div>
 
                     {/* Period */}
-                    <div className="space-y-1.5">
+                    <div className="!space-y-1.5">
                         <label className="text-xs font-black text-text-muted uppercase tracking-widest !ml-0.5">Kỳ thu phí</label>
                         <div className="relative">
                             <select
@@ -130,7 +130,7 @@ const TuitionDeadlineModal = ({ isOpen, onClose, onSave, editData = null, classe
                     </div>
 
                     {/* Deadline Date */}
-                    <div className="space-y-1.5">
+                    <div className="!space-y-1.5">
                         <label className="text-xs font-black text-text-muted uppercase tracking-widest !ml-0.5">Ngày hạn nộp</label>
                         <div className="relative">
                             <Icon icon="solar:calendar-date-bold-duotone" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted text-lg" />
@@ -145,7 +145,7 @@ const TuitionDeadlineModal = ({ isOpen, onClose, onSave, editData = null, classe
                     </div>
 
                     {/* Grace Period */}
-                    <div className="space-y-1.5">
+                    <div className="!space-y-1.5">
                         <label className="text-xs font-black text-text-muted uppercase tracking-widest !ml-0.5">Thời gian gia hạn <span className="normal-case">(ngày)</span></label>
                         <div className="relative">
                             <input

@@ -87,9 +87,9 @@ const TuitionFeeModal = ({ isOpen, onClose, onSave, editData = null, classes = [
                 </div>
 
                 {/* Body */}
-                <div className="!p-6 space-y-5 overflow-y-auto max-h-[65vh] custom-scrollbar">
+                <div className="!p-6 !space-y-5 overflow-y-auto max-h-[65vh] custom-scrollbar">
                     {/* Class Select */}
-                    <div className="space-y-1.5">
+                    <div className="!space-y-1.5">
                         <label className="text-xs font-black text-text-muted uppercase tracking-widest !ml-0.5">Lớp học</label>
                         <div className="!px-4 !py-3 !bg-slate-50 border border-border rounded-xl font-bold text-text-main flex items-center gap-2 opacity-80">
                             <Icon icon="solar:users-group-rounded-bold-duotone" className="text-primary text-lg" />
@@ -98,7 +98,7 @@ const TuitionFeeModal = ({ isOpen, onClose, onSave, editData = null, classes = [
                     </div>
 
                     {/* Billing Method */}
-                    <div className="space-y-1.5">
+                    <div className="!space-y-1.5">
                         <label className="text-xs font-black text-text-muted uppercase tracking-widest !ml-0.5">Hình thức thu phí</label>
                         <div className="relative">
                             <select
@@ -113,7 +113,7 @@ const TuitionFeeModal = ({ isOpen, onClose, onSave, editData = null, classes = [
                     </div>
 
                     {/* Amount */}
-                    <div className="space-y-1.5">
+                    <div className="!space-y-1.5">
                         <label className="text-xs font-black text-text-muted uppercase tracking-widest !ml-0.5">Đơn giá / Buổi (₫)</label>
                         <div className="relative">
                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted font-black text-sm">₫</span>
@@ -135,7 +135,7 @@ const TuitionFeeModal = ({ isOpen, onClose, onSave, editData = null, classes = [
                     </div>
 
                     {/* Deadline Days */}
-                    <div className="space-y-1.5">
+                    <div className="!space-y-1.5">
                         <label className="text-xs font-black text-text-muted uppercase tracking-widest !ml-0.5">Số ngày hạn nộp (Sau khi chốt)</label>
                         <div className="relative">
                             <input
