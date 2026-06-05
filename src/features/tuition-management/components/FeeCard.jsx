@@ -26,7 +26,6 @@ const FeeCard = ({ fee, onPay, onViewInvoice }) => {
                             {fee.title}
                         </h4>
                         <div className="flex items-center gap-2 mt-1">
-                            <span className="text-[11px] font-bold text-text-muted">Mã đơn: {fee.code}</span>
                             <span className="w-1 h-1 rounded-full bg-border" />
                             <span className={`!px-2.5 !py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 ${status.bg} ${status.color} border ${status.border}`}>
                                 <Icon icon={status.icon} className="text-xs" />
@@ -46,7 +45,7 @@ const FeeCard = ({ fee, onPay, onViewInvoice }) => {
                     </div>
                     <div className="flex-1 md:flex-none">
                         <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider block">
-                            {fee.status === 'Paid' ? 'Ngày nộp' : 'Hạn thanh toán'}
+                            {fee.status === 'Paid' ? 'Hạn thanh toán' : 'Hạn thanh toán'}
                         </span>
                         <p className="text-sm font-bold text-text-main mt-0.5">{fee.dueDate ? formatViFullDate(fee.dueDate) : 'N/A'}</p>
                     </div>
@@ -68,7 +67,7 @@ const FeeCard = ({ fee, onPay, onViewInvoice }) => {
                             className="px-5 py-2.5 !bg-emerald-50 !text-emerald-600 border border-emerald-100 rounded-xl text-xs font-bold hover:!bg-emerald-100 !transition-all flex items-center justify-center gap-1.5"
                         >
                             <Icon icon="solar:document-text-bold-duotone" className="text-base" />
-                            Xem hóa đơn
+                            Xem phiếu thu
                         </button>
                     ) : fee.status === 'Checking' ? (
                         <div className="px-5 py-2.5 !bg-blue-50 !text-blue-600 border border-blue-100 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5">

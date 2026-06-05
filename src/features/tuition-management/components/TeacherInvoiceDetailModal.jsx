@@ -57,7 +57,7 @@ const TeacherInvoiceDetailModal = ({ isOpen, onClose, data, onExtend }) => {
     const amount = displayData.totalAmount || displayData.amount || data.totalAmount || 0;
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title="Chi tiết Hóa đơn (Giáo viên)" maxWidth="md">
+        <Modal isOpen={isOpen} onClose={onClose} title="Chi tiết Phiếu thu (Giáo viên)" maxWidth="md">
             <div className="!p-6 !space-y-6 !bg-white">
                 {isLoading ? (
                     <div className="!flex !flex-col !justify-center !items-center !py-20 text-text-muted">
@@ -73,7 +73,7 @@ const TeacherInvoiceDetailModal = ({ isOpen, onClose, data, onExtend }) => {
                                     <Icon icon="solar:bill-check-bold-duotone" className="!text-3xl" />
                                 </div>
                                 <div>
-                                    <h2 className="!text-lg !font-black !text-text-main">Hóa đơn Học phí</h2>
+                                    <h2 className="!text-lg !font-black !text-text-main">Phiếu thu Học phí</h2>
                                     <p className="!text-xs !font-bold !text-text-muted">Học sinh: {data.studentName || data.name}</p>
                                 </div>
                             </div>

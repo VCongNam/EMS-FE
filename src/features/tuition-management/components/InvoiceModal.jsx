@@ -62,8 +62,7 @@ const InvoiceModal = ({ isOpen, onClose, data, onPay }) => {
                                     <Icon icon="solar:bill-list-bold-duotone" className="!text-3xl" />
                                 </div>
                                 <div>
-                                    <h2 className="!text-lg !font-black !text-text-main">Hóa đơn Học phí</h2>
-                                    <p className="!text-xs !font-bold !text-text-muted">Số: INV-{displayData.invoiceID || displayData.invoiceId || data.id}</p>
+                                    <h2 className="!text-lg !font-black !text-text-main">Phiếu thu Học phí</h2>
                                 </div>
                             </div>
                             <div className="!text-right">

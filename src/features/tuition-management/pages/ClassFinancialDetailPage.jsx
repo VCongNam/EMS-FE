@@ -308,7 +308,7 @@ const ClassFinancialDetailPage = () => {
             
             if (!res.ok) {
                 const errorData = await res.json().catch(() => ({}));
-                toast.error(extractErrorMessage(errorData, "Học sinh này đã được chốt hóa đơn hoặc dữ liệu không hợp lệ."));
+                toast.error(extractErrorMessage(errorData, "Học sinh này đã được chốt phiếu thu hoặc dữ liệu không hợp lệ."));
                 return;
             }
 
@@ -421,7 +421,7 @@ const ClassFinancialDetailPage = () => {
         setPromptModal({
             isOpen: true,
             title: 'Gia hạn hạn nộp',
-            message: `Nhập số ngày muốn gia hạn cho tất cả hóa đơn chưa đóng trong tháng ${selectedMonth}/${selectedYear}:`,
+            message: `Nhập số ngày muốn gia hạn cho tất cả phiếu thu chưa đóng trong tháng ${selectedMonth}/${selectedYear}:`,
             defaultValue: '7',
             confirmText: 'Gia hạn',
             action: async (days) => {
