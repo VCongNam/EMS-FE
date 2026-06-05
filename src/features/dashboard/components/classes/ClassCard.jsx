@@ -205,7 +205,7 @@ const ClassCard = ({
             </div>
 
             {/* Progress Bar */}
-            {showProgress && classData.progress && (
+            {/* {showProgress && classData.progress && (
                 <>
                 <div className="flex justify-between items-end !mb-3">
                     <span className="text-xs font-bold text-text-muted uppercase tracking-wider">Tiến độ</span>
@@ -218,7 +218,7 @@ const ClassCard = ({
                     ></div>
                 </div>
                 </>
-            )}
+            )} */}
         </div>
     );
 };
