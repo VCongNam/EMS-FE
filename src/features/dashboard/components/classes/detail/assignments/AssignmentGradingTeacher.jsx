@@ -319,11 +319,20 @@ const AssignmentGradingTeacher = ({ assignment, onRefresh }) => {
     };
 
     const handleRowGradeUpdate = (studentId, field, value) => {
+        let val = value;
+        if (field === 'grade') {
+            const maxLimit = assignment.maxScore ?? 10;
+            const num = parseFloat(value);
+            if (!isNaN(num)) {
+                if (num > maxLimit) val = String(maxLimit);
+                else if (num < 0) val = '0';
+            }
+        }
         setRowStates(prev => ({
             ...prev,
             [studentId]: {
                 ...(prev[studentId] || { grade: '', file: null, fileName: '' }),
-                [field]: value
+                [field]: val
             }
         }));
     };
@@ -616,7 +625,16 @@ const AssignmentGradingTeacher = ({ assignment, onRefresh }) => {
                                                 <input
                                                     type="number"
                                                     value={scoreInput}
-                                                    onChange={(e) => setScoreInput(e.target.value)}
+                                                    onChange={(e) => {
+                                                        const maxLimit = assignment.maxScore ?? 10;
+                                                        let val = e.target.value;
+                                                        const num = parseFloat(val);
+                                                        if (!isNaN(num)) {
+                                                            if (num > maxLimit) val = String(maxLimit);
+                                                            else if (num < 0) val = '0';
+                                                        }
+                                                        setScoreInput(val);
+                                                    }}
                                                     placeholder="--"
                                                     className="w-16 bg-transparent border-none text-right !py-1 !px-2 focus:outline-none font-black text-primary text-lg"
                                                 />

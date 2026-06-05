@@ -19,11 +19,17 @@ const GradeMasterView = ({ classId, gradeTableData, onRefresh }) => {
     }, [gradeTableData]);
 
     const handleScoreChange = (studentId, assignmentId, value) => {
+        let val = value;
+        const num = parseFloat(value);
+        if (!isNaN(num)) {
+            if (num > 10) val = '10';
+            else if (num < 0) val = '0';
+        }
         setLocalGrades(prev => ({
             ...prev,
             [studentId]: {
                 ...(prev[studentId] || {}),
-                [assignmentId]: value
+                [assignmentId]: val
             }
         }));
     };
