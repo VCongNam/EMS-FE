@@ -25,7 +25,7 @@ const UpdateAttendanceRecordPage = () => {
     };
 
     const StatusBadge = ({ status }) => {
-        if (status === 'present') return <span className="px-3 py-1 bg-green-100 text-green-700 rounded text-xs font-bold uppercase tracking-wider">có mặt</span>;
+        if (status === 'present') return <span className="px-3 py-1 bg-green-100 text-green-700 rounded text-xs font-bold uppercase tracking-wider">Có mặt</span>;
         if (status === 'absent') return <span className="px-3 py-1 bg-red-100 text-red-700 rounded text-xs font-bold uppercase tracking-wider">Vắng mặt</span>;
     };
 
@@ -109,7 +109,7 @@ const UpdateAttendanceRecordPage = () => {
                                                 className={`px-3 py-1.5 rounded-lg border focus:ring-2 outline-none font-bold text-sm ${student.currentStatus !== student.originalStatus ? 'border-primary ring-1 ring-primary/50 text-primary bg-primary/5' : 'border-border text-text-main bg-background'
                                                     }`}
                                             >
-                                                <option value="present">có mặt</option>
+                                                <option value="present">Có mặt</option>
                                                 <option value="absent">Vắng mặt</option>
                                             </select>
                                         )}

@@ -99,9 +99,6 @@ const ClassBreakdownTable = ({ classes, startDate, endDate }) => {
                             <th className="!px-6 !py-4 cursor-pointer hover:bg-gray-100 transition-colors text-center" onClick={() => requestSort('studentGrowth.netGrowth')}>
                                 <div className="flex items-center gap-1.5 justify-center">Tăng trưởng {renderSortIcon('studentGrowth.netGrowth')}</div>
                             </th>
-                            <th className="!px-6 !py-4 cursor-pointer hover:bg-gray-100 transition-colors text-center" onClick={() => requestSort('academicPerformance.attendanceRatePercent')}>
-                                <div className="flex items-center gap-1.5 justify-center">Chuyên cần {renderSortIcon('academicPerformance.attendanceRatePercent')}</div>
-                            </th>
                             <th className="!px-6 !py-4 text-center">Học lực (% Giỏi)</th>
                             <th className="!px-6 !py-4 text-center">Hành động</th>
                         </tr>
@@ -141,11 +138,7 @@ const ClassBreakdownTable = ({ classes, startDate, endDate }) => {
                                             {netGrowth > 0 ? '+' : ''}{netGrowth}
                                         </div>
                                     </td>
-                                    <td className="!px-6 !py-4 text-center">
-                                        <div className={`font-bold ${attendanceRate < 80 ? 'text-orange-500' : 'text-[#1E293B]'}`}>
-                                            {attendanceRate}%
-                                        </div>
-                                    </td>
+                                   
                                     <td className="!px-6 !py-4 text-center">
                                         <div className="flex flex-col items-center">
                                             <span className="font-black text-indigo-600">{aboveAveragePercent}%</span>

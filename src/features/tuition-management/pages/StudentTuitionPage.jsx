@@ -10,6 +10,8 @@ import { tuitionService } from '../api/tuitionServiceStudent';
 import useAuthStore from '../../../store/authStore';
 import { toast } from 'react-toastify';
 import { extractErrorMessage } from '../../../utils/errorHandler';
+import { formatViDate } from '../../../utils/dateUtils';
+
 
 
 const StudentTuitionPage = () => {
@@ -89,14 +91,12 @@ const StudentTuitionPage = () => {
                 const data = await res.json();
                 // Map Backend to Frontend format
                 const mappedTransactions = data.map(tx => {
-                    const dateObj = new Date(tx.paidDate);
-                    const formattedDate = dateObj.toLocaleDateString('vi-VN', {
+                    const formattedDate = formatViDate(tx.paidDate, {
                         day: '2-digit',
                         month: '2-digit',
-                        year: 'numeric'
-                    }) + ' ' + dateObj.toLocaleTimeString('vi-VN', {
+                        year: 'numeric',
                         hour: '2-digit',
-                        minute: '2-digit',
+                        minute: '2-digit'
                     });
 
                     return {
@@ -164,61 +164,69 @@ const StudentTuitionPage = () => {
     };
 
     return (
-        <div className="!max-w-7xl !mx-auto !space-y-8 !animate-fade-in custom-scrollbar">
+        <div className="!space-y-6 animate-fade-in-up">
             {/* Header Section */}
-            <div className="!flex !flex-col sm:!flex-row sm:!items-end !justify-between !gap-6 !mb-8 !mt-4">
-                <div className="!space-y-2">
-                    <h1 className="!text-3xl sm:!text-4xl !font-extrabold !text-text-main !font-['Outfit'] !tracking-tight !flex !items-center !gap-3">
-                        <Icon icon="solar:wallet-money-bold-duotone" className="!text-primary" />
+            <div className="!bg-surface rounded-2xl border border-border !p-6 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center !gap-4">
+                <div className="!space-y-1">
+                    <h2 className="text-2xl font-bold text-text-main flex items-center !gap-2">
+                        <Icon icon="solar:wallet-money-bold-duotone" className="text-primary text-3xl" />
                         Học phí của tôi
-                    </h1>
-                    <p className="!text-text-muted !font-medium !ml-1">
+                    </h2>
+                    <p className="text-text-muted text-sm">
                         Quản lý và thanh toán các khoản học phí trong các lớp học bạn đang tham gia.
                     </p>
                 </div>
             </div>
 
             {/* Filters */}
-            <div className="!flex !flex-col md:!flex-row !gap-4 !items-center !justify-between !bg-white !p-4 !rounded-2xl !border !border-border">
-                <div className="!flex !items-center !gap-1 !p-1.5 !bg-background !rounded-xl !border !border-border !w-full md:!w-fit">
+            <div className="flex flex-col md:flex-row !gap-4 items-center justify-between !bg-surface !p-4 rounded-2xl border border-border">
+                <div className="!bg-background rounded-xl border border-border !p-1 flex items-center !gap-1 w-full md:w-fit">
                     <button
                         onClick={() => setActiveTab('fees')}
-                        className={`!px-6 !py-2.5 !rounded-lg !text-sm !font-black !flex !items-center !gap-2 !transition-all !flex-1 md:!flex-none ${activeTab === 'fees' ? '!bg-white !text-primary !shadow-sm' : '!text-text-muted hover:!text-text-main'}`}
+                        className={`!px-5 !py-2 rounded-lg text-sm font-bold flex items-center justify-center !gap-2 transition-all flex-1 md:flex-none ${
+                            activeTab === 'fees'
+                                ? '!bg-white text-primary shadow-sm'
+                                : 'text-text-muted hover:text-text-main'
+                        }`}
                     >
                         <Icon icon="solar:bill-list-bold-duotone" className="!text-lg" />
                         Khoản phí
                     </button>
                     <button
                         onClick={() => setActiveTab('history')}
-                        className={`!px-6 !py-2.5 !rounded-lg !text-sm !font-black !flex !items-center !gap-2 !transition-all !flex-1 md:!flex-none ${activeTab === 'history' ? '!bg-white !text-primary !shadow-sm' : '!text-text-muted hover:!text-text-main'}`}
+                        className={`!px-5 !py-2 rounded-lg text-sm font-bold flex items-center justify-center !gap-2 transition-all flex-1 md:flex-none ${
+                            activeTab === 'history'
+                                ? '!bg-white text-primary shadow-sm'
+                                : 'text-text-muted hover:text-text-main'
+                        }`}
                     >
-                        <Icon icon="solar:history-bold-duotone" className="!text-lg" />
-                        Lịch sử & Giao dịch
+                        <Icon icon="solar:history-bold-duotone" className="text-lg" />
+                        Giao dịch
                     </button>
                 </div>
 
                 {activeTab === 'fees' && (
-                    <div className="!flex !items-center !gap-3 !w-full md:!w-auto">
-                        <div className="!relative !flex-1 md:!flex-none">
-                            <Icon icon="solar:filter-bold-duotone" className="!absolute !left-3 !top-1/2 !-translate-y-1/2 !text-text-muted" />
+                    <div className="flex items-center !gap-3 w-full md:w-auto">
+                        <div className="relative flex-1 md:flex-none">
+                            <Icon icon="solar:filter-bold-duotone" className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
                             <select
                                 value={statusFilter}
                                 onChange={(e) => setStatusFilter(e.target.value)}
-                                className="!w-full md:!w-auto !pl-9 !pr-8 !py-2.5 !bg-background !border !border-border !rounded-xl !text-sm !font-medium focus:!outline-none focus:!border-primary/50"
+                                className="w-full md:w-auto !pl-9 !pr-8 !py-2 !bg-background border border-border rounded-xl text-sm font-medium focus:outline-none focus:border-primary/50 outline-none appearance-none cursor-pointer"
                             >
                                 <option value="">Tất cả trạng thái</option>
                                 <option value="Chưa nộp">Chưa nộp</option>
                                 <option value="Đã nộp">Đã nộp</option>
                             </select>
                         </div>
-                        <div className="!relative !flex-1 md:!flex-none">
-                            <Icon icon="solar:calendar-bold-duotone" className="!absolute !left-3 !top-1/2 !-translate-y-1/2 !text-text-muted" />
+                        <div className="relative flex-1 md:flex-none">
+                            <Icon icon="solar:calendar-bold-duotone" className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
                             <input
                                 type="text"
                                 placeholder="Thời gian (VD: Tháng 3)"
                                 value={periodFilter}
                                 onChange={(e) => setPeriodFilter(e.target.value)}
-                                className="!w-full md:!w-auto !pl-9 !pr-4 !py-2.5 !bg-background !border !border-border !rounded-xl !text-sm !font-medium focus:!outline-none focus:!border-primary/50"
+                                className="w-full md:w-auto !pl-9 !pr-4 !py-2 !bg-background border border-border rounded-xl text-sm font-medium focus:outline-none focus:border-primary/50 outline-none"
                             />
                         </div>
                     </div>
@@ -229,34 +237,34 @@ const StudentTuitionPage = () => {
             <div className="!space-y-6">
                 {activeTab === 'fees' ? (
                     isLoading ? (
-                        <div className="!flex !justify-center !items-center !py-20 text-text-muted">
-                            <Icon icon="solar:spinner-linear" className="!animate-spin !text-4xl" />
+                        <div className="flex justify-center items-center !py-20 text-text-muted">
+                            <Icon icon="solar:spinner-linear" className="animate-spin text-4xl" />
                         </div>
                     ) : (
                         <>
-                            <div className="!grid !grid-cols-1 lg:!grid-cols-2 !gap-6">
+                            <div className="!space-y-3">
                                 {fees.filter(f => f.status !== 'Paid').map((fee, idx) => (
                                     <FeeCard key={fee.id || idx} fee={fee} onPay={handlePay} onViewInvoice={handleViewInvoice} />
                                 ))}
                                 {fees.filter(f => f.status !== 'Paid').length === 0 && (
-                                    <div className="!col-span-full !text-center !py-10 text-text-muted">
+                                    <div className="text-center !py-12 !bg-surface rounded-2xl border border-border text-text-muted">
                                         Không có khoản phí chưa nộp nào.
                                     </div>
                                 )}
                             </div>
 
                             {/* Secondary Section for Fees tab (Paid items) */}
-                            <div className="!pt-8 !space-y-6">
-                                <div className="!flex !items-center !gap-4 !px-2">
-                                    <h3 className="!text-xl !font-black !text-text-main !tracking-tight">Các khoản đã hoàn thành</h3>
-                                    <div className="!flex-1 !h-px !bg-border !dashed !border-t-2 !border-dashed !border-primary/10" />
+                            <div className="!pt-4 !space-y-4">
+                                <div className="flex items-center !gap-4 !px-2">
+                                    <h3 className="text-lg font-bold text-text-main tracking-tight">Các khoản đã hoàn thành</h3>
+                                    <div className="flex-1 h-px border-t border-dashed border-border" />
                                 </div>
-                                <div className="!grid !grid-cols-1 lg:!grid-cols-2 !gap-6">
+                                <div className="!space-y-3">
                                     {fees.filter(f => f.status === 'Paid').map((fee, idx) => (
                                         <FeeCard key={fee.id || idx} fee={fee} onViewInvoice={handleViewInvoice} />
                                     ))}
                                     {fees.filter(f => f.status === 'Paid').length === 0 && (
-                                        <div className="!col-span-full !text-center !py-6 text-text-muted">
+                                        <div className="text-center !py-10 !bg-surface rounded-2xl border border-border text-text-muted">
                                             Không có lịch sử nộp phí.
                                         </div>
                                     )}
@@ -266,8 +274,8 @@ const StudentTuitionPage = () => {
                     )
                 ) : (
                     isHistoryLoading ? (
-                        <div className="!flex !justify-center !items-center !py-20 text-text-muted">
-                            <Icon icon="solar:spinner-linear" className="!animate-spin !text-4xl" />
+                        <div className="flex justify-center items-center !py-20 text-text-muted">
+                            <Icon icon="solar:spinner-linear" className="animate-spin text-4xl" />
                         </div>
                     ) : (
                         <TransactionHistory transactions={transactions} onViewInvoice={handleViewInvoice} onResubmit={handleResubmit} />

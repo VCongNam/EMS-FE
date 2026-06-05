@@ -9,7 +9,7 @@ import { extractErrorMessage } from '../../../../../../utils/errorHandler';
 const STATUS_OPTIONS = [
     {
         key: 'present',
-        label: 'có mặt',
+        label: 'Có mặt',
         icon: 'material-symbols:check-circle-rounded',
         activeClass: '!bg-green-500/15 border-green-500 text-green-600 ring-2 ring-green-500/20',
         dotClass: '!bg-green-500',
@@ -190,7 +190,7 @@ const AttendanceModal = ({ isOpen, lesson, existingRecord, onClose, onSave, read
                         <div className="grid grid-cols-2 sm:flex sm:flex-wrap !gap-2">
                             <div className="flex items-center !gap-2 !px-3 !py-2 !bg-green-500/10 border border-green-500/20 rounded-2xl">
                                 <span className="w-2 h-2 rounded-full !bg-green-500 shrink-0" />
-                                <span className="text-xs font-bold text-green-600">có mặt: {presentCount}</span>
+                                <span className="text-xs font-bold text-green-600">Có mặt: {presentCount}</span>
                             </div>
                             <div className="flex items-center !gap-2 !px-3 !py-2 !bg-red-500/10 border border-red-500/20 rounded-2xl">
                                 <span className="w-2 h-2 rounded-full !bg-red-500 shrink-0" />

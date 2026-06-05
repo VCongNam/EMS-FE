@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Icon } from '@iconify/react';
 import Button from '../../../components/ui/Button';
+import { formatViFullDate } from '../../../utils/dateUtils';
+
 
 const TaskDetailModal = ({ isOpen, onClose, task, onUpdateStatus, onReviewTask, userRole }) => {
     const [feedback, setFeedback] = useState('');
@@ -77,7 +79,7 @@ const TaskDetailModal = ({ isOpen, onClose, task, onUpdateStatus, onReviewTask, 
                                 Hạn chót
                             </span>
                             <div className="!px-4 !py-3 bg-background rounded-2xl border border-border font-bold text-text-main shadow-sm italic">
-                                {task.deadline ? new Date(task.deadline).toLocaleDateString('vi-VN', {day:'2-digit', month:'2-digit', year:'numeric'}) : 'Không có'}
+                                {task.deadline ? formatViFullDate(task.deadline) : 'Không có'}
                             </div>
                         </div>
                         <div className="space-y-2">
@@ -86,7 +88,7 @@ const TaskDetailModal = ({ isOpen, onClose, task, onUpdateStatus, onReviewTask, 
                                 Lớp học
                             </span>
                             <div className="!px-4 !py-3 bg-primary/5 rounded-2xl border border-primary/20 font-bold text-primary shadow-sm truncate">
-                                {task.classId || 'N/A'}
+                                {task.className || task.classId || 'N/A'}
                             </div>
                         </div>
                     </div>

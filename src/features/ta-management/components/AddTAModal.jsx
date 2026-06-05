@@ -21,12 +21,10 @@ const AddTAModal = ({ isOpen, onClose, onAdd, classId }) => {
         { key: 'Grade', label: 'Chấm điểm & Nhập điểm', icon: 'solar:pen-new-square-bold-duotone' },
         { key: 'Report', label: 'Xem Báo cáo học tập', icon: 'solar:chart-2-bold-duotone' },
         { key: 'Assignment', label: 'Quản lý bài tập', icon: 'solar:document-add-bold-duotone' },
-        { key: 'Feedback', label: 'Nhận xét & Phản hồi', icon: 'solar:chat-round-dots-bold-duotone' },
     ];
 
     // Assignment fields
     const [selectedPermissions, setSelectedPermissions] = useState(['Attendance']);
-    const [salaryPerSession, setSalaryPerSession] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleTogglePermission = (key) => {
@@ -79,7 +77,7 @@ const AddTAModal = ({ isOpen, onClose, onAdd, classId }) => {
             const payload = {
                 taid: foundTA.taId,
                 permission: selectedPermissions.join(', '),
-                salaryPerSession: salary
+                salaryPerSession: 0
             };
             const res = await taService.assignTAToClass(classId, payload, token);
             if (res.ok) {
@@ -218,23 +216,6 @@ const AddTAModal = ({ isOpen, onClose, onAdd, classId }) => {
                                             })}
                                         </div>
                                     </div>
-
-                                    {/* <div className="!space-y-1.5 group">
-                                        <label className={labelClasses}>Lương mỗi buổi học (đ) <span className="text-red-500">*</span></label>
-                                        <div className="relative">
-                                            <Icon icon="solar:wad-of-money-linear" className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted/70 text-lg group-focus-within:text-primary transition-colors" />
-                                            <input
-                                                type="number"
-                                                value={salaryPerSession}
-                                                onChange={(e) => setSalaryPerSession(e.target.value)}
-                                                className={`${inputClasses} font-bold text-primary`}
-                                                min="0"
-                                                step="1000"
-                                                placeholder="Ví dụ: 50000"
-                                            />
-                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted font-bold text-xs uppercase opacity-70">VND</div>
-                                        </div>
-                                    </div> */}
                                 </div>
 
                                 {foundTA.bio && (

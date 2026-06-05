@@ -416,5 +416,28 @@ export const tuitionService = {
             }
         });
         return response;
+    },
+
+    payCash: async (invoiceId, payload, token) => {
+        const response = await fetch(getApiUrl(`/api/TuitionFee/invoice/${invoiceId}/pay-cash`), {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+        return response;
+    },
+
+    remindOverdueInvoices: async (classId, token) => {
+        const response = await fetch(getApiUrl(`/api/TuitionFee/class/${classId}/remind-overdue`), {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        return response;
     }
 };

@@ -204,7 +204,7 @@ const StudentPaymentTable = ({
                                                         <button 
                                                             onClick={() => onViewInvoiceClick && onViewInvoiceClick(student)}
                                                             className="!p-2 !rounded-xl !bg-indigo-50 !text-indigo-600 hover:!bg-indigo-600 hover:!text-white !transition-all"
-                                                            title="Xem chi tiết hóa đơn & QR"
+                                                            title="Xem chi tiết phiếu thu & QR"
                                                         >
                                                             <Icon icon="solar:bill-check-bold-duotone" className="!text-lg" />
                                                         </button>

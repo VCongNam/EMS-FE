@@ -42,8 +42,8 @@ const SideMenu = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
             { name: 'Trang cá nhân', path: '/profile', icon: 'material-symbols:person-rounded' },
         ],
         admin: [
-            { name: 'Tổng quan Hệ thống', path: '/admin/dashboard', icon: 'material-symbols:dashboard-rounded' },
-            { name: 'Quản lý Tài khoản', path: '/admin/accounts', icon: 'material-symbols:manage-accounts-rounded' },
+            // { name: 'Tổng quan Hệ thống', path: '/admin/dashboard', icon: 'material-symbols:dashboard-rounded' },
+            { name: 'Danh sách giáo viên', path: '/admin/accounts', icon: 'material-symbols:manage-accounts-rounded' },
             { name: 'Quản lý Phản hồi', path: '/admin/feedback', icon: 'material-symbols:feedback-rounded' },
             { name: 'Thông báo', path: '/notifications', icon: 'material-symbols:circle-notifications-sharp', badge: unreadCount }
         ],
@@ -72,7 +72,7 @@ const SideMenu = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
                             <Icon icon="material-symbols:school" className="text-2xl text-white" />
                         </div>
                         <span className="text-2xl font-bold font-['Outfit'] tracking-tight truncate">
-                            {role === 'student' ? 'EMS' : role === 'admin' ? 'EMS Admin' : 'EMS'}
+                            {role === 'student' ? 'ECMS' : role === 'admin' ? 'ECMS Admin' : 'ECMS'}
                         </span>
                     </div>
                     
@@ -144,7 +144,7 @@ const SideMenu = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
                     <button
                         onClick={installApp}
                         title={isCollapsed ? "Tải ứng dụng" : ""}
-                        className={`w-full flex items-center rounded-2xl !bg-white/10 hover:bg-white/20 text-white transition-all font-medium cursor-pointer border border-white/20 shadow-lg ${isCollapsed ? 'lg:p-3 lg:justify-center' : 'p-4 gap-3'}`}
+                        className={`w-full flex items-center rounded-2xl !bg-white/10 hover:!bg-white/20 text-white transition-all font-medium cursor-pointer border border-white/20 shadow-lg ${isCollapsed ? 'lg:!p-3 lg:justify-center' : '!p-4 gap-3'}`}
                     >
                         <Icon icon="material-symbols:download-for-offline-rounded" className="text-2xl flex-shrink-0" />
                         {!isCollapsed && <span className="truncate text-sm">Tải ứng dụng</span>}
@@ -156,7 +156,7 @@ const SideMenu = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
                             window.location.href = '/login';
                         }}
                         title={isCollapsed ? "Đăng xuất" : ""}
-                        className={`w-full flex items-center rounded-2xl hover:bg-red-500/20 text-red-100 transition-all font-medium cursor-pointer ${isCollapsed ? 'lg:p-3 lg:justify-center' : 'p-4 gap-3'}`}
+                        className={`w-full flex items-center rounded-2xl hover:!bg-red-500/20 text-red-100 transition-all font-medium cursor-pointer ${isCollapsed ? 'lg:!p-3 lg:justify-center' : '!p-4 gap-3'}`}
                     >
                         <Icon icon="material-symbols:logout-rounded" className="text-2xl flex-shrink-0" />
                         {!isCollapsed && <span className="truncate text-sm">Đăng xuất</span>}

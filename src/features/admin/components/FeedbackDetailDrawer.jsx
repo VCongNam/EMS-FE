@@ -4,6 +4,7 @@ import { Icon } from '@iconify/react';
 import { toast } from 'react-toastify';
 import { adminService } from '../api/adminService';
 import { extractErrorMessage } from '../../../utils/errorHandler';
+import { formatViDate } from '../../../utils/dateUtils';
 
 const FeedbackDetailDrawer = ({ feedbackData, isOpen, onClose, onUpdateSuccess }) => {
     const [updating, setUpdating] = useState(false);
@@ -84,7 +85,7 @@ const FeedbackDetailDrawer = ({ feedbackData, isOpen, onClose, onUpdateSuccess }
                                 <div className="flex items-center justify-between mb-4">
                                     {getTypeBadge(feedback.type)}
                                     <span className="text-xs font-bold text-text-secondary">
-                                        {new Date(feedback.createdAt).toLocaleString('vi-VN')}
+                                        {formatViDate(feedback.createdAt)}
                                     </span>
                                 </div>
                                 <h3 className="text-xl font-black text-text-main">{feedback.title}</h3>

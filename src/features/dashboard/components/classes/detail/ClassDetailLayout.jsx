@@ -68,7 +68,7 @@ const ClassDetailLayout = () => {
         { path: 'stream', label: 'Bảng tin', icon: 'material-symbols:stream-rounded' },
         { path: 'materials', label: 'Tài liệu', icon: 'material-symbols:folder-open-rounded' },
         { path: 'classwork', label: 'Bài tập', icon: 'material-symbols:assignment-rounded' },
-        { path: 'people', label: 'Thành viên', icon: 'material-symbols:group-rounded' },
+{ path: 'people', label: 'Thành viên', icon: 'material-symbols:group-rounded' },
         { path: 'grades', label: 'Điểm số', icon: 'material-symbols:grading-rounded' },
         { path: 'schedule', label: 'Lịch học', icon: 'solar:calendar-bold-duotone' },
         { path: 'attendance', label: 'Điểm danh', icon: 'material-symbols:fact-check-rounded' },
@@ -123,7 +123,7 @@ const ClassDetailLayout = () => {
                                     Giảng viên: {classInfo.teacherName || 'Đang cập nhật...'}
                                 </>
                             ) : (
-                                <>Mã lớp: {classInfo.code}</>
+<>Mã lớp: {classInfo.code}</>
                             )}
                         </p>
                     </div>
@@ -179,7 +179,7 @@ const ClassDetailLayout = () => {
                                     key={tab.path}
                                     onClick={() => {
                                         navigate(`${basePath}/${classId}/${tab.path}`);
-                                        setDropdownOpen(false);
+setDropdownOpen(false);
                                     }}
                                     className={`w-full flex items-center gap-3 !px-4 !py-3 text-sm font-semibold transition-colors ${isActive
                                         ? 'bg-primary/10 text-primary'

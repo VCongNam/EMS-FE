@@ -57,7 +57,7 @@ const ClassSchedulePage = () => {
     const { isClassArchived = false } = useOutletContext() || {};
     const { user } = useAuthStore();
     const isTeacherOrTA = ['TEACHER', 'TA'].includes(user?.role?.toUpperCase());
-    const canManageClass = isTeacherOrTA && !isClassArchived;
+const canManageClass = isTeacherOrTA && !isClassArchived;
 
     const [scheduleConfig, setScheduleConfig] = useState(MOCK_SCHEDULE_CONFIG);
     const [lessons, setLessons] = useState([]);
@@ -122,7 +122,7 @@ const ClassSchedulePage = () => {
                 });
 
                 // Sort by date and startTime
-                mappedLessons.sort((a, b) => {
+mappedLessons.sort((a, b) => {
                     const dateDesc = new Date(a.date) - new Date(b.date);
                     if (dateDesc === 0) {
                         return a.startTime.localeCompare(b.startTime);
@@ -207,8 +207,7 @@ const ClassSchedulePage = () => {
         if (!canManageClass) return;
         const token = useAuthStore.getState().user?.token;
         if (!token) return;
-
-        try {
+try {
             const payload = {
                 classId,
                 title: formData.title,
@@ -272,7 +271,7 @@ const ClassSchedulePage = () => {
                                 <h2 className="text-base font-bold text-text-main">Cấu hình lịch định kỳ</h2>
                                 <p className="text-xs text-text-muted">Thông tin thiết lập hiện tại của lớp</p>
                             </div>
-                        </div>
+</div>
                         {canManageClass && (
                             <div className="flex items-center !gap-2">
                                 <button onClick={() => setIsModalOpen(true)} className="flex items-center !gap-1.5 text-xs font-semibold text-primary !px-3 !py-2 border border-primary/30 rounded-xl hover:!bg-primary/5 transition-colors">
@@ -299,7 +298,7 @@ const ClassSchedulePage = () => {
                                     <Icon icon={item.icon} className="text-base" />
                                 </div>
                                 <p className="text-[11px] text-text-muted">{item.label}</p>
-                                <p className="text-sm font-bold text-text-main leading-tight truncate">{item.value}</p>
+<p className="text-sm font-bold text-text-main leading-tight truncate">{item.value}</p>
                             </div>
                         ))}
                     </div>
@@ -341,7 +340,7 @@ const ClassSchedulePage = () => {
                                 { id: 'all', label: 'Tất cả', count: lessons.length },
                                 { id: 'scheduled', label: 'Sắp tới', count: lessons.filter(l => l.status === 'scheduled' || l.status === 'sắp diễn ra').length },
                                 { id: 'completed', label: 'Hoàn thành', count: lessons.filter(l => l.status === 'completed' || l.status === 'đã kết thúc').length },
-                                { id: 'cancelled', label: 'Đã hủy', count: lessons.filter(l => l.status === 'cancelled' || l.status === 'canceled' || l.status === 'đã hủy').length },
+{ id: 'cancelled', label: 'Đã hủy', count: lessons.filter(l => l.status === 'cancelled' || l.status === 'canceled' || l.status === 'đã hủy').length },
                             ].map(tab => (
                                 <button key={tab.id} onClick={() => setFilterStatus(tab.id)}
                                     className={`flex whitespace-nowrap items-center !gap-1.5 !px-3 !py-2 rounded-lg text-xs font-semibold transition-all ${filterStatus === tab.id ? '!bg-primary text-white shadow-sm' : 'text-text-muted hover:text-text-main'
@@ -381,7 +380,7 @@ const ClassSchedulePage = () => {
                             return (
                                 <div key={lesson.id || idx}
                                     className={`flex flex-col sm:flex-row items-start sm:items-center justify-between !gap-4 !p-4 rounded-2xl border transition-all group ${isDeleting ? 'opacity-0 scale-95 border-red-200 !bg-red-50' :
-                                        'border-border hover:border-primary/30 hover:shadow-sm !bg-background'
+'border-border hover:border-primary/30 hover:shadow-sm !bg-background'
                                         }`}>
                                     <div className="flex items-center !gap-4 w-full sm:w-auto">
                                         <div className="flex flex-col items-center justify-center min-w-[56px] !px-3 !py-2.5 !bg-primary/10 rounded-xl text-primary border border-primary/20 shrink-0">
@@ -414,7 +413,7 @@ const ClassSchedulePage = () => {
 
                                         {isTeacherOrTA && (
                                             <div className="flex items-center !gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                                                {!isClassArchived && (
+{!isClassArchived && (
                                                     <button
                                                         onClick={() => handleOpenAttendance(lesson)}
                                                         className={`flex items-center !gap-1.5 !px-3 !py-1.5 text-xs font-bold rounded-xl shadow-sm transition-all whitespace-nowrap ${lesson.status === 'scheduled' ? '!bg-primary text-white hover:!bg-primary/90' : '!bg-background border border-border text-text-main hover:border-primary'}`}
@@ -447,7 +446,7 @@ const ClassSchedulePage = () => {
                                 </div>
                             );
                         })}
-                    </div>
+</div>
                 )}
 
                 {/* Pagination Controls */}
@@ -503,7 +502,7 @@ const ClassSchedulePage = () => {
             <SessionModal
                 isOpen={sessionModalState.isOpen}
                 onClose={() => setSessionModalState({ isOpen: false, initialData: null })}
-                onSave={handleSaveSessionAPI}
+onSave={handleSaveSessionAPI}
                 initialData={sessionModalState.initialData}
             />
 

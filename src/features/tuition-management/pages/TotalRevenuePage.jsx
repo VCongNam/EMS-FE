@@ -89,7 +89,7 @@ const TotalRevenuePage = () => {
             </div>
 
             {/* Header section */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center !gap-6 bg-surface !p-8 rounded-[2.5rem] border border-border shadow-sm">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center !gap-6 !bg-surface !p-8 rounded-[2.5rem] border border-border shadow-sm">
                 <div>
                     <h1 className="!text-3xl sm:!text-4xl !font-black !text-text-main !tracking-tight !flex !items-center !gap-3 font-['Outfit']">
                         Tổng hợp Doanh thu

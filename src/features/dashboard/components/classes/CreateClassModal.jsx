@@ -22,6 +22,8 @@ const initialForm = {
     room: '',
     tuitionFee: '',
     maxCapacity: '',
+    billingMethod: 'PostPaid',
+    paymentDeadlineDays: '5',
     schedules: [
         { day: 'T2', startTime: '08:00', endTime: '10:00' }
     ],
@@ -29,9 +31,11 @@ const initialForm = {
 
 const InputField = ({ label, required, children, error }) => (
     <div className="flex flex-col !gap-2">
-        <label className="block text-[11px] font-bold text-text-muted uppercase tracking-widest leading-none">
-            {label} {required && <span className="text-red-400">*</span>}
-        </label>
+        {label && (
+            <label className="block text-[11px] font-bold text-text-muted uppercase tracking-widest leading-tight min-h-[16px] md:min-h-[28px] flex items-end">
+                <span>{label} {required && <span className="text-red-400">*</span>}</span>
+            </label>
+        )}
         {children}
         {error && (
             <p className="flex items-center !gap-1 text-xs text-red-500">
@@ -68,13 +72,15 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
             if (initialData) {
                 setForm({
                     className: initialData.className || initialData.name || '',
-                    subjectName: initialData.subjectName || initialData.subject || '', 
-                    gradeLevel: initialData.gradeLevel || '', 
+                    subjectName: initialData.subjectName || initialData.subject || '',
+                    gradeLevel: initialData.gradeLevel || '',
                     startDate: initialData.startDate ? initialData.startDate.split('T')[0] : '',
                     endDate: initialData.endDate ? initialData.endDate.split('T')[0] : '',
                     room: initialData.room || '',
                     tuitionFee: initialData.tuitionFee || '',
                     maxCapacity: initialData.maxStudents || '',
+                    billingMethod: initialData.billingMethod || 'PostPaid',
+                    paymentDeadlineDays: initialData.paymentDeadlineDays !== undefined && initialData.paymentDeadlineDays !== null ? String(initialData.paymentDeadlineDays) : '5',
                     schedules: initialData.schedules ? initialData.schedules.map(s => ({
                         day: mapNumberToDay(s.dayOfWeek),
                         startTime: s.startTime?.substring(0, 5) || '',
@@ -91,12 +97,12 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
 
     const mapDayToNumber = (dayKey) => {
         // Mapping: Sunday=0, Monday=1, ..., Saturday=6 (Standard JS/ISO convention)
-        const map = { 'CN': 0, 'T2': 1, 'T3': 2, 'T4': 3, 'T5': 4, 'T6': 5, 'T7': 6 };
+        const map = { 'CN': 7, 'T2': 1, 'T3': 2, 'T4': 3, 'T5': 4, 'T6': 5, 'T7': 6 };
         return map[dayKey];
     };
 
     const mapNumberToDay = (num) => {
-        const map = { 0: 'CN', 1: 'T2', 2: 'T3', 3: 'T4', 4: 'T5', 5: 'T6', 6: 'T7' };
+        const map = { 7: 'CN', 1: 'T2', 2: 'T3', 3: 'T4', 4: 'T5', 5: 'T6', 6: 'T7' };
         return map[num];
     };
 
@@ -154,11 +160,11 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
         if (!form.gradeLevel.toString().trim()) newErrors.gradeLevel = 'Khối lớp không được để trống.';
         if (!form.startDate) newErrors.startDate = 'Vui lòng chọn ngày bắt đầu.';
         if (!form.endDate) newErrors.endDate = 'Vui lòng chọn ngày kết thúc.';
-        
+
         if (form.startDate && form.endDate && form.endDate <= form.startDate) {
             newErrors.endDate = 'Ngày kết thúc phải sau ngày bắt đầu.';
         }
-        
+
         if (form.schedules.length === 0) {
             newErrors.days = 'Vui lòng chọn ít nhất một ngày học.';
         } else {
@@ -174,8 +180,18 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
         if (form.maxCapacity && parseInt(form.maxCapacity) < 1) {
             newErrors.maxCapacity = 'Sĩ số phải là số nguyên dương.';
         }
-        if (form.tuitionFee && parseInt(form.tuitionFee) < 0) {
+        if (!form.tuitionFee || form.tuitionFee.toString().trim() === '') {
+            newErrors.tuitionFee = 'Học phí không được để trống.';
+        } else if (parseInt(form.tuitionFee) < 0) {
             newErrors.tuitionFee = 'Học phí không hợp lệ.';
+        }
+        if (!form.paymentDeadlineDays || form.paymentDeadlineDays.toString().trim() === '') {
+            newErrors.paymentDeadlineDays = 'Hạn đóng học phí không được để trống.';
+        } else {
+            const days = parseInt(form.paymentDeadlineDays);
+            if (isNaN(days) || days < 1 || days > 7) {
+                newErrors.paymentDeadlineDays = 'Hạn đóng học phí phải từ 1 đến 7 ngày.';
+            }
         }
         return newErrors;
     };
@@ -193,11 +209,13 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
         // Transform form data to match API requirements
         const payload = {
             className: form.className.trim(),
-            room: form.room.trim() || undefined,
+            room: form.room ? form.room.trim() : undefined,
             startDate: form.startDate,
             endDate: form.endDate,
             tuitionFee: form.tuitionFee ? parseInt(form.tuitionFee) : 0,
             maxStudents: form.maxCapacity ? parseInt(form.maxCapacity) : null,
+            billingMethod: 'Postpaid',
+            paymentDeadlineDays: form.paymentDeadlineDays ? parseInt(form.paymentDeadlineDays) : 5,
             subjectName: form.subjectName.trim(),
             gradeLevel: parseInt(form.gradeLevel),
             schedules: form.schedules.map(s => ({
@@ -274,8 +292,8 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
                     </div>
 
                     {/* ── Scrollable Body ── */}
-                        <div className="flex-1 overflow-y-auto overscroll-contain">
-                            <div className="!px-6 !py-7 flex flex-col !gap-8 sm:!px-8">
+                    <div className="flex-1 overflow-y-auto overscroll-contain">
+                        <div className="!px-6 !py-7 flex flex-col !gap-8 sm:!px-8">
                             {/* Class Basic Info */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <InputField label="Tên lớp học" required error={errors.className}>
@@ -301,7 +319,7 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <InputField label="Khối lớp" required error={errors.gradeLevel}>
+                                <InputField label="Khối lớp" error={errors.gradeLevel}>
                                     <input
                                         type="number"
                                         placeholder="Ví dụ: 12"
@@ -313,135 +331,131 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
                                 </InputField>
                             </div>
 
-                        {/* Start Date & End Date */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <InputField label="Ngày bắt đầu" required error={errors.startDate}>
-                                <input
-                                    type="date"
-                                    value={form.startDate}
-                                    onChange={e => handleChange('startDate', e.target.value)}
-                                    disabled={isSubmitting}
-                                    className={`w-full !my-1 !px-4 !py-3 bg-background border rounded-xl outline-none transition-all text-text-main font-medium focus:border-primary focus:ring-4 focus:ring-primary/5 ${errors.startDate ? 'border-red-400 ring-2 ring-red-100' : 'border-border'} ${isSubmitting ? 'opacity-60 cursor-not-allowed' : ''}`}
-                                />
-                            </InputField>
-                            <InputField label="Ngày kết thúc" required error={errors.endDate}>
-                                <input
-                                    type="date"
-                                    value={form.endDate}
-                                    onChange={e => handleChange('endDate', e.target.value)}
-                                    disabled={isSubmitting}
-                                    className={`w-full !my-1 !px-4 !py-3 bg-background border rounded-xl outline-none transition-all text-text-main font-medium focus:border-primary focus:ring-4 focus:ring-primary/5 ${errors.endDate ? 'border-red-400 ring-2 ring-red-100' : 'border-border'} ${isSubmitting ? 'opacity-60 cursor-not-allowed' : ''}`}
-                                />
-                            </InputField>
-                        </div>
-
-                        {/* Room & Max Capacity */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <InputField label="Phòng học (Không bắt buộc)" error={errors.room}>
-                                <input
-                                    type="text"
-                                    placeholder="Ví dụ: P.201"
-                                    value={form.room}
-                                    onChange={e => handleChange('room', e.target.value)}
-                                    disabled={isSubmitting}
-                                    className={`w-full !my-1 !px-4 !py-3 bg-background border rounded-xl outline-none transition-all text-text-main font-medium placeholder:font-normal placeholder:text-text-muted/50 focus:border-primary focus:ring-4 focus:ring-primary/5 ${errors.room ? 'border-red-400 ring-2 ring-red-100' : 'border-border'} ${isSubmitting ? 'opacity-60 cursor-not-allowed' : ''}`}
-                                />
-                            </InputField>
-                            <InputField label="Sĩ số tối đa (Không bắt buộc)" error={errors.maxCapacity}>
-                                <input
-                                    type="number"
-                                    min={1}
-                                    placeholder="Ví dụ: 30"
-                                    value={form.maxCapacity}
-                                    onChange={e => handleChange('maxCapacity', e.target.value)}
-                                    disabled={isSubmitting}
-                                    className={`w-full !my-1 !px-4 !py-3 bg-background border rounded-xl outline-none transition-all text-text-main font-medium placeholder:font-normal placeholder:text-text-muted/50 focus:border-primary focus:ring-4 focus:ring-primary/5 ${errors.maxCapacity ? 'border-red-400 ring-2 ring-red-100' : 'border-border'} ${isSubmitting ? 'opacity-60 cursor-not-allowed' : ''}`}
-                                />
-                            </InputField>
-                        </div>
-
-                        {/* Tuition Fee */}
-                        <InputField label="Học phí (VNĐ) (Không bắt buộc)" error={errors.tuitionFee}>
-                            <input
-                                type="number"
-                                min={0}
-                                placeholder="Ví dụ: 1500000"
-                                value={form.tuitionFee}
-                                onChange={e => handleChange('tuitionFee', e.target.value)}
-                                disabled={isSubmitting}
-                                className={`w-full !my-1 !px-4 !py-3 bg-background border rounded-xl outline-none transition-all text-text-main font-medium placeholder:font-normal placeholder:text-text-muted/50 focus:border-primary focus:ring-4 focus:ring-primary/5 ${errors.tuitionFee ? 'border-red-400 ring-2 ring-red-100' : 'border-border'} ${isSubmitting ? 'opacity-60 cursor-not-allowed' : ''}`}
-                            />
-                        </InputField>
-
-                        {/* Days of the Week */}
-                        <div className="space-y-3">
-                            <div>
-                                <label className="block text-xs font-bold text-text-muted uppercase tracking-widest">
-                                    Các ngày học trong tuần <span className="text-red-500">*</span>
-                                </label>
-                                <div className="flex flex-wrap gap-2 !pt-1">
-                                    {DAYS.map(day => {
-                                        const isSelected = form.schedules.some(s => s.day === day.key);
-                                        return (
-                                            <button
-                                                key={day.key}
-                                                type="button"
-                                                onClick={() => toggleDay(day.key)}
-                                                disabled={isSubmitting}
-                                                className={`w-10 h-10 !my-1 rounded-xl text-sm font-bold transition-all border ${
-                                                    isSelected
-                                                        ? ' text-primary border-primary shadow-md shadow-primary/20'
-                                                        : '!bg-background border-border text-text-muted hover:border-primary hover:text-primary'
-                                                } ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                            >
-                                                {day.label}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                                {errors.days && <p className="text-xs text-red-500 !mt-1">{errors.days}</p>}
+                            {/* Start Date & End Date */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <InputField label="Ngày bắt đầu" required error={errors.startDate}>
+                                    <input
+                                        type="date"
+                                        value={form.startDate}
+                                        onChange={e => handleChange('startDate', e.target.value)}
+                                        disabled={isSubmitting}
+                                        className={`w-full !my-1 !px-4 !py-3 bg-background border rounded-xl outline-none transition-all text-text-main font-medium focus:border-primary focus:ring-4 focus:ring-primary/5 ${errors.startDate ? 'border-red-400 ring-2 ring-red-100' : 'border-border'} ${isSubmitting ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                    />
+                                </InputField>
+                                <InputField label="Ngày kết thúc" required error={errors.endDate}>
+                                    <input
+                                        type="date"
+                                        value={form.endDate}
+                                        onChange={e => handleChange('endDate', e.target.value)}
+                                        disabled={isSubmitting}
+                                        className={`w-full !my-1 !px-4 !py-3 bg-background border rounded-xl outline-none transition-all text-text-main font-medium focus:border-primary focus:ring-4 focus:ring-primary/5 ${errors.endDate ? 'border-red-400 ring-2 ring-red-100' : 'border-border'} ${isSubmitting ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                    />
+                                </InputField>
                             </div>
 
-                            {/* Dynamic Time Inputs for Selected Days */}
-                            {form.schedules.length > 0 && (
-                                <div className="bg-background rounded-2xl border border-border !p-4 space-y-3">
-                                    <h3 className="text-sm font-bold text-text-main">Thiết lập khung giờ học</h3>
-                                    <div className="space-y-3">
-                                        {form.schedules.map(schedule => (
-                                            <div key={schedule.day} className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary font-bold flex items-center justify-center text-sm shrink-0">
-                                                    {schedule.day}
-                                                </div>
-                                                <div className="flex-1 grid grid-cols-2 gap-3">
-                                                    <InputField error={errors[`startTime_${schedule.day}`]}>
-                                                        <input
-                                                            type="time"
-                                                            value={schedule.startTime}
-                                                            onChange={e => handleScheduleTimeChange(schedule.day, 'startTime', e.target.value)}
-                                                            disabled={isSubmitting}
-                                                            className={`w-full !px-3 !py-2 bg-white border rounded-xl outline-none text-sm transition-all text-text-main font-medium focus:border-primary focus:ring-4 focus:ring-primary/5 ${errors[`startTime_${schedule.day}`] ? 'border-red-400 ring-2 ring-red-100' : 'border-border'} ${isSubmitting ? 'opacity-60 cursor-not-allowed' : ''}`}
-                                                        />
-                                                    </InputField>
-                                                    <InputField error={errors[`endTime_${schedule.day}`]}>
-                                                        <input
-                                                            type="time"
-                                                            value={schedule.endTime}
-                                                            onChange={e => handleScheduleTimeChange(schedule.day, 'endTime', e.target.value)}
-                                                            disabled={isSubmitting}
-                                                            className={`w-full !px-3 !py-2 bg-white border rounded-xl outline-none text-sm transition-all text-text-main font-medium focus:border-primary focus:ring-4 focus:ring-primary/5 ${errors[`endTime_${schedule.day}`] ? 'border-red-400 ring-2 ring-red-100' : 'border-border'} ${isSubmitting ? 'opacity-60 cursor-not-allowed' : ''}`}
-                                                        />
-                                                    </InputField>
-                                                </div>
-                                            </div>
-                                        ))}
+                            {/* Tuition & Billing Settings */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <InputField label="Học phí (VNĐ / buổi)" required error={errors.tuitionFee}>
+                                    <input
+                                        type="number"
+                                        min={0}
+                                        placeholder="Ví dụ: 150000"
+                                        value={form.tuitionFee}
+                                        onChange={e => handleChange('tuitionFee', e.target.value)}
+                                        disabled={isSubmitting}
+                                        className={`${inputBase} !my-1 ${errors.tuitionFee ? 'border-red-400 ring-2 ring-red-100' : 'border-border'} ${isSubmitting ? 'opacity-60 cursor-not-allowed bg-background-muted' : ''}`}
+                                    />
+                                </InputField>
+
+                                {/* <InputField label="Hình thức thanh toán">
+                                    <span className={`${inputBase} !my-1 bg-background-muted opacity-80`}>
+                                        Trả sau
+                                    </span>
+                                </InputField> */}
+
+
+                                <InputField label="Hạn đóng (1-7 ngày)" required error={errors.paymentDeadlineDays}>
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        max={7}
+                                        placeholder="Ví dụ: 5"
+                                        value={form.paymentDeadlineDays}
+                                        onChange={e => handleChange('paymentDeadlineDays', e.target.value)}
+                                        disabled={isSubmitting}
+                                        className={`${inputBase} !my-1 ${errors.paymentDeadlineDays ? 'border-red-400 ring-2 ring-red-100' : 'border-border'} ${isSubmitting ? 'opacity-60 cursor-not-allowed bg-background-muted' : ''}`}
+                                    />
+                                </InputField>
+                            </div>
+
+                            {/* Days of the Week */}
+                            <div className="space-y-3">
+                                <div>
+                                    <label className="block text-xs font-bold text-text-muted uppercase tracking-widest">
+                                        Các ngày học trong tuần <span className="text-red-500">*</span>
+                                    </label>
+                                    <div className="flex flex-wrap gap-2 !pt-1">
+                                        {DAYS.map(day => {
+                                            const isSelected = form.schedules.some(s => s.day === day.key);
+                                            return (
+                                                <button
+                                                    key={day.key}
+                                                    type="button"
+                                                    onClick={() => toggleDay(day.key)}
+                                                    disabled={isSubmitting}
+                                                    className={`w-10 h-10 !my-1 rounded-xl text-sm font-bold transition-all border ${isSelected
+                                                        ? ' text-primary border-primary shadow-md shadow-primary/20'
+                                                        : '!bg-background border-border text-text-muted hover:border-primary hover:text-primary'
+                                                        } ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                >
+                                                    {day.label}
+                                                </button>
+                                            );
+                                        })}
                                     </div>
+                                    {errors.days && <p className="text-xs text-red-500 !mt-1">{errors.days}</p>}
                                 </div>
-                            )}
+
+                                {/* Dynamic Time Inputs for Selected Days */}
+                                {form.schedules.length > 0 && (
+                                    <div className="bg-background rounded-2xl border border-border !p-4 space-y-3">
+                                        <h3 className="text-sm font-bold text-text-main">Thiết lập khung giờ học</h3>
+                                        <div className="space-y-3">
+                                            {form.schedules.map(schedule => (
+                                                <div key={schedule.day} className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary font-bold flex items-center justify-center text-sm shrink-0">
+                                                        {schedule.day}
+                                                    </div>
+                                                    <div className="flex-1 grid grid-cols-2 gap-3">
+                                                        <InputField error={errors[`startTime_${schedule.day}`]}>
+                                                            <input
+                                                                type="time"
+                                                                value={schedule.startTime}
+                                                                onChange={e => handleScheduleTimeChange(schedule.day, 'startTime', e.target.value)}
+                                                                disabled={isSubmitting}
+                                                                className={`w-full !px-3 !py-2 bg-white border rounded-xl outline-none text-sm transition-all text-text-main font-medium focus:border-primary focus:ring-4 focus:ring-primary/5 ${errors[`startTime_${schedule.day}`] ? 'border-red-400 ring-2 ring-red-100' : 'border-border'} ${isSubmitting ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                                            />
+                                                        </InputField>
+                                                        <InputField error={errors[`endTime_${schedule.day}`]}>
+                                                            <input
+                                                                type="time"
+                                                                value={schedule.endTime}
+                                                                onChange={e => handleScheduleTimeChange(schedule.day, 'endTime', e.target.value)}
+                                                                disabled={isSubmitting}
+                                                                className={`w-full !px-3 !py-2 bg-white border rounded-xl outline-none text-sm transition-all text-text-main font-medium focus:border-primary focus:ring-4 focus:ring-primary/5 ${errors[`endTime_${schedule.day}`] ? 'border-red-400 ring-2 ring-red-100' : 'border-border'} ${isSubmitting ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                                            />
+                                                        </InputField>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                {/* ── Footer ── */}
+                    {/* ── Footer ── */}
                     <div className="shrink-0 flex items-center !gap-3 !px-6 !py-5 sm:!px-8 border-t border-border bg-surface/95 backdrop-blur-md">
                         <button
                             onClick={onClose}

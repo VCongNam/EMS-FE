@@ -115,10 +115,10 @@ const SetTAPermissionsPage = ({ classId }) => {
     };
 
     const permissionItems = [
-        { key: 'takeAttendance', label: 'Điểm danh học sinh', desc: 'Cho phép TA thực hiện điểm danh trong lớp học do mình phụ trách.', icon: 'material-symbols:fact-check-rounded' },
-        { key: 'editScores', label: 'Chấm điểm & Nhập điểm', desc: 'Cho phép TA nhập, sửa điểm các bài kiểm tra của học sinh.', icon: 'material-symbols:edit-note-rounded' },
-        { key: 'viewReports', label: 'Xem Báo cáo học tập', desc: 'Xem biểu đồ thống kê, báo cáo học tập của lớp học.', icon: 'material-symbols:insert-chart-rounded' },
-        { key: 'createAssignments', label: 'Tạo Bài tập & Assignment', desc: 'Đăng tải bài tập, quản lý tài liệu, thông báo lớp.', icon: 'material-symbols:assignment-rounded' },
+        { key: 'takeAttendance', label: 'Điểm danh học sinh', desc: 'Cho phép Trợ giảng thực hiện điểm danh trong lớp học do mình phụ trách.', icon: 'material-symbols:fact-check-rounded' },
+        { key: 'editScores', label: 'Chấm điểm & Nhập điểm', desc: 'Cho phép Trợ giảng nhập, sửa điểm các bài kiểm tra của học sinh.', icon: 'material-symbols:edit-note-rounded' },
+        { key: 'viewReports', label: 'Xem Báo cáo học tập', desc: 'Cho phép Trợ giảng xem báo cáo học tập của lớp học.', icon: 'material-symbols:insert-chart-rounded' },
+        { key: 'createAssignments', label: 'Tạo Bài tập', desc: 'Cho phép Trợ giảng đăng tải bài tập, quản lý tài liệu.', icon: 'material-symbols:assignment-rounded' },
     ];
 
     if (isLoading && tas.length === 0) {
@@ -132,9 +132,9 @@ const SetTAPermissionsPage = ({ classId }) => {
 
     if (tas.length === 0) {
         return (
-            <div className="bg-surface rounded-3xl border border-border !p-12 text-center animate-fade-in">
+            <div className="!bg-surface rounded-3xl border border-border !p-12 text-center animate-fade-in">
                 <div className="flex flex-col items-center justify-center opacity-70">
-                    <div className="w-20 h-20 bg-background rounded-full flex items-center justify-center !mb-4 border border-border">
+                    <div className="w-20 h-20 !bg-background rounded-full flex items-center justify-center !mb-4 border border-border">
                         <Icon icon="solar:ghost-smile-bold-duotone" className="text-4xl text-text-muted" />
                     </div>
                     <h3 className="text-lg font-bold text-text-main !mb-1">Lớp chưa có trợ giảng nào</h3>

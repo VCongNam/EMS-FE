@@ -104,7 +104,6 @@ const AccountListPage = () => {
                         >
                             <option value="all">Tất cả trạng thái</option>
                             <option value="Active">Đang hoạt động</option>
-                            <option value="Banned">Đã bị khóa</option>
                             <option value="Unverified">Chưa xác minh</option>
                         </select>
                     </div>

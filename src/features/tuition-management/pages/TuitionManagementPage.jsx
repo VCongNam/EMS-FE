@@ -8,6 +8,8 @@ import { tuitionService } from '../api/tuitionService';
 import useAuthStore from '../../../store/authStore';
 import TuitionFeeModal from '../components/TuitionFeeModal';
 import { extractErrorMessage } from '../../../utils/errorHandler';
+import { formatViDate } from '../../../utils/dateUtils';
+
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const ITEMS_PER_PAGE = 10;
@@ -17,8 +19,7 @@ const formatVND = (amount) => amount?.toLocaleString('vi-VN') + ' ₫';
 
 const formatDate = (dateStr) => {
     if (!dateStr) return 'N/A';
-    const d = new Date(dateStr);
-    return d.toLocaleDateString('vi-VN', {
+    return formatViDate(dateStr, {
         hour: '2-digit',
         minute: '2-digit',
         day: '2-digit',
@@ -781,7 +782,7 @@ const TuitionManagementPage = () => {
                                         {!isConfigured && <span className="!text-[9px] !font-black !text-amber-500 !uppercase">Thiếu cấu hình</span>}
                                     </td>
                                     <td className="!px-6 !py-4 text-center">
-                                        <span className="!px-2.5 !py-1 rounded-lg text-[10px] font-black bg-purple-100 text-purple-700">
+                                        <span className="!px-2.5 !py-1 rounded-lg text-[10px] font-black !bg-purple-100 text-purple-700">
                                             Trả sau
                                         </span>
                                     </td>
@@ -815,7 +816,7 @@ const TuitionManagementPage = () => {
     );
 
     return (
-        <div className="w-full !mx-auto animate-fade-in space-y-6 !pb-12 h-screen overflow-y-auto !pr-2 custom-scrollbar">
+        <div className="w-full !mx-auto animate-fade-in !space-y-6 !pb-12 h-screen overflow-y-auto !pr-2 custom-scrollbar">
             {/* Main Header (Sticky top card style) */}
             <header className="sticky top-0 z-20 !bg-white/80 backdrop-blur-md border border-slate-200 rounded-[var(--radius-xl)] !p-6 shadow-sm !mb-6 !flex !flex-col sm:!flex-row sm:!items-center !justify-between !gap-6">
                 <div>

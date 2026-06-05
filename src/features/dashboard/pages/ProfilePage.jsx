@@ -6,6 +6,7 @@ import { profileService } from '../api/profileService';
 import { toast } from 'react-toastify';
 import ChangePasswordModal from '../components/profile/ChangePasswordModal';
 import { extractErrorMessage } from '../../../utils/errorHandler';
+import { formatViFullDate } from '../../../utils/dateUtils';
 
 const ProfilePage = () => {
     const { user, updateProfile } = useAuthStore();
@@ -322,7 +323,7 @@ const ProfilePage = () => {
                                 <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Ngày tham gia</span>
                                 <span className="text-sm text-text-main font-medium flex items-center gap-2">
                                     <Icon icon="material-symbols:calendar-today-rounded" className="text-primary text-base" />
-                                    10/03/2025
+                                    {formData.createdAt ? formatViFullDate(formData.createdAt) : 'Chưa cập nhật'}
                                 </span>
                             </div>
                             <div className="!p-4 !mt-2 bg-primary/5 rounded-2xl border border-primary/10 flex items-center justify-between">

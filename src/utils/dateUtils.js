@@ -13,7 +13,21 @@ export const formatViDate = (date, options = {}) => {
     };
 
     try {
-        const d = typeof date === 'string' ? new Date(date) : date;
+        let d;
+        if (typeof date === 'string') {
+            let dateStr = date;
+            // If the date string has a 'T' (date-time format) and lacks a timezone specifier (Z or offset),
+            // treat it as UTC by appending 'Z'
+            const parts = date.split('T');
+            const timePart = parts[1];
+            if (timePart && !timePart.endsWith('Z') && !timePart.includes('+') && !timePart.includes('-')) {
+                dateStr = date + 'Z';
+            }
+            d = new Date(dateStr);
+        } else {
+            d = date;
+        }
+        
         // Check if date is valid
         if (isNaN(d.getTime())) return date;
         

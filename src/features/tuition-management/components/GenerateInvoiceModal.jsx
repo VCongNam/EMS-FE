@@ -83,11 +83,11 @@ const GenerateInvoiceModal = ({ isOpen, onClose, onSave, classData }) => {
                 </div>
 
                 {/* Body */}
-                <div className="!p-6 space-y-5 overflow-y-auto max-h-[65vh] custom-scrollbar">
+                <div className="!p-6 !space-y-5 overflow-y-auto max-h-[65vh] custom-scrollbar">
                     
                     <div className="!flex !gap-4">
                         {/* Period Month */}
-                        <div className="space-y-1.5 flex-1">
+                        <div className="!space-y-1.5 flex-1">
                             <label className="text-xs font-black text-text-muted uppercase tracking-widest !ml-0.5">Tháng</label>
                             <input
                                 type="number"
@@ -100,7 +100,7 @@ const GenerateInvoiceModal = ({ isOpen, onClose, onSave, classData }) => {
                         </div>
 
                         {/* Period Year */}
-                        <div className="space-y-1.5 flex-1">
+                        <div className="!space-y-1.5 flex-1">
                             <label className="text-xs font-black text-text-muted uppercase tracking-widest !ml-0.5">Năm</label>
                             <input
                                 type="number"
@@ -115,7 +115,7 @@ const GenerateInvoiceModal = ({ isOpen, onClose, onSave, classData }) => {
 
                     {/* Due Date (Only for Postpaid) */}
                     {!isPrepaid && (
-                        <div className="space-y-1.5">
+                        <div className="!space-y-1.5">
                             <label className="text-xs font-black text-text-muted uppercase tracking-widest !ml-0.5">Hạn nộp hóa đơn</label>
                             <input
                                 type="datetime-local"

@@ -111,7 +111,7 @@ const StudentLessonCard = ({ lesson }) => {
                 }`}>
                 {STATUS_LABEL[lesson.status?.toLowerCase()] || lesson.status || '—'}
             </div>
-        </div>
+</div>
     );
 };
 
@@ -155,7 +155,7 @@ const TeacherLessonCard = ({ lesson, onEdit, onDelete }) => {
                         title="Xóa buổi học">
                         <Icon icon="solar:trash-bin-trash-bold-duotone" className="text-sm sm:text-base cursor-pointer" />
                     </button>
-                </div>
+</div>
             )}
         </div>
     );
@@ -212,7 +212,7 @@ const WeekView = ({ weekStart, lessons, onEdit, onDelete, isStudent }) => {
                                 ) : (
                                     <div className="w-1.5 h-1.5 rounded-full opacity-0" />
                                 )}
-                            </div>
+</div>
                         </button>
                     );
                 })}
@@ -271,7 +271,7 @@ const MonthView = ({ year, month, lessons, onEdit, onDelete, isStudent }) => {
 
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
-    let startOffset = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
+let startOffset = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
 
     const cells = [];
     for (let i = 0; i < startOffset; i++) cells.push(null);
@@ -317,7 +317,7 @@ const MonthView = ({ year, month, lessons, onEdit, onDelete, isStudent }) => {
                                         </div>
                                         <div className="flex gap-1 mt-auto pb-1 h-2">
                                             {dayLessons.length > 0 ? (
-                                                dots.map((color, idx) => (
+dots.map((color, idx) => (
                                                     <div key={idx} className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-white' : COLOR_MAP[color]?.dot || 'bg-primary'}`} />
                                                 ))
                                             ) : (
@@ -370,7 +370,7 @@ const MonthView = ({ year, month, lessons, onEdit, onDelete, isStudent }) => {
 
 // --- Upcoming List ---
 const UpcomingList = ({ lessons, isStudent }) => {
-    const today = toDateStr(new Date());
+const today = toDateStr(new Date());
     const upcoming = lessons
         .filter(l => l.date >= today)
         .sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime))
@@ -425,8 +425,7 @@ const ScheduleManagementPage = () => {
 
     const [lessons, setLessons] = useState([]);
     const [loading, setLoading] = useState(true);
-
-    const [sessionModalState, setSessionModalState] = useState({ isOpen: false, initialData: null });
+const [sessionModalState, setSessionModalState] = useState({ isOpen: false, initialData: null });
     const [deletingId, setDeletingId] = useState(null);
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, sessionId: null });
 
@@ -492,7 +491,7 @@ const ScheduleManagementPage = () => {
                     return {
                         id: item.sessionId,
                         classId: item.classId,
-                        className: item.title || `Class ${item.classId?.substring(0, 6)}`,
+className: item.title || `Class ${item.classId?.substring(0, 6)}`,
                         date: item.date ? item.date.split('T')[0] : '',
                         startTime: item.startTime?.substring(0, 5) || '--:--',
                         endTime: item.endTime?.substring(0, 5) || '--:--',
@@ -566,7 +565,7 @@ const ScheduleManagementPage = () => {
             };
             const res = isEdit
                 ? await sessionService.updateSession(sessionModalState.initialData.sessionId, payload, token)
-                : await sessionService.createSession(payload, token);
+: await sessionService.createSession(payload, token);
 
             if (res.ok) {
                 toast.success(isEdit ? 'Cập nhật thành công!' : 'Tạo mới thành công!');
@@ -629,7 +628,7 @@ const ScheduleManagementPage = () => {
     const stats = isStudent ? [
         { icon: 'solar:users-group-rounded-bold-duotone', color: 'text-primary bg-primary/10 border-primary/20', label: 'Lớp đang học', value: totalClasses },
         { icon: 'solar:clock-circle-bold-duotone', color: 'text-blue-500 bg-blue-500/10 border-blue-500/20', label: 'Buổi hôm nay', value: totalToday },
-        { icon: 'solar:check-circle-bold-duotone', color: 'text-green-500 bg-green-500/10 border-green-500/20', label: 'Đã có mặt', value: totalPresent },
+{ icon: 'solar:check-circle-bold-duotone', color: 'text-green-500 bg-green-500/10 border-green-500/20', label: 'Đã có mặt', value: totalPresent },
         { icon: 'solar:calendar-mark-bold-duotone', color: 'text-orange-500 bg-orange-500/10 border-orange-500/20', label: 'Sắp diễn ra', value: totalUpcoming },
     ] : [
         { icon: 'solar:users-group-rounded-bold-duotone', color: 'text-primary bg-primary/10 border-primary/20', label: 'Lớp tham gia', value: totalClasses },
@@ -664,7 +663,7 @@ const ScheduleManagementPage = () => {
                     <div className="flex items-center bg-background border border-border rounded-xl !p-1 shadow-inner">
                         <button onClick={() => setViewMode('week')}
                             className={`flex-1 sm:flex-none flex justify-center items-center !gap-2 !px-4 !py-2.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'week' ? '!bg-primary text-white shadow-md' : 'text-text-muted hover:text-text-main hover:bg-surface'}`}>
-                            <Icon icon="solar:calendar-date-bold-duotone" className="text-lg" /> Tuần
+<Icon icon="solar:calendar-date-bold-duotone" className="text-lg" /> Tuần
                         </button>
                         <button onClick={() => setViewMode('month')}
                             className={`flex-1 sm:flex-none flex justify-center items-center !gap-2 !px-4 !py-2.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'month' ? '!bg-primary text-white shadow-md' : 'text-text-muted hover:text-text-main hover:bg-surface'}`}>
@@ -702,7 +701,7 @@ const ScheduleManagementPage = () => {
             </div>
 
             {/* ── Main Calendar + Upcoming ── */}
-            <div className="flex flex-col lg:flex-row !gap-6">
+<div className="flex flex-col lg:flex-row !gap-6">
                 <div className="flex-1 overflow-x-auto bg-surface !p-6 rounded-[2rem] border border-border shadow-sm min-h-[600px]">
                     <div className="flex items-center justify-between !mb-6 sticky left-4 right-4">
                         <div className="flex items-center !gap-3">
@@ -750,7 +749,7 @@ const ScheduleManagementPage = () => {
                         initialData={sessionModalState.initialData}
                     />
                     <ConfirmModal
-                        isOpen={confirmModal.isOpen}
+isOpen={confirmModal.isOpen}
                         onClose={() => setConfirmModal({ isOpen: false, sessionId: null })}
                         onConfirm={handleConfirmDelete}
                         title="Xác nhận xóa buổi học"

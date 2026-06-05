@@ -3,6 +3,8 @@ import { Icon } from '@iconify/react';
 import Modal from '../../../components/common/Modal';
 import { tuitionService } from '../api/tuitionService';
 import useAuthStore from '../../../store/authStore';
+import { formatViFullDate } from '../../../utils/dateUtils';
+
 
 const TeacherInvoiceDetailModal = ({ isOpen, onClose, data, onExtend }) => {
     const { user } = useAuthStore();
@@ -55,12 +57,12 @@ const TeacherInvoiceDetailModal = ({ isOpen, onClose, data, onExtend }) => {
     const amount = displayData.totalAmount || displayData.amount || data.totalAmount || 0;
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title="Chi tiết Hóa đơn (Giáo viên)" maxWidth="md">
+        <Modal isOpen={isOpen} onClose={onClose} title="Chi tiết Phiếu thu (Giáo viên)" maxWidth="md">
             <div className="!p-6 !space-y-6 !bg-white">
                 {isLoading ? (
                     <div className="!flex !flex-col !justify-center !items-center !py-20 text-text-muted">
                         <Icon icon="solar:spinner-linear" className="!animate-spin !text-4xl" />
-                        <p className="mt-2">Đang tải dữ liệu...</p>
+                        <p className="!mt-2">Đang tải dữ liệu...</p>
                     </div>
                 ) : (
                     <>
@@ -71,7 +73,7 @@ const TeacherInvoiceDetailModal = ({ isOpen, onClose, data, onExtend }) => {
                                     <Icon icon="solar:bill-check-bold-duotone" className="!text-3xl" />
                                 </div>
                                 <div>
-                                    <h2 className="!text-lg !font-black !text-text-main">Hóa đơn Học phí</h2>
+                                    <h2 className="!text-lg !font-black !text-text-main">Phiếu thu Học phí</h2>
                                     <p className="!text-xs !font-bold !text-text-muted">Học sinh: {data.studentName || data.name}</p>
                                 </div>
                             </div>
@@ -94,7 +96,7 @@ const TeacherInvoiceDetailModal = ({ isOpen, onClose, data, onExtend }) => {
                             <div className="!space-y-3 md:!text-right">
                                 <p className="!text-[10px] !font-black !text-text-muted !uppercase !tracking-widest">Hạn thanh toán</p>
                                 <p className="!text-sm !font-black !text-red-500">
-                                    {displayData.dueDate || data.dueDate ? new Date(displayData.dueDate || data.dueDate).toLocaleDateString('vi-VN') : 'N/A'}
+                                    {displayData.dueDate || data.dueDate ? formatViFullDate(displayData.dueDate || data.dueDate) : 'N/A'}
                                 </p>
                             </div>
                         </div>

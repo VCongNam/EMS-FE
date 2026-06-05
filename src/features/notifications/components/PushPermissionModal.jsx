@@ -67,17 +67,17 @@ const PushPermissionModal = () => {
                     <div className="absolute top-0 right-0 w-32 h-32 !bg-primary/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
                     <div className="absolute bottom-0 left-0 w-24 h-24 !bg-primary/10 rounded-full blur-xl translate-y-1/2 -translate-x-1/2" />
                     
-                    <div className="relative w-16 h-16 !bg-white rounded-2xl shadow-sm flex items-center justify-center text-primary mt-8 animate-bounce-slow">
+                    <div className="relative w-16 h-16 !bg-white rounded-2xl shadow-sm flex items-center justify-center text-primary !mt-8 animate-bounce-slow">
                         <Icon icon="solar:bell-bing-bold-duotone" className="text-4xl" />
                     </div>
                 </div>
 
                 {/* Body */}
-                <div className="p-8 pt-10 text-center">
-                    <h3 className="text-2xl font-black text-text-main mb-3 font-['Outfit'] tracking-tight">
+                <div className="!p-8 !pt-10 text-center">
+                    <h3 className="text-2xl font-black text-text-main !mb-3 font-['Outfit'] tracking-tight">
                         Cập nhật tức thời!
                     </h3>
-                    <p className="text-sm font-medium text-text-muted mb-8 leading-relaxed !px-2">
+                    <p className="text-sm font-medium text-text-muted !mb-8 leading-relaxed !px-2">
                         Bật thông báo ngay để không bỏ lỡ bài tập mới, phản hồi từ giáo viên và các cập nhật quan trọng.
                     </p>
 

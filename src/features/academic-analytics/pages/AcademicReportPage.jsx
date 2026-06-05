@@ -170,7 +170,7 @@ const AcademicReportPage = () => {
             ) : (
                 <>
                     {/* 2. KPI Cards (Grid 4 cột) */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         <StatCard
                             title="Sĩ số (Active)"
                             icon="material-symbols:group-rounded"
@@ -192,15 +192,7 @@ const AcademicReportPage = () => {
                                 </div>
                             }
                         />
-                        <StatCard
-                            title="Chuyên cần"
-                            icon="material-symbols:calendar-check-rounded"
-                            iconColor="text-purple-600"
-                            iconBg="!bg-purple-50"
-                            value={`${reportData?.totalAcademicPerformance?.attendanceRatePercent}%`}
-                            warning={reportData?.totalAcademicPerformance?.attendanceRatePercent < 80}
-                            subValue="Tỉ lệ đi học trung bình"
-                        />
+                       
                         <StatCard
                             title="Chất lượng học lực"
                             icon="material-symbols:school-rounded"

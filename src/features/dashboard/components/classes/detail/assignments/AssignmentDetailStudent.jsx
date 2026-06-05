@@ -5,6 +5,7 @@ import useAuthStore from '../../../../../../store/authStore';
 import { studentAssignmentService } from '../../../../api/studentAssignmentService';
 import { extractErrorMessage } from '../../../../../../utils/errorHandler';
 import ConfirmModal from '../../../../../../components/ui/ConfirmModal';
+import { formatViDate } from '../../../../../../utils/dateUtils';
 
 const getFileIcon = (type) => {
     if (type?.includes('pdf')) return <Icon icon="vscode-icons:file-type-pdf2" className="text-3xl" />;
@@ -98,7 +99,7 @@ const AssignmentDetailStudent = ({ assignment, onRefresh }) => {
     };
 
     return (
-        <div className="flex flex-col lg:flex-row gap-6 animate-fade-in-up !pb-12 bg-[#F8FAFC] min-h-screen">
+        <div className="flex flex-col lg:flex-row gap-6 animate-fade-in-up pb-8">
             <ConfirmModal
                 isOpen={showCancelConfirm}
                 onClose={() => setShowCancelConfirm(false)}
@@ -111,8 +112,8 @@ const AssignmentDetailStudent = ({ assignment, onRefresh }) => {
             />
             {/* Left Column: Assignment Content */}
             <div className="flex-1 flex flex-col gap-6">
-                {/* Sticky Top Header */}
-                <div className="bg-white/80 backdrop-blur-md sticky top-0 z-10 !px-6 sm:!px-8 !py-6 border-b border-border rounded-b-3xl shadow-sm">
+                {/* Header Card */}
+                <div className="bg-white rounded-3xl !px-6 sm:!px-8 !py-6 border border-border shadow-sm">
                     <div className="flex items-center gap-4">
                         <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/20">
                             <Icon icon="material-symbols:assignment-rounded" className="text-3xl" />
@@ -133,8 +134,6 @@ const AssignmentDetailStudent = ({ assignment, onRefresh }) => {
                         </div>
                     </div>
                 </div>
-
-                <div className="!px-4 sm:!px-6 space-y-6">
                     {/* Metadata Cards Row */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="bg-white rounded-2xl border border-border !p-5 flex items-center gap-4 shadow-sm">
@@ -154,7 +153,7 @@ const AssignmentDetailStudent = ({ assignment, onRefresh }) => {
                             <div>
                                 <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest text-orange-600">HẠN NỘP</p>
                                 <p className="text-sm font-bold text-text-main">
-                                    {new Date(assignment.dueDate).toLocaleString('vi-VN', {
+                                    {formatViDate(assignment.dueDate, {
                                         hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric'
                                     })}
                                 </p>
@@ -216,12 +215,11 @@ const AssignmentDetailStudent = ({ assignment, onRefresh }) => {
                             </div>
                         </div>
                     )}
-                </div>
             </div>
 
             {/* Right Column: Submission Widget */}
-            <div className="w-full lg:w-[380px] shrink-0 sticky top-24 self-start !px-4 sm:!px-0">
-                <div className="bg-white rounded-[2rem] border-2 border-primary/10 !p-8 shadow-2xl shadow-primary/5 space-y-8 relative overflow-hidden">
+            <div className="w-full lg:w-[380px] shrink-0 sticky top-24 self-start">
+                <div className="bg-white rounded-3xl border border-border !p-6 shadow-sm space-y-6 relative overflow-hidden">
                     {/* Decorative Background Element */}
                     <div className="absolute -top-12 -right-12 w-32 h-32 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
 
@@ -294,7 +292,7 @@ const AssignmentDetailStudent = ({ assignment, onRefresh }) => {
                             {mySubmission?.submittedAt && (
                                 <div className="flex items-center gap-2 text-text-muted text-[11px] font-bold uppercase tracking-wider !px-1">
                                     <Icon icon="material-symbols:calendar-today-outline-rounded" />
-                                    Nộp lúc: {new Date(mySubmission.submittedAt).toLocaleString('vi-VN')}
+                                    Nộp lúc: {formatViDate(mySubmission.submittedAt)}
                                 </div>
                             )}
 

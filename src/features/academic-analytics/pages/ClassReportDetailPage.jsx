@@ -146,7 +146,7 @@ const ClassReportDetailPage = () => {
             </div>
 
             {/* 2. KPI Cards (Scoped for 1 class) */}
-            <div className="!grid !grid-cols-1 sm:!grid-cols-2 lg:!grid-cols-4 !gap-6">
+            <div className="!grid !grid-cols-1 sm:!grid-cols-2 lg:!grid-cols-3 !gap-6">
                 <StatCard
                     title="Sĩ số Hiện tại"
                     icon="material-symbols:group-rounded"
@@ -168,15 +168,7 @@ const ClassReportDetailPage = () => {
                         </div>
                     }
                 />
-                <StatCard
-                    title="Chuyên cần lớp"
-                    icon="material-symbols:calendar-check-rounded"
-                    iconColor="text-purple-600"
-                    iconBg="bg-purple-50"
-                    value={`${academicPerformance?.attendanceRatePercent}%`}
-                    warning={academicPerformance?.attendanceRatePercent < 80}
-                    subValue="Tỷ lệ đi học lớp"
-                />
+                
                 <StatCard
                     title="Học lực lớp"
                     icon="material-symbols:school-rounded"

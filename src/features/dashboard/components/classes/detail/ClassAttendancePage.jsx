@@ -10,7 +10,7 @@ import { formatViDate } from '../../../../../utils/dateUtils';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const STATUS_CFG = {
-    present: { label: 'có mặt', badge: '!bg-green-500/10 text-green-600 border-green-500/20', dot: '!bg-green-500' },
+    present: { label: 'Có mặt', badge: '!bg-green-500/10 text-green-600 border-green-500/20', dot: '!bg-green-500' },
     absent: { label: 'Vắng mặt', badge: '!bg-red-500/10 text-red-600 border-red-500/20', dot: '!bg-red-500' },
     'not taken': { label: 'Chưa điểm danh', badge: '!bg-text-muted/10 text-text-muted border-border', dot: '!bg-text-muted' },
 };

@@ -5,6 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import { tuitionService } from '../api/tuitionService';
 import useAuthStore from '../../../store/authStore';
 import { extractErrorMessage } from '../../../utils/errorHandler';
+import { formatViDate } from '../../../utils/dateUtils';
+
 
 const TransactionReviewHubPage = () => {
     const navigate = useNavigate();
@@ -84,8 +86,7 @@ const TransactionReviewHubPage = () => {
     
     const formatDate = (dateStr) => {
         if (!dateStr) return 'N/A';
-        const d = new Date(dateStr);
-        return d.toLocaleDateString('vi-VN', { 
+        return formatViDate(dateStr, { 
             hour: '2-digit', 
             minute: '2-digit', 
             day: '2-digit', 

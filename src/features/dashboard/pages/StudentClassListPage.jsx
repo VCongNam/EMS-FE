@@ -13,7 +13,7 @@ import { extractErrorMessage } from '../../../utils/errorHandler';
 const formatSchedule = (cls) => {
     // Try all possible property names from various API versions
     const schedules = cls.schedules || cls.Schedules || cls.classSchedules || cls.schedule || [];
-    
+
     if (!Array.isArray(schedules) || schedules.length === 0) {
         return 'Chưa có lịch cụ thể';
     }
@@ -69,8 +69,8 @@ const StudentClassListPage = () => {
             // Mapping filter status to API expected values
             let apiStatus = null;
             if (filterStatus === 'ongoing') apiStatus = 'Active';
-            else if (filterStatus === 'upcoming') apiStatus = 'Active'; 
-            else if (filterStatus === 'completed') apiStatus = 'Past'; 
+            else if (filterStatus === 'upcoming') apiStatus = 'Active';
+            else if (filterStatus === 'completed') apiStatus = 'Past';
 
             const res = await studentClassService.getMyClasses({
                 page: currentPage,
@@ -81,7 +81,7 @@ const StudentClassListPage = () => {
             if (res.ok) {
                 const result = await res.json();
                 // console.log("Student Classes API Raw Result:", result);
-                
+
                 const items = result.data?.items || result.items || [];
                 const mappedClasses = await Promise.all(items.map(async (cls) => {
                     // Fetch sessions to calculate progress for this class
@@ -97,8 +97,8 @@ const StudentClassListPage = () => {
                             const schedData = await schedRes.json();
                             const sessions = Array.isArray(schedData) ? schedData : (schedData.data || []);
                             totalSessions = sessions.length;
-                            currentSession = sessions.filter(s => 
-                                (s.status || '').toLowerCase().includes('completed') || 
+                            currentSession = sessions.filter(s =>
+                                (s.status || '').toLowerCase().includes('completed') ||
                                 (s.status || '').toLowerCase().includes('đã kết thúc')
                             ).length;
                         }
@@ -110,8 +110,8 @@ const StudentClassListPage = () => {
                         id: cls.classID || cls.id,
                         name: cls.className,
                         code: cls.className?.split(' ').pop() || 'CLASS',
-                        status: cls.enrollmentStatus?.toLowerCase() === 'active' ? 'ongoing' : 
-                                cls.enrollmentStatus?.toLowerCase() === 'past' ? 'completed' : 'ongoing',
+                        status: cls.enrollmentStatus?.toLowerCase() === 'active' ? 'ongoing' :
+                            cls.enrollmentStatus?.toLowerCase() === 'past' ? 'completed' : 'ongoing',
                         createdAt: cls.startDate ? new Date(cls.startDate).toLocaleDateString('vi-VN') : 'Chưa xác định',
                         schedule: formatSchedule(cls),
                         progress: {
@@ -192,23 +192,23 @@ const StudentClassListPage = () => {
                 </div>
             ) : filteredClasses.length > 0 ? (
                 <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-fade-in-up">
-                    {filteredClasses.map((cls) => (
-                        <ClassCard 
-                            key={cls.id} 
-                            classData={cls} 
-                            basePath="/student/classes"
-                            showStudentCount={false}
-                        />
-                    ))}
-                </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-fade-in-up">
+                        {filteredClasses.map((cls) => (
+                            <ClassCard
+                                key={cls.id}
+                                classData={cls}
+                                basePath="/student/classes"
+                                showStudentCount={false}
+                            />
+                        ))}
+                    </div>
 
-                <Pagination
-                    totalItems={totalItems}
-                    itemsPerPage={itemsPerPage}
-                    currentPage={currentPage}
-                    onPageChange={setCurrentPage}
-                />
+                    <Pagination
+                        totalItems={totalItems}
+                        itemsPerPage={itemsPerPage}
+                        currentPage={currentPage}
+                        onPageChange={setCurrentPage}
+                    />
                 </>
             ) : (
                 <div className="bg-surface rounded-2xl border border-border !p-12 flex flex-col items-center justify-center text-center shadow-sm min-h-[300px]">

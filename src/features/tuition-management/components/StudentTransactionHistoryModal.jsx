@@ -50,7 +50,7 @@ const StudentTransactionHistoryModal = ({
                     </div>
                     <button 
                         onClick={onClose}
-                        className="p-2 hover:bg-slate-200 rounded-full transition-colors"
+                        className="!p-2 hover:!bg-slate-200 rounded-full transition-colors"
                     >
                         <Icon icon="solar:close-circle-bold" className="text-2xl text-text-muted" />
                     </button>
@@ -59,29 +59,29 @@ const StudentTransactionHistoryModal = ({
                 {/* Body */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar !p-6">
                     {isLoading ? (
-                        <div className="py-20 text-center flex flex-col items-center gap-3">
+                        <div className="!py-20 text-center flex flex-col items-center gap-3">
                             <Icon icon="line-md:loading-loop" className="text-4xl text-primary" />
                             <p className="text-sm font-bold text-text-muted">Đang tải lịch sử...</p>
                         </div>
                     ) : historyData.length === 0 ? (
-                        <div className="py-20 text-center flex flex-col items-center gap-3 opacity-40">
+                        <div className="!py-20 text-center flex flex-col items-center gap-3 opacity-40">
                             <Icon icon="solar:document-text-bold-duotone" className="text-6xl" />
                             <p className="text-lg font-bold">Chưa có giao dịch nào</p>
                         </div>
                     ) : (
-                        <div className="space-y-4">
+                        <div className="!space-y-4">
                             {historyData.map((tx, index) => (
-                                <div key={tx.transactionId || index} className="p-5 rounded-2xl border border-border bg-background hover:border-primary/30 transition-all group">
+                                <div key={tx.transactionId || index} className="!p-5 rounded-2xl border border-border !bg-background hover:border-primary/30 transition-all group">
                                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                                         <div className="flex items-start gap-4">
-                                            <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
+                                            <div className="w-12 h-12 rounded-xl !bg-slate-100 flex items-center justify-center shrink-0">
                                                 <Icon 
                                                     icon={tx.paymentMethod === 'Bank Transfer' ? 'solar:card-transfer-bold-duotone' : 'solar:wallet-money-bold-duotone'} 
                                                     className="text-2xl text-slate-500" 
                                                 />
                                             </div>
                                             <div>
-                                                <div className="flex items-center gap-2 mb-1">
+                                                <div className="flex items-center gap-2 !mb-1">
                                                     <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black border uppercase ${getStatusStyle(tx.status)}`}>
                                                         {getStatusLabel(tx.status)}
                                                     </span>
@@ -111,7 +111,7 @@ const StudentTransactionHistoryModal = ({
                                                     href={tx.proofImageUrl} 
                                                     target="_blank" 
                                                     rel="noopener noreferrer"
-                                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 text-blue-600 text-[11px] font-black hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                                                    className="flex items-center gap-1.5 !px-3 !py-1.5 rounded-xl !bg-blue-50 text-blue-600 text-[11px] font-black hover:!bg-blue-600 hover:text-white transition-all shadow-sm"
                                                 >
                                                     <Icon icon="solar:image-bold-duotone" />
                                                     Xem minh chứng
@@ -129,7 +129,7 @@ const StudentTransactionHistoryModal = ({
                 <div className="!p-6 border-t border-border !bg-slate-50 shrink-0">
                     <button 
                         onClick={onClose}
-                        className="w-full py-3 !bg-white border border-border rounded-xl text-sm font-black text-text-muted hover:bg-slate-100 transition-colors"
+                        className="w-full !py-3 !bg-white border border-border rounded-xl text-sm font-black text-text-muted hover:!bg-slate-100 transition-colors"
                     >
                         Đóng
                     </button>

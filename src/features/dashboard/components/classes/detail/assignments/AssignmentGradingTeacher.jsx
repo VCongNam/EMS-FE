@@ -4,6 +4,7 @@ import { assignmentService } from '../../../../api/assignmentService';
 import useAuthStore from '../../../../../../store/authStore';
 import { toast } from 'react-toastify';
 import { useTAPermission } from '../../../../../dashboard/context/TAPermissionContext';
+import { formatViDate } from '../../../../../../utils/dateUtils';
 
 /* ─── helpers ─────────────────────────────────────────────────────────────── */
 const getFileIcon = (type = '', name = '') => {
@@ -318,11 +319,20 @@ const AssignmentGradingTeacher = ({ assignment, onRefresh }) => {
     };
 
     const handleRowGradeUpdate = (studentId, field, value) => {
+        let val = value;
+        if (field === 'grade') {
+            const maxLimit = assignment.maxScore ?? 10;
+            const num = parseFloat(value);
+            if (!isNaN(num)) {
+                if (num > maxLimit) val = String(maxLimit);
+                else if (num < 0) val = '0';
+            }
+        }
         setRowStates(prev => ({
             ...prev,
             [studentId]: {
                 ...(prev[studentId] || { grade: '', file: null, fileName: '' }),
-                [field]: value
+                [field]: val
             }
         }));
     };
@@ -496,7 +506,7 @@ const AssignmentGradingTeacher = ({ assignment, onRefresh }) => {
                                 {selectedStudent.submittedAt && (
                                     <span className="text-[11px] text-text-muted flex items-center gap-1">
                                         <Icon icon="material-symbols:schedule-rounded" />
-                                        Nộp lúc: {new Date(selectedStudent.submittedAt).toLocaleString('vi-VN')}
+                                        Nộp lúc: {formatViDate(selectedStudent.submittedAt)}
                                     </span>
                                 )}
                             </div>
@@ -553,7 +563,7 @@ const AssignmentGradingTeacher = ({ assignment, onRefresh }) => {
                                                         <span className="w-1 h-1 rounded-full bg-border" />
                                                         <span>
                                                             {file.submittedAt || selectedStudent.submittedAt ? 
-                                                                new Date(file.submittedAt || selectedStudent.submittedAt).toLocaleString('vi-VN') : 
+                                                                formatViDate(file.submittedAt || selectedStudent.submittedAt) : 
                                                                 'N/A'}
                                                         </span>
                                                     </div>
@@ -615,7 +625,16 @@ const AssignmentGradingTeacher = ({ assignment, onRefresh }) => {
                                                 <input
                                                     type="number"
                                                     value={scoreInput}
-                                                    onChange={(e) => setScoreInput(e.target.value)}
+                                                    onChange={(e) => {
+                                                        const maxLimit = assignment.maxScore ?? 10;
+                                                        let val = e.target.value;
+                                                        const num = parseFloat(val);
+                                                        if (!isNaN(num)) {
+                                                            if (num > maxLimit) val = String(maxLimit);
+                                                            else if (num < 0) val = '0';
+                                                        }
+                                                        setScoreInput(val);
+                                                    }}
                                                     placeholder="--"
                                                     className="w-16 bg-transparent border-none text-right !py-1 !px-2 focus:outline-none font-black text-primary text-lg"
                                                 />
@@ -702,7 +721,7 @@ const AssignmentGradingTeacher = ({ assignment, onRefresh }) => {
                                                                 {file.createdAt && (
                                                                     <>
                                                                         <span className="w-0.5 h-0.5 rounded-full bg-orange-200" />
-                                                                        <span>{new Date(file.createdAt).toLocaleDateString('vi-VN')}</span>
+                                                                        <span>{formatViDate(file.createdAt, { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
                                                                     </>
                                                                 )}
                                                             </div>
@@ -745,7 +764,7 @@ const AssignmentGradingTeacher = ({ assignment, onRefresh }) => {
                                     <div key={idx} className="bg-background !p-3 rounded-xl border border-border shadow-sm">
                                         <p className="text-sm text-text-main leading-relaxed">{fb.content}</p>
                                         <p className="text-[10px] text-text-muted !mt-2 text-right font-medium">
-                                            {new Date(fb.createdAt).toLocaleString('vi-VN')}
+                                            {formatViDate(fb.createdAt)}
                                         </p>
                                     </div>
                                 ))
@@ -826,7 +845,7 @@ const AssignmentGradingTeacher = ({ assignment, onRefresh }) => {
                         <div className="min-w-0">
                             <p className="text-[10px] text-text-muted font-bold uppercase tracking-wider">Hạn nộp</p>
                             <p className="text-sm font-bold text-text-main !mt-0.5">
-                                {new Date(assignment.dueDate).toLocaleString('vi-VN', {
+                                {formatViDate(assignment.dueDate, {
                                     day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
                                 })}
                             </p>

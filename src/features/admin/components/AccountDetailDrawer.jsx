@@ -92,12 +92,7 @@ const AccountDetailDrawer = ({ accountId, isOpen, onClose, onUpdateSuccess }) =>
                                     <p className="text-[10px] font-black uppercase text-text-secondary tracking-widest !mb-1">Số điện thoại</p>
                                     <p className="text-sm font-bold text-text-main">{account.phoneNumber || 'Chưa cập nhật'}</p>
                                 </div>
-                                <div>
-                                    <p className="text-[10px] font-black uppercase text-text-secondary tracking-widest !mb-1">Ngày tạo</p>
-                                    <p className="text-sm font-bold text-text-main">
-                                        {account.createdAt ? new Date(account.createdAt).toLocaleDateString('vi-VN') : 'Không có'}
-                                    </p>
-                                </div>
+                                
                             </div>
 
                             {/* Teacher Specific Details */}
