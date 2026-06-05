@@ -134,7 +134,6 @@ const CreateTaskModal = ({ isOpen, onClose, onAssign, tas = [], classes = [] }) 
                                     <option value="Grade">Chấm điểm</option>
                                     <option value="Report">Xem Báo cáo</option>
                                     <option value="Assignment">Quản lý bài tập</option>
-                                    <option value="Feedback">Nhận xét</option>
                                 </select>
                             </div>
                         </div>
