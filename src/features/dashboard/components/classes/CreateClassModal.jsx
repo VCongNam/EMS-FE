@@ -22,6 +22,8 @@ const initialForm = {
     room: '',
     tuitionFee: '',
     maxCapacity: '',
+    billingMethod: 'PostPaid',
+    paymentDeadlineDays: '5',
     schedules: [
         { day: 'T2', startTime: '08:00', endTime: '10:00' }
     ],
@@ -29,9 +31,11 @@ const initialForm = {
 
 const InputField = ({ label, required, children, error }) => (
     <div className="flex flex-col !gap-2">
-        <label className="block text-[11px] font-bold text-text-muted uppercase tracking-widest leading-none">
-            {label} {required && <span className="text-red-400">*</span>}
-        </label>
+        {label && (
+            <label className="block text-[11px] font-bold text-text-muted uppercase tracking-widest leading-tight min-h-[16px] md:min-h-[28px] flex items-end">
+                <span>{label} {required && <span className="text-red-400">*</span>}</span>
+            </label>
+        )}
         {children}
         {error && (
             <p className="flex items-center !gap-1 text-xs text-red-500">
@@ -75,6 +79,8 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
                     room: initialData.room || '',
                     tuitionFee: initialData.tuitionFee || '',
                     maxCapacity: initialData.maxStudents || '',
+                    billingMethod: initialData.billingMethod || 'PostPaid',
+                    paymentDeadlineDays: initialData.paymentDeadlineDays !== undefined && initialData.paymentDeadlineDays !== null ? String(initialData.paymentDeadlineDays) : '5',
                     schedules: initialData.schedules ? initialData.schedules.map(s => ({
                         day: mapNumberToDay(s.dayOfWeek),
                         startTime: s.startTime?.substring(0, 5) || '',
@@ -174,8 +180,18 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
         if (form.maxCapacity && parseInt(form.maxCapacity) < 1) {
             newErrors.maxCapacity = 'Sĩ số phải là số nguyên dương.';
         }
-        if (form.tuitionFee && parseInt(form.tuitionFee) < 0) {
+        if (!form.tuitionFee || form.tuitionFee.toString().trim() === '') {
+            newErrors.tuitionFee = 'Học phí không được để trống.';
+        } else if (parseInt(form.tuitionFee) < 0) {
             newErrors.tuitionFee = 'Học phí không hợp lệ.';
+        }
+        if (!form.paymentDeadlineDays || form.paymentDeadlineDays.toString().trim() === '') {
+            newErrors.paymentDeadlineDays = 'Hạn đóng học phí không được để trống.';
+        } else {
+            const days = parseInt(form.paymentDeadlineDays);
+            if (isNaN(days) || days < 1 || days > 7) {
+                newErrors.paymentDeadlineDays = 'Hạn đóng học phí phải từ 1 đến 7 ngày.';
+            }
         }
         return newErrors;
     };
@@ -193,11 +209,13 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
         // Transform form data to match API requirements
         const payload = {
             className: form.className.trim(),
-            room: form.room.trim() || undefined,
+            room: form.room ? form.room.trim() : undefined,
             startDate: form.startDate,
             endDate: form.endDate,
             tuitionFee: form.tuitionFee ? parseInt(form.tuitionFee) : 0,
             maxStudents: form.maxCapacity ? parseInt(form.maxCapacity) : null,
+            billingMethod: 'Postpaid',
+            paymentDeadlineDays: form.paymentDeadlineDays ? parseInt(form.paymentDeadlineDays) : 5,
             subjectName: form.subjectName.trim(),
             gradeLevel: parseInt(form.gradeLevel),
             schedules: form.schedules.map(s => ({
@@ -335,43 +353,43 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
                                 </InputField>
                             </div>
 
-                            {/* Room & Max Capacity */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <InputField label="Phòng học (Không bắt buộc)" error={errors.room}>
+                            {/* Tuition & Billing Settings */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <InputField label="Học phí (VNĐ / buổi)" required error={errors.tuitionFee}>
                                     <input
-                                        type="text"
-                                        placeholder="Ví dụ: P.201"
-                                        value={form.room}
-                                        onChange={e => handleChange('room', e.target.value)}
+                                        type="number"
+                                        min={0}
+                                        placeholder="Ví dụ: 150000"
+                                        value={form.tuitionFee}
+                                        onChange={e => handleChange('tuitionFee', e.target.value)}
                                         disabled={isSubmitting}
-                                        className={`w-full !my-1 !px-4 !py-3 bg-background border rounded-xl outline-none transition-all text-text-main font-medium placeholder:font-normal placeholder:text-text-muted/50 focus:border-primary focus:ring-4 focus:ring-primary/5 ${errors.room ? 'border-red-400 ring-2 ring-red-100' : 'border-border'} ${isSubmitting ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                        className={`${inputBase} !my-1 ${errors.tuitionFee ? 'border-red-400 ring-2 ring-red-100' : 'border-border'} ${isSubmitting ? 'opacity-60 cursor-not-allowed bg-background-muted' : ''}`}
                                     />
                                 </InputField>
-                                <InputField label="Sĩ số tối đa (Không bắt buộc)" error={errors.maxCapacity}>
+
+                                <InputField label="Hình thức thanh toán">
+                                    <select
+                                        disabled
+                                        value="PostPaid"
+                                        className={`${inputBase} !my-1 bg-background-muted opacity-80 cursor-not-allowed`}
+                                    >
+                                        <option value="PostPaid">Trả sau</option>
+                                    </select>
+                                </InputField>
+
+                                <InputField label="Hạn đóng (1-7 ngày)" required error={errors.paymentDeadlineDays}>
                                     <input
                                         type="number"
                                         min={1}
-                                        placeholder="Ví dụ: 30"
-                                        value={form.maxCapacity}
-                                        onChange={e => handleChange('maxCapacity', e.target.value)}
+                                        max={7}
+                                        placeholder="Ví dụ: 5"
+                                        value={form.paymentDeadlineDays}
+                                        onChange={e => handleChange('paymentDeadlineDays', e.target.value)}
                                         disabled={isSubmitting}
-                                        className={`w-full !my-1 !px-4 !py-3 bg-background border rounded-xl outline-none transition-all text-text-main font-medium placeholder:font-normal placeholder:text-text-muted/50 focus:border-primary focus:ring-4 focus:ring-primary/5 ${errors.maxCapacity ? 'border-red-400 ring-2 ring-red-100' : 'border-border'} ${isSubmitting ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                        className={`${inputBase} !my-1 ${errors.paymentDeadlineDays ? 'border-red-400 ring-2 ring-red-100' : 'border-border'} ${isSubmitting ? 'opacity-60 cursor-not-allowed bg-background-muted' : ''}`}
                                     />
                                 </InputField>
                             </div>
-
-                            {/* Tuition Fee */}
-                            <InputField label="Học phí (VNĐ) (Không bắt buộc)" error={errors.tuitionFee}>
-                                <input
-                                    type="number"
-                                    min={0}
-                                    placeholder="Ví dụ: 1500000"
-                                    value={form.tuitionFee}
-                                    onChange={e => handleChange('tuitionFee', e.target.value)}
-                                    disabled={isSubmitting}
-                                    className={`w-full !my-1 !px-4 !py-3 bg-background border rounded-xl outline-none transition-all text-text-main font-medium placeholder:font-normal placeholder:text-text-muted/50 focus:border-primary focus:ring-4 focus:ring-primary/5 ${errors.tuitionFee ? 'border-red-400 ring-2 ring-red-100' : 'border-border'} ${isSubmitting ? 'opacity-60 cursor-not-allowed' : ''}`}
-                                />
-                            </InputField>
 
                             {/* Days of the Week */}
                             <div className="space-y-3">
