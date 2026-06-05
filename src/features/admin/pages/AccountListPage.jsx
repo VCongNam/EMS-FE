@@ -3,6 +3,7 @@ import { Icon } from '@iconify/react';
 import { toast } from 'react-toastify';
 import { adminService } from '../api/adminService';
 import AccountDetailDrawer from '../components/AccountDetailDrawer';
+import { extractErrorMessage } from '../../../utils/errorHandler';
 
 const AccountListPage = () => {
     const [accounts, setAccounts] = useState([]);
@@ -28,7 +29,7 @@ const AccountListPage = () => {
             const data = await adminService.getAccounts();
             setAccounts(data);
         } catch (error) {
-            toast.error(error.message);
+            toast.error(extractErrorMessage(error));
         } finally {
             setLoading(false);
         }
@@ -184,9 +185,9 @@ const AccountListPage = () => {
                                             <button 
                                                 onClick={() => handleOpenDrawer(account.teacherId)}
                                                 className="w-10 h-10 rounded-xl !bg-primary text-white flex items-center justify-center hover:!bg-primary-dark transition-all shadow-md active:scale-95"
-                                                title="Xem và chỉnh sửa"
+                                                title="Xem chi tiết"
                                             >
-                                                <Icon icon="solar:settings-minimalistic-bold-duotone" className="text-xl" />
+                                                <Icon icon="solar:eye-bold-duotone" className="text-xl" />
                                             </button>
                                         </td>
                                     </tr>

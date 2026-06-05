@@ -7,10 +7,12 @@ import ClassListFilter from '../components/classes/ClassListFilter';
 import CreateClassModal from '../components/classes/CreateClassModal';
 import ClassDetailsModal from '../components/classes/ClassDetailsModal';
 import ConfirmModal from '../../../components/ui/ConfirmModal';
-import { mockClasses } from '../data/mockClasses';
-import { getApiUrl } from '../../../config/api';
+import Pagination from '../../../components/ui/Pagination';
 import useAuthStore from '../../../store/authStore';
 import { classService } from '../api/classService';
+import { sessionService } from '../api/sessionService';
+import Loading from '../../../components/ui/Loading';
+import { extractErrorMessage } from '../../../utils/errorHandler';
 
 // Helper functions for formatting Data to API shapes
 const parseDate = (dateStr) => {
@@ -24,9 +26,9 @@ const parseTime = (timeStr) => {
 };
 
 const mapDaysToIso = (daysArr) => {
-    // Mapping: Sunday=1, Monday=2, ..., Saturday=7 (Vietnamese convention)
-    const map = { 'CN': 1, 'T2': 2, 'T3': 3, 'T4': 4, 'T5': 5, 'T6': 6, 'T7': 7 };
-    return daysArr.map(d => map[d] !== undefined ? map[d] : 2); // Default to Monday if not found
+    // Mapping: Sunday=0, Monday=1, ..., Saturday=6 (Standard convention)
+    const map = { 'CN': 0, 'T2': 1, 'T3': 2, 'T4': 3, 'T5': 4, 'T6': 5, 'T7': 6 };
+    return daysArr.map(d => map[d] !== undefined ? map[d] : 1); // Default to Monday if not found
 };
 
 const TeacherClassListPage = () => {
@@ -39,6 +41,10 @@ const TeacherClassListPage = () => {
     const [selectedClass, setSelectedClass] = useState(null);
     const [viewClass, setViewClass] = useState(null);
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, type: '', classId: null });
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8; // 2 rows of 4 (on XL screens) or 4 rows of 2 (on MD)
 
     // 2. Định nghĩa hàm Tải danh sách lớp thực tế từ Database thông qua Backend
     const fetchClasses = async () => {
@@ -73,7 +79,7 @@ const TeacherClassListPage = () => {
             const data = [...(Array.isArray(activeData) ? activeData : []), ...(Array.isArray(archivedData) ? archivedData : [])];
 
             // 3. Mapping cấu trúc Data thực tế về cấu trúc thẻ ClassCard hiển thị
-            const mappedData = data.map(apiClass => {
+            const mappedData = await Promise.all(data.map(async (apiClass) => {
                 let mappedStatus = 'upcoming';
                 const st = apiClass.status?.toLowerCase() || '';
                 if (st.includes('scheduled')) mappedStatus = 'upcoming';
@@ -81,25 +87,55 @@ const TeacherClassListPage = () => {
                 if (st.includes('completed')) mappedStatus = 'completed';
                 if (st.includes('archived')) mappedStatus = 'archived';
 
+                // Format schedule string from API schedules array if available
+                let scheduleDisplay = 'Chưa có lịch';
+                if (apiClass.schedules && apiClass.schedules.length > 0) {
+                    const dayMap = { 0: 'CN', 1: 'T2', 2: 'T3', 3: 'T4', 4: 'T5', 5: 'T6', 6: 'T7' };
+                    scheduleDisplay = apiClass.schedules
+                        .sort((a, b) => (a.dayOfWeek === 0 ? 7 : a.dayOfWeek) - (b.dayOfWeek === 0 ? 7 : b.dayOfWeek))
+                        .map(s => {
+                            return `${dayMap[s.dayOfWeek] || '??'}`;
+                        })
+                        .join(', ');
+                }
+
+                // Fetch sessions to calculate progress
+                let currentSession = 0;
+                let totalSessions = 0;
+                try {
+                    const sessionRes = await sessionService.getClassSessions(apiClass.classId, token);
+                    if (sessionRes.ok) {
+                        const sessions = await sessionRes.json();
+                        const sessionList = Array.isArray(sessions) ? sessions : (sessions.data || []);
+                        totalSessions = sessionList.length;
+                        currentSession = sessionList.filter(s =>
+                            (s.status || '').toLowerCase().includes('completed') ||
+                            (s.status || '').toLowerCase().includes('đã kết thúc')
+                        ).length;
+                    }
+                } catch (e) {
+                    console.warn(`Failed to fetch sessions for class ${apiClass.classId}`, e);
+                }
+
                 return {
                     id: apiClass.classId,
                     name: apiClass.className,
                     subjectName: apiClass.subjectName || 'N/A',
                     gradeLevel: apiClass.gradeLevel || 'N/A',
-                    code: apiClass.room || 'N/A', // Lấy tạm room làm mã phụ
+                    code: apiClass.room || 'N/A',
                     status: mappedStatus,
                     createdAt: apiClass.startDate || 'N/A',
-                    schedule: 'Xem lịch chi tiết', // Backend chưa đổ detail schedules ra
+                    schedule: scheduleDisplay,
                     students: {
-                        count: 0, // Backend array ko chứa count người dùng
+                        count: apiClass.currentStudents || 0,
                         max: apiClass.maxStudents || 30
                     },
                     progress: {
-                        currentSession: 0,
-                        totalSessions: 10 // Mock progress tạm thời cho đẹp ui
+                        currentSession: currentSession,
+                        totalSessions: totalSessions || 10
                     }
                 };
-            });
+            }));
 
             setMockClassesData(mappedData);
         } catch (error) {
@@ -109,7 +145,7 @@ const TeacherClassListPage = () => {
         }
     };
 
-    // 4. Cho phép tự động fetch lần đầu khi tải màn hình
+    // ... (keep useEffect and handlers same) ...
     React.useEffect(() => {
         fetchClasses();
     }, []);
@@ -119,9 +155,30 @@ const TeacherClassListPage = () => {
         setIsModalOpen(true);
     };
 
-    const handleOpenEditModal = (classData) => {
-        setSelectedClass(classData);
-        setIsModalOpen(true);
+    const handleOpenEditModal = async (classData) => {
+        try {
+            const token = useAuthStore.getState().user?.token;
+            if (!token) return toast.error('Vui lòng đăng nhập lại!');
+
+            const loadingToast = toast.loading("Đang lấy thông tin chi tiết...");
+
+            const response = await classService.getClassById(classData.id, token);
+
+            if (!response.ok) {
+                toast.dismiss(loadingToast);
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(extractErrorMessage(errorData, 'Không thể lấy thông tin chi tiết lớp học.'));
+            }
+
+            const fullDetail = await response.json();
+            toast.dismiss(loadingToast);
+
+            // fullDetail will have all actual API fields: className, schedules, startDate, etc.
+            setSelectedClass(fullDetail);
+            setIsModalOpen(true);
+        } catch (error) {
+            toast.error(error.message);
+        }
     };
 
     const handleOpenViewModal = (classData) => {
@@ -131,37 +188,33 @@ const TeacherClassListPage = () => {
     const handleSaveClass = async (payload) => {
         try {
             const token = useAuthStore.getState().user?.token;
-            if (!token) return toast.error('Vui lòng đăng nhập lại!');
-
-            if (selectedClass) {
-                // Đang Edit lớp -> Gọi PUT API với biến URL {id}
-                const response = await classService.updateClass(selectedClass.id, payload, token);
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('Update Class Error:', errorText);
-                    throw new Error('Lỗi khi cập nhật lớp học. Backend có thể trả về lỗi 400 Bad Request!');
-                }
-
-                toast.success('Cập nhật thông tin lớp học thành công!');
-            } else {
-                // Cờ đang rỗng -> Gọi POST API tạo lớp mới tinh
-                const response = await classService.createClass(payload, token);
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('Create Class Error:', errorText);
-                    throw new Error(`Lỗi khi cắm Lớp Mới: ${errorText || response.statusText}`);
-                }
-
-                toast.success('Tạo lớp học thành công!');
+            if (!token) {
+                toast.error('Vui lòng đăng nhập lại!');
+                return false;
             }
 
+            if (selectedClass) {
+                const targetId = selectedClass.classId || selectedClass.id;
+                const response = await classService.updateClass(targetId, payload, token);
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(extractErrorMessage(errorData, 'Lỗi khi cập nhật lớp học.'));
+                }
+                toast.success('Cập nhật thông tin lớp học thành công!');
+            } else {
+                const response = await classService.createClass(payload, token);
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(extractErrorMessage(errorData, 'Lỗi khi tạo lớp học mới.'));
+                }
+                toast.success('Tạo lớp học thành công!');
+            }
             setIsModalOpen(false);
-            fetchClasses(); // Cập nhật lại danh sách màn hình ngay lập tức 
+            fetchClasses();
+            return true;
         } catch (error) {
             toast.error(error.message);
-            console.error('Save Class Error:', error);
+            throw error;
         }
     };
 
@@ -183,23 +236,23 @@ const TeacherClassListPage = () => {
 
             if (type === 'archive') {
                 const res = await classService.archiveClass(classId, token);
-                if (!res.ok) throw new Error('Không thể chuyển lớp học này sang trạng thái Lưu trữ!');
-                toast.success('Đã đưa lớp học vào mục Lưu trữ thành công.');
+                if (!res.ok) {
+                    const errorData = await res.json().catch(() => ({}));
+                    throw new Error(extractErrorMessage(errorData, 'Không thể lưu trữ lớp học!'));
+                }
+                toast.success('Đã đưa lớp học vào mục Lưu trữ.');
             } else if (type === 'unarchive') {
-                // Sửa thành API đường dẫn thực thế là /restore theo Swagger
                 const res = await classService.restoreClass(classId, token);
-                if (!res.ok) throw new Error('Cầu nối API khôi phục lớp học hiện Backend báo lỗi hoặc chưa hỗ trợ!');
+                if (!res.ok) {
+                    const errorData = await res.json().catch(() => ({}));
+                    throw new Error(extractErrorMessage(errorData, 'Không thể khôi phục lớp học!'));
+                }
                 toast.success('Đã khôi phục lớp học thành công.');
             }
-
-            // Xử lý UI sau khi thành công
             setConfirmModal({ isOpen: false, type: '', classId: null });
-            fetchClasses(); // Gọi cục DB load lại List lớp mới ròi đổ ra màng hình
-
+            fetchClasses();
         } catch (error) {
-            console.error('Lỗi khi thao tác lớp học:', error);
             toast.error(error.message);
-            setConfirmModal({ isOpen: false, type: '', classId: null });
         }
     };
 
@@ -213,11 +266,23 @@ const TeacherClassListPage = () => {
             const matchesSearch = cls.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 cls.code.toLowerCase().includes(searchQuery.toLowerCase());
 
-            const matchesFilter = filterStatus === 'all' ? cls.status !== 'archived' : cls.status === filterStatus;
-
-            return matchesSearch && matchesFilter;
+            // If filter is 'archived', only show archived. If 'all', show all EXCEPT archived.
+            if (filterStatus === 'all') return matchesSearch && cls.status !== 'archived';
+            return matchesSearch && cls.status === filterStatus;
         });
     }, [searchQuery, filterStatus, mockClassesData]);
+
+    // Reset to page 1 when search or filter changes
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, filterStatus]);
+
+    // Get current items
+    const paginatedClasses = useMemo(() => {
+        const indexOfLastItem = currentPage * itemsPerPage;
+        const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+        return filteredClasses.slice(indexOfFirstItem, indexOfLastItem);
+    }, [filteredClasses, currentPage, itemsPerPage]);
 
     // Statistics
     const stats = {
@@ -261,23 +326,31 @@ const TeacherClassListPage = () => {
 
                 {/* Class Grid */}
                 {loading ? (
-                    <div className="flex flex-col items-center justify-center !py-20">
-                        <Icon icon="material-symbols:sync-rounded" className="animate-spin text-5xl text-primary opacity-50 !mb-4" />
-                        <p className="text-text-muted font-medium">Đang đồng bộ dữ liệu lớp học từ máy chủ...</p>
+                    <div className="!py-20 flex justify-center">
+                        <Loading text="Đang đồng bộ dữ liệu lớp học..." />
                     </div>
-                ) : filteredClasses.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-fade-in-up">
-                        {filteredClasses.map((cls) => (
-                            <ClassCard
-                                key={cls.id}
-                                classData={cls}
-                                onEdit={() => handleOpenEditModal(cls)}
-                                onViewDetails={() => handleOpenViewModal(cls)}
-                                onArchive={() => openConfirmArchive(cls.id)}
-                                onUnarchive={() => openConfirmUnarchive(cls.id)}
-                            />
-                        ))}
-                    </div>
+                ) : paginatedClasses.length > 0 ? (
+                    <>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-fade-in-up">
+                            {paginatedClasses.map((cls) => (
+                                <ClassCard
+                                    key={cls.id}
+                                    classData={cls}
+                                    onEdit={() => handleOpenEditModal(cls)}
+                                    onViewDetails={() => handleOpenViewModal(cls)}
+                                    onArchive={() => openConfirmArchive(cls.id)}
+                                    onUnarchive={() => openConfirmUnarchive(cls.id)}
+                                />
+                            ))}
+                        </div>
+
+                        <Pagination
+                            totalItems={filteredClasses.length}
+                            itemsPerPage={itemsPerPage}
+                            currentPage={currentPage}
+                            onPageChange={setCurrentPage}
+                        />
+                    </>
                 ) : (
                     <div className="bg-surface rounded-2xl border border-border !p-12 flex flex-col items-center justify-center text-center shadow-sm min-h-[300px]">
                         <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center !mb-6">

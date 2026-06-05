@@ -1,25 +1,64 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Icon } from '@iconify/react';
 import useAuthStore from '../../../store/authStore';
 import Button from '../../../components/ui/Button';
 import { profileService } from '../api/profileService';
 import { toast } from 'react-toastify';
+import ChangePasswordModal from '../components/profile/ChangePasswordModal';
+import { extractErrorMessage } from '../../../utils/errorHandler';
+
 const ProfilePage = () => {
     const { user, updateProfile } = useAuthStore();
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({ ...user });
 
-    // Change password states
-    const [oldPassword, setOldPassword] = useState('');
-    const [newPassword, setNewPassword] = useState('');
-    const [confirmNewPassword, setConfirmNewPassword] = useState('');
-    const [passwordLoading, setPasswordLoading] = useState(false);
-    const [passwordError, setPasswordError] = useState('');
-    const [passwordSuccess, setPasswordSuccess] = useState('');
+    // Modal state for password change
+    const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
     // Toggle states for masking personal info
     const [showEmail, setShowEmail] = useState(false);
     const [showPhone, setShowPhone] = useState(false);
+
+    const fileInputRef = useRef(null);
+    const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+    const handleAvatarChange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Basic validation
+        if (!file.type.startsWith('image/')) {
+            toast.error("Vui lòng chọn tệp hình ảnh");
+            return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error("Kích thước ảnh không được vượt quá 5MB");
+            return;
+        }
+
+        setUploadingAvatar(true);
+        try {
+            const response = await profileService.updateAvatar(file, user.token);
+            if (response.ok) {
+                const data = await response.json();
+                const avatarUrl = data.avatarUrl || data.url || data.filePath || data.data?.avatarUrl || data.data?.url || data.data?.filePath;
+                if (avatarUrl) {
+                    updateProfile({ avatarUrl });
+                }
+                toast.success(data.message || "Cập nhật ảnh đại diện thành công!");
+            } else {
+                const errData = await response.json().catch(() => ({}));
+                throw errData;
+            }
+        } catch (error) {
+            console.error("Upload avatar failed:", error);
+            toast.error(extractErrorMessage(error, "Có lỗi xảy ra khi tải ảnh lên"));
+        } finally {
+            setUploadingAvatar(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+    };
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -29,8 +68,41 @@ const ProfilePage = () => {
 
                 if (response.ok) {
                     const data = await response.json();
-                    setFormData(prev => ({ ...prev, ...data }));
-                    updateProfile(data);
+                    
+                    let mappedData = { ...data };
+                    let dobStr = '';
+
+                    if (data.roleName?.toLowerCase() === 'student' && data.roleSpecificData) {
+                        const rsd = data.roleSpecificData;
+                        
+                        // Map DOB
+                        if (rsd.dob) {
+                            dobStr = rsd.dob.split('T')[0];
+                        }
+                        
+                        // Map other roleSpecificData fields to our flat formData structure
+                        mappedData = {
+                            ...mappedData,
+                            fullName: rsd.studentName || '',
+                            address: rsd.address || '',
+                            parentName: data.fullName || '',
+                            parentPhone: data.phoneNumber || '',
+                            parentEmail: data.email || '',
+                        };
+                    } else {
+                        // Format DOB for HTML date input: YYYY-MM-DD
+                        if (data.dob && typeof data.dob === 'object') {
+                            const { year, month, day } = data.dob;
+                            if (year && month && day) {
+                                dobStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                            }
+                        } else if (data.dob && typeof data.dob === 'string') {
+                            dobStr = data.dob.split('T')[0];
+                        }
+                    }
+
+                    setFormData(prev => ({ ...prev, ...mappedData, dobString: dobStr }));
+                    updateProfile(mappedData);
                 }
             } catch (error) {
                 console.error("Fetch profile failed:", error);
@@ -44,6 +116,7 @@ const ProfilePage = () => {
     const [saving, setSaving] = useState(false);
     const [banks, setBanks] = useState([]);
     const [showBankDropdown, setShowBankDropdown] = useState(false);
+    const [bankSearch, setBankSearch] = useState('');
 
     useEffect(() => {
         const fetchBanks = async () => {
@@ -60,6 +133,12 @@ const ProfilePage = () => {
         fetchBanks();
     }, []);
 
+    useEffect(() => {
+        if (formData.roleSpecificData?.bankName && banks.length > 0) {
+            setBankSearch(getBankDisplay(formData.roleSpecificData.bankName));
+        }
+    }, [formData.roleSpecificData?.bankName, banks]);
+
     const getBankDisplay = (val) => {
         if (!val) return '';
         const bank = banks.find(b => b.bin === val);
@@ -67,9 +146,9 @@ const ProfilePage = () => {
     };
 
     const filteredBanks = banks.filter(bank =>
-        (bank.shortName || '').toLowerCase().includes((formData.roleSpecificData?.bankName || '').toLowerCase()) ||
-        (bank.name || '').toLowerCase().includes((formData.roleSpecificData?.bankName || '').toLowerCase()) ||
-        (bank.bin || '').includes(formData.roleSpecificData?.bankName || '')
+        (bank.shortName || '').toLowerCase().includes(bankSearch.toLowerCase()) ||
+        (bank.name || '').toLowerCase().includes(bankSearch.toLowerCase()) ||
+        (bank.bin || '').includes(bankSearch)
     );
 
     const handleSave = async () => {
@@ -77,78 +156,75 @@ const ProfilePage = () => {
         setSaving(true);
 
         try {
-            // Determine endpoint based on role dynamically
-            const rolePath = user.role?.toLowerCase() || 'ta';
-            const endpoint = `/api/Account/${rolePath}/profile`;
+            let response;
+            let updatedFormData = { ...formData };
 
-            // Build base payload
-            let payload = {
-                fullName: formData.fullName,
-                phoneNumber: formData.phoneNumber || ""
-            };
-
-            // Add role-specific data for TA and Teacher
-            if (user.role === 'TA' || user.role === 'teacher') {
-                payload = {
-                    ...payload,
-                    bio: formData.roleSpecificData?.bio || "",
-                    bankName: formData.roleSpecificData?.bankName || "",
-                    bankAccount: formData.roleSpecificData?.bankAccount || "",
-                    bankAccountName: formData.roleSpecificData?.bankAccountName || ""
-                };
-                if (user.role === 'teacher') {
-                    payload.specialization = formData.roleSpecificData?.specialization || "";
+            if (user.role === 'student') {
+                const studentId = formData.roleSpecificData?.studentId;
+                if (!studentId) {
+                    throw new Error("Không tìm thấy mã học sinh!");
                 }
+
+                const studentPayload = {
+                    studentFullName: formData.fullName,
+                    address: formData.address || "",
+                    dob: formData.dobString || null,
+                    parentFullName: formData.parentName || "",
+                    phoneNumber: formData.parentPhone || "",
+                    parentEmail: formData.parentEmail || ""
+                };
+
+                response = await profileService.updateStudentProfile(studentId, studentPayload, user.token);
+
+                // Update nested roleSpecificData in the synced local state
+                updatedFormData.roleSpecificData = {
+                    ...updatedFormData.roleSpecificData,
+                    studentName: formData.fullName,
+                    address: formData.address,
+                    dob: formData.dobString
+                };
+                // Map the new parent/account info to the root properties
+                updatedFormData.fullName = formData.fullName; // Student Name for display
+                updatedFormData.email = formData.parentEmail; // Parent Email is root email
+                updatedFormData.phoneNumber = formData.parentPhone; // Parent Phone is root phone
+            } else {
+                const rolePath = user.role?.toLowerCase() || 'ta';
+                let payload = {
+                    fullName: formData.fullName,
+                    phoneNumber: formData.phoneNumber || ""
+                };
+
+                // Add role-specific data for TA and Teacher
+                if (user.role === 'TA' || user.role === 'teacher') {
+                    payload = {
+                        ...payload,
+                        bio: formData.roleSpecificData?.bio || "",
+                        bankName: formData.roleSpecificData?.bankName || "",
+                        bankAccount: formData.roleSpecificData?.bankAccount || "",
+                        bankAccountName: formData.roleSpecificData?.bankAccountName || ""
+                    };
+                    if (user.role === 'teacher') {
+                        payload.specialization = formData.roleSpecificData?.specialization || "";
+                    }
+                }
+
+                response = await profileService.updateProfile(rolePath, payload, user.token);
             }
 
-            const response = await profileService.updateProfile(rolePath, payload, user.token);
-
             if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Lỗi ${response.status}: ${errorText || 'Không rõ nguyên nhân'}`);
+                const errData = await response.json().catch(() => ({}));
+                throw errData;
             }
 
             // Sync with local Zustand store only if successful
-            updateProfile(formData);
+            updateProfile(updatedFormData);
             setIsEditing(false);
             toast.success("Cập nhật hồ sơ thành công!");
         } catch (error) {
             console.error("Save profile error:", error);
-            toast.error(error.message);
+            toast.error(extractErrorMessage(error, "Cập nhật hồ sơ thất bại"));
         } finally {
             setSaving(false);
-        }
-    };
-
-    const handleChangePassword = async (e) => {
-        e.preventDefault();
-        setPasswordError('');
-        setPasswordSuccess('');
-
-        if (newPassword !== confirmNewPassword) {
-            setPasswordError('Mật khẩu xác nhận không khớp!');
-            return;
-        }
-
-        if (!user?.token) return;
-        setPasswordLoading(true);
-
-        try {
-            const response = await profileService.changePassword({ oldPassword, newPassword }, user.token);
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || "Đổi mật khẩu thất bại. Vui lòng kiểm tra lại mật khẩu cũ!");
-            }
-
-            setPasswordSuccess("Đổi mật khẩu thành công!");
-            setOldPassword('');
-            setNewPassword('');
-            setConfirmNewPassword('');
-        } catch (err) {
-            setPasswordError(err.message);
-        } finally {
-            setPasswordLoading(false);
         }
     };
 
@@ -162,16 +238,35 @@ const ProfilePage = () => {
         <div className="w-full mx-auto">
             {/* Header / Banner Section */}
             <div className="relative">
-
-
                 <div className="flex flex-col sm:flex-row items-center sm:items-end justify-between gap-6 relative z-10">
                     <div className="flex flex-col sm:flex-row items-center sm:items-end gap-6 w-full sm:w-auto">
                         <div className="relative group mx-auto sm:mx-0">
+                            <input 
+                                type="file"
+                                ref={fileInputRef}
+                                className="hidden"
+                                accept="image/*"
+                                onChange={handleAvatarChange}
+                            />
                             <div className="w-40 h-40 sm:w-48 sm:h-48 rounded-[2.5rem] bg-surface flex items-center justify-center border-[6px] border-background shadow-2xl relative overflow-hidden transition-transform duration-500 group-hover:scale-[1.02]">
                                 <div className="absolute inset-0 bg-primary/5 group-hover:bg-primary/10 transition-colors"></div>
-                                <Icon icon="material-symbols:person-rounded" className="text-8xl sm:text-9xl text-primary" />
+                                {user?.avatarUrl ? (
+                                    <img src={user.avatarUrl} alt={user.fullName} className="w-full h-full object-cover" />
+                                ) : (
+                                    <Icon icon="material-symbols:person-rounded" className="text-8xl sm:text-9xl text-primary" />
+                                )}
+                                
+                                {uploadingAvatar && (
+                                    <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center z-20">
+                                        <Icon icon="svg-spinners:180-ring-with-bg" className="text-4xl text-white" />
+                                    </div>
+                                )}
+
                                 {isEditing && (
-                                    <button className="absolute inset-0 bg-black/40 backdrop-blur-[2px] text-white flex flex-col items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                    <button 
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className="absolute inset-0 bg-black/40 backdrop-blur-[2px] text-white flex flex-col items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10"
+                                    >
                                         <Icon icon="material-symbols:camera-alt-rounded" className="text-3xl" />
                                         <span className="text-xs font-bold uppercase tracking-wider">Đổi ảnh</span>
                                     </button>
@@ -199,11 +294,16 @@ const ProfilePage = () => {
                         <Button
                             variant="outline"
                             onClick={() => isEditing ? handleSave() : setIsEditing(true)}
+                            disabled={saving}
                             className="!px-8 !py-6 w-full sm:w-auto shadow-xl hover:shadow-primary/20 transition-all rounded-2xl"
                         >
                             <span className="flex items-center gap-2">
-                                <Icon icon={isEditing ? "material-symbols:save-rounded" : "material-symbols:edit-document-rounded"} className="text-xl" />
-                                {isEditing ? 'Lưu hồ sơ' : 'Chỉnh sửa'}
+                                {saving ? (
+                                    <Icon icon="svg-spinners:180-ring-with-bg" className="text-xl" />
+                                ) : (
+                                    <Icon icon={isEditing ? "material-symbols:save-rounded" : "material-symbols:edit-document-rounded"} className="text-xl" />
+                                )}
+                                {saving ? 'Đang lưu...' : (isEditing ? 'Lưu hồ sơ' : 'Chỉnh sửa')}
                             </span>
                         </Button>
                     </div>
@@ -222,13 +322,13 @@ const ProfilePage = () => {
                                 <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Ngày tham gia</span>
                                 <span className="text-sm text-text-main font-medium flex items-center gap-2">
                                     <Icon icon="material-symbols:calendar-today-rounded" className="text-primary text-base" />
-                                    10/03/2026
+                                    10/03/2025
                                 </span>
                             </div>
                             <div className="!p-4 !mt-2 bg-primary/5 rounded-2xl border border-primary/10 flex items-center justify-between">
                                 <div className="flex flex-col gap-1">
                                     <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Trạng thái</span>
-                                    <span className="text-sm font-bold text-primary italic">Active</span>
+                                    <span className="text-sm font-bold text-primary italic">Đang hoạt động</span>
                                 </div>
                                 <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
                             </div>
@@ -241,7 +341,7 @@ const ProfilePage = () => {
                             <Icon icon="material-symbols:verified-user-rounded" className="text-lg text-green-500" /> Xác thực hồ sơ
                         </h3>
                         <p className="text-sm text-text-muted leading-relaxed">
-                            Hồ sơ của bạn đã được xác thực bởi bộ phận nhân sự và đang trong trạng thái hoạt động chính thức.
+                            Hồ sơ của bạn đã được xác thực bởi bộ phận học vụ và đang trong trạng thái hoạt động chính thức.
                         </p>
                     </div>
                 </div>
@@ -287,76 +387,78 @@ const ProfilePage = () => {
                     <div className="bg-surface !mt-2 !p-8 rounded-[2rem] border border-border shadow-sm">
                         <div className="flex items-center justify-between mb-8">
                             <h3 className="text-xl font-bold text-text-main flex items-center gap-3">
-                                <Icon icon="material-symbols:contact-page-rounded" className="text-2xl text-primary" /> Thông tin liên hệ
+                                <Icon icon="material-symbols:contact-page-rounded" className="text-2xl text-primary" /> 
+                                {user?.role === 'student' ? 'Thông tin học sinh' : 'Thông tin liên hệ'}
                             </h3>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-8">
                             <div className="space-y-2">
                                 <label className="block text-xs !mt-2 font-bold text-text-muted uppercase tracking-widest px-1">Họ và tên đầy đủ</label>
-                                <div className="relative group">
-                                    <input
-                                        type="text"
-                                        disabled={!isEditing}
-                                        value={formData.fullName || ''}
-                                        onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                                        className="w-full !mt-2 !pl-2 !pr-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main"
-                                    />
-                                </div>
+                                <input
+                                    type="text"
+                                    disabled={!isEditing}
+                                    value={formData.fullName || ''}
+                                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                                    className="w-full !mt-2 !px-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main"
+                                />
                             </div>
-                            <div className="space-y-2">
-                                <label className="block text-xs !mt-2 font-bold text-text-muted uppercase tracking-widest px-1">Địa chỉ Email</label>
-                                <div className="relative group">
-                                    <input
-                                        type={showEmail ? "email" : "password"}
-                                        disabled={!isEditing}
-                                        value={formData.email || ''}
-                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                        className="w-full !mt-2 !pl-2 !pr-12 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowEmail(!showEmail)}
-                                        className="absolute right-4 top-[55%] -translate-y-1/2 text-text-muted hover:text-primary transition-colors focus:outline-none"
-                                        title={showEmail ? "Ẩn" : "Hiện"}
-                                        disabled={!isEditing && !formData.email}
-                                    >
-                                        <Icon icon={showEmail ? "mdi:eye-off-outline" : "mdi:eye-outline"} className="text-2xl" />
-                                    </button>
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <label className="block text-xs font-bold text-text-muted uppercase tracking-widest px-1">Số điện thoại</label>
-                                <div className="relative group">
-                                    <input
-                                        type={showPhone ? "text" : "password"}
-                                        disabled={!isEditing}
-                                        placeholder="Chưa cập nhật"
-                                        value={formData.phoneNumber || ''}
-                                        onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                                        className="w-full !mt-2 !pl-2 !pr-12 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPhone(!showPhone)}
-                                        className="absolute right-4 top-[55%] -translate-y-1/2 text-text-muted hover:text-primary transition-colors focus:outline-none"
-                                        title={showPhone ? "Ẩn" : "Hiện"}
-                                        disabled={!isEditing && !formData.phoneNumber}
-                                    >
-                                        <Icon icon={showPhone ? "mdi:eye-off-outline" : "mdi:eye-outline"} className="text-2xl" />
-                                    </button>
-                                </div>
-                            </div>
+                            {user?.role !== 'student' && (
+                                <>
+                                    <div className="space-y-2">
+                                        <label className="block text-xs !mt-2 font-bold text-text-muted uppercase tracking-widest px-1">Địa chỉ Email</label>
+                                        <div className="relative group">
+                                            <input
+                                                type={showEmail ? "email" : "password"}
+                                                disabled={!isEditing}
+                                                value={formData.email || ''}
+                                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                                className="w-full !mt-2 !px-5 !pr-12 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowEmail(!showEmail)}
+                                                className="absolute right-4 top-[55%] -translate-y-1/2 text-text-muted hover:text-primary transition-colors focus:outline-none"
+                                                title={showEmail ? "Ẩn" : "Hiện"}
+                                                disabled={!isEditing && !formData.email}
+                                            >
+                                                <Icon icon={showEmail ? "mdi:eye-off-outline" : "mdi:eye-outline"} className="text-2xl" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="block text-xs font-bold text-text-muted uppercase tracking-widest px-1">Số điện thoại</label>
+                                        <div className="relative group">
+                                            <input
+                                                type={showPhone ? "text" : "password"}
+                                                disabled={!isEditing}
+                                                placeholder="Chưa cập nhật"
+                                                value={formData.phoneNumber || ''}
+                                                onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                                                className="w-full !mt-2 !px-5 !pr-12 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPhone(!showPhone)}
+                                                className="absolute right-4 top-[55%] -translate-y-1/2 text-text-muted hover:text-primary transition-colors focus:outline-none"
+                                                title={showPhone ? "Ẩn" : "Hiện"}
+                                                disabled={!isEditing && !formData.phoneNumber}
+                                            >
+                                                <Icon icon={showPhone ? "mdi:eye-off-outline" : "mdi:eye-outline"} className="text-2xl" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
                             {user?.role === 'student' && (
                                 <div className="space-y-2">
                                     <label className="block text-xs font-bold text-text-muted uppercase tracking-widest px-1">Ngày sinh</label>
-                                    <div className="relative group">
-                                        <input
-                                            type="text"
-                                            disabled={!isEditing}
-                                            placeholder="DD/MM/YYYY"
-                                            className="w-full !mt-2 !pl-2 !pr-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main"
-                                        />
-                                    </div>
+                                    <input
+                                        type="date"
+                                        disabled={!isEditing}
+                                        value={formData.dobString || ''}
+                                        onChange={(e) => setFormData({ ...formData, dobString: e.target.value })}
+                                        className="w-full !mt-2 !px-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main"
+                                    />
                                 </div>
                             )}
                         </div>
@@ -366,20 +468,52 @@ const ProfilePage = () => {
                     {user?.role === 'student' && (
                         <div className="bg-surface !mt-2 !p-8 rounded-[2rem] border border-border shadow-sm animate-fade-in-up">
                             <h3 className="text-xl font-bold text-text-main mb-8 flex items-center gap-3">
-                                <Icon icon="material-symbols:family-restroom-rounded" className="text-2xl text-primary" /> Liên hệ khẩn cấp
+                                <Icon icon="solar:user-id-bold-duotone" className="text-2xl text-primary" /> Thông tin bổ sung & Gia đình
                             </h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-8">
                                 <div className="space-y-2">
-                                    <label className="block text-xs font-bold text-text-muted uppercase tracking-widest !mt-2 px-1">Họ tên phụ huynh</label>
-                                    <input type="text" disabled={!isEditing} placeholder="Nguyễn Văn A" className="w-full !mt-2 !pl-2 !pr-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main" />
+                                    <label className="block text-xs font-bold text-text-muted uppercase tracking-widest !mt-2 px-1">Email phụ huynh</label>
+                                    <input 
+                                        type="email" 
+                                        disabled={!isEditing} 
+                                        value={formData.parentEmail || ''} 
+                                        onChange={(e) => setFormData({...formData, parentEmail: e.target.value})}
+                                        placeholder="parent@example.com" 
+                                        className="w-full !mt-2 !px-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main" 
+                                    />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="block text-xs font-bold text-text-muted uppercase tracking-widest !mt-2 px-1">SĐT liên hệ</label>
-                                    <input type="text" disabled={!isEditing} placeholder="0987xxx678" className="w-full !mt-2 !pl-2 !pr-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main" />
+                                    <label className="block text-xs font-bold text-text-muted uppercase tracking-widest !mt-2 px-1">Họ tên phụ huynh</label>
+                                    <input 
+                                        type="text" 
+                                        disabled={!isEditing} 
+                                        value={formData.parentName || ''} 
+                                        onChange={(e) => setFormData({...formData, parentName: e.target.value})}
+                                        placeholder="Nguyễn Văn A" 
+                                        className="w-full !mt-2 !px-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main" 
+                                    />
                                 </div>
-                                <div className="space-y-2 sm:col-span-2">
-                                    <label className="block text-xs font-bold text-text-muted uppercase tracking-widest px-1">Địa chỉ cư trú</label>
-                                    <input type="text" disabled={!isEditing} placeholder="Số 1, Đường ABC, TP.HCM" className="w-full !mt-2 !px-2 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main" />
+                                <div className="space-y-2">
+                                    <label className="block text-xs font-bold text-text-muted uppercase tracking-widest !mt-2 px-1">SĐT phụ huynh</label>
+                                    <input 
+                                        type="text" 
+                                        disabled={!isEditing} 
+                                        value={formData.parentPhone || ''} 
+                                        onChange={(e) => setFormData({...formData, parentPhone: e.target.value})}
+                                        placeholder="09xxx..." 
+                                        className="w-full !mt-2 !px-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main" 
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="block text-xs font-bold text-text-muted uppercase tracking-widest !mt-2 px-1">Địa chỉ thường trú</label>
+                                    <input 
+                                        type="text" 
+                                        disabled={!isEditing} 
+                                        value={formData.address || ''} 
+                                        onChange={(e) => setFormData({...formData, address: e.target.value})}
+                                        placeholder="Số nhà, tên đường, phường/xã..." 
+                                        className="w-full !mt-2 !px-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-70 font-bold text-text-main" 
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -397,9 +531,9 @@ const ProfilePage = () => {
                                         <input
                                             type="text"
                                             disabled={!isEditing}
-                                            value={getBankDisplay(formData.roleSpecificData?.bankName || '')}
+                                            value={isEditing ? bankSearch : getBankDisplay(formData.roleSpecificData?.bankName || '')}
                                             onChange={(e) => {
-                                                setFormData(prev => ({ ...prev, roleSpecificData: { ...prev.roleSpecificData, bankName: e.target.value } }));
+                                                setBankSearch(e.target.value);
                                                 setShowBankDropdown(true);
                                             }}
                                             onFocus={() => isEditing && setShowBankDropdown(true)}
@@ -415,6 +549,7 @@ const ProfilePage = () => {
                                                         type="button"
                                                         onClick={() => {
                                                             setFormData(prev => ({ ...prev, roleSpecificData: { ...prev.roleSpecificData, bankName: bank.bin } }));
+                                                            setBankSearch(bank.shortName);
                                                             setShowBankDropdown(false);
                                                         }}
                                                         className="w-full !px-4 !py-3 flex items-center gap-3 hover:bg-primary/5 transition-colors border-b border-border/50 last:border-0"
@@ -452,70 +587,34 @@ const ProfilePage = () => {
 
                     {/* Change Password Section */}
                     <div className="bg-surface !mt-2 !p-8 rounded-[2rem] border border-border shadow-sm animate-fade-in-up">
-                        <h3 className="text-xl font-bold text-text-main mb-8 flex items-center gap-3">
-                            <Icon icon="material-symbols:lock-reset-rounded" className="text-2xl text-primary" /> Đổi mật khẩu
-                        </h3>
-
-                        <form onSubmit={handleChangePassword} className="space-y-6">
-                            {passwordError && (
-                                <div className="!p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-medium">
-                                    {passwordError}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
+                                    <Icon icon="material-symbols:lock-reset-rounded" className="text-2xl" />
                                 </div>
-                            )}
-                            {passwordSuccess && (
-                                <div className="!p-4 bg-green-50 border border-green-200 text-green-700 rounded-xl text-sm font-medium">
-                                    {passwordSuccess}
+                                <div>
+                                    <h3 className="text-xl font-bold text-text-main tracking-tight">Bảo mật tài khoản</h3>
+                                    <p className="text-xs font-medium text-text-muted">Thay đổi mật khẩu định kỳ để bảo vệ tài khoản</p>
                                 </div>
-                            )}
-
-                            <div className="space-y-2">
-                                <label className="block text-xs font-bold text-text-muted uppercase tracking-widest px-1">Mật khẩu cũ</label>
-                                <input
-                                    type="password"
-                                    required
-                                    value={oldPassword}
-                                    onChange={(e) => setOldPassword(e.target.value)}
-                                    placeholder="••••••••"
-                                    className="w-full !mt-2 !px-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all text-text-main font-mono"
-                                />
                             </div>
-                            <div className="space-y-2">
-                                <label className="block text-xs font-bold text-text-muted uppercase tracking-widest px-1">Mật khẩu mới</label>
-                                <input
-                                    type="password"
-                                    required
-                                    value={newPassword}
-                                    onChange={(e) => setNewPassword(e.target.value)}
-                                    placeholder="••••••••"
-                                    className="w-full !mt-2 !px-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all text-text-main font-mono"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="block text-xs font-bold text-text-muted uppercase tracking-widest px-1">Xác nhận mật khẩu mới</label>
-                                <input
-                                    type="password"
-                                    required
-                                    value={confirmNewPassword}
-                                    onChange={(e) => setConfirmNewPassword(e.target.value)}
-                                    placeholder="••••••••"
-                                    className="w-full !mt-2 !px-5 !py-4 rounded-2xl bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all text-text-main font-mono"
-                                />
-                            </div>
-                            <div className="!pt-4">
-                                <Button
-                                    type="submit"
-                                    disabled={passwordLoading}
-                                    variant="outline"
-                                    className="!px-8 !py-4 font-bold rounded-xl border-2 hover:bg-background transition-colors text-text-main disabled:opacity-70 disabled:cursor-not-allowed"
-                                >
-                                    {passwordLoading ? 'Đang cập nhật...' : 'Cập nhật mật khẩu'}
-                                </Button>
-                            </div>
-                        </form>
+                            <Button
+                                variant="outline"
+                                onClick={() => setIsPasswordModalOpen(true)}
+                                className="!px-8 !py-4 !rounded-2xl !font-bold"
+                            >
+                                Đổi mật khẩu
+                            </Button>
+                        </div>
                     </div>
-
                 </div>
             </div>
+
+            {/* Change Password Modal */}
+            <ChangePasswordModal 
+                isOpen={isPasswordModalOpen}
+                onClose={() => setIsPasswordModalOpen(false)}
+                token={user?.token}
+            />
         </div>
     );
 };

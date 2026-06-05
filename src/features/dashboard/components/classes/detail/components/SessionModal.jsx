@@ -7,6 +7,7 @@ const inputClasses = "w-full !px-4 !py-3 bg-background border border-border roun
 const labelClasses = "block text-sm font-semibold text-text-main !mb-1.5";
 
 const SessionModal = ({ isOpen, onClose, onSave, initialData = null }) => {
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState({
         title: '',
         date: '',
@@ -19,14 +20,48 @@ const SessionModal = ({ isOpen, onClose, onSave, initialData = null }) => {
 
     useEffect(() => {
         if (initialData) {
+            const getGMT7Value = (iso, fallbackDate) => {
+                if (!iso && !fallbackDate) return { date: '', time: '' };
+                
+                let d = new Date(iso);
+                
+                // If invalid and we have a fallback date, try combining them
+                if (isNaN(d.getTime()) && fallbackDate) {
+                    const datePart = fallbackDate.split('T')[0];
+                    const timePart = (iso && iso.length >= 5 && !iso.includes('-')) ? iso : '00:00:00';
+                    d = new Date(`${datePart}T${timePart.substring(0, 8)}`);
+                }
+
+                // If still invalid, try fallback date directly
+                if (isNaN(d.getTime()) && fallbackDate) {
+                    d = new Date(fallbackDate);
+                }
+
+                if (isNaN(d.getTime())) return { date: '', time: '' };
+
+                return {
+                    date: d.toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }),
+                    time: d.toLocaleTimeString('en-GB', { timeZone: 'Asia/Ho_Chi_Minh', hour12: false })
+                };
+            };
+
+            const startInfo = getGMT7Value(initialData.startTime, initialData.date);
+            const endInfo = getGMT7Value(initialData.endTime, initialData.date);
+
+            const getValue = (key, altKey) => {
+                if (initialData[key] !== undefined && initialData[key] !== null && initialData[key] !== '') return initialData[key];
+                if (initialData[altKey] !== undefined && initialData[altKey] !== null && initialData[altKey] !== '') return initialData[altKey];
+                return initialData[key] || initialData[altKey] || '';
+            };
+
             setFormData({
-                title: initialData.title || '',
-                date: initialData.date ? initialData.date.split('T')[0] : '', // Format YYYY-MM-DD
-                startTime: initialData.startTime || '',
-                endTime: initialData.endTime || '',
-                meetingLink: initialData.meetingLink || '',
-                topic: initialData.topic || '',
-                note: initialData.note || ''
+                title: getValue('title', 'Title'),
+                date: startInfo.date,
+                startTime: startInfo.time,
+                endTime: endInfo.time,
+                meetingLink: getValue('meetingLink', 'MeetingLink'),
+                topic: getValue('topic', 'Topic'),
+                note: getValue('note', 'Note')
             });
         } else {
             setFormData({
@@ -52,14 +87,24 @@ const SessionModal = ({ isOpen, onClose, onSave, initialData = null }) => {
         return formData.title && formData.date && formData.startTime && formData.endTime;
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        onSave(formData);
+        setIsSubmitting(true);
+        try {
+            const success = await onSave(formData);
+            if (success) {
+                onClose();
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return ReactDOM.createPortal(
         <>
-            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] animate-fade-in" onClick={onClose} />
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] animate-fade-in" onClick={() => !isSubmitting && onClose()} />
             <div className="fixed inset-0 z-[9999] flex items-center justify-center !p-4 pointer-events-none">
                 <div className="bg-surface rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden animate-fade-in-up pointer-events-auto flex flex-col relative" onClick={e => e.stopPropagation()}>
                     {/* Header */}
@@ -77,7 +122,7 @@ const SessionModal = ({ isOpen, onClose, onSave, initialData = null }) => {
                                 </p>
                             </div>
                         </div>
-                        <button type="button" onClick={onClose} className="w-10 h-10 rounded-xl bg-background border border-border flex items-center justify-center text-text-muted hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-all shrink-0">
+                        <button type="button" onClick={onClose} disabled={isSubmitting} className="w-10 h-10 rounded-xl bg-background border border-border flex items-center justify-center text-text-muted hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-all shrink-0 disabled:opacity-50 disabled:cursor-not-allowed">
                             <Icon icon="material-symbols:close-rounded" className="text-xl" />
                         </button>
                     </div>
@@ -91,7 +136,7 @@ const SessionModal = ({ isOpen, onClose, onSave, initialData = null }) => {
                                 <label className={labelClasses}>Tiêu đề buổi học <span className="text-red-500">*</span></label>
                                 <div className="relative">
                                     <Icon icon="solar:text-field-linear" className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted/70 text-lg pointer-events-none" />
-                                    <input type="text" name="title" required value={formData.title} onChange={handleChange} placeholder="Vd: Buổi 1: Giới thiệu môn học" className={`${inputClasses} !pl-11`} />
+                                    <input type="text" name="title" required disabled={isSubmitting} value={formData.title} onChange={handleChange} placeholder="Vd: Buổi 1: Giới thiệu môn học" className={`${inputClasses} !pl-11 disabled:opacity-50`} />
                                 </div>
                             </div>
 
@@ -101,21 +146,21 @@ const SessionModal = ({ isOpen, onClose, onSave, initialData = null }) => {
                                     <label className={labelClasses}>Ngày học <span className="text-red-500">*</span></label>
                                     <div className="relative">
                                         <Icon icon="solar:calendar-linear" className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted/70 text-lg group-focus-within:text-primary transition-colors pointer-events-none" />
-                                        <input type="date" name="date" required value={formData.date} onChange={handleChange} className={`${inputClasses} !pl-11`} />
+                                        <input type="date" name="date" required disabled={isSubmitting} value={formData.date} onChange={handleChange} className={`${inputClasses} !pl-11 disabled:opacity-50`} />
                                     </div>
                                 </div>
                                 <div className="!space-y-1 group">
                                     <label className={labelClasses}>Giờ bắt đầu <span className="text-red-500">*</span></label>
                                     <div className="relative">
-                                        <Icon icon="solar:clock-linear" className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted/70 text-lg group-focus-within:text-primary transition-colors pointer-events-none" />
-                                        <input type="time" name="startTime" step="1" required value={formData.startTime} onChange={handleChange} className={`${inputClasses} !pl-11`} />
+                                        <Icon icon="solar:alarm-add-linear" className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted/70 text-lg group-focus-within:text-primary transition-colors pointer-events-none" />
+                                        <input type="time" name="startTime" step="1" required disabled={isSubmitting} value={formData.startTime} onChange={handleChange} className={`${inputClasses} !pl-11 disabled:opacity-50`} />
                                     </div>
                                 </div>
                                 <div className="!space-y-1 group">
                                     <label className={labelClasses}>Giờ kết thúc <span className="text-red-500">*</span></label>
                                     <div className="relative">
-                                        <Icon icon="solar:clock-linear" className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted/70 text-lg group-focus-within:text-primary transition-colors pointer-events-none" />
-                                        <input type="time" name="endTime" step="1" required value={formData.endTime} onChange={handleChange} className={`${inputClasses} !pl-11`} />
+                                        <Icon icon="solar:alarm-turn-off-line-duotone" className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted/70 text-lg group-focus-within:text-primary transition-colors pointer-events-none" />
+                                        <input type="time" name="endTime" step="1" required disabled={isSubmitting} value={formData.endTime} onChange={handleChange} className={`${inputClasses} !pl-11 disabled:opacity-50`} />
                                     </div>
                                 </div>
                             </div>
@@ -125,7 +170,7 @@ const SessionModal = ({ isOpen, onClose, onSave, initialData = null }) => {
                                 <label className={labelClasses}>Link Meeting / Phòng học online</label>
                                 <div className="relative">
                                     <Icon icon="solar:link-minimalistic-linear" className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted/70 text-lg pointer-events-none" />
-                                    <input type="url" name="meetingLink" value={formData.meetingLink} onChange={handleChange} placeholder="https://meet.google.com/..." className={`${inputClasses} !pl-11`} />
+                                    <input type="url" name="meetingLink" disabled={isSubmitting} value={formData.meetingLink} onChange={handleChange} placeholder="https://meet.google.com/..." className={`${inputClasses} !pl-11 disabled:opacity-50`} />
                                 </div>
                             </div>
 
@@ -134,7 +179,7 @@ const SessionModal = ({ isOpen, onClose, onSave, initialData = null }) => {
                                 <label className={labelClasses}>Chủ đề (Topic)</label>
                                 <div className="relative">
                                     <Icon icon="solar:tag-horizontal-linear" className="absolute left-4 top-4 text-text-muted/70 text-lg pointer-events-none" />
-                                    <textarea name="topic" rows={2} value={formData.topic} onChange={handleChange} placeholder="Nội dung chính của buổi học..." className={`${inputClasses} !pl-11 resize-none`} />
+                                    <textarea name="topic" rows={2} disabled={isSubmitting} value={formData.topic} onChange={handleChange} placeholder="Nội dung chính của buổi học..." className={`${inputClasses} !pl-11 resize-none disabled:opacity-50`} />
                                 </div>
                             </div>
 
@@ -143,7 +188,7 @@ const SessionModal = ({ isOpen, onClose, onSave, initialData = null }) => {
                                 <label className={labelClasses}>Ghi chú (Note)</label>
                                 <div className="relative">
                                     <Icon icon="solar:document-text-linear" className="absolute left-4 top-4 text-text-muted/70 text-lg pointer-events-none" />
-                                    <textarea name="note" rows={2} value={formData.note} onChange={handleChange} placeholder="Nhắc nhở học viên chuẩn bị trước..." className={`${inputClasses} !pl-11 resize-none`} />
+                                    <textarea name="note" rows={2} disabled={isSubmitting} value={formData.note} onChange={handleChange} placeholder="Nhắc nhở học viên chuẩn bị trước..." className={`${inputClasses} !pl-11 resize-none disabled:opacity-50`} />
                                 </div>
                             </div>
 
@@ -151,10 +196,10 @@ const SessionModal = ({ isOpen, onClose, onSave, initialData = null }) => {
 
                         {/* Footer */}
                         <div className="!px-6 md:!px-8 !pb-6 !pt-5 border-t border-border flex flex-col-reverse sm:flex-row justify-end !gap-3 sm:!gap-4 shrink-0 bg-surface/50">
-                            <Button type="button" variant="outline" onClick={onClose} className="w-full sm:w-auto justify-center">Hủy bỏ</Button>
-                            <Button type="submit" variant="primary" disabled={!isFormValid()} className="w-full sm:w-auto justify-center shadow-lg group">
-                                <Icon icon="solar:diskette-bold-duotone" className="text-xl text-white group-hover:scale-110 transition-transform" />
-                                <span className="text-white font-bold">{initialData ? 'Lưu thay đổi' : 'Tạo buổi học'}</span>
+                            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting} className="w-full sm:w-auto justify-center disabled:opacity-50 disabled:cursor-not-allowed">Hủy bỏ</Button>
+                            <Button type="submit" variant="primary" disabled={isSubmitting || !isFormValid()} className="w-full sm:w-auto justify-center shadow-lg group disabled:opacity-50 disabled:cursor-not-allowed">
+                                <Icon icon={isSubmitting ? "line-md:loading-twotone-loop" : "solar:diskette-bold-duotone"} className="text-xl text-white group-hover:scale-110 transition-transform" />
+                                <span className="text-white font-bold">{isSubmitting ? 'Đang xử lý...' : (initialData ? 'Lưu thay đổi' : 'Tạo buổi học')}</span>
                             </Button>
                         </div>
                     </form>

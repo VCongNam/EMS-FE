@@ -4,7 +4,9 @@ import { toast } from 'react-toastify';
 import useAuthStore from '../../../store/authStore';
 import { taService } from '../api/taService';
 import AddTAModal from '../components/AddTAModal';
+import EditTAPermissionModal from '../components/EditTAPermissionModal';
 import ConfirmModal from '../../../components/ui/ConfirmModal';
+import { extractErrorMessage } from '../../../utils/errorHandler';
 
 const ViewTAListPage = ({ classId }) => {
     const { user } = useAuthStore();
@@ -12,6 +14,8 @@ const ViewTAListPage = ({ classId }) => {
     const [assistants, setAssistants] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [selectedAssistant, setSelectedAssistant] = useState(null);
 
     // Confirm Modal State
     const [confirmConfig, setConfirmConfig] = useState({
@@ -21,6 +25,19 @@ const ViewTAListPage = ({ classId }) => {
         onConfirm: () => { },
         type: 'danger'
     });
+
+    const translatePermission = (permStr) => {
+        if (!permStr) return 'Chưa phân quyền';
+        const map = {
+            'Attendance': 'Điểm danh',
+            'Grade': 'Chấm điểm',
+            'Report': 'Báo cáo',
+            'Assignment': 'Bài tập',
+            'Feedback': 'Nhận xét',
+            'None': 'Không có quyền'
+        };
+        return permStr.split(',').map(p => map[p.trim()] || p.trim()).join(', ');
+    };
 
     const fetchAssistants = async () => {
         if (!classId || !user?.token) return;
@@ -38,7 +55,8 @@ const ViewTAListPage = ({ classId }) => {
                     setAssistants([]);
                 }
             } else {
-                toast.error('Không thể tải danh sách trợ giảng');
+                const errorData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errorData, 'Không thể tải danh sách trợ giảng'));
             }
         } catch (error) {
             console.error(error);
@@ -65,7 +83,8 @@ const ViewTAListPage = ({ classId }) => {
                         toast.success('Đã gỡ trợ giảng khỏi lớp thành công.');
                         fetchAssistants();
                     } else {
-                        toast.error('Có lỗi xảy ra khi thực hiện thao tác.');
+                        const errorData = await res.json().catch(() => ({}));
+                        toast.error(extractErrorMessage(errorData, 'Có lỗi xảy ra khi thực hiện thao tác.'));
                     }
                 } catch (error) {
                     console.error(error);
@@ -95,8 +114,8 @@ const ViewTAListPage = ({ classId }) => {
                         toast.success('Đã khôi phục trợ giảng thành công.');
                         fetchAssistants();
                     } else {
-                        const errorData = await res.json();
-                        toast.error(errorData.message || 'Có lỗi xảy ra khi thực hiện thao tác.');
+                        const errorData = await res.json().catch(() => ({}));
+                        toast.error(extractErrorMessage(errorData, 'Có lỗi xảy ra khi thực hiện thao tác.'));
                     }
                 } catch (error) {
                     console.error(error);
@@ -120,6 +139,7 @@ const ViewTAListPage = ({ classId }) => {
 
             {/* Header / Actions */}
             <div className="bg-surface !p-4 sm:!p-6 rounded-[2rem] border border-border shadow-sm !space-y-4">
+                
                 <div className="flex flex-col sm:flex-row items-center !gap-4">
                     <div className="relative w-full sm:flex-1">
                         <Icon icon="solar:magnifer-linear" className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted text-lg" />
@@ -159,7 +179,6 @@ const ViewTAListPage = ({ classId }) => {
                             <tr className="bg-background/80 border-b border-border">
                                 <th className="!p-5 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap">Tên Trợ giảng</th>
                                 <th className="!p-5 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap">Quyền hiện tại</th>
-                                <th className="!p-5 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap text-center">Lương / Buổi</th>
                                 <th className="!p-5 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap text-center">Tình trạng</th>
                                 <th className="!p-5 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap text-right">Thao tác</th>
                             </tr>
@@ -167,7 +186,7 @@ const ViewTAListPage = ({ classId }) => {
                         <tbody className="divide-y divide-border/50">
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan="5" className="!p-10 text-center text-primary">
+                                    <td colSpan="4" className="!p-10 text-center text-primary">
                                         <Icon icon="solar:spinner-linear" className="animate-spin text-3xl mx-auto mb-2" />
                                         <p className="font-medium">Đang tải...</p>
                                     </td>
@@ -188,21 +207,18 @@ const ViewTAListPage = ({ classId }) => {
                                             </div>
                                             <div className="flex flex-col">
                                                 <span className="font-semibold text-[15px]">{assistant.fullName}</span>
-                                                <div className="flex items-center !gap-2 !mt-0.5 text-xs text-text-muted">
-                                                    <span className="flex items-center !gap-1"><Icon icon="solar:letter-linear" /> {assistant.email || 'Chưa cập nhật'}</span>
-                                                </div>
+                                                
                                             </div>
                                         </div>
                                     </td>
                                     <td className="!p-5">
-                                        {assistant.permission ? (
-                                            <span className="!px-3 !py-1 bg-primary/10 text-primary border border-primary/20 rounded-lg text-sm font-semibold shadow-sm">{assistant.permission}</span>
+                                        {assistant.permission && assistant.permission !== 'None' ? (
+                                            <span className="!px-3 !py-1 bg-primary/10 text-primary border border-primary/20 rounded-lg text-sm font-semibold shadow-sm">
+                                                {translatePermission(assistant.permission)}
+                                            </span>
                                         ) : (
                                             <span className="text-text-muted text-sm italic">Chưa phân quyền</span>
                                         )}
-                                    </td>
-                                    <td className="!p-5 text-center">
-                                        <span className="font-bold text-green-600">{assistant.salaryPerSession ? assistant.salaryPerSession.toLocaleString('vi-VN') + ' đ' : 'N/A'}</span>
                                     </td>
                                     <td className="!p-5 text-center">
                                         <div className="flex justify-center">
@@ -215,6 +231,18 @@ const ViewTAListPage = ({ classId }) => {
                                     </td>
                                     <td className="!p-5 text-right">
                                         <div className={`flex items-center justify-end gap-1 transition-opacity ${assistant.status === 'Active' ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`}>
+                                            {assistant.status === 'Active' && (
+                                                <button 
+                                                    onClick={() => {
+                                                        setSelectedAssistant({...assistant, classId});
+                                                        setIsEditModalOpen(true);
+                                                    }}
+                                                    className="!p-1.5 text-text-muted hover:text-primary transition-colors rounded-lg hover:bg-primary/10" 
+                                                    title="Chỉnh sửa quyền"
+                                                >
+                                                    <Icon icon="solar:pen-bold-duotone" className="text-lg" />
+                                                </button>
+                                            )}
                                             {assistant.status === 'Active' ? (
                                                 <button 
                                                     onClick={() => handleRemoveTA(assistant)}
@@ -238,7 +266,7 @@ const ViewTAListPage = ({ classId }) => {
                             ))}
                             {!isLoading && filteredAssistants.length === 0 && (
                                 <tr>
-                                    <td colSpan="5" className="!p-16 text-center">
+                                    <td colSpan="4" className="!p-16 text-center">
                                         <div className="flex flex-col items-center justify-center opacity-70">
                                             <div className="w-20 h-20 bg-background rounded-full flex items-center justify-center !mb-4 border border-border">
                                                 <Icon icon="solar:ghost-smile-bold-duotone" className="text-4xl text-text-muted" />
@@ -289,6 +317,17 @@ const ViewTAListPage = ({ classId }) => {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
+                                    {assistant.status === 'Active' && (
+                                        <button 
+                                            onClick={() => {
+                                                setSelectedAssistant({...assistant, classId});
+                                                setIsEditModalOpen(true);
+                                            }}
+                                            className="!p-2 text-primary bg-primary/10 hover:bg-primary/20 rounded-xl transition-colors"
+                                        >
+                                            <Icon icon="solar:pen-bold-duotone" className="text-lg" />
+                                        </button>
+                                    )}
                                     {assistant.status === 'Active' ? (
                                         <button 
                                             onClick={() => handleRemoveTA(assistant)}
@@ -309,11 +348,7 @@ const ViewTAListPage = ({ classId }) => {
                             <div className="bg-background rounded-xl !p-3 !space-y-2 border border-border/50">
                                 <div className="flex items-center justify-between text-sm">
                                     <span className="text-text-muted">Quyền hạn:</span>
-                                    <span className="font-semibold text-primary">{assistant.permission || 'Chưa phân quyền'}</span>
-                                </div>
-                                <div className="flex items-center justify-between text-sm">
-                                    <span className="text-text-muted">Lương/Buổi:</span>
-                                    <span className="font-bold text-green-600">{assistant.salaryPerSession ? assistant.salaryPerSession.toLocaleString('vi-VN') + ' đ' : 'N/A'}</span>
+                                    <span className="font-semibold text-primary">{translatePermission(assistant.permission)}</span>
                                 </div>
                             </div>
                         </div>
@@ -326,6 +361,13 @@ const ViewTAListPage = ({ classId }) => {
                 onClose={() => setIsAddModalOpen(false)}
                 onAdd={fetchAssistants}
                 classId={classId}
+            />
+
+            <EditTAPermissionModal 
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                assistant={selectedAssistant}
+                onUpdate={fetchAssistants}
             />
 
             <ConfirmModal

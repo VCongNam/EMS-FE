@@ -1,5 +1,6 @@
 import React from 'react';
 import { Icon } from '@iconify/react';
+import { formatViDateTimeShort } from '../../../utils/dateUtils';
 
 const TYPE_CONFIG = {
     teacher: {
@@ -29,7 +30,7 @@ const NotificationItem = ({ notification, onClick }) => {
     const displayTitle = notification.title || 'Thông báo';
     const displayMessage = notification.message || notification.content || '';
     const displayTime = notification.createdAt 
-        ? new Date(notification.createdAt).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })
+        ? formatViDateTimeShort(notification.createdAt)
         : notification.timestamp;
 
     return (

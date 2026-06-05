@@ -2,19 +2,28 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import SideMenu from './components/SideMenu';
+import PushPermissionModal from '../features/notifications/components/PushPermissionModal';
 
 const DashboardLayout = () => {
     const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
 
     return (
         <div className="flex min-h-screen bg-background">
+            <PushPermissionModal />
+            
             {/* Sidebar */}
-            <SideMenu isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+            <SideMenu 
+                isOpen={isSidebarOpen} 
+                onClose={() => setIsSidebarOpen(false)} 
+                isCollapsed={isSidebarCollapsed}
+                onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            />
 
         
 
             {/* Main Content Area */}
-            <div className={`flex-1 flex flex-col transition-all duration-300 ${isSidebarOpen ? 'lg:!pl-72' : 'lg:!pl-72'}`}>
+            <div className={`flex-1 flex flex-col transition-all duration-300 ${isSidebarCollapsed ? 'lg:!pl-20' : 'lg:!pl-72'}`}>
                 {/* Mobile Dashboard Header (Hidden on Desktop) */}
                 <header className="lg:hidden h-header px-4 sm:px-8 flex items-center bg-surface/50 backdrop-blur-md border-b border-border sticky top-0 z-40">
                     <button

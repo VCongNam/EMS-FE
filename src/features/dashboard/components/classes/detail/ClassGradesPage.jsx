@@ -187,6 +187,7 @@ const ClassGradesPage = () => {
     const [gradeTableData, setGradeTableData] = useState(null);
     const [isLoadingCategories, setIsLoadingCategories] = useState(true);
     const [isLoadingTable, setIsLoadingTable] = useState(true);
+    const [tableError, setTableError] = useState(false);
 
     const fetchCategories = async () => {
         try {
@@ -206,6 +207,7 @@ const ClassGradesPage = () => {
     const fetchGradeTable = async () => {
         try {
             setIsLoadingTable(true);
+            setTableError(false);
             const res = await gradebookService.getGradeTable(classId, user?.token);
             if (res.ok) {
                 const data = await res.json();
@@ -213,9 +215,13 @@ const ClassGradesPage = () => {
                 if (!selectedStudentId && data.studentRows?.length > 0) {
                     setSelectedStudentId(data.studentRows[0].studentId);
                 }
+            } else {
+                console.error('Grade table API error:', res.status);
+                setTableError(true);
             }
         } catch (error) {
             console.error("Lỗi mạng:", error);
+            setTableError(true);
         } finally {
             setIsLoadingTable(false);
         }
@@ -446,12 +452,41 @@ const ClassGradesPage = () => {
                 )}
 
                 {/* Teacher/TA: existing master table view */}
-                {!isStudent && activeTab === 'overview' && gradeTableData && (
+                {!isStudent && activeTab === 'overview' && isLoadingTable && (
+                    <div className="flex-1 flex flex-col items-center justify-center gap-4 text-primary">
+                        <Icon icon="solar:spinner-linear" className="animate-spin text-5xl" />
+                        <p className="font-bold">Đang tải bảng điểm...</p>
+                    </div>
+                )}
+
+                {!isStudent && activeTab === 'overview' && !isLoadingTable && tableError && (
+                    <div className="flex-1 flex flex-col items-center justify-center gap-4 text-text-muted !p-10 text-center">
+                        <Icon icon="solar:shield-warning-bold-duotone" className="text-6xl opacity-30" />
+                        <p className="font-bold text-lg">Không thể tải bảng điểm</p>
+                        <p className="text-sm">Tài khoản của bạn có thể chưa được cấp quyền truy cập bảng điểm lớp này, hoặc có lỗi xảy ra.</p>
+                        <button
+                            onClick={refreshAll}
+                            className="flex items-center gap-2 !px-5 !py-2.5 bg-primary text-white rounded-xl text-sm font-bold hover:bg-primary/90 transition-colors"
+                        >
+                            <Icon icon="solar:refresh-bold-duotone" />
+                            Thử lại
+                        </button>
+                    </div>
+                )}
+
+                {!isStudent && activeTab === 'overview' && !isLoadingTable && !tableError && gradeTableData && (
                     <GradeMasterView
                         classId={classId}
                         gradeTableData={gradeTableData}
                         onRefresh={refreshAll}
                     />
+                )}
+
+                {!isStudent && activeTab === 'overview' && !isLoadingTable && !tableError && !gradeTableData && (
+                    <div className="flex-1 flex flex-col items-center justify-center gap-4 text-text-muted !p-10 text-center">
+                        <Icon icon="solar:notebook-bold-duotone" className="text-6xl opacity-20" />
+                        <p className="font-medium">Chưa có dữ liệu bảng điểm</p>
+                    </div>
                 )}
 
                 {!isStudent && activeTab === 'individual' && renderTeacherIndividualView()}

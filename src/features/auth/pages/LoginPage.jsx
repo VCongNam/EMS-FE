@@ -38,24 +38,38 @@ const LoginPage = () => {
 
         try {
             const roleConfig = ROLES.find(r => r.id === selectedRole);
-            const response = await authService.login({ 
+            const loginPayload = { 
                 identifier, 
                 password, 
                 selectedRole: roleConfig?.apiRole || 'Student' 
-            });
+            };
+            // console.log("[Login] Sending Payload:", loginPayload);
+
+            const response = await authService.login(loginPayload);
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
+                console.log("[Login] Error Status:", response.status);
+                console.log("[Login] Error Data:", errorData);
                 
+                const finalMessage = (errorData.message || errorData.Message || "").toLowerCase();
+                const needsActivation = response.status === 403 || finalMessage.includes("xác thực") || finalMessage.includes("kích hoạt");
+
                 // Check if account needs onboarding (verification)
-                // Assuming status 403 or specific message suggests account activation is needed
-                if (response.status === 403 || errorData.message?.includes("xác thực") || errorData.message?.includes("kích hoạt")) {
-                    toast.info("Tài khoản của bạn cần được kích hoạt trước khi sử dụng.");
-                    navigate('/verify-onboarding');
+                if (needsActivation) {
+                    if (selectedRole === 'student') {
+                        // console.log("[Login] Student needs activation. Redirecting to /verify-onboarding");
+                        toast.info("Tài khoản của bạn cần được kích hoạt trước khi sử dụng.");
+                        navigate('/verify-onboarding');
+                    } else {
+                        // console.log("[Login] Staff/Teacher needs OTP. Redirecting to /verify-email");
+                        toast.info("Tài khoản của bạn cần được xác thực mã OTP.");
+                        navigate('/verify-email', { state: { email: identifier } });
+                    }
                     return;
                 }
 
-                throw new Error(errorData.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại!');
+                throw new Error(errorData.message || errorData.Message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại!');
             }
 
             const data = await response.json();
@@ -106,9 +120,9 @@ const LoginPage = () => {
         if (role === 'teacher') {
             navigate('/teacher/classes');
         } else if (role === 'ta') {
-            navigate('/dashboard'); 
+            navigate('/assisted-classes'); 
         } else if (role === 'student') {
-            navigate('/dashboard'); 
+            navigate('/student/classes'); 
         } else if (role === 'admin') {
             navigate('/admin/dashboard');
         } else {
@@ -242,9 +256,11 @@ const LoginPage = () => {
                             <label className="text-sm font-semibold text-text-main">
                                 Mật khẩu
                             </label>
-                            <Link to="/forgot-password" className="text-sm font-medium text-primary hover:text-primary-dark hover:underline transition-colors">
-                                Quên mật khẩu?
-                            </Link>
+                            {selectedRole !== 'student' && (
+                                <Link to="/forgot-password" className="text-sm font-medium text-primary hover:text-primary-dark hover:underline transition-colors">
+                                    Quên mật khẩu?
+                                </Link>
+                            )}
                         </div>
                         <div className="relative group">
                             <div className="absolute inset-y-0 left-0 !pl-4 flex items-center pointer-events-none text-text-muted group-focus-within:text-primary transition-colors">
@@ -281,14 +297,16 @@ const LoginPage = () => {
                     </Button>
                 </div>
 
-                <div className="text-center !mt-6">
-                    <p className="text-text-muted font-medium">
-                        Chưa có tài khoản?{' '}
-                        <Link to="/register" className="text-primary font-bold hover:underline transition-all">
-                            Đăng ký
-                        </Link>
-                    </p>
-                </div>
+                {selectedRole !== 'student' && (
+                    <div className="text-center !mt-6">
+                        <p className="text-text-muted font-medium">
+                            Chưa có tài khoản?{' '}
+                            <Link to="/register" className="text-primary font-bold hover:underline transition-all">
+                                Đăng ký
+                            </Link>
+                        </p>
+                    </div>
+                )}
             </form>
         </AuthLayout>
     );

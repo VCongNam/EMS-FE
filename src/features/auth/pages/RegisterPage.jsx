@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
+import ReCAPTCHA from 'react-google-recaptcha';
 import { Link, useNavigate } from 'react-router-dom';
 import Button from '../../../components/ui/Button';
 import AuthLayout from '../components/AuthLayout';
 import { authService } from '../api/authService';
 const RegisterPage = () => {
     const navigate = useNavigate();
+
+    const recaptchaRef = useRef(null);
 
     // State cho việc chọn Role MOCKUP: 'teacher' | 'ta'
     const [role, setRole] = useState('teacher');
@@ -14,6 +17,10 @@ const RegisterPage = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+
+
+    // State lưu mã token của Captcha sau khi người dùng hoàn thành captcha
+    const [captchaToken, setCaptchaToken] = useState(null);
 
     // UI states
     const [showPassword, setShowPassword] = useState(false);
@@ -30,6 +37,13 @@ const RegisterPage = () => {
             return;
         }
 
+        //Kiểm tra nếu chưa có token captcha (người dùng chưa hoàn thành captcha)
+        if (!captchaToken) {
+            setError('Vui lòng hoàn thành captcha để xác nhận bạn không phải là robot.');
+            return;
+        }
+
+
         setLoading(true);
 
         try {
@@ -37,18 +51,44 @@ const RegisterPage = () => {
                 email: email.trim(), 
                 password, 
                 fullName: fullName.trim(), 
-                roleName: role === 'teacher' ? 'Teacher' : 'TA' 
+                roleName: role === 'teacher' ? 'Teacher' : 'TA' ,
+                captchaToken: captchaToken // gửi token captcha lên backend để xác thực
             });
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || 'Đăng ký thất bại. Vui lòng kiểm tra lại thông tin!');
+                // Parse validation errors from BE (e.g. errors.password: ["...", "..."])
+                if (errorData.errors && typeof errorData.errors === 'object') {
+                    // Dịch từng message sang tiếng Việt bằng keyword matching
+                    const translateMsg = (msg) => {
+                        const m = msg.toLowerCase();
+                        if (m.includes('at least 8') || m.includes('8 character')) return 'ít nhất 8 ký tự';
+                        if (m.includes('uppercase')) return 'có ít nhất 1 chữ in hoa';
+                        if (m.includes('lowercase')) return 'có ít nhất 1 chữ in thường';
+                        if (m.includes('digit') || m.includes('numeric') && !m.includes('non')) return 'có ít nhất 1 chữ số';
+                        if (m.includes('non alphanumeric') || m.includes('non-alphanumeric') || m.includes('special character') || m.includes('special char')) return 'có ít nhất 1 ký tự đặc biệt (!@#$...)';
+                        return null; // không dịch được → bỏ qua
+                    };
+                    const allMessages = Object.values(errorData.errors).flat();
+                    const translated = allMessages.map(translateMsg).filter(Boolean);
+                    if (translated.length > 0) {
+                        throw new Error('Mật khẩu phải ' + translated.join(', ') + '.');
+                    }
+                }
+                throw new Error(errorData.message || errorData.title || 'Đăng ký thất bại. Vui lòng kiểm tra lại thông tin!');
             }
 
             // Chuyển sang trang xác thực email, truyền theo địa chỉ email 
             navigate('/verify-email', { state: { email: email.trim() } });
         } catch (err) {
             setError(err.message);
+
+
+            // QUAN TRỌNG: Nếu đăng ký lỗi (trùng mail, mk yếu...), phải reset Captcha để user tick lại
+            if (recaptchaRef.current) {
+                recaptchaRef.current.reset();
+                setCaptchaToken(null);
+            }
         } finally {
             setLoading(false);
         }
@@ -89,8 +129,9 @@ const RegisterPage = () => {
 
                     <form className="animate-fade-in-up !space-y-5" onSubmit={handleRegister}>
                         {error && (
-                            <div className="!p-4 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm font-medium flex items-center gap-2">
-                                {error}
+                            <div className="!p-4 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm font-medium flex items-start gap-2">
+                                <span>⚠️</span>
+                                <span>{error}</span>
                             </div>
                         )}
 
@@ -162,6 +203,17 @@ const RegisterPage = () => {
                                     {showConfirmPassword ? "Ẩn" : "Hiện"}
                                 </button>
                             </div>
+                        </div>
+
+                        {/* VÙNG CHỨA RECAPTCHA */}
+                        <div className="flex justify-center !my-4">
+                            <ReCAPTCHA
+                                ref={recaptchaRef}
+                                sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY || "6Lc5xuQsAAAAAAGnZfNyUmasRdXunlU1wnWOLZGh"}
+                                onChange={(token) => setCaptchaToken(token)}
+                                onExpired={() => setCaptchaToken(null)}
+                                onErrored={() => setCaptchaToken(null)}
+                            />
                         </div>
 
                         <div className="!pt-2">

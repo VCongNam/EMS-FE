@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import { useNavigate, useParams } from 'react-router-dom';
 import { tuitionService } from '../api/tuitionService';
 import useAuthStore from '../../../store/authStore';
+import { extractErrorMessage } from '../../../utils/errorHandler';
 
 const ClassTransactionsPage = () => {
     const navigate = useNavigate();
@@ -15,6 +16,11 @@ const ClassTransactionsPage = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [className, setClassName] = useState('');
+
+    // Filter period
+    const currentDate = new Date();
+    const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
+    const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
 
     // Pagination
     const ITEMS_PER_PAGE = 5;
@@ -29,7 +35,7 @@ const ClassTransactionsPage = () => {
         if (!user?.token || !classId) return;
         try {
             setIsLoading(true);
-            const res = await tuitionService.getClassTransactions(classId, user.token);
+            const res = await tuitionService.getClassTransactions(classId, selectedMonth, selectedYear, user.token);
             if (res.ok) {
                 const data = await res.json();
                 setTransactions(data || []);
@@ -38,7 +44,8 @@ const ClassTransactionsPage = () => {
                     setClassName(data[0].className);
                 }
             } else {
-                toast.error("Không thể lấy danh sách giao dịch.");
+                const errData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errData, "Không thể lấy danh sách giao dịch."));
             }
         } catch (error) {
             console.error("Lỗi:", error);
@@ -50,7 +57,7 @@ const ClassTransactionsPage = () => {
 
     useEffect(() => {
         fetchTransactions();
-    }, [user?.token, classId]);
+    }, [user?.token, classId, selectedMonth, selectedYear]);
 
     const handleAction = async (isApproved) => {
         if (!selectedTx) return;
@@ -73,7 +80,8 @@ const ClassTransactionsPage = () => {
                 setReviewNote('');
                 fetchTransactions();
             } else {
-                toast.error("Xử lý thất bại, vui lòng thử lại.");
+                const errData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errData, "Xử lý thất bại, vui lòng thử lại."));
             }
         } catch (error) {
             toast.error("Đã xảy ra lỗi.");
@@ -121,6 +129,9 @@ const ClassTransactionsPage = () => {
         return filteredTransactions.slice(start, start + ITEMS_PER_PAGE);
     }, [filteredTransactions, currentPage]);
 
+    const months = Array.from({ length: 12 }, (_, i) => i + 1);
+    const years = [currentDate.getFullYear() - 1, currentDate.getFullYear(), currentDate.getFullYear() + 1];
+
     const getStatusStyle = (status) => {
         const s = status?.toLowerCase();
         if (s === 'completed' || s === 'successful') return '!text-emerald-500 !bg-emerald-50';
@@ -151,12 +162,41 @@ const ClassTransactionsPage = () => {
             </div>
 
             <div className="!flex !flex-col md:!flex-row !items-start md:!items-center !justify-between !bg-surface !p-6 !rounded-[2.5rem] !border !border-border !shadow-sm !gap-4">
-                <div>
-                    <h1 className="!text-3xl !font-black !text-text-main !tracking-tight !flex !items-center !gap-3 font-['Outfit']">
-                        {className ? `Giao dịch – ${className}` : 'Giao dịch lớp học'}
-                        <div className="!w-2 !h-2 !rounded-full !bg-amber-500 !animate-pulse"></div>
-                    </h1>
-                    <p className="!text-sm !font-bold !text-text-muted !mt-1">Xem và duyệt các giao dịch thanh toán học phí của lớp này.</p>
+                <div className="!flex !items-center !gap-4">
+                    <div>
+                        <h1 className="!text-3xl !font-black !text-text-main !tracking-tight !flex !items-center !gap-3 font-['Outfit']">
+                            {className ? `Giao dịch – ${className}` : 'Giao dịch lớp học'}
+                            <div className="!w-2 !h-2 !rounded-full !bg-amber-500 !animate-pulse"></div>
+                        </h1>
+                        <p className="!text-sm !font-bold !text-text-muted !mt-1">Xem và duyệt các giao dịch thanh toán học phí của lớp này.</p>
+                    </div>
+
+                    {/* Period Filter */}
+                    <div className="!flex !items-center !gap-4 !bg-white !px-6 !py-3 !rounded-[2rem] !border !border-border !shadow-sm">
+                        <div className="!flex !items-center !gap-3">
+                            <div className="!p-2 !bg-blue-50 !rounded-xl">
+                                <Icon icon="solar:calendar-bold-duotone" className="!text-primary !text-xl" />
+                            </div>
+                            <span className="!text-sm !font-black !text-text-main !uppercase !tracking-wider">Kỳ thu:</span>
+                        </div>
+                        <div className="!flex !items-center !gap-4 !bg-slate-50 !px-4 !py-2 !rounded-xl !border !border-slate-200">
+                            <select 
+                                value={selectedMonth} 
+                                onChange={e => setSelectedMonth(Number(e.target.value))} 
+                                className="!bg-transparent !border-none !text-sm !font-black !text-[#355872] focus:!outline-none !cursor-pointer"
+                            >
+                                {months.map(m => <option key={m} value={m}>Tháng {m}</option>)}
+                            </select>
+                            <span className="!text-slate-300 font-bold">/</span>
+                            <select 
+                                value={selectedYear} 
+                                onChange={e => setSelectedYear(Number(e.target.value))} 
+                                className="!bg-transparent !border-none !text-sm !font-black !text-[#355872] focus:!outline-none !cursor-pointer"
+                            >
+                                {years.map(y => <option key={y} value={y}>{y}</option>)}
+                            </select>
+                        </div>
+                    </div>
                 </div>
 
                 <div className="!flex !items-center !gap-2 !bg-background !p-1.5 !rounded-2xl !border !border-border">

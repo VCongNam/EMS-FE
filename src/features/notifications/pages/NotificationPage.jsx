@@ -7,16 +7,26 @@ import NotificationFilters from '../components/NotificationFilters';
 import NotificationItem from '../components/NotificationItem';
 import { showNotification } from '../utils/toastUtils';
 import { toast } from 'react-toastify';
+import Pagination from '../../../components/ui/Pagination';
+import { useNotifications } from '../../../contexts/NotificationContext';
+import { extractErrorMessage } from '../../../utils/errorHandler';
 
 const NotificationPage = () => {
     const navigate = useNavigate();
     const { user } = useAuthStore();
     const token = user?.token;
+    const { isPushSupported, isPushSubscribed, requestPushPermission, setUnreadCount } = useNotifications();
+    
+    const isStudent = user?.role?.toLowerCase() === 'student';
 
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10; // 5 rows of 2
 
     const fetchNotifications = async () => {
         if (!token) return;
@@ -27,11 +37,12 @@ const NotificationPage = () => {
                 const data = await response.json();
                 setNotifications(data);
             } else {
-                toast.error('Không thể tải thông báo');
+                const errorData = await response.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errorData, 'Không thể tải thông báo'));
             }
         } catch (error) {
             console.error('Fetch notifications error:', error);
-            toast.error('Lỗi kết nối máy chủ');
+            toast.error(extractErrorMessage(error, 'Lỗi kết nối máy chủ'));
         } finally {
             setLoading(false);
         }
@@ -40,6 +51,11 @@ const NotificationPage = () => {
     useEffect(() => {
         fetchNotifications();
     }, [token]);
+
+    // Reset to page 1 when filter or search changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [filter, searchQuery]);
 
     const filteredNotifications = notifications.filter(notif => {
         const title = notif.title || '';
@@ -55,10 +71,18 @@ const NotificationPage = () => {
         return matchesFilter && matchesSearch;
     });
 
+    // Get current notifications for pagination
+    const paginatedNotifications = React.useMemo(() => {
+        const indexOfLastItem = currentPage * itemsPerPage;
+        const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+        return filteredNotifications.slice(indexOfFirstItem, indexOfLastItem);
+    }, [filteredNotifications, currentPage, itemsPerPage]);
+
     const handleMarkAsRead = async (notif) => {
         // Optimistic UI update
         if (!notif.isRead) {
             setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, isRead: true } : n));
+            setUnreadCount(prev => Math.max(0, prev - 1));
             try {
                 await notificationService.markAsRead(notif.id, token);
             } catch (error) {
@@ -78,6 +102,7 @@ const NotificationPage = () => {
         if (!hasUnread) return;
 
         setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+        setUnreadCount(0);
         try {
             const response = await notificationService.markAllAsRead(token);
             if (response.ok) {
@@ -85,7 +110,7 @@ const NotificationPage = () => {
             }
         } catch (error) {
             console.error('Mark all read error:', error);
-            toast.error('Không thể cập nhật trạng thái');
+            toast.error(extractErrorMessage(error, 'Không thể cập nhật trạng thái'));
         }
     };
 
@@ -106,6 +131,28 @@ const NotificationPage = () => {
                 </div>
 
                 <div className="!flex !flex-col sm:!flex-row !items-start md:!items-center !gap-4 !w-full md:!w-auto">
+                    {isPushSupported && (
+                        <button 
+                            onClick={async () => {
+                                const perm = await requestPushPermission();
+                                if (perm === 'granted') {
+                                    toast.success('Đã bật thông báo trên thiết bị này!');
+                                } else if (perm === 'denied') {
+                                    toast.error('Bạn đã chặn quyền! Vui lòng mở cài đặt trình duyệt.');
+                                }
+                            }}
+                            disabled={isPushSubscribed}
+                            title={isPushSubscribed ? "Thiết bị này đã được phép nhận thông báo" : "Bật thông báo đẩy"}
+                            className={`!w-full sm:!w-auto !px-6 !py-3 !rounded-2xl !text-sm !font-black !transition-all !flex !items-center !justify-center !gap-2 !border
+                                ${isPushSubscribed 
+                                    ? '!bg-green-50 !text-green-600 !border-green-200 cursor-default' 
+                                    : '!bg-primary !text-white !border-transparent hover:!bg-primary/90 shadow-md shadow-primary/20 hover:-translate-y-0.5'
+                                }`}
+                        >
+                            <Icon icon={isPushSubscribed ? "solar:bell-bing-bold-duotone" : "solar:bell-bold-duotone"} className="!text-lg" />
+                            {isPushSubscribed ? 'Đã bật thông báo' : 'Bật nhận thông báo'}
+                        </button>
+                    )}
                     <button 
                         onClick={fetchNotifications}
                         disabled={loading}
@@ -119,6 +166,7 @@ const NotificationPage = () => {
 
             {/* Navigation & Filters */}
             <NotificationFilters 
+                isStudent={isStudent}
                 activeFilter={filter} 
                 onFilterChange={setFilter} 
                 onMarkAllRead={handleMarkAllRead}
@@ -141,18 +189,32 @@ const NotificationPage = () => {
                             <Icon icon="solar:ghost-bold-duotone" className="!text-5xl !text-text-muted" />
                         </div>
                         <h3 className="!text-xl !font-black !text-text-main !mb-2">Ố ô! Không tìm thấy gì nhỉ?</h3>
-                        <p className="!text-sm !font-medium !text-text-muted !max-w-xs !mx-auto">Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm xem sao bạn nhé.</p>
+                        <p className="!text-sm !font-medium !text-text-muted !max-w-xs !mx-auto">
+                            {isStudent 
+                                ? "Thử thay đổi từ khóa tìm kiếm xem sao bạn nhé." 
+                                : "Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm xem sao bạn nhé."
+                            }
+                        </p>
                     </div>
                 ) : (
-                    <div className="!grid !grid-cols-1 md:!grid-cols-2 !gap-6">
-                        {filteredNotifications.map(notif => (
-                            <NotificationItem 
-                                key={notif.id} 
-                                notification={notif} 
-                                onClick={handleMarkAsRead} 
-                            />
-                        ))}
-                    </div>
+                    <>
+                        <div className="!grid !grid-cols-1 md:!grid-cols-2 !gap-6">
+                            {paginatedNotifications.map(notif => (
+                                <NotificationItem 
+                                    key={notif.id} 
+                                    notification={notif} 
+                                    onClick={handleMarkAsRead} 
+                                />
+                            ))}
+                        </div>
+
+                        <Pagination
+                            totalItems={filteredNotifications.length}
+                            itemsPerPage={itemsPerPage}
+                            currentPage={currentPage}
+                            onPageChange={setCurrentPage}
+                        />
+                    </>
                 )}
             </div>
 

@@ -6,53 +6,74 @@ import { assignmentService } from '../../../api/assignmentService';
 import { studentAssignmentService } from '../../../api/studentAssignmentService';
 import { toast } from 'react-toastify';
 import ConfirmModal from '../../../../../components/ui/ConfirmModal';
+import Pagination from '../../../../../components/ui/Pagination';
+import { useTAPermission } from '../../../../dashboard/context/TAPermissionContext';
+import { extractErrorMessage } from '../../../../../utils/errorHandler';
+import Loading from '../../../../../components/ui/Loading';
 
 const ClassworkPage = () => {
     const { user } = useAuthStore();
     const { classId } = useParams();
     const navigate = useNavigate();
-    
+    const { hasPermission, isTA } = useTAPermission();
+
     // RBAC check
     const userRole = user?.role?.toUpperCase();
     const isTeacherOrTA = userRole === 'TEACHER' || userRole === 'TA';
+    const canManageAssignment = !isTA || hasPermission('Assignment');
 
     const [assignments, setAssignments] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [totalItems, setTotalItems] = useState(0);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8;
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, assignmentId: null });
 
-    useEffect(() => {
-        const fetchAssignments = async () => {
-            if (!classId) return;
-            try {
-                setIsLoading(true);
-                let res;
-                if (isTeacherOrTA) {
-                    res = await assignmentService.getAssignmentsByClass(classId, user?.token);
-                } else {
-                    res = await studentAssignmentService.getAssignments(classId, user?.token);
+    const fetchAssignments = async () => {
+        if (!classId) return;
+        try {
+            setIsLoading(true);
+            let res;
+            if (isTeacherOrTA) {
+                res = await assignmentService.getAssignmentsByClass(classId, user?.token, currentPage, itemsPerPage);
+            } else {
+                res = await studentAssignmentService.getAssignments(classId, user?.token, currentPage, itemsPerPage);
+            }
+
+            if (res.ok) {
+                const result = await res.json();
+                
+                // Handle different response structures
+                let items = [];
+                let total = 0;
+
+                if (Array.isArray(result)) {
+                    items = result;
+                    total = result.length;
+                } else if (result.data?.items) {
+                    items = result.data.items;
+                    total = result.data.totalCount || result.data.totalItems || items.length;
+                } else if (result.data) {
+                    items = Array.isArray(result.data) ? result.data : [result.data];
+                    total = items.length;
                 }
 
-                if (res.ok) {
-                    const result = await res.json();
-                    // Handle different response structures
-                    if (Array.isArray(result)) {
-                        setAssignments(result);
-                    } else if (result.data?.items) {
-                        setAssignments(result.data.items);
-                    } else if (result.data) {
-                        setAssignments(Array.isArray(result.data) ? result.data : [result.data]);
-                    }
-                } else {
-                    console.error("Lỗi API khi tải bài tập:", res.status);
-                }
-            } catch (err) {
-                console.error("Lỗi mạng khi tải bài tập:", err);
-            } finally {
-                setIsLoading(false);
+                setAssignments(items);
+                setTotalItems(total);
+            } else {
+                const errData = await res.json().catch(() => ({}));
+                console.error("Lỗi API khi tải bài tập:", extractErrorMessage(errData, `Status: ${res.status}`));
             }
-        };
+        } catch (err) {
+            console.error("Lỗi mạng khi tải bài tập:", err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
         fetchAssignments();
-    }, [classId, user?.token, isTeacherOrTA]);
+    }, [classId, user?.token, isTeacherOrTA, currentPage]);
 
     const handleDeleteClick = (e, id) => {
         e.stopPropagation();
@@ -67,9 +88,10 @@ const ClassworkPage = () => {
             const res = await assignmentService.deleteAssignment(id, user?.token);
             if (res.ok) {
                 toast.success('Xóa bài tập thành công!');
-                setAssignments(prev => prev.filter(a => (a.assignmentId || a.id) !== id));
+                fetchAssignments();
             } else {
-                toast.error('Có lỗi xảy ra khi xóa bài tập.');
+                const errData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errData, 'Có lỗi xảy ra khi xóa bài tập.'));
             }
         } catch (err) {
             console.error(err);
@@ -79,19 +101,69 @@ const ClassworkPage = () => {
         }
     };
 
+    const handlePublish = async (e, id) => {
+        e.stopPropagation();
+        try {
+            const res = await assignmentService.publishAssignment(id, user?.token);
+            if (res.ok) {
+                toast.success('Giao bài tập thành công!');
+                // Update local state to reflect the status change
+                setAssignments(prev => prev.map(a => {
+                    const aId = a.assignmentID || a.assignmentId;
+                    if (aId === id) {
+                        return { ...a, status: 'Published' };
+                    }
+                    return a;
+                }));
+            } else {
+                const errData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errData, 'Có lỗi xảy ra khi giao bài tập.'));
+            }
+        } catch (err) {
+            console.error(err);
+            toast.error('Lỗi khi giao bài tập.');
+        }
+    };
+
+    const getStatusInfo = (status, isOverdue, isSubmitted) => {
+        const s = (status || '').toLowerCase();
+        
+        // Priority: Submitted > Overdue > Status-based
+        if (isSubmitted) return { label: 'Đã nộp', color: '!bg-green-500/10 text-green-600 border-green-200' };
+        if (isOverdue) return { label: 'Quá hạn', color: '!bg-red-500/10 text-red-600 border-red-200' };
+        
+        if (s === 'draft') return { label: 'Bản nháp', color: '!bg-slate-500/15 text-slate-600 border-slate-500/20' };
+        if (s === 'published') return { label: 'Đã giao', color: '!bg-primary/10 text-primary border-primary/20' };
+        if (s === 'turned in' || s === 'submitted') return { label: 'Đã nộp', color: '!bg-green-500/10 text-green-600 border-green-200' };
+        if (s === 'graded') return { label: 'Đã chấm điểm', color: '!bg-purple-500/10 text-purple-600 border-purple-200' };
+        
+        return { label: status || 'Đã giao', color: '!bg-blue-500/10 text-blue-600 border-blue-200' };
+    };
+
     const formattedAssignments = assignments.map(a => {
         const dDate = new Date(a.dueDate);
         const isOverdue = !isNaN(dDate) && dDate < new Date() && !a.isSubmitted;
+        const statusRaw = a.studentStatus || a.status || 'Published';
+        const stInfo = getStatusInfo(statusRaw, isOverdue, a.isSubmitted);
+
         return {
             id: a.assignmentID || a.assignmentId,
             title: a.title || 'Chưa có tiêu đề',
             dueDateDisplay: isNaN(dDate) ? 'Không xác định' : dDate.toLocaleString('vi-VN', {
                hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric'
             }),
-            status: a.studentStatus || a.status || 'Published',
+            statusLabel: stInfo.label,
+            statusColor: stInfo.color,
             isSubmitted: a.isSubmitted || false,
             grade: a.grade,
-            isOverdue: isOverdue
+            isOverdue: isOverdue,
+            isDraft: statusRaw.toLowerCase() === 'draft',
+            // New fields from API
+            totalSubmissions: a.totalSubmissions || 0,
+            totalStudents: a.totalStudents || 0,
+            gradeCategoryName: a.gradeCategoryName,
+            isOffline: a.isOffline || false,
+            isGraded: a.isGraded ?? a.isgraded ?? false
         };
     });
 
@@ -113,11 +185,17 @@ const ClassworkPage = () => {
                     )}
 
                     {isTeacherOrTA && (
-                        <button 
-                            onClick={() => navigate(`../create-assignment`, { relative: 'path' })}
-                            className="w-full sm:w-auto flex items-center justify-center gap-2 !bg-primary text-white font-semibold !px-6 !py-2.5 rounded-xl hover:!bg-primary-hover transition-colors shadow-sm shadow-primary/20"
+                        <button
+                            onClick={() => canManageAssignment && navigate(`../create-assignment`, { relative: 'path' })}
+                            disabled={!canManageAssignment}
+                            title={!canManageAssignment ? 'Bạn không có quyền tạo bài tập' : ''}
+                            className={`w-full sm:w-auto flex items-center justify-center gap-2 font-semibold !px-6 !py-2.5 rounded-xl transition-colors shadow-sm ${
+                                canManageAssignment
+                                    ? '!bg-primary text-white hover:!bg-primary-hover shadow-primary/20'
+                                    : '!bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
+                            }`}
                         >
-                            <Icon icon="material-symbols:add-rounded" className="text-xl" />
+                            <Icon icon={canManageAssignment ? 'material-symbols:add-rounded' : 'material-symbols:lock-rounded'} className="text-xl" />
                             Tạo bài tập
                         </button>
                     )}
@@ -126,8 +204,8 @@ const ClassworkPage = () => {
 
             {/* Assignments List */}
             {isLoading ? (
-                <div className="flex justify-center items-center py-10">
-                    <Icon icon="solar:spinner-linear" className="animate-spin text-3xl text-primary" />
+                <div className="!py-20 flex justify-center">
+                    <Loading text="Đang tải danh sách bài tập..." />
                 </div>
             ) : formattedAssignments.length > 0 ? (
                 <div className="!space-y-4">
@@ -143,35 +221,63 @@ const ClassworkPage = () => {
                                         <Icon icon="material-symbols:assignment-rounded" className="text-2xl text-primary group-hover:text-white" />
                                     </div>
                                     <div>
-                                        <h4 className="font-bold text-text-main text-lg group-hover:text-primary transition-colors">{assignment.title}</h4>
-                                        <p className="text-sm text-text-muted mt-1">Trạng thái: <span className="font-medium">{assignment.status}</span></p>
+                                        <h4 className="font-bold text-text-main text-lg group-hover:text-primary transition-colors flex items-center gap-2">
+                                            {assignment.title}
+                                            {assignment.isOffline && (
+                                                <span className="!bg-amber-100 text-amber-700 text-[10px] !px-2 !py-0.5 rounded-md border border-amber-200 flex items-center gap-1">
+                                                    <Icon icon="material-symbols:edit-document-outline-rounded" />
+                                                    Offline
+                                                </span>
+                                            )}
+                                        </h4>
+                                        <div className="flex flex-wrap items-center gap-2 mt-1">
+                                            <span className={`text-[10px] font-bold uppercase tracking-wider !px-2 !py-0.5 rounded-lg border ${assignment.statusColor}`}>
+                                                {assignment.statusLabel}
+                                            </span>
+                                            {assignment.gradeCategoryName && (
+                                                <span className="text-[10px] font-medium text-text-muted bg-background border border-border !px-2 !py-0.5 rounded-lg flex items-center gap-1">
+                                                    <Icon icon="material-symbols:category-outline-rounded" />
+                                                    {assignment.gradeCategoryName}
+                                                </span>
+                                            )}
+                                            {!assignment.isGraded && (
+                                                <span className="text-[10px] font-medium text-text-muted italic">
+                                                    (Không tính điểm)
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                                 
-                                <div className="flex items-center justify-between sm:justify-end gap-6 sm:w-1/3">
+                                <div className="flex items-center justify-between sm:justify-end gap-6 sm:w-1/2">
+                                    {isTeacherOrTA && (
+                                        <div className="text-center px-4 border-r border-border hidden md:block">
+                                            <p className="text-xs text-text-muted font-medium !mb-0.5">Nộp bài</p>
+                                            <p className="text-sm font-bold text-text-main">
+                                                {assignment.totalSubmissions}<span className="text-text-muted font-normal">/{assignment.totalStudents}</span>
+                                            </p>
+                                        </div>
+                                    )}
                                     {!isTeacherOrTA && (
-                                        <span className={`text-sm font-semibold !px-3 !py-1 rounded-full ${
-                                            assignment.isSubmitted ? '!bg-green-500/10 text-green-600' : 
-                                            assignment.isOverdue ? '!bg-red-500/10 text-red-600' : '!bg-orange-500/10 text-orange-600'
-                                        }`}>
-                                            {assignment.status}
+                                        <span className={`text-xs font-bold !px-3 !py-1.5 rounded-xl border ${assignment.statusColor}`}>
+                                            {assignment.statusLabel}
                                         </span>
                                     )}
                                     <div className="text-right flex-shrink-0">
-                                        <p className="text-sm text-text-main font-semibold">Đến hạn</p>
+                                        <p className="text-sm text-text-main font-semibold">{assignment.isOffline ? 'Ngày thi' : 'Đến hạn'}</p>
                                         <p className={`text-sm ${assignment.isOverdue ? 'text-red-500 font-bold' : 'text-text-muted'}`}>{assignment.dueDateDisplay}</p>
                                     </div>
                                     <div className="flex items-center gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity mt-2 sm:mt-0">
-                                        {isTeacherOrTA && (
+                                        {isTeacherOrTA && canManageAssignment && (
                                             <>
-                                                <button 
+                                                <button
                                                     onClick={(e) => { e.stopPropagation(); navigate(`../edit-assignment/${assignment.id}`, { relative: 'path' }); }}
                                                     className="p-1.5 text-text-muted hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
                                                     title="Chỉnh sửa"
                                                 >
                                                     <Icon icon="material-symbols:edit-outline-rounded" className="text-xl" />
                                                 </button>
-                                                <button 
+                                                <button
                                                     onClick={(e) => handleDeleteClick(e, assignment.id)}
                                                     className="p-1.5 text-text-muted hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
                                                     title="Xóa"
@@ -193,6 +299,18 @@ const ClassworkPage = () => {
                         {isTeacherOrTA ? 'Nhấp vào nút "Tạo bài tập" để giao bài cho lớp.' : 'Giáo viên chưa giao bài tập nào cho lớp.'}
                     </p>
                  </div>
+            )}
+
+            {/* Pagination */}
+            {!isLoading && totalItems > itemsPerPage && (
+                <div className="flex justify-center !mt-8">
+                    <Pagination
+                        currentPage={currentPage}
+                        totalItems={totalItems}
+                        itemsPerPage={itemsPerPage}
+                        onPageChange={(page) => setCurrentPage(page)}
+                    />
+                </div>
             )}
 
             <ConfirmModal 

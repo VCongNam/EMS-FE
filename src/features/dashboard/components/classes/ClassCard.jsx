@@ -12,8 +12,9 @@ const getStatusConfig = (status) => {
         case 'upcoming':
             return { label: 'Đã lên lịch', color: 'text-blue-600', bg: 'bg-blue-100', dot: 'bg-blue-500' };
         case 'completed':
-        case 'archived':
             return { label: 'Đã kết thúc', color: 'text-gray-600', bg: 'bg-gray-100', dot: 'bg-gray-500' };
+        case 'archived':
+            return { label: 'Lưu trữ', color: 'text-orange-600', bg: 'bg-orange-50', dot: 'bg-orange-400' };
         default:
             return { label: 'Không xác định', color: 'text-gray-600', bg: 'bg-gray-100', dot: 'bg-gray-500' };
     }
@@ -27,6 +28,7 @@ const ClassCard = ({
     onViewDetails, 
     basePath = '/teacher/classes',
     showProgress = true,
+    showStudentCount = true,
     salary = null,
     permission = null
 }) => {
@@ -58,6 +60,27 @@ const ClassCard = ({
         
         // Chuyển hướng tới tab Bảng tin của chi tiết lớp
         navigate(`${basePath}/${classData.id}/stream`);
+    };
+
+    const getPermissionLabel = (permString) => {
+        if (!permString) return '';
+        
+        const mapping = {
+            'attendance': 'Điểm danh',
+            'grades': 'Điểm số',
+            'posts': 'Bài đăng',
+            'materials': 'Tài liệu',
+            'sessions': 'Buổi học',
+            'students': 'Học viên',
+            'tasks': 'Nhiệm vụ',
+            'feedback': 'Nhận xét',
+            'reports': 'Báo cáo'
+        };
+
+        return permString.split(',')
+            .map(p => p.trim().toLowerCase())
+            .map(p => mapping[p] || p)
+            .join(', ');
     };
 
     return (
@@ -138,9 +161,9 @@ const ClassCard = ({
                 <h3 className="text-lg font-bold text-text-main font-['Outfit'] !mb-1 group-hover:text-primary transition-colors line-clamp-2">
                     {classData.name}
                 </h3>
-                <p className="font-mono text-sm text-text-muted bg-background inline-block !px-2 !py-0.5 rounded border border-border/50 !mb-3">
+                {/* <p className="font-mono text-sm text-text-muted bg-background inline-block !px-2 !py-0.5 rounded border border-border/50 !mb-3">
                     {classData.code}
-                </p>
+                </p> */}
 
                 <div className="space-y-2 !mt-2">
                     <div className="flex items-center text-sm text-text-muted gap-2">
@@ -153,10 +176,12 @@ const ClassCard = ({
                             <span>{classData.schedule}</span>
                         </div>
                     )}
-                    <div className="flex items-center text-sm text-text-muted gap-2">
-                        <Icon icon="material-symbols:group-outline-rounded" className="text-primary text-base" />
-                        <span>{classData.students?.count || classData.studentCount || 0} / {classData.students?.max || '--'} học viên</span>
-                    </div>
+                    {showStudentCount && (
+                        <div className="flex items-center text-sm text-text-muted gap-2">
+                            <Icon icon="material-symbols:group-outline-rounded" className="text-primary text-base" />
+                            <span>{classData.students?.count || classData.studentCount || 0} / {classData.students?.max || '--'} học viên</span>
+                        </div>
+                    )}
                 </div>
 
                 {/* Additional Info for TAs */}
@@ -166,7 +191,7 @@ const ClassCard = ({
                             <div className="flex items-center gap-2">
                                 <Icon icon="solar:shield-keyhole-linear" className="text-amber-500 text-base" />
                                 <span className="text-xs font-semibold text-text-main">Quyền: </span>
-                                <span className="text-xs text-text-muted truncate">{permission}</span>
+                                <span className="text-xs text-text-muted truncate">{getPermissionLabel(permission)}</span>
                             </div>
                         )}
                         {salary && (

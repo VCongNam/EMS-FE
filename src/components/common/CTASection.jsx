@@ -31,7 +31,7 @@ const CTASection = ({
                         <a href={primaryBtnLink}>
                             <Button
                                 size="lg"
-                                className="!bg-white !text-[#355872] !border-none !shadow-[0_10px_30px_-5px_rgba(0,0,0,0.3)] hover:!shadow-[0_15px_40px_-5px_rgba(0,0,0,0.4)] hover:!scale-105 !font-bold !px-14 !py-5 !text-lg"
+                                className="bg-white !text-[#355872] !border-none !shadow-[0_10px_30px_-5px_rgba(0,0,0,0.3)] hover:!shadow-[0_15px_40px_-5px_rgba(0,0,0,0.4)] hover:!scale-105 !font-bold !px-14 !py-5 !text-lg"
                             >
                                 {primaryBtnText}
                             </Button>

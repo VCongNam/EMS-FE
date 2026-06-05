@@ -4,18 +4,21 @@ import { Icon } from '@iconify/react';
 import { toast } from 'react-toastify';
 import useAuthStore from '../../../store/authStore';
 import { taService } from '../api/taService';
+import { extractErrorMessage } from '../../../utils/errorHandler';
 
 const PERMISSION_OPTIONS = [
-    { key: 'Attendance', label: 'Điểm danh học sinh', icon: 'solar:calendar-check-bold-duotone', desc: 'Cho phép TA thực hiện điểm danh trong lớp học do mình phụ trách.' },
+    { key: 'Attendance', label: 'Điểm danh học sinh', icon: 'solar:calendar-check-bold-duotone', desc: 'Cho phép TA thực hiện điểm danh trong lớp học.' },
     { key: 'Grade', label: 'Chấm điểm & Nhập điểm', icon: 'solar:pen-new-square-bold-duotone', desc: 'Cho phép TA nhập, sửa điểm các bài kiểm tra của học sinh.' },
     { key: 'Report', label: 'Xem Báo cáo học tập', icon: 'solar:chart-2-bold-duotone', desc: 'Xem biểu đồ thống kê, báo cáo học tập của lớp học.' },
-    { key: 'Assignment', label: 'Tạo Bài tập & Assignment', icon: 'solar:document-add-bold-duotone', desc: 'Đăng tải bài tập, quản lý tài liệu, thông báo lớp.' },
+    { key: 'Assignment', label: 'Quản lý bài tập', icon: 'solar:document-add-bold-duotone', desc: 'Đăng tải bài tập, quản lý tài liệu, thông báo lớp.' },
+    { key: 'Feedback', label: 'Nhận xét & Phản hồi', icon: 'solar:chat-round-dots-bold-duotone', desc: 'Cho phép TA viết nhận xét và phản hồi cho học sinh.' },
 ];
 
 const EditTAPermissionModal = ({ isOpen, onClose, assistant, onUpdate }) => {
     const { user } = useAuthStore();
     const [isSaving, setIsSaving] = useState(false);
     const [selectedPermissions, setSelectedPermissions] = useState([]);
+    const [salaryPerSession, setSalaryPerSession] = useState(0);
 
     useEffect(() => {
         if (assistant?.permission) {
@@ -23,6 +26,12 @@ const EditTAPermissionModal = ({ isOpen, onClose, assistant, onUpdate }) => {
             setSelectedPermissions(perms);
         } else {
             setSelectedPermissions([]);
+        }
+        
+        if (assistant?.salaryPerSession) {
+            setSalaryPerSession(assistant.salaryPerSession);
+        } else {
+            setSalaryPerSession(0);
         }
     }, [assistant]);
 
@@ -46,8 +55,11 @@ const EditTAPermissionModal = ({ isOpen, onClose, assistant, onUpdate }) => {
             return;
         }
 
+        const salary = Number(salaryPerSession);
+
         const payload = {
-            permission: selectedPermissions.join(', ') || 'None'
+            permission: selectedPermissions.join(', ') || 'None',
+            salaryPerSession: salary
         };
 
         try {
@@ -58,8 +70,8 @@ const EditTAPermissionModal = ({ isOpen, onClose, assistant, onUpdate }) => {
                 onUpdate();
                 onClose();
             } else {
-                const error = await res.json();
-                toast.error(error.message || 'Lỗi khi cập nhật quyền');
+                const error = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(error, 'Lỗi khi cập nhật quyền'));
             }
         } catch (error) {
             console.error(error);
@@ -78,18 +90,18 @@ const EditTAPermissionModal = ({ isOpen, onClose, assistant, onUpdate }) => {
             />
 
             {/* Modal Container */}
-            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none">
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center !p-4 pointer-events-none">
                 <div 
                     className="bg-surface w-full max-w-2xl rounded-[1.5rem] shadow-[0_10px_40px_rgba(0,0,0,0.15)] border border-border overflow-hidden animate-slide-up pointer-events-auto flex flex-col"
                     onClick={e => e.stopPropagation()}
                 >
                     {/* Header */}
-                    <div className="p-6 flex items-center justify-between">
+                    <div className="!p-6 flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <Icon icon="solar:shield-keyhole-bold-duotone" className="text-[26px] text-primary" />
                             <h3 className="text-xl font-bold text-text-main">Quyền hạn cấu hình</h3>
                         </div>
-                        <div className="px-5 py-1.5 bg-background text-text-muted rounded-lg text-[13px] font-bold">
+                        <div className="!px-5 !py-1.5 bg-background text-text-muted rounded-lg text-[13px] font-bold">
                             {assistant?.fullName}
                         </div>
                     </div>
@@ -98,8 +110,13 @@ const EditTAPermissionModal = ({ isOpen, onClose, assistant, onUpdate }) => {
                         {/* Divider */}
                         <div className="h-[1px] bg-border/50 w-full mb-6"></div>
 
-                        {/* List of Permissions */}
-                        <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1 custom-scrollbar">
+
+
+                        <label className="block text-sm font-bold text-text-main !mb-4 flex items-center gap-2">
+                            <Icon icon="solar:shield-check-bold-duotone" className="text-xl text-primary" />
+                            Danh sách quyền hạn
+                        </label>
+                        <div className="space-y-4 max-h-[60vh] overflow-y-auto !pr-1 custom-scrollbar">
                             {PERMISSION_OPTIONS.map((opt) => {
                                 const isActive = selectedPermissions.includes(opt.key);
                                 return (
@@ -137,10 +154,10 @@ const EditTAPermissionModal = ({ isOpen, onClose, assistant, onUpdate }) => {
                         </div>
 
                         {/* Divider */}
-                        <div className="h-[1px] bg-border/50 w-full mt-8 mb-6"></div>
+                        <div className="h-[1px] !bg-border/50 w-full !mt-8 !mb-6"></div>
 
                         {/* Footer Actions */}
-                        <div className="flex justify-end items-center gap-6 pr-2">
+                        <div className="flex justify-end items-center gap-6 !pr-2">
                             <button
                                 onClick={onClose}
                                 className="text-[15px] font-bold text-text-muted hover:text-text-main transition-colors !bg-transparent"
@@ -150,7 +167,7 @@ const EditTAPermissionModal = ({ isOpen, onClose, assistant, onUpdate }) => {
                             <button
                                 onClick={handleSave}
                                 disabled={isSaving}
-                                className="px-8 py-2.5 rounded-xl !bg-primary !text-white font-bold shadow-lg shadow-primary/20 hover:!bg-primary-hover transition-all flex items-center gap-2 group disabled:opacity-50"
+                                className="!px-8 !py-2.5 rounded-xl !bg-primary !text-white font-bold shadow-lg shadow-primary/20 hover:!bg-primary-hover transition-all flex items-center gap-2 group disabled:opacity-50"
                             >
                                 {isSaving ? (
                                     <Icon icon="solar:spinner-linear" className="animate-spin text-xl !text-white" />

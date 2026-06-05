@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import Button from '../../../components/ui/Button';
 import AuthLayout from '../components/AuthLayout';
 import { authService } from '../api/authService';
+import { extractErrorMessage } from '../../../utils/errorHandler';
 
 const VerifyEmailPage = () => {
     const navigate = useNavigate();
@@ -47,14 +48,14 @@ const VerifyEmailPage = () => {
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || 'Xác thực email thất bại. Mã xác nhận không hợp lệ!');
+                throw new Error(extractErrorMessage(errorData, 'Xác thực email thất bại. Mã xác nhận không hợp lệ!'));
             }
 
             toast.success("Xác thực email thành công! Chào mừng bạn.");
             // Đăng ký và xác thực thành công, chuyển hướng về Login
             navigate('/login');
         } catch (err) {
-            setError(err.message);
+            setError(extractErrorMessage(err));
         } finally {
             setLoading(false);
         }
@@ -69,13 +70,13 @@ const VerifyEmailPage = () => {
             const response = await authService.resendOtp(email);
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || 'Không thể gửi lại mã OTP.');
+                throw new Error(extractErrorMessage(errorData, 'Không thể gửi lại mã OTP.'));
             }
             toast.success("Mã OTP mới đã được gửi tới email của bạn!");
             setResendTimer(60); // Reset timer
         } catch (err) {
-            toast.error(err.message);
-            setError(err.message);
+            toast.error(extractErrorMessage(err));
+            setError(extractErrorMessage(err));
         } finally {
             setResending(false);
         }

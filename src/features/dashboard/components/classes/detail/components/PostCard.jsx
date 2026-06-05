@@ -1,14 +1,23 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
 import useAuthStore from '../../../../../../store/authStore';
+import { formatViDate } from '../../../../../../utils/dateUtils';
 import PostComposer from './PostComposer';
 import ConfirmModal from '../../../../../../components/ui/ConfirmModal';
 
 const PostCard = ({ post, onUpdate, onDelete, onComment, onDeleteComment }) => {
     const { user } = useAuthStore();
     const token = user?.token;
-    const isTeacherOrTA = ['TEACHER', 'TA'].includes(user?.role?.toUpperCase());
-    console.log('PostCard - User Role:', user?.role, 'isTeacherOrTA:', isTeacherOrTA);
+    const userRole = user?.role?.toUpperCase();
+    const isTeacher = userRole === 'TEACHER';
+    const isTA = userRole === 'TA';
+    
+    // Permission rules:
+    // 1. Teachers can manage all posts (moderator role)
+    // 2. TAs can only manage posts that are NOT from Teachers
+    const canManagePost = isTeacher || (isTA && post.role !== 'TEACHER');
+    
+    console.log('PostCard - Role:', userRole, 'Post Role:', post.role, 'Can Manage:', canManagePost);
     const [isEditing, setIsEditing] = useState(false);
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
     const [commentText, setCommentText] = useState('');
@@ -17,7 +26,7 @@ const PostCard = ({ post, onUpdate, onDelete, onComment, onDeleteComment }) => {
 
     const handleCommentSubmit = async () => {
         if (!commentText.trim() || isSubmittingComment) return;
-        
+
         setIsSubmittingComment(true);
         try {
             await onComment(post.postId, commentText);
@@ -29,7 +38,7 @@ const PostCard = ({ post, onUpdate, onDelete, onComment, onDeleteComment }) => {
 
     if (isEditing) {
         return (
-            <PostComposer 
+            <PostComposer
                 editMode={true}
                 initialContent={{ title: post.title, content: post.content }}
                 initialAttachments={post.attachments || []}
@@ -58,27 +67,27 @@ const PostCard = ({ post, onUpdate, onDelete, onComment, onDeleteComment }) => {
                                     {post.role === 'TEACHER' ? 'GIÁO VIÊN' : post.role === 'TA' ? 'TRỢ GIẢNG' : 'HỌC SINH'}
                                 </span>
                             )}
-                            <span>{new Date(post.createdAt).toLocaleString('vi-VN', { 
-                                day: '2-digit', month: '2-digit', year: 'numeric', 
-                                hour: '2-digit', minute: '2-digit' 
+                            <span>{formatViDate(post.createdAt, {
+                                day: '2-digit', month: '2-digit', year: 'numeric',
+                                hour: '2-digit', minute: '2-digit'
                             })}</span>
                         </div>
                     </div>
                 </div>
-                
+
                 <div className="flex items-center gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                    {isTeacherOrTA && (
+                    {canManagePost && (
                         <>
-                            <button 
-                                onClick={() => setIsEditing(true)} 
-                                className="!p-1.5 text-text-muted hover:text-primary hover:bg-primary/10 rounded-lg transition-colors border border-transparent hover:border-primary/20" 
+                            <button
+                                onClick={() => setIsEditing(true)}
+                                className="!p-1.5 text-text-muted hover:text-primary hover:bg-primary/10 rounded-lg transition-colors border border-transparent hover:border-primary/20"
                                 title="Chỉnh sửa"
                             >
                                 <Icon icon="material-symbols:edit-outline-rounded" className="text-lg" />
                             </button>
-                            <button 
-                                onClick={() => setIsConfirmOpen(true)} 
-                                className="!p-1.5 text-text-muted hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors border border-transparent hover:border-red-200" 
+                            <button
+                                onClick={() => setIsConfirmOpen(true)}
+                                className="!p-1.5 text-text-muted hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors border border-transparent hover:border-red-200"
                                 title="Xóa"
                             >
                                 <Icon icon="material-symbols:delete-outline-rounded" className="text-lg" />
@@ -107,37 +116,36 @@ const PostCard = ({ post, onUpdate, onDelete, onComment, onDeleteComment }) => {
                             const fileExt = fileName.split('.').pop().toUpperCase();
                             const displayType = fileExt.length > 4 ? fileExt.substring(0, 4) : fileExt;
                             const fileSize = att.fileSize ? `${(att.fileSize / 1024 / 1024).toFixed(2)} MB` : att.size;
-                            
+
                             return (
-                                <a 
-                                    key={att.attachmentId || att.id} 
-                                    href={att.fileUrl} 
-                                    target="_blank" 
+                                <a
+                                    key={att.attachmentId || att.id}
+                                    href={att.fileUrl}
+                                    target="_blank"
                                     rel="noopener noreferrer"
                                     className="group border border-border rounded-xl overflow-hidden hover:bg-surface-hover hover:border-primary/50 transition-all cursor-pointer flex items-center h-24"
                                 >
                                     {/* Attachment Icon Side */}
                                     <div className="w-24 h-full border-r border-border bg-background flex flex-col items-center justify-center flex-shrink-0 group-hover:bg-primary/5 transition-colors p-2">
-                                        <Icon 
+                                        <Icon
                                             icon={
                                                 fileName.toLowerCase().endsWith('.pdf') ? 'solar:file-text-bold-duotone' :
-                                                fileName.toLowerCase().match(/\.(doc|docx)$/) ? 'solar:document-bold-duotone' :
-                                                fileName.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/) ? 'solar:gallery-bold-duotone' :
-                                                fileName.toLowerCase().match(/\.(mp4|mov|avi)$/) ? 'solar:videocamera-record-bold-duotone' :
-                                                fileName.toLowerCase().match(/\.(ppt|pptx)$/) ? 'solar:presentation-graph-bold-duotone' :
-                                                'solar:file-bold-duotone'
-                                            } 
-                                            className={`text-4xl !mb-1 ${
-                                                fileName.toLowerCase().endsWith('.pdf') ? 'text-red-500' :
-                                                fileName.toLowerCase().match(/\.(doc|docx)$/) ? 'text-blue-500' :
-                                                fileName.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/) ? 'text-emerald-500' :
-                                                fileName.toLowerCase().match(/\.(mp4|mov|avi)$/) ? 'text-purple-500' :
-                                                'text-text-muted'
-                                            }`} 
+                                                    fileName.toLowerCase().match(/\.(doc|docx)$/) ? 'solar:document-bold-duotone' :
+                                                        fileName.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/) ? 'solar:gallery-bold-duotone' :
+                                                            fileName.toLowerCase().match(/\.(mp4|mov|avi)$/) ? 'solar:videocamera-record-bold-duotone' :
+                                                                fileName.toLowerCase().match(/\.(ppt|pptx)$/) ? 'solar:presentation-graph-bold-duotone' :
+                                                                    'solar:file-bold-duotone'
+                                            }
+                                            className={`text-4xl !mb-1 ${fileName.toLowerCase().endsWith('.pdf') ? 'text-red-500' :
+                                                    fileName.toLowerCase().match(/\.(doc|docx)$/) ? 'text-blue-500' :
+                                                        fileName.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/) ? 'text-emerald-500' :
+                                                            fileName.toLowerCase().match(/\.(mp4|mov|avi)$/) ? 'text-purple-500' :
+                                                                'text-text-muted'
+                                                }`}
                                         />
                                         <span className="text-[10px] font-bold text-text-muted truncate w-full text-center group-hover:text-primary">{displayType}</span>
                                     </div>
-                                    
+
                                     {/* Attachment Detail Side */}
                                     <div className="p-4 w-full overflow-hidden flex flex-col justify-center gap-1">
                                         <h5 className="text-sm font-semibold text-text-main truncate group-hover:text-primary transition-colors">
@@ -156,7 +164,7 @@ const PostCard = ({ post, onUpdate, onDelete, onComment, onDeleteComment }) => {
             {(post.comments?.length > 0 || isSubmittingComment) && (
                 <div className="!px-5 !py-4 border-t border-border bg-background/50">
                     <div className="flex items-center justify-between !mb-4">
-                        <button 
+                        <button
                             onClick={() => setShowAllComments(!showAllComments)}
                             className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
                         >
@@ -172,20 +180,20 @@ const PostCard = ({ post, onUpdate, onDelete, onComment, onDeleteComment }) => {
                                     <Icon icon="solar:user-bold-duotone" className="text-primary text-xs" />
                                 </div>
                                 <div className="flex-1 bg-background !p-3 rounded-2xl border border-border group-hover:border-primary/30 transition-colors">
-                                    <div className="flex items-center justify-between !mb-1">
-                                        <h5 className="text-xs font-bold text-text-main">{comment.authorName}</h5>
-                                        <div className="flex items-center gap-2">
-                                            {isTeacherOrTA && (
-                                                <button 
-                                                    onClick={() => onDeleteComment(comment.commentId)}
-                                                    className="opacity-0 group-hover:opacity-100 p-1 text-text-muted hover:text-red-500 transition-opacity"
-                                                    title="Xóa nhận xét"
-                                                >
-                                                    <Icon icon="material-symbols:delete-outline-rounded" className="text-sm" />
-                                                </button>
-                                            )}
+                                        <div className="flex items-center justify-between !mb-1">
+                                            <h5 className="text-xs font-bold text-text-main">{comment.authorName}</h5>
+                                            <div className="flex items-center gap-2">
+                                                {canManagePost && (
+                                                    <button
+                                                        onClick={() => onDeleteComment(comment.commentId)}
+                                                        className="opacity-0 group-hover:opacity-100 p-1 text-text-muted hover:text-red-500 transition-opacity"
+                                                        title="Xóa nhận xét"
+                                                    >
+                                                        <Icon icon="material-symbols:delete-outline-rounded" className="text-sm" />
+                                                    </button>
+                                                )}
                                             <span className="text-[10px] text-text-muted">
-                                                {new Date(comment.createdAt).toLocaleDateString('vi-VN')}
+                                                {formatViDate(comment.createdAt, { day: '2-digit', month: '2-digit', year: 'numeric' })}
                                             </span>
                                         </div>
                                     </div>
@@ -203,15 +211,15 @@ const PostCard = ({ post, onUpdate, onDelete, onComment, onDeleteComment }) => {
                     <Icon icon="solar:user-bold-duotone" className="text-primary text-sm" />
                 </div>
                 <div className="w-full bg-background border border-border rounded-full !px-4 !py-2 flex items-center gap-2 focus-within:border-primary/50 transition-colors">
-                    <input 
-                        type="text" 
+                    <input
+                        type="text"
                         value={commentText}
                         onChange={(e) => setCommentText(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleCommentSubmit()}
-                        placeholder="Thêm nhận xét của lớp học..." 
+                        placeholder="Thêm nhận xét của lớp học..."
                         className="w-full bg-transparent border-none focus:outline-none text-sm text-text-main"
                     />
-                    <button 
+                    <button
                         onClick={handleCommentSubmit}
                         disabled={!commentText.trim() || isSubmittingComment}
                         className="text-text-muted hover:text-primary disabled:opacity-30 transition-colors"
@@ -221,7 +229,7 @@ const PostCard = ({ post, onUpdate, onDelete, onComment, onDeleteComment }) => {
                 </div>
             </div>
 
-            <ConfirmModal 
+            <ConfirmModal
                 isOpen={isConfirmOpen}
                 onClose={() => setIsConfirmOpen(false)}
                 onConfirm={() => {

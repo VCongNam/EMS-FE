@@ -4,23 +4,16 @@ import { Icon } from '@iconify/react';
 import { toast } from 'react-toastify';
 import useAuthStore from '../../../../../../store/authStore';
 import { sessionService } from '../../../../api/sessionService';
+import { extractErrorMessage } from '../../../../../../utils/errorHandler';
 
 const STATUS_OPTIONS = [
     {
         key: 'present',
-        label: 'Hiện diện',
+        label: 'có mặt',
         icon: 'material-symbols:check-circle-rounded',
         activeClass: '!bg-green-500/15 border-green-500 text-green-600 ring-2 ring-green-500/20',
         dotClass: '!bg-green-500',
         borderHover: 'hover:border-green-400',
-    },
-    {
-        key: 'late',
-        label: 'Đi muộn',
-        icon: 'material-symbols:schedule-rounded',
-        activeClass: '!bg-orange-500/15 border-orange-500 text-orange-600 ring-2 ring-orange-500/20',
-        dotClass: '!bg-orange-500',
-        borderHover: 'hover:border-orange-400',
     },
     {
         key: 'absent',
@@ -32,7 +25,7 @@ const STATUS_OPTIONS = [
     },
 ];
 
-const AttendanceModal = ({ isOpen, lesson, existingRecord, onClose, onSave }) => {
+const AttendanceModal = ({ isOpen, lesson, existingRecord, onClose, onSave, readOnly = false }) => {
     const [students, setStudents] = useState([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -49,20 +42,24 @@ const AttendanceModal = ({ isOpen, lesson, existingRecord, onClose, onSave }) =>
                     const res = await sessionService.getAttendance(lesson.id, token);
                     if (res.ok) {
                         const data = await res.json();
-                        const mapped = data.map(item => ({
-                            id: item.studentId,
-                            name: item.fullName,
-                            attendanceId: item.attendanceId,
-                            status: item.status ? item.status.toLowerCase() : 'none',
-                            isExcused: item.isExcused || false,
-                            note: item.note || ''
-                        }));
+                        const mapped = data.map(item => {
+                            const rawStatus = item.status ? item.status.toLowerCase() : 'none';
+                            return {
+                                id: item.studentId,
+                                name: item.fullName,
+                                attendanceId: item.attendanceId,
+                                status: rawStatus === 'late' ? 'present' : rawStatus,
+                                isExcused: item.isExcused || false,
+                                note: item.note || ''
+                            };
+                        });
                         setStudents(mapped);
                     } else {
-                        toast.error('Lỗi khi tải danh sách điểm danh');
+                        const errData = await res.json().catch(() => ({}));
+                        toast.error(extractErrorMessage(errData, 'Lỗi khi tải danh sách điểm danh'));
                     }
                 } catch (err) {
-                    toast.error('Lỗi kết nối máy chủ');
+                    toast.error(extractErrorMessage(err, 'Lỗi kết nối máy chủ'));
                 } finally {
                     setIsLoading(false);
                 }
@@ -92,15 +89,15 @@ const AttendanceModal = ({ isOpen, lesson, existingRecord, onClose, onSave }) =>
     };
 
     const handleSubmit = async () => {
-        const unchecked = students.filter(s => s.status === 'none');
-        if (unchecked.length > 0) {
-            toast.warning(`Còn ${unchecked.length} học sinh chưa được điểm danh!`);
+        const markedStudents = students.filter(s => s.status === 'present' || s.status === 'absent');
+        if (markedStudents.length === 0) {
+            toast.warning("Vui lòng chọn trạng thái điểm danh cho ít nhất 1 học sinh!");
             return;
         }
 
         setIsSubmitting(true);
         const token = useAuthStore.getState().user?.token;
-        const payload = students.map(s => ({
+        const payload = markedStudents.map(s => ({
             studentId: s.id,
             status: s.status.charAt(0).toUpperCase() + s.status.slice(1), // "present" -> "Present", "absent" -> "Absent"
             isExcused: s.isExcused,
@@ -114,17 +111,17 @@ const AttendanceModal = ({ isOpen, lesson, existingRecord, onClose, onSave }) =>
                 toast.success(`Đã lưu điểm danh Buổi ${lesson.session} thành công!`);
                 onSave(lesson.id, students);
             } else {
-                toast.error('Có lỗi xảy ra khi lưu điểm danh');
+                const errData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errData, 'Có lỗi xảy ra khi lưu điểm danh'));
             }
         } catch (err) {
-            toast.error('Lỗi kết nối máy chủ');
+            toast.error(extractErrorMessage(err, 'Lỗi kết nối máy chủ'));
         } finally {
             setIsSubmitting(false);
         }
     };
 
     const presentCount = students.filter(s => s.status === 'present').length;
-    const lateCount = students.filter(s => s.status === 'late').length;
     const absentCount = students.filter(s => s.status === 'absent').length;
     const noneCount = students.filter(s => s.status === 'none').length;
 
@@ -193,11 +190,7 @@ const AttendanceModal = ({ isOpen, lesson, existingRecord, onClose, onSave }) =>
                         <div className="grid grid-cols-2 sm:flex sm:flex-wrap !gap-2">
                             <div className="flex items-center !gap-2 !px-3 !py-2 !bg-green-500/10 border border-green-500/20 rounded-2xl">
                                 <span className="w-2 h-2 rounded-full !bg-green-500 shrink-0" />
-                                <span className="text-xs font-bold text-green-600">Hiện diện: {presentCount}</span>
-                            </div>
-                            <div className="flex items-center !gap-2 !px-3 !py-2 !bg-orange-500/10 border border-orange-500/20 rounded-2xl">
-                                <span className="w-2 h-2 rounded-full !bg-orange-500 shrink-0" />
-                                <span className="text-xs font-bold text-orange-600">Đi muộn: {lateCount}</span>
+                                <span className="text-xs font-bold text-green-600">có mặt: {presentCount}</span>
                             </div>
                             <div className="flex items-center !gap-2 !px-3 !py-2 !bg-red-500/10 border border-red-500/20 rounded-2xl">
                                 <span className="w-2 h-2 rounded-full !bg-red-500 shrink-0" />
@@ -211,22 +204,30 @@ const AttendanceModal = ({ isOpen, lesson, existingRecord, onClose, onSave }) =>
                             )}
                         </div>
 
-                        {/* Quick mark all */}
-                        <div className="flex items-center !gap-2 !mt-3 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-                            <span className="text-xs font-semibold text-text-muted shrink-0">Đánh dấu tất cả:</span>
-                            <button
-                                onClick={() => handleMarkAll('present')}
-                                className="text-xs font-semibold !px-3 !py-1.5 rounded-xl !bg-green-500/10 text-green-600 border border-green-500/20 hover:!bg-green-500/20 transition-colors whitespace-nowrap"
-                            >
-                                Hiện diện
-                            </button>
-                            <button
-                                onClick={() => handleMarkAll('absent')}
-                                className="text-xs font-semibold !px-3 !py-1.5 rounded-xl !bg-red-500/10 text-red-600 border border-red-500/20 hover:!bg-red-500/20 transition-colors whitespace-nowrap"
-                            >
-                                Vắng mặt
-                            </button>
-                        </div>
+                        {/* Quick mark all — hidden in readOnly */}
+                        {!readOnly && (
+                            <div className="flex items-center !gap-2 !mt-3 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+                                <span className="text-xs font-semibold text-text-muted shrink-0">Đánh dấu tất cả:</span>
+                                <button
+                                    onClick={() => handleMarkAll('present')}
+                                    className="text-xs font-semibold !px-3 !py-1.5 rounded-xl !bg-green-500/10 text-green-600 border border-green-500/20 hover:!bg-green-500/20 transition-colors whitespace-nowrap"
+                                >
+                                    có mặt
+                                </button>
+                                <button
+                                    onClick={() => handleMarkAll('absent')}
+                                    className="text-xs font-semibold !px-3 !py-1.5 rounded-xl !bg-red-500/10 text-red-600 border border-red-500/20 hover:!bg-red-500/20 transition-colors whitespace-nowrap"
+                                >
+                                    Vắng mặt
+                                </button>
+                            </div>
+                        )}
+                        {readOnly && (
+                            <div className="flex items-center !gap-2 !mt-3 !px-3 !py-2 bg-amber-50 border border-amber-200 rounded-xl text-amber-700 text-xs font-semibold">
+                                <Icon icon="material-symbols:lock-rounded" />
+                                Bạn chỉ có quyền xem điểm danh (không được chỉnh sửa)
+                            </div>
+                        )}
                     </div>
 
                     {/* Student List */}
@@ -257,10 +258,11 @@ const AttendanceModal = ({ isOpen, lesson, existingRecord, onClose, onSave }) =>
                                                     <button
                                                         key={opt.key}
                                                         title={opt.label}
-                                                        onClick={() => handleStatusChange(student.id, opt.key)}
-                                                        className={`flex items-center !gap-1.5 !px-3 !py-1.5 rounded-xl border text-xs font-semibold transition-all whitespace-nowrap ${student.status === opt.key
-                                                                ? opt.activeClass
-                                                                : `!bg-surface border-border text-text-muted ${opt.borderHover}`
+                                                        onClick={() => !readOnly && handleStatusChange(student.id, opt.key)}
+                                                        disabled={readOnly}
+                                                        className={`flex items-center !gap-1.5 !px-3 !py-1.5 rounded-xl border text-xs font-semibold transition-all whitespace-nowrap ${readOnly ? 'cursor-not-allowed opacity-80' : ''} ${student.status === opt.key
+                                                            ? opt.activeClass
+                                                            : `!bg-surface border-border text-text-muted ${readOnly ? '' : opt.borderHover}`
                                                             }`}
                                                     >
                                                         <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${student.status === opt.key ? opt.dotClass : '!bg-border'}`} />
@@ -285,10 +287,11 @@ const AttendanceModal = ({ isOpen, lesson, existingRecord, onClose, onSave }) =>
                                                 {STATUS_OPTIONS.map(opt => (
                                                     <button
                                                         key={opt.key}
-                                                        onClick={() => handleStatusChange(student.id, opt.key)}
-                                                        className={`flex-1 flex items-center justify-center !gap-1.5 !py-2 rounded-xl border text-xs font-semibold transition-all ${student.status === opt.key
-                                                                ? opt.activeClass
-                                                                : `!bg-surface border-border text-text-muted ${opt.borderHover}`
+                                                        onClick={() => !readOnly && handleStatusChange(student.id, opt.key)}
+                                                        disabled={readOnly}
+                                                        className={`flex-1 flex items-center justify-center !gap-1.5 !py-2 rounded-xl border text-xs font-semibold transition-all ${readOnly ? 'cursor-not-allowed opacity-80' : ''} ${student.status === opt.key
+                                                            ? opt.activeClass
+                                                            : `!bg-surface border-border text-text-muted ${readOnly ? '' : opt.borderHover}`
                                                             }`}
                                                     >
                                                         <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${student.status === opt.key ? opt.dotClass : '!bg-border'}`} />
@@ -298,8 +301,8 @@ const AttendanceModal = ({ isOpen, lesson, existingRecord, onClose, onSave }) =>
                                             </div>
                                         </div>
 
-                                        {/* Add Note & isExcused section for absent or late */}
-                                        {(student.status === 'absent' || student.status === 'late') && (
+                                        {/* Add Note & isExcused section for absent */}
+                                        {student.status === 'absent' && (
                                             <div className="!px-4 !pb-3 sm:!pl-[5.5rem] !pt-0 flex flex-col sm:flex-row items-start sm:items-center !gap-3 animate-fade-in mt-1 sm:mt-0">
                                                 <label className="flex items-center !gap-2 cursor-pointer group shrink-0">
                                                     <input
@@ -316,7 +319,7 @@ const AttendanceModal = ({ isOpen, lesson, existingRecord, onClose, onSave }) =>
                                                         type="text"
                                                         value={student.note}
                                                         onChange={(e) => handleNoteChange(student.id, e.target.value)}
-                                                        placeholder="Ghi chú (Lý do nghỉ / muộn...)"
+                                                        placeholder="Ghi chú (Lý do nghỉ...)"
                                                         className="w-full text-xs !pl-9 !pr-3 !py-2 rounded-xl border border-border bg-background focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all font-medium placeholder:text-text-muted/50"
                                                     />
                                                 </div>
@@ -334,20 +337,22 @@ const AttendanceModal = ({ isOpen, lesson, existingRecord, onClose, onSave }) =>
                             onClick={onClose}
                             className="!px-5 !py-2.5 text-sm font-semibold text-text-muted border border-border rounded-xl hover:!bg-background hover:text-text-main transition-all"
                         >
-                            Huỷ
+                            {readOnly ? 'Đóng' : 'Huỷ'}
                         </button>
-                        <button
-                            onClick={handleSubmit}
-                            disabled={isSubmitting || isLoading}
-                            className="flex items-center !gap-2 !px-5 !py-2.5 !bg-primary text-white text-sm font-bold rounded-xl shadow-lg shadow-primary/30 hover:!bg-primary/90 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                        >
-                            {isSubmitting ? (
-                                <Icon icon="svg-spinners:ring-resize" className="text-lg" />
-                            ) : (
-                                <Icon icon="material-symbols:save-rounded" className="text-lg" />
-                            )}
-                            Lưu điểm danh
-                        </button>
+                        {!readOnly && (
+                            <button
+                                onClick={handleSubmit}
+                                disabled={isSubmitting || isLoading}
+                                className="flex items-center !gap-2 !px-5 !py-2.5 !bg-primary text-white text-sm font-bold rounded-xl shadow-lg shadow-primary/30 hover:!bg-primary/90 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                            >
+                                {isSubmitting ? (
+                                    <Icon icon="svg-spinners:ring-resize" className="text-lg" />
+                                ) : (
+                                    <Icon icon="material-symbols:save-rounded" className="text-lg" />
+                                )}
+                                Lưu điểm danh
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>

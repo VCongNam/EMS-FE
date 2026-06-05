@@ -5,6 +5,7 @@ import Button from '../../../components/ui/Button';
 import AuthLayout from '../components/AuthLayout';
 import useAuthStore from '../../../store/authStore';
 import { authService } from '../api/authService';
+import { extractErrorMessage } from '../../../utils/errorHandler';
 
 const AdminLoginPage = () => {
     const [focusedField, setFocusedField] = useState(null);
@@ -38,10 +39,10 @@ const AdminLoginPage = () => {
                 navigate('/admin/dashboard');
             } else {
                 const errorData = await response.json().catch(() => ({}));
-                toast.error(errorData.message || 'Tài khoản hoặc mật khẩu Admin không chính xác.');
+                toast.error(extractErrorMessage(errorData, 'Tài khoản hoặc mật khẩu Admin không chính xác.'));
             }
         } catch (error) {
-            toast.error('Lỗi kết nối máy chủ. Vui lòng thử lại sau.');
+            toast.error(extractErrorMessage(error, 'Lỗi kết nối máy chủ. Vui lòng thử lại sau.'));
             console.error(error);
         } finally {
             setLoading(false);

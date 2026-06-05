@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { tuitionService } from '../api/tuitionService';
 import useAuthStore from '../../../store/authStore';
+import { extractErrorMessage } from '../../../utils/errorHandler';
 
 const TransactionReviewHubPage = () => {
     const navigate = useNavigate();
@@ -33,7 +34,8 @@ const TransactionReviewHubPage = () => {
                 const data = await res.json();
                 setTransactions(data || []);
             } else {
-                toast.error("Không thể lấy danh sách giao dịch.");
+                const errData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errData, "Không thể lấy danh sách giao dịch."));
             }
         } catch (error) {
             console.error("Lỗi:", error);
@@ -68,7 +70,8 @@ const TransactionReviewHubPage = () => {
                 setReviewNote('');
                 fetchTransactions(); // Reload list
             } else {
-                toast.error("Xử lý thất bại, vui lòng thử lại.");
+                const errData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errData, "Xử lý thất bại, vui lòng thử lại."));
             }
         } catch (error) {
             toast.error("Đã xảy ra lỗi.");

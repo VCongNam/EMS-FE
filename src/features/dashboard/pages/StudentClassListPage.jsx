@@ -5,7 +5,50 @@ import Button from '../../../components/ui/Button';
 import ClassCard from '../components/classes/ClassCard';
 import ClassListFilter from '../components/classes/ClassListFilter';
 import studentClassService from '../api/studentClassService';
+import studentScheduleService from '../api/studentScheduleService';
+import Pagination from '../../../components/ui/Pagination';
 import useAuthStore from '../../../store/authStore';
+import { extractErrorMessage } from '../../../utils/errorHandler';
+
+const formatSchedule = (cls) => {
+    // Try all possible property names from various API versions
+    const schedules = cls.schedules || cls.Schedules || cls.classSchedules || cls.schedule || [];
+    
+    if (!Array.isArray(schedules) || schedules.length === 0) {
+        return 'Chưa có lịch cụ thể';
+    }
+
+    const dayNames = {
+        7: 'CN',
+        1: 'T2',
+        2: 'T3',
+        3: 'T4',
+        4: 'T5',
+        5: 'T6',
+        6: 'T7'
+    };
+
+    try {
+        const formatted = schedules
+            .sort((a, b) => {
+                const da = a.dayOfWeek !== undefined ? a.dayOfWeek : (a.DayOfWeek || 0);
+                const db = b.dayOfWeek !== undefined ? b.dayOfWeek : (b.DayOfWeek || 0);
+                return (da === 0 ? 7 : da) - (db === 0 ? 7 : db);
+            })
+            .map(s => {
+                const dow = s.dayOfWeek !== undefined ? s.dayOfWeek : s.DayOfWeek;
+                if (dow === undefined || dow === null) return null;
+                return dayNames[dow] || '??';
+            })
+            .filter(Boolean)
+            .join(', ');
+
+        return formatted || 'Chưa có lịch cụ thể';
+    } catch (err) {
+        console.error("Format schedule error for class:", cls.className, err);
+        return 'Chưa có lịch cụ thể';
+    }
+};
 
 const StudentClassListPage = () => {
     const { user } = useAuthStore();
@@ -15,43 +58,77 @@ const StudentClassListPage = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
 
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
+    const itemsPerPage = 8;
+
     const fetchMyClasses = async () => {
         setIsLoading(true);
         try {
             // Mapping filter status to API expected values
             let apiStatus = null;
             if (filterStatus === 'ongoing') apiStatus = 'Active';
-            else if (filterStatus === 'upcoming') apiStatus = 'Active'; // Giả định Active bao gồm cả sắp khai giảng
-            else if (filterStatus === 'completed') apiStatus = 'Past'; // Giả định Past cho đã kết thúc
+            else if (filterStatus === 'upcoming') apiStatus = 'Active'; 
+            else if (filterStatus === 'completed') apiStatus = 'Past'; 
 
             const res = await studentClassService.getMyClasses({
-                page: 1,
-                size: 50,
+                page: currentPage,
+                size: itemsPerPage,
                 status: apiStatus
             }, token);
 
             if (res.ok) {
                 const result = await res.json();
-                const mappedClasses = (result.data?.items || []).map(cls => ({
-                    id: cls.classID,
-                    name: cls.className,
-                    code: cls.className.split(' ').pop() || 'CLASS',
-                    status: cls.enrollmentStatus?.toLowerCase() === 'active' ? 'ongoing' : 
-                            cls.enrollmentStatus?.toLowerCase() === 'past' ? 'completed' : 'ongoing',
-                    createdAt: cls.startDate ? new Date(cls.startDate).toLocaleDateString('vi-VN') : 'Chưa xác định',
-                    schedule: 'Chưa có lịch cụ thể',
-                    progress: {
-                        currentSession: 0,
-                        totalSessions: 1
-                    },
-                    students: {
-                        count: 0,
-                        max: 50
+                // console.log("Student Classes API Raw Result:", result);
+                
+                const items = result.data?.items || result.items || [];
+                const mappedClasses = await Promise.all(items.map(async (cls) => {
+                    // Fetch sessions to calculate progress for this class
+                    let currentSession = 0;
+                    let totalSessions = 0;
+                    try {
+                        const schedRes = await studentScheduleService.getSchedule({
+                            FromDate: '2025-01-01',
+                            ToDate: '2027-01-01',
+                            ClassId: cls.classID
+                        }, token);
+                        if (schedRes.ok) {
+                            const schedData = await schedRes.json();
+                            const sessions = Array.isArray(schedData) ? schedData : (schedData.data || []);
+                            totalSessions = sessions.length;
+                            currentSession = sessions.filter(s => 
+                                (s.status || '').toLowerCase().includes('completed') || 
+                                (s.status || '').toLowerCase().includes('đã kết thúc')
+                            ).length;
+                        }
+                    } catch (e) {
+                        console.warn(`Failed to fetch sessions for student class ${cls.classID}`, e);
                     }
+
+                    return {
+                        id: cls.classID || cls.id,
+                        name: cls.className,
+                        code: cls.className?.split(' ').pop() || 'CLASS',
+                        status: cls.enrollmentStatus?.toLowerCase() === 'active' ? 'ongoing' : 
+                                cls.enrollmentStatus?.toLowerCase() === 'past' ? 'completed' : 'ongoing',
+                        createdAt: cls.startDate ? new Date(cls.startDate).toLocaleDateString('vi-VN') : 'Chưa xác định',
+                        schedule: formatSchedule(cls),
+                        progress: {
+                            currentSession: currentSession,
+                            totalSessions: totalSessions || 1
+                        },
+                        students: {
+                            count: cls.currentStudents || 0,
+                            max: cls.maxStudents || 50
+                        }
+                    };
                 }));
                 setClasses(mappedClasses);
+                setTotalItems(result.data?.totalCount || result.data?.totalItems || result.totalCount || mappedClasses.length);
             } else {
-                toast.error('Không thể tải danh sách lớp học');
+                const errData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errData, 'Không thể tải danh sách lớp học'));
             }
         } catch (error) {
             console.error('Fetch classes error:', error);
@@ -65,7 +142,12 @@ const StudentClassListPage = () => {
         if (token) {
             fetchMyClasses();
         }
-    }, [token, filterStatus]);
+    }, [token, filterStatus, currentPage]);
+
+    // Reset to page 1 when filter changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [filterStatus]);
 
     const filteredClasses = useMemo(() => {
         return classes.filter(cls => {
@@ -97,6 +179,7 @@ const StudentClassListPage = () => {
                     onSearchChange={setSearchQuery}
                     filterStatus={filterStatus}
                     onFilterChange={setFilterStatus}
+                    showArchived={false}
                 />
             </div>
 
@@ -108,15 +191,25 @@ const StudentClassListPage = () => {
                     ))}
                 </div>
             ) : filteredClasses.length > 0 ? (
+                <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-fade-in-up">
                     {filteredClasses.map((cls) => (
                         <ClassCard 
                             key={cls.id} 
                             classData={cls} 
                             basePath="/student/classes"
+                            showStudentCount={false}
                         />
                     ))}
                 </div>
+
+                <Pagination
+                    totalItems={totalItems}
+                    itemsPerPage={itemsPerPage}
+                    currentPage={currentPage}
+                    onPageChange={setCurrentPage}
+                />
+                </>
             ) : (
                 <div className="bg-surface rounded-2xl border border-border !p-12 flex flex-col items-center justify-center text-center shadow-sm min-h-[300px]">
                     <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center !mb-6">

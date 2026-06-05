@@ -6,9 +6,11 @@ import Button from "../../../../../components/ui/Button";
 import ConfirmModal from '../../../../../components/ui/ConfirmModal';
 import AddStudentModal from './components/AddStudentModal';
 import ImportStudentModal from './components/ImportStudentModal';
+import ResetPasswordModal from './components/ResetPasswordModal';
 import useAuthStore from '../../../../../store/authStore';
 import TAPermissionsModal from './components/TAPermissionsModal';
 import { classService } from '../../../api/classService';
+import Pagination from '../../../../../components/ui/Pagination';
 
 const ClassPeoplePage = () => {
     const { classId } = useParams();
@@ -20,6 +22,11 @@ const ClassPeoplePage = () => {
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isPermissionsModalOpen, setIsPermissionsModalOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [resetModal, setResetModal] = useState({ isOpen: false, studentId: null, studentName: '' });
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
     // Confirm Modal State
     const [confirmConfig, setConfirmConfig] = useState({
@@ -92,6 +99,11 @@ const ClassPeoplePage = () => {
         fetchMembers();
     }, [classId, user?.token]);
 
+    // Reset to page 1 when search or filter changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, statusFilter]);
+
     const handleRemoveStudent = (studentId) => {
         setConfirmConfig({
             isOpen: true,
@@ -142,6 +154,10 @@ const ClassPeoplePage = () => {
         });
     };
 
+    const handleResetPassword = (studentId, studentName) => {
+        setResetModal({ isOpen: true, studentId, studentName });
+    };
+
     const filteredMembers = members.filter(member => {
         const matchesSearch =
             member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -150,6 +166,13 @@ const ClassPeoplePage = () => {
         const matchesStatus = statusFilter === 'all' || member.status === statusFilter;
         return matchesSearch && matchesStatus;
     });
+
+    // Pagination logic
+    const paginatedMembers = React.useMemo(() => {
+        const indexOfLastItem = currentPage * itemsPerPage;
+        const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+        return filteredMembers.slice(indexOfFirstItem, indexOfLastItem);
+    }, [filteredMembers, currentPage, itemsPerPage]);
 
     const handleAddStudent = () => {
         fetchMembers();
@@ -178,7 +201,7 @@ const ClassPeoplePage = () => {
                     </div>
                     {isTeacherOrTA && <p className="text-sm text-text-muted !mb-4">Quản lý danh sách học viên trong lớp</p>}
                     <div className="flex flex-col !gap-2.5">
-                        {isTeacherOrTA && (
+                    {!isCurrentUserTA && isTeacherOrTA && (
                             <>
                                 <Button
                                     onClick={() => setIsAddModalOpen(true)}
@@ -239,7 +262,7 @@ const ClassPeoplePage = () => {
                             <h2 className="text-lg font-bold text-text-main">Giáo viên & Trợ giảng</h2>
                         </div>
                         {assistants.length > 1 && (
-                            <button 
+                            <button
                                 onClick={() => setIsStaffExpanded(!isStaffExpanded)}
                                 className="text-sm font-bold text-primary flex items-center gap-1.5 hover:underline"
                             >
@@ -307,7 +330,7 @@ const ClassPeoplePage = () => {
 
                         {/* Show more indicator card inside the grid if not expanded and there are hidden TAs */}
                         {!isStaffExpanded && hiddenTAsCount > 0 && (
-                            <button 
+                            <button
                                 onClick={() => setIsStaffExpanded(true)}
                                 className="border-2 border-dashed border-primary/20 rounded-xl !p-4 flex items-center justify-center gap-3 hover:bg-primary/5 hover:border-primary/40 transition-all bg-background group"
                             >
@@ -345,14 +368,13 @@ const ClassPeoplePage = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border/50">
-                                {filteredMembers.map((member) => (
-                                    <tr 
-                                        key={member.id} 
-                                        className={`transition-all duration-300 group ${
-                                            member.status === 'Active' 
-                                            ? 'hover:bg-primary/5' 
-                                            : 'opacity-60 grayscale-[0.6] bg-gray-50/50 grayscale'
-                                        }`}
+                                {paginatedMembers.map((member) => (
+                                    <tr
+                                        key={member.id}
+                                        className={`transition-all duration-300 group ${member.status === 'Active'
+                                                ? 'hover:bg-primary/5'
+                                                : 'opacity-60 grayscale-[0.6] bg-gray-50/50 grayscale'
+                                            }`}
                                     >
                                         <td className="!p-4 text-text-main">
                                             <div className="flex items-center !gap-3 w-max">
@@ -368,11 +390,11 @@ const ClassPeoplePage = () => {
                                             <td className="!p-4">
                                                 <div className="flex flex-col !gap-1 text-xs">
                                                     <span className="flex items-center !gap-1.5 text-text-main">
-                                                        <Icon icon="solar:letter-linear" className="text-primary" /> 
+                                                        <Icon icon="solar:letter-linear" className="text-primary" />
                                                         <span className="truncate max-w-[150px]">{member.email}</span>
                                                     </span>
                                                     <span className="flex items-center !gap-1.5 text-text-muted">
-                                                        <Icon icon="solar:phone-linear" className="text-primary" /> 
+                                                        <Icon icon="solar:phone-linear" className="text-primary" />
                                                         {member.phone}
                                                     </span>
                                                 </div>
@@ -396,24 +418,31 @@ const ClassPeoplePage = () => {
                                                 </td>
                                             </>
                                         )}
-                                        {isTeacherOrTA && (
+                                        {!isCurrentUserTA && isTeacherOrTA && (
                                             <td className="!p-4 text-right">
                                                 <div className={`flex items-center justify-end gap-1 transition-opacity ${member.status === 'Active' ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`}>
-                                                    <button className="!p-1.5 text-text-muted hover:text-blue-500 transition-colors rounded-lg hover:bg-blue-500/10" title="Chi tiết học tập">
-                                                        <Icon icon="solar:chart-2-bold-duotone" className="text-lg" />
-                                                    </button>
+
                                                     {member.status === 'Active' ? (
-                                                        <button 
-                                                            onClick={() => handleRemoveStudent(member.id)}
-                                                            className="!p-1.5 text-text-muted hover:text-red-500 transition-colors rounded-lg hover:bg-red-500/10" 
-                                                            title="Xóa khỏi lớp"
-                                                        >
-                                                            <Icon icon="solar:trash-bin-trash-bold-duotone" className="text-lg" />
-                                                        </button>
+                                                        <>
+                                                            <button
+                                                                onClick={() => handleResetPassword(member.id, member.name)}
+                                                                className="!p-1.5 text-text-muted hover:text-amber-500 transition-colors rounded-lg hover:bg-amber-500/10"
+                                                                title="Reset mật khẩu"
+                                                            >
+                                                                <Icon icon="solar:key-bold-duotone" className="text-lg" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleRemoveStudent(member.id)}
+                                                                className="!p-1.5 text-text-muted hover:text-red-500 transition-colors rounded-lg hover:bg-red-500/10"
+                                                                title="Xóa khỏi lớp"
+                                                            >
+                                                                <Icon icon="solar:trash-bin-trash-bold-duotone" className="text-lg" />
+                                                            </button>
+                                                        </>
                                                     ) : (
-                                                        <button 
+                                                        <button
                                                             onClick={() => handleRestoreStudent(member.id)}
-                                                            className="!p-1.5 text-green-600 hover:text-green-700 transition-colors rounded-lg bg-green-500/10" 
+                                                            className="!p-1.5 text-green-600 hover:text-green-700 transition-colors rounded-lg bg-green-500/10"
                                                             title="Khôi phục trạng thái"
                                                         >
                                                             <Icon icon="solar:refresh-bold-duotone" className="text-lg" />
@@ -430,12 +459,11 @@ const ClassPeoplePage = () => {
                 </div>
 
                 <div className="lg:hidden space-y-3">
-                    {filteredMembers.map((member) => (
-                        <div 
-                            key={member.id} 
-                            className={`bg-surface rounded-2xl border border-border shadow-sm !p-4 flex flex-col gap-3 transition-all duration-300 ${
-                                member.status === 'Active' ? '' : 'opacity-60 grayscale-[0.6] bg-gray-50/50'
-                            }`}
+                    {paginatedMembers.map((member) => (
+                        <div
+                            key={member.id}
+                            className={`bg-surface rounded-2xl border border-border shadow-sm !p-4 flex flex-col gap-3 transition-all duration-300 ${member.status === 'Active' ? '' : 'opacity-60 grayscale-[0.6] bg-gray-50/50'
+                                }`}
                         >
                             <div className="flex items-center justify-between gap-3">
                                 <div className="flex items-center gap-3">
@@ -463,15 +491,17 @@ const ClassPeoplePage = () => {
                                     <span>{member.phone}</span>
                                 </div>
                             </div>
-                            {isTeacherOrTA && (
+                            {!isCurrentUserTA && isTeacherOrTA && (
                                 <div className="flex gap-2 !mt-2">
-                                    <button className="flex-1 !py-2 bg-background hover:bg-border/20 rounded-xl text-xs font-bold text-text-muted flex justify-center items-center gap-2 transition-colors">
-                                        <Icon icon="solar:chart-2-bold-duotone" /> Tiến độ
-                                    </button>
                                     {member.status === 'Active' ? (
+                                        <>
+                                        <button onClick={() => handleResetPassword(member.id, member.name)} className="flex-1 !py-2 bg-amber-50 text-amber-600 hover:bg-amber-100 rounded-xl text-xs font-bold flex justify-center items-center gap-2 transition-colors border border-amber-100">
+                                            <Icon icon="solar:key-bold-duotone" /> Reset MK
+                                        </button>
                                         <button onClick={() => handleRemoveStudent(member.id)} className="flex-1 !py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl text-xs font-bold flex justify-center items-center gap-2 transition-colors border border-red-100">
                                             <Icon icon="solar:trash-bin-trash-bold-duotone" /> Xóa
                                         </button>
+                                        </>
                                     ) : (
                                         <button onClick={() => handleRestoreStudent(member.id)} className="flex-1 !py-2 bg-green-600 text-white hover:bg-green-700 rounded-xl text-xs font-bold flex justify-center items-center gap-2 transition-colors border border-green-600">
                                             <Icon icon="solar:refresh-bold-duotone" /> Khôi phục
@@ -482,7 +512,24 @@ const ClassPeoplePage = () => {
                         </div>
                     ))}
                 </div>
+
+                {/* Pagination component for both mobile/desktop */}
+                {filteredMembers.length > itemsPerPage && (
+                    <Pagination
+                        totalItems={filteredMembers.length}
+                        itemsPerPage={itemsPerPage}
+                        currentPage={currentPage}
+                        onPageChange={setCurrentPage}
+                    />
+                )}
             </div>
+
+            <ResetPasswordModal
+                isOpen={resetModal.isOpen}
+                onClose={() => setResetModal({ isOpen: false, studentId: null, studentName: '' })}
+                studentId={resetModal.studentId}
+                studentName={resetModal.studentName}
+            />
 
             <AddStudentModal
                 isOpen={isAddModalOpen}

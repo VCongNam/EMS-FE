@@ -4,6 +4,20 @@ import { toast } from 'react-toastify';
 import useAuthStore from '../../../store/authStore';
 import { taService } from '../api/taService';
 import EditTAPermissionModal from '../components/EditTAPermissionModal';
+import { extractErrorMessage } from '../../../utils/errorHandler';
+
+const PERMISSION_MAP = {
+    'Attendance': 'Điểm danh',
+    'Grade': 'Chấm điểm',
+    'Report': 'Báo cáo',
+    'Assignment': 'Bài tập',
+    'Permission': 'Toàn quyền',
+    'None': 'Mặc định'
+};
+
+const getPermissionLabel = (perm) => {
+    return PERMISSION_MAP[perm.trim()] || perm.trim();
+};
 
 const GlobalTAManagementPage = () => {
     const { user } = useAuthStore();
@@ -29,7 +43,8 @@ const GlobalTAManagementPage = () => {
                     setAssistants([]);
                 }
             } else {
-                toast.error('Không thể tải danh sách trợ giảng');
+                const errData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errData, 'Không thể tải danh sách trợ giảng'));
             }
         } catch (error) {
             console.error(error);
@@ -56,7 +71,17 @@ const GlobalTAManagementPage = () => {
         <div className="w-full !space-y-6 animate-fade-in !pb-8 !p-6 bg-surface rounded-2xl shadow-sm border border-border mt-2">
             
             {/* Header Section */}
+
             <div className="bg-background !p-4 sm:!p-6 rounded-[2rem] border border-border shadow-sm !space-y-4">
+                 <div className="flex items-center !gap-4 !mb-6">
+                                <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-inner shrink-0">
+                                    <Icon icon="solar:users-group-rounded-bold-duotone" className="text-3xl" />
+                                </div>
+                                <div>
+                                    <h1 className="text-2xl font-bold text-text-main font-['Outfit']">Quản lý trợ giảng</h1>
+                                    <p className="text-sm text-text-muted mt-0.5">Điều chỉnh danh sách, phân quyền cấu hình và giao việc cho trợ giảng</p>
+                                </div>
+                            </div>
                 <div className="flex flex-col sm:flex-row items-center !gap-4">
                     <div className="relative w-full sm:flex-1">
                         <Icon icon="solar:magnifer-linear" className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted text-lg" />
@@ -88,17 +113,16 @@ const GlobalTAManagementPage = () => {
                         <thead>
                             <tr className="bg-surface/80 border-b border-border">
                                 <th className="!p-5 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap">Tên Trợ giảng</th>
-                                <th className="!p-5 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap">Lớp đang dạy</th>
+                                <th className="!p-5 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap">Lớp hỗ trợ</th>
                                 <th className="!p-5 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap">Liên hệ</th>
                                 <th className="!p-5 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap">Quyền hiện tại</th>
-                                <th className="!p-5 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap text-center">Lương / Buổi</th>
                                 <th className="!p-5 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap text-right">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-border/50 bg-surface">
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan="6" className="!p-10 text-center text-primary">
+                                    <td colSpan="5" className="!p-10 text-center text-primary">
                                         <Icon icon="solar:spinner-linear" className="animate-spin text-3xl mx-auto mb-2" />
                                         <p className="font-medium">Đang tải danh sách...</p>
                                     </td>
@@ -112,14 +136,12 @@ const GlobalTAManagementPage = () => {
                                             </div>
                                             <div className="flex flex-col">
                                                 <span className="font-semibold text-[15px]">{assistant.fullName}</span>
-                                                <span className="text-xs text-text-muted">{assistant.email || 'N/A'}</span>
                                             </div>
                                         </div>
                                     </td>
                                     <td className="!p-5">
                                         <div className="flex flex-col">
                                             <span className="font-bold text-sm text-primary">{assistant.className || 'Chưa rõ'}</span>
-                                            <span className="text-[10px] text-text-muted">Mã lớp: {assistant.classId?.split('-')[0]}...</span>
                                         </div>
                                     </td>
                                     <td className="!p-5">
@@ -132,19 +154,14 @@ const GlobalTAManagementPage = () => {
                                         {assistant.permission ? (
                                             <div className="flex flex-wrap gap-1">
                                                 {assistant.permission.split(',').map((p, i) => (
-                                                    <span key={i} className="!px-2 !py-0.5 bg-primary/10 text-primary border border-primary/20 rounded-md text-[10px] font-bold shadow-sm whitespace-nowrap capitalize">
-                                                        {p.trim()}
+                                                    <span key={i} className="!px-2 !py-0.5 bg-primary/10 text-primary border border-primary/20 rounded-md text-[10px] font-bold shadow-sm whitespace-nowrap">
+                                                        {getPermissionLabel(p)}
                                                     </span>
                                                 ))}
                                             </div>
                                         ) : (
                                             <span className="text-text-muted text-xs italic">Mặc định</span>
                                         )}
-                                    </td>
-                                    <td className="!p-5 text-center">
-                                        <span className="font-bold text-emerald-600 text-sm">
-                                            {assistant.salaryPerSession ? assistant.salaryPerSession.toLocaleString('vi-VN') + ' đ' : '0 đ'}
-                                        </span>
                                     </td>
                                     <td className="!p-5 text-right">
                                         <button 
@@ -162,7 +179,7 @@ const GlobalTAManagementPage = () => {
                             ))}
                             {!isLoading && filteredAssistants.length === 0 && (
                                 <tr>
-                                    <td colSpan="6" className="!p-16 text-center">
+                                    <td colSpan="5" className="!p-16 text-center">
                                         <div className="flex flex-col items-center justify-center opacity-70">
                                             <div className="w-20 h-20 bg-background rounded-full flex items-center justify-center !mb-4 border border-border">
                                                 <Icon icon="solar:ghost-smile-bold-duotone" className="text-4xl text-text-muted" />
@@ -208,11 +225,11 @@ const GlobalTAManagementPage = () => {
                             </div>
                             <div className="flex items-center justify-between text-xs">
                                 <span className="text-text-muted">Quyền hạn:</span>
-                                <span className="font-semibold text-primary">{assistant.permission || 'Mặc định'}</span>
-                            </div>
-                            <div className="flex items-center justify-between text-xs">
-                                <span className="text-text-muted">Lương/Buổi:</span>
-                                <span className="font-bold text-emerald-600">{assistant.salaryPerSession ? assistant.salaryPerSession.toLocaleString('vi-VN') + ' đ' : '0 đ'}</span>
+                                <span className="font-semibold text-primary">
+                                    {assistant.permission 
+                                        ? assistant.permission.split(',').map(p => getPermissionLabel(p)).join(', ') 
+                                        : 'Mặc định'}
+                                </span>
                             </div>
                         </div>
                     </div>

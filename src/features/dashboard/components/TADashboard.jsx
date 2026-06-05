@@ -7,12 +7,15 @@ import DashboardDeadlines from './DashboardDeadlines'; // It's actually the List
 import DashboardRecentNotifications from './DashboardRecentNotifications';
 import useAuthStore from '../../../store/authStore';
 import { notificationService } from '../../notifications/api/notificationService';
+import { formatViDate } from '../../../utils/dateUtils';
+import { useNotifications } from '../../../contexts/NotificationContext';
 
 const TADashboard = () => {
     const { user } = useAuthStore();
     const token = user?.token;
     const userName = (user?.fullName || 'Trợ giảng').split(' ').pop();
     const navigate = useNavigate();
+    const { setUnreadCount } = useNotifications();
 
     const [notifications, setNotifications] = useState([]);
 
@@ -36,6 +39,7 @@ const TADashboard = () => {
         // Mark as read in UI
         if (notif.isRead === false) {
             setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, isRead: true } : n));
+            setUnreadCount(prev => Math.max(0, prev - 1));
             try {
                 await notificationService.markAsRead(notif.id, token);
             } catch (error) {
@@ -96,7 +100,7 @@ const TADashboard = () => {
                     </div>
                     <div className="!pr-4">
                         <p className="!text-[10px] !font-black !text-text-muted !uppercase !tracking-widest">Ngày hôm nay</p>
-                        <p className="!text-sm !font-black !text-text-main">{new Date().toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+                        <p className="!text-sm !font-black !text-text-main">{formatViDate(new Date(), { weekday: 'long', day: 'numeric', month: 'long' })}</p>
                     </div>
                 </div>
             </div>

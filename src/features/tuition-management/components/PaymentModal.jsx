@@ -4,6 +4,8 @@ import Modal from '../../../components/common/Modal';
 import useAuthStore from '../../../store/authStore';
 import { tuitionService } from '../api/tuitionServiceStudent';
 import { toast } from 'react-toastify';
+import { extractErrorMessage } from '../../../utils/errorHandler';
+
 
 const PaymentModal = ({ isOpen, onClose, fee, onSuccess }) => {
     // step 1: QR & Upload, step 2: Success
@@ -41,11 +43,11 @@ const PaymentModal = ({ isOpen, onClose, fee, onSuccess }) => {
         try {
             setIsLoadingQr(true);
             const res = await tuitionService.getPaymentQr(targetInvoiceId, user?.token);
-            const result = await res.json();
+            const result = await res.json().catch(() => ({}));
             if (res.ok && result.data) {
                 setQrData(result.data);
             } else {
-                toast.error("Không thể lấy mã QR thanh toán");
+                toast.error(extractErrorMessage(result, "Không thể lấy mã QR thanh toán"));
             }
         } catch (err) {
             console.error("Error fetching QR Code:", err);
@@ -82,14 +84,13 @@ const PaymentModal = ({ isOpen, onClose, fee, onSuccess }) => {
             setIsUploading(true);
             const targetInvoiceId = fee.invoiceId || fee.id;
             const res = await tuitionService.uploadTransactionProof(targetInvoiceId, proofFile, user?.token);
-            const result = await res.json();
+            const result = await res.json().catch(() => ({}));
 
             if (res.ok) {
                 setStep(2);
                 if (onSuccess) onSuccess(); // Trigger refresh
             } else {
-                // Hiển thị lỗi từ BE (VD: Bạn đã nộp minh chứng rồi...)
-                toast.error(result.error || result.message || "Đã xảy ra lỗi khi tải lên. Vui lòng thử lại.");
+                toast.error(extractErrorMessage(result, "Đã xảy ra lỗi khi tải lên. Vui lòng thử lại."));
             }
         } catch (err) {
             console.error("Upload proof error:", err);

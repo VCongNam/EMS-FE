@@ -7,8 +7,8 @@ import { jwtDecode } from 'jwt-decode';
  * ProtectedRoute component handles access to private routes.
  * Cập nhật: Tự động kiểm tra thời hạn của JWT Token để Force Logout nếu hết hạn.
  */
-const ProtectedRoute = ({ redirectPath = '/login' }) => {
-    const { isAuthenticated, user, logout } = useAuthStore();
+const ProtectedRoute = ({ redirectPath = '/login', allowedRoles = [] }) => {
+    const { isAuthenticated, user, logout, getHomePath } = useAuthStore();
 
     useEffect(() => {
         if (isAuthenticated && user?.token) {
@@ -30,6 +30,17 @@ const ProtectedRoute = ({ redirectPath = '/login' }) => {
 
     if (!isAuthenticated) {
         return <Navigate to={redirectPath} replace />;
+    }
+
+    // Role-based authorization
+    if (allowedRoles.length > 0 && user?.role) {
+        const userRole = user.role.toLowerCase();
+        const isAuthorized = allowedRoles.some(role => role.toLowerCase() === userRole);
+        
+        if (!isAuthorized) {
+            console.warn(`User role '${userRole}' not authorized for this route.`);
+            return <Navigate to={getHomePath()} replace />;
+        }
     }
 
     return <Outlet />;

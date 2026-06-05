@@ -17,6 +17,12 @@ export const sessionService = {
     });
   },
 
+  getSessionById: async (sessionId, token) => {
+    return fetch(getApiUrl(`/api/session/${sessionId}`), {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+  },
+
   createSession: async (payload, token) => {
     return fetch(getApiUrl('/api/session'), {
       method: 'POST',
@@ -60,6 +66,12 @@ export const sessionService = {
         'Content-Type': 'application/json' 
       },
       body: JSON.stringify(payload)
+    });
+  },
+
+  getClassAttendanceHistory: async (classId, token) => {
+    return fetch(getApiUrl(`/api/Session/class/${classId}/attendance-history`), {
+      headers: { 'Authorization': `Bearer ${token}` }
     });
   }
 };

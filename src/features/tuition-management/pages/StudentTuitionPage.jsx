@@ -9,6 +9,8 @@ import TransactionDetailModal from '../components/TransactionDetailModal';
 import { tuitionService } from '../api/tuitionServiceStudent';
 import useAuthStore from '../../../store/authStore';
 import { toast } from 'react-toastify';
+import { extractErrorMessage } from '../../../utils/errorHandler';
+
 
 const StudentTuitionPage = () => {
     const { classId } = useParams();
@@ -67,7 +69,8 @@ const StudentTuitionPage = () => {
 
                 setFees(mappedFees);
             } else {
-                toast.error('Không thể tải danh sách học phí');
+                const errData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errData, 'Không thể tải danh sách học phí'));
             }
         } catch (error) {
             console.error('Error fetching fees:', error);
@@ -85,18 +88,32 @@ const StudentTuitionPage = () => {
             if (res.ok) {
                 const data = await res.json();
                 // Map Backend to Frontend format
-                const mappedTransactions = data.map(tx => ({
-                    id: tx.transactionId,
-                    transactionId: tx.transactionId,
-                    amount: tx.amountPaid,
-                    date: new Date(tx.paidDate).toLocaleString('vi-VN'),
-                    method: tx.paymentMethod || 'Chuyển khoản',
-                    status: tx.status,
-                    content: tx.invoiceContent
-                }));
+                const mappedTransactions = data.map(tx => {
+                    const dateObj = new Date(tx.paidDate);
+                    const formattedDate = dateObj.toLocaleDateString('vi-VN', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric'
+                    }) + ' ' + dateObj.toLocaleTimeString('vi-VN', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                    });
+
+                    return {
+                        id: tx.transactionId,
+                        transactionId: tx.transactionId,
+                        invoiceId: tx.invoiceId,
+                        amount: tx.amountPaid,
+                        date: formattedDate,
+                        method: tx.paymentMethod || 'Chuyển khoản',
+                        status: tx.status,
+                        content: tx.invoiceContent
+                    };
+                });
                 setTransactions(mappedTransactions);
             } else {
-                toast.error('Không thể tải lịch sử giao dịch');
+                const errData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errData, 'Không thể tải lịch sử giao dịch'));
             }
         } catch (error) {
             console.error('Error fetching transactions:', error);
@@ -118,6 +135,20 @@ const StudentTuitionPage = () => {
 
     const handlePay = (fee) => {
         setSelectedFee(fee);
+        setIsPaymentOpen(true);
+    };
+
+    const handleResubmit = (tx) => {
+        if (!tx.invoiceId) {
+            toast.error('Không tìm thấy mã hóa đơn. Vui lòng liên hệ hỗ trợ.');
+            return;
+        }
+        setSelectedFee({
+            invoiceId: tx.invoiceId,
+            id: tx.invoiceId,
+            amount: tx.amount,
+            title: tx.content || 'Nộp lại minh chứng'
+        });
         setIsPaymentOpen(true);
     };
 
@@ -239,7 +270,7 @@ const StudentTuitionPage = () => {
                             <Icon icon="solar:spinner-linear" className="!animate-spin !text-4xl" />
                         </div>
                     ) : (
-                        <TransactionHistory transactions={transactions} onViewInvoice={handleViewInvoice} />
+                        <TransactionHistory transactions={transactions} onViewInvoice={handleViewInvoice} onResubmit={handleResubmit} />
                     )
                 )}
             </div>

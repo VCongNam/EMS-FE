@@ -49,5 +49,57 @@ export const notificationService = {
                 'Content-Type': 'application/json'
             }
         });
+    },
+
+    /**
+     * Lấy VAPID Public Key từ Backend (để đăng ký Push)
+     */
+    getVapidPublicKey: async (token) => {
+        // Giả sử npoint là /api/Notification/vapid-public-key
+        // Bạn có thể đổi lại nếu BE dùng path khác
+        return await fetch(getApiUrl('/api/Notification/public-key'), {
+            headers: { 
+                'Authorization': `Bearer ${token}` 
+            }
+        });
+    },
+
+    /**
+     * Lưu Subscription Object lên Server (Cấu trúc phẳng theo BE yêu cầu)
+     */
+    saveSubscription: async (subscription, token) => {
+        const subJson = subscription.toJSON();
+        
+        // Chuyển cấu trúc từ { endpoint, keys: {p256dh, auth} } 
+        // thành cấu trúc phẳng { endpoint, p256dh, auth, deviceName }
+        const payload = {
+            endpoint: subJson.endpoint,
+            p256dh: subJson.keys.p256dh,
+            auth: subJson.keys.auth,
+            deviceName: `${navigator.platform} - ${navigator.userAgent.split(' ')[0]}` // Tự tạo tên thiết bị
+        };
+
+        return await fetch(getApiUrl('/api/Notification/subscribe'), {
+            method: 'POST',
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+    },
+
+    /**
+     * Hủy đăng ký trên Server
+     */
+    unsubscribe: async (endpoint, token) => {
+        return await fetch(getApiUrl('/api/Notification/unsubscribe'), {
+            method: 'POST',
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ endpoint })
+        });
     }
 };

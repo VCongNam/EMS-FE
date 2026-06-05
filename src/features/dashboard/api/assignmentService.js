@@ -12,8 +12,12 @@ export const assignmentService = {
       body: payloadFormData
     });
   },
-  getAssignmentsByClass: async (classId, token) => {
-    return fetch(getApiUrl(`/api/Assignment/class/${classId}`), {
+  getAssignmentsByClass: async (classId, token, page = 1, size = 100) => {
+    const queryParams = new URLSearchParams({
+      Page: page,
+      Size: size
+    });
+    return fetch(getApiUrl(`/api/Assignment/class/${classId}?${queryParams.toString()}`), {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -58,14 +62,44 @@ export const assignmentService = {
       }
     });
   },
-  gradeSubmission: async (submissionId, grade, token) => {
+  gradeSubmission: async (submissionId, gradePayload, token) => {
+    let body;
+    let headers = {
+      'Authorization': `Bearer ${token}`
+    };
+    
+    // If payload is already FormData (containing Score and Files)
+    if (gradePayload instanceof FormData) {
+        body = gradePayload;
+    } else {
+        // Fallback for current string/number grade
+        body = new FormData();
+        body.append('grade', gradePayload);
+        // Do not set Content-Type for FormData, fetch does it automatically with boundary
+    }
+
     return fetch(getApiUrl(`/api/Assignment/submissions/${submissionId}/grade`), {
       method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+      headers: headers,
+      body: body
+    });
+  },
+  createOfflineTest: async (payloadFormData, token) => {
+    return fetch(getApiUrl('/api/Assignment/offline-test'), {
+      method: 'POST',
+      headers: { 
+        'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({ grade: parseFloat(grade) })
+      body: payloadFormData
+    });
+  },
+  createOfflineSubmission: async (assignmentId, payloadFormData, token) => {
+    return fetch(getApiUrl(`/api/Assignment/${assignmentId}/offline-submission`), {
+      method: 'POST',
+      headers: { 
+        'Authorization': `Bearer ${token}`
+      },
+      body: payloadFormData
     });
   },
   giveFeedback: async (submissionId, content, token) => {
@@ -76,6 +110,32 @@ export const assignmentService = {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ content })
+    });
+  },
+  getSubmissionDetail: async (assignmentId, studentId, token) => {
+    return fetch(getApiUrl(`/api/Assignment/${assignmentId}/submissions/${studentId}`), {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+  },
+  publishAssignment: async (assignmentId, token) => {
+    return fetch(getApiUrl(`/api/Assignment/${assignmentId}/publish`), {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+  },
+  downloadAllSubmissions: async (assignmentId, token) => {
+    return fetch(getApiUrl(`/api/Assignment/${assignmentId}/download-all-submissions`), {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
     });
   }
 };

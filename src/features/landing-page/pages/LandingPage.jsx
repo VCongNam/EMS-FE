@@ -1,4 +1,6 @@
 import React from 'react';
+import { usePWA } from '../../../contexts/PWAContext';
+import { Icon } from '@iconify/react';
 import Button from '../../../components/ui/Button';
 import heroImg from '../../../assets/images/heroPic1.png';
 import heroImg2 from '../../../assets/images/heroPic2.png';
@@ -13,10 +15,12 @@ import report from '../../../assets/images/report.png';
 import finance from '../../../assets/images/finance.png';
 import FeatureCard from '../components/FeatureCard';
 import StepCard from '../components/StepCard';
+import classManagement from '../../../assets/images/classManagement.png';
 import CTASection from '../../../components/common/CTASection';
 import ImageCarousel from '../../../components/common/ImageCarousel';
 
 const LandingPage = () => {
+    const { isInstallable, installApp } = usePWA();
     const features = [
         {
             icon: <img src={feature1} alt="feature1" />,
@@ -72,7 +76,7 @@ const LandingPage = () => {
             caption: 'Bảng điều khiển tổng quan — theo dõi mọi thứ trong một màn hình'
         },
         {
-            src: 'https://placehold.co/1280x720/2D3142/ffffff?text=Quản+Lý+Lớp+Học',
+            src: classManagement,
             alt: 'Quản lý lớp học',
             caption: 'Quản lý lớp học — sắp xếp lịch học và phân công giáo viên dễ dàng'
         },
@@ -108,6 +112,14 @@ const LandingPage = () => {
                         <Button size="lg" className="!bg-gradient-to-r !p-3 !from-[#355872] !to-[#7AAACE] !text-white border-none shadow-[0_10px_20px_-5px_rgba(53,88,114,0.4)] hover:shadow-[0_15px_30px_-5px_rgba(53,88,114,0.5)] hover:scale-105 transition-all duration-300 animate-shine"
                         >Bắt đầu miễn phí</Button>
                         <Button variant="outline" size="lg">Tìm hiểu thêm về EMS</Button>
+                        <Button
+                            size="lg"
+                            className="!bg-green-600 !text-white border-none shadow-lg hover:bg-green-700 transition-all flex items-center gap-2"
+                            onClick={installApp}
+                        >
+                            <Icon icon="material-symbols:download-for-offline-rounded" className="text-2xl" />
+                            Tải ứng dụng
+                        </Button>
                     </div>
                 </div>
 

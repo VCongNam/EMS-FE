@@ -7,14 +7,21 @@ import DashboardDeadlines from './DashboardDeadlines';
 import DashboardRecentNotifications from './DashboardRecentNotifications';
 import useAuthStore from '../../../store/authStore';
 import { notificationService } from '../../notifications/api/notificationService';
+import studentClassService from '../api/studentClassService';
+import { studentAssignmentService } from '../api/studentAssignmentService';
+import { formatViDate } from '../../../utils/dateUtils';
+import { useNotifications } from '../../../contexts/NotificationContext';
 
 const StudentDashboard = () => {
     const { user } = useAuthStore();
     const token = user?.token;
     const userName = (user?.fullName || 'Học sinh').split(' ').pop();
     const navigate = useNavigate();
+    const { setUnreadCount } = useNotifications();
 
     const [notifications, setNotifications] = useState([]);
+    const [deadlines, setDeadlines] = useState([]);
+    const [isLoadingDeadlines, setIsLoadingDeadlines] = useState(true);
 
     useEffect(() => {
         const fetchRecentNotifications = async () => {
@@ -32,10 +39,85 @@ const StudentDashboard = () => {
         fetchRecentNotifications();
     }, [token]);
 
+    useEffect(() => {
+        const fetchDeadlines = async () => {
+            if (!token) return;
+            try {
+                setIsLoadingDeadlines(true);
+                // 1. Get classes
+                const classRes = await studentClassService.getMyClasses({ page: 1, size: 10 }, token);
+                if (classRes.ok) {
+                    const classData = await classRes.json();
+                    const classes = classData.data || classData || [];
+                    
+                    // 2. Get assignments for each class
+                    let allAssignments = [];
+                    const classList = Array.isArray(classes) ? classes : [];
+
+                    for (const cls of classList) {
+                        const classId = cls.classId || cls.id;
+                        const className = cls.className || cls.name;
+                        
+                        const assRes = await studentAssignmentService.getAssignments(classId, token);
+                        if (assRes.ok) {
+                            const assData = await assRes.json();
+                            const assignmentsList = assData.data || (Array.isArray(assData) ? assData : []);
+                            
+                            const assignments = assignmentsList.map(a => ({
+                                id: a.assignmentId || a.id,
+                                title: a.title,
+                                subtitle: className,
+                                dueDate: new Date(a.dueDate),
+                                status: a.status,
+                                isSubmitted: a.submittedAt || a.isSubmitted,
+                                classId: classId
+                            }));
+                            allAssignments = [...allAssignments, ...assignments];
+                        }
+                    }
+                    
+                    // 3. Filter and Sort
+                    const now = new Date();
+                    const next7Days = new Date();
+                    next7Days.setDate(now.getDate() + 7);
+
+                    const upcoming = allAssignments
+                        .filter(a => !a.isSubmitted && a.dueDate > now)
+                        .sort((a, b) => a.dueDate - b.dueDate)
+                        .slice(0, 4)
+                        .map(a => {
+                            const diffHours = (a.dueDate - now) / (1000 * 60 * 60);
+                            let status = 'Normal';
+                            if (diffHours < 24) status = 'Urgent';
+                            else if (diffHours < 72) status = 'Soon';
+
+                            return {
+                                id: a.id,
+                                title: a.title,
+                                subtitle: a.subtitle,
+                                rightText: formatViDate(a.dueDate, { day: '2-digit', month: '2-digit' }) + ', ' + formatViDate(a.dueDate, { hour: '2-digit', minute: '2-digit' }),
+                                status: status,
+                                path: `/student/classes/${a.classId}/assignment/${a.id}`,
+                                actionIcon: 'solar:pen-new-square-bold-duotone'
+                            };
+                        });
+                        
+                    setDeadlines(upcoming);
+                }
+            } catch (error) {
+                console.error("Error fetching deadlines:", error);
+            } finally {
+                setIsLoadingDeadlines(false);
+            }
+        };
+        fetchDeadlines();
+    }, [token]);
+
     const handleNotificationClick = async (notif) => {
         // Mark as read in UI
         if (notif.isRead === false) {
             setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, isRead: true } : n));
+            setUnreadCount(prev => Math.max(0, prev - 1));
             try {
                 await notificationService.markAsRead(notif.id, token);
             } catch (error) {
@@ -62,7 +144,7 @@ const StudentDashboard = () => {
             <div className="!flex !flex-col md:!flex-row !justify-between !items-start md:!items-center !gap-6">
                 <div className="!space-y-1">
                     <h1 className="!text-3xl !font-black !text-text-main !tracking-tight">Chào quay lại, {userName}!</h1>
-                    <p className="!text-sm !font-bold !text-text-muted">Hôm nay bạn có 3 tiết học và 2 bài tập cần hoàn thành.</p>
+                    <p className="!text-sm !font-bold !text-text-muted">Hôm nay bạn có các tiết học và bài tập cần hoàn thành.</p>
                 </div>
                 <div className="!flex !items-center !gap-3 !bg-white !p-2 !rounded-2xl !border !border-border !shadow-sm">
                     <div className="!w-10 !h-10 !rounded-xl !bg-primary/10 !text-primary !flex !items-center !justify-center">
@@ -70,7 +152,7 @@ const StudentDashboard = () => {
                     </div>
                     <div className="!pr-4">
                         <p className="!text-[10px] !font-black !text-text-muted !uppercase !tracking-widest">Ngày hôm nay</p>
-                        <p className="!text-sm !font-black !text-text-main">{new Date().toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+                        <p className="!text-sm !font-black !text-text-main">{formatViDate(new Date(), { weekday: 'long', day: 'numeric', month: 'long' })}</p>
                     </div>
                 </div>
             </div>
@@ -115,7 +197,12 @@ const StudentDashboard = () => {
             {/* Content Grid */}
             <div className="!grid !grid-cols-1 lg:!grid-cols-2 !gap-8">
                 {/* Upcoming Deadlines */}
-                <DashboardDeadlines />
+                <DashboardDeadlines 
+                    items={deadlines}
+                    isLoading={isLoadingDeadlines}
+                    viewAllLink="/student/classes"
+                    viewAllLabel="Xem lớp học"
+                />
 
                 {/* Recent Notifications Feed */}
                 <DashboardRecentNotifications 

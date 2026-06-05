@@ -4,8 +4,10 @@ import { toast } from 'react-toastify';
 import Button from '../../../components/ui/Button';
 import CreateTaskModal from '../components/CreateTaskModal';
 import TaskDetailModal from '../components/TaskDetailModal';
+import Pagination from '../../../components/ui/Pagination';
 import useAuthStore from '../../../store/authStore';
 import { taService } from '../api/taService';
+import { extractErrorMessage } from '../../../utils/errorHandler';
 
 const TATaskManagementTab = ({ classId }) => {
     const { user } = useAuthStore();
@@ -16,6 +18,10 @@ const TATaskManagementTab = ({ classId }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [selectedTask, setSelectedTask] = useState(null);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+    
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 5;
 
     const loadData = async () => {
         if (!classId || !user?.token) return;
@@ -80,7 +86,7 @@ const TATaskManagementTab = ({ classId }) => {
 
         } catch (error) {
             console.error('Lỗi khi tải dữ liệu công việc:', error);
-            toast.error('Lỗi kết nối máy chủ khi tải danh sách công việc');
+            toast.error(extractErrorMessage(error, 'Lỗi kết nối máy chủ khi tải danh sách công việc'));
         } finally {
             setIsLoading(false);
         }
@@ -89,6 +95,11 @@ const TATaskManagementTab = ({ classId }) => {
     useEffect(() => {
         loadData();
     }, [classId, user?.token]);
+    
+    // Reset to page 1 when search changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery]);
 
     const handleReviewTask = async (taskId, isApproved, feedback) => {
         if (!user?.token) return;
@@ -100,12 +111,12 @@ const TATaskManagementTab = ({ classId }) => {
                 setIsDetailModalOpen(false);
                 loadData(); // Re-fetch to get new status and feedback
             } else {
-                const err = await res.json();
-                toast.error(err.message || 'Lỗi khi xử lý yêu cầu');
+                const errData = await res.json().catch(() => ({}));
+                toast.error(extractErrorMessage(errData, 'Lỗi khi xử lý yêu cầu'));
             }
         } catch (e) {
             console.error(e);
-            toast.error('Lỗi kết nối máy chủ');
+            toast.error(extractErrorMessage(e, 'Lỗi kết nối máy chủ'));
         }
     };
 
@@ -126,7 +137,7 @@ const TATaskManagementTab = ({ classId }) => {
                 case 'overdue':
                     return "bg-red-500/10 text-red-600 border-red-200/50";
                 default:
-                    return "bg-slate-500/10 text-slate-600 border-slate-200/50";
+                    return "bg-slate-500/10 text-slate-600 border-slate-500/50";
             }
         };
 
@@ -194,6 +205,13 @@ const TATaskManagementTab = ({ classId }) => {
 
     const filteredTasks = tasks.filter(t => (t.title || '').toLowerCase().includes(searchQuery.toLowerCase()));
 
+    // Pagination logic
+    const paginatedTasks = React.useMemo(() => {
+        const indexOfLastItem = currentPage * itemsPerPage;
+        const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+        return filteredTasks.slice(indexOfFirstItem, indexOfLastItem);
+    }, [filteredTasks, currentPage, itemsPerPage]);
+
     return (
         <div className="animate-fade-in !space-y-6">
             {/* Control Bar */}
@@ -239,8 +257,8 @@ const TATaskManagementTab = ({ classId }) => {
                             <Icon icon="solar:spinner-linear" className="animate-spin text-4xl" />
                             <span className="font-medium text-text-muted">Đang tải danh sách công việc...</span>
                         </div>
-                    ) : filteredTasks.length > 0 ? (
-                        filteredTasks.map(task => <TaskCard key={task.id} task={task} />)
+                    ) : paginatedTasks.length > 0 ? (
+                        paginatedTasks.map(task => <TaskCard key={task.id} task={task} />)
                     ) : (
                         <div className="flex-1 flex flex-col items-center justify-center text-center !py-20 opacity-60">
                             <div className="w-20 h-20 rounded-3xl border-2 border-dashed border-border flex items-center justify-center !mb-4">
@@ -251,6 +269,17 @@ const TATaskManagementTab = ({ classId }) => {
                         </div>
                     )}
                 </div>
+
+                {filteredTasks.length > itemsPerPage && (
+                    <div className="!mt-4">
+                        <Pagination 
+                            totalItems={filteredTasks.length}
+                            itemsPerPage={itemsPerPage}
+                            currentPage={currentPage}
+                            onPageChange={setCurrentPage}
+                        />
+                    </div>
+                )}
             </div>
 
             {isCreateModalOpen && (
@@ -268,15 +297,17 @@ const TATaskManagementTab = ({ classId }) => {
                             const res = await taService.createTask(payload, user.token);
                             if (res.ok) {
                                 toast.success('Giao việc thành công!');
-                                setIsCreateModalOpen(false);
                                 loadData();
+                                return true;
                             } else {
-                                const error = await res.json();
-                                toast.error(error.message || 'Lỗi khi giao việc');
+                                const errorData = await res.json().catch(() => ({}));
+                                toast.error(extractErrorMessage(errorData, 'Lỗi khi giao việc'));
+                                return false;
                             }
                         } catch (e) {
                             console.error(e);
-                            toast.error('Lỗi kết nối máy chủ');
+                            toast.error(extractErrorMessage(e, 'Lỗi kết nối máy chủ'));
+                            return false;
                         }
                     }}
                     tas={tas}

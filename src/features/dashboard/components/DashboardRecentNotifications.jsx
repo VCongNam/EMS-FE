@@ -1,6 +1,7 @@
 import React from 'react';
 import { Icon } from '@iconify/react';
 import { Link } from 'react-router-dom';
+import { formatViTime } from '../../../utils/dateUtils';
 
 const DashboardRecentNotifications = ({ title, icon, iconBgBase, iconColor, notifications, onNotificationClick, viewAllLink, viewAllLabel }) => {
     // Default fallback
@@ -32,7 +33,7 @@ const DashboardRecentNotifications = ({ title, icon, iconBgBase, iconColor, noti
                 {displayNotifications.map((notif) => {
                     const displayMessage = notif.message || notif.content;
                     const displayTime = notif.createdAt 
-                        ? new Date(notif.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) 
+                        ? formatViTime(notif.createdAt) 
                         : notif.time;
                     
                     return (
