@@ -193,7 +193,7 @@ const CreateAssignmentPage = () => {
                 }
 
                 // If user specifically wants to publish a draft, call the publish API separately
-                if (currentStatus === 'Draft' && targetStatus === 'Published') {
+                if (currentStatus?.toLowerCase() === 'draft' && targetStatus === 'Published') {
                     console.log(">>> [Assignment] Transitioning status from Draft to Published...");
                     res = await assignmentService.publishAssignment(assignmentId, token);
                 } else {
@@ -469,7 +469,7 @@ const CreateAssignmentPage = () => {
                     Hủy
                 </button>
                 
-                {(!isEditMode && !isOfflineMode && currentStatus === 'Draft') && (
+                {(!isOfflineMode && (!isEditMode || currentStatus?.toLowerCase() === 'draft')) && (
                     <button
                         onClick={() => handleSave('Draft')}
                         disabled={isSubmitting || !title.trim()}
@@ -480,7 +480,7 @@ const CreateAssignmentPage = () => {
                         ) : (
                             <Icon icon="solar:diskette-bold-duotone" className="text-lg text-primary" />
                         )}
-                        {isEditMode ? 'Lưu thay đổi' : 'Lưu bản nháp'}
+                        Lưu bản nháp
                     </button>
                 )}
 

@@ -28,6 +28,12 @@ const STATUS_CONFIG = {
     'đã hủy': { label: 'Đã hủy', className: '!bg-red-100 text-red-700 border-red-200', dot: '!bg-red-400' },
 };
 
+const ATTENDANCE_CONFIG = {
+    'có mặt': { label: 'Có mặt', bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-200', icon: 'solar:check-circle-bold' },
+    'vắng mặt': { label: 'Vắng mặt', bg: 'bg-red-100', text: 'text-red-600', border: 'border-red-200', icon: 'solar:close-circle-bold' },
+    'chưa điểm danh': { label: 'Chưa điểm danh', bg: 'bg-yellow-100', text: 'text-yellow-700', border: 'border-yellow-200', icon: 'solar:clock-circle-bold' },
+};
+
 const MOCK_SCHEDULE_CONFIG = {
     openingDate: '2026-04-07',
     transcriptTemplateId: 'T1',
@@ -155,7 +161,17 @@ const ClassSchedulePage = () => {
 
                     // Normalize status: handle both English keys and Vietnamese strings
                     const rawStatus = item.status || '';
-                    const normalizedStatus = rawStatus.toLowerCase();
+                    let normalizedStatus = rawStatus.toLowerCase();
+
+                    if (isTeacherOrTA) {
+                        if (normalizedStatus === 'scheduled' || normalizedStatus === 'sắp diễn ra') {
+                            const now = new Date();
+                            const compareDate = !isNaN(endDateObj.getTime()) ? endDateObj : dateObj;
+                            if (!isNaN(compareDate.getTime()) && compareDate < now) {
+                                normalizedStatus = 'completed';
+                            }
+                        }
+                    }
 
                     return {
                         id: item.sessionId || item.sessionID,
@@ -165,7 +181,7 @@ const ClassSchedulePage = () => {
                         startTime: gmt7StartTime,
                         endTime: gmt7EndTime,
                         status: normalizedStatus || 'scheduled',
-                        attendanceStatus: item.attendanceStatus || null,
+                        attendanceStatus: item.attendanceStatus || item.AttendanceStatus || null,
                         title: item.title || item.className,
                         raw: item
                     };
@@ -496,6 +512,16 @@ const ClassSchedulePage = () => {
                                     </div>
 
                                     <div className="flex items-center !gap-2 w-full sm:w-auto justify-between sm:justify-end mt-2 sm:mt-0">
+                                        {!isTeacherOrTA && lesson.attendanceStatus && ATTENDANCE_CONFIG[(lesson.attendanceStatus || '').toLowerCase()] && (() => {
+                                            const att = ATTENDANCE_CONFIG[(lesson.attendanceStatus || '').toLowerCase()];
+                                            return (
+                                                <span className={`flex shrink-0 items-center gap-1.5 text-[11px] font-bold !px-3 !py-1.5 rounded-full border ${att.bg} ${att.text} ${att.border}`}>
+                                                    <Icon icon={att.icon} className="text-sm shrink-0" />
+                                                    {att.label}
+                                                </span>
+                                            );
+                                        })()}
+
                                         <span className={`flex shrink-0 items-center !gap-1.5 text-[11px] font-bold !px-3 !py-1.5 rounded-full border ${cfg.className}`}>
                                             <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
                                             {cfg.label}

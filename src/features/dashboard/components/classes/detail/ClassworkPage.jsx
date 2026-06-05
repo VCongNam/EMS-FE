@@ -126,12 +126,30 @@ const ClassworkPage = () => {
         }
     };
 
-    const getStatusInfo = (status, isOverdue, isSubmitted) => {
+    const getStatusInfo = (status, isOverdue, isSubmitted, isTeacher) => {
         const s = (status || '').toLowerCase();
         
-        // Priority: Submitted > Overdue > Status-based
+        if (!isTeacher) {
+            if (s === 'đã chấm' || s === 'đã chấm điểm' || s === 'graded') {
+                return { label: 'Đã chấm điểm', color: '!bg-purple-500/10 text-purple-600 border-purple-200' };
+            }
+            if (s === 'đã nộp' || s === 'submitted' || s === 'turned in') {
+                return { label: 'Đã nộp', color: '!bg-green-500/10 text-green-600 border-green-200' };
+            }
+            if (s === 'chưa nộp' || s === 'pending' || s === 'missing' || s === 'not submitted') {
+                return { label: 'Chưa nộp', color: '!bg-red-500/10 text-red-600 border-red-200' };
+            }
+            if (s === 'nộp muộn' || s === 'muộn' || s === 'late') {
+                return { label: 'Nộp muộn', color: '!bg-amber-500/10 text-amber-600 border-amber-200' };
+            }
+            if (s === 'draft') return { label: 'Bản nháp', color: '!bg-slate-500/15 text-slate-600 border-slate-500/20' };
+            if (s === 'published') return { label: 'Đã giao', color: '!bg-primary/10 text-primary border-primary/20' };
+            
+            return { label: status || 'Đã giao', color: '!bg-blue-500/10 text-blue-600 border-blue-200' };
+        }
+        
+        // Priority: Submitted > Status-based
         if (isSubmitted) return { label: 'Đã nộp', color: '!bg-green-500/10 text-green-600 border-green-200' };
-        if (isOverdue) return { label: 'Quá hạn', color: '!bg-red-500/10 text-red-600 border-red-200' };
         
         if (s === 'draft') return { label: 'Bản nháp', color: '!bg-slate-500/15 text-slate-600 border-slate-500/20' };
         if (s === 'published') return { label: 'Đã giao', color: '!bg-primary/10 text-primary border-primary/20' };
@@ -145,7 +163,7 @@ const ClassworkPage = () => {
         const dDate = new Date(a.dueDate);
         const isOverdue = !isNaN(dDate) && dDate < new Date() && !a.isSubmitted;
         const statusRaw = a.studentStatus || a.status || 'Published';
-        const stInfo = getStatusInfo(statusRaw, isOverdue, a.isSubmitted);
+        const stInfo = getStatusInfo(statusRaw, isOverdue, a.isSubmitted, isTeacherOrTA);
 
         return {
             id: a.assignmentID || a.assignmentId,

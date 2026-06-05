@@ -171,7 +171,7 @@ const SessionDetailModal = ({ isOpen, onClose, data }) => {
 
                         {data.meetingLink && (
                             <div className="!pt-2">
-                                <a href={data.meetingLink} target="_blank" rel="noreferrer" 
+                                <a href={data.meetingLink} target="_blank" rel="noreferrer"
                                     className="w-full flex items-center justify-center gap-2 !py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20">
                                     <Icon icon="solar:link-minimalistic-linear" className="text-lg" />
                                     Tham gia buổi học
@@ -648,18 +648,18 @@ const ScheduleManagementPage = () => {
 
             loadingToast = toast.loading("Đang tải chi tiết buổi học...");
             const res = await sessionService.getSessionById(lesson.id, token);
-            
+
             if (res.ok) {
                 const result = await res.json();
                 const detailedData = result.data || result;
-                
+
                 toast.dismiss(loadingToast);
-                setSessionModalState({ 
-                    isOpen: true, 
+                setSessionModalState({
+                    isOpen: true,
                     initialData: {
                         ...lesson.raw,
                         ...detailedData
-                    } 
+                    }
                 });
             } else {
                 toast.dismiss(loadingToast);
