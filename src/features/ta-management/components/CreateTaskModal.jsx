@@ -10,7 +10,7 @@ const CreateTaskModal = ({ isOpen, onClose, onAssign, tas = [], classes = [] }) 
         title: '',
         assignedTo: '',
         deadline: '',
-        type: 'Grade'
+        type: 'Attendance'
     });
 
     if (!isOpen) return null;
@@ -130,7 +130,11 @@ const CreateTaskModal = ({ isOpen, onClose, onAssign, tas = [], classes = [] }) 
                                     onChange={e => setTaskData({...taskData, type: e.target.value})}
                                     className="w-full !px-4 !py-3 rounded-xl bg-background border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium text-text-main outline-none appearance-none disabled:opacity-50"
                                 >
-                                    <option value="Grade">Chấm điểm </option>
+                                    <option value="Attendance">Điểm danh</option>
+                                    <option value="Grade">Chấm điểm</option>
+                                    <option value="Report">Xem Báo cáo</option>
+                                    <option value="Assignment">Quản lý bài tập</option>
+                                    <option value="Feedback">Nhận xét</option>
                                 </select>
                             </div>
                         </div>

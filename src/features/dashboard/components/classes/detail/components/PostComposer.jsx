@@ -104,7 +104,7 @@ const PostComposer = ({ onPost, editMode = false, initialContent = '', initialAt
                             type="text"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
-                            placeholder="Tiêu đề bài đăng (tùy chọn)"
+                            placeholder="Tiêu đề bài đăng"
                             className="w-full bg-background border-none focus:ring-0 !p-2 font-bold text-text-main text-lg placeholder:font-bold"
                         />
                         <textarea

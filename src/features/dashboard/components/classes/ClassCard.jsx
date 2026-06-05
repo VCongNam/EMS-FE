@@ -153,9 +153,9 @@ const ClassCard = ({
                                         <Icon icon="material-symbols:unarchive-rounded" /> Bỏ lưu trữ
                                     </button>
                                 )}
-                                <button className="w-full text-left !px-4 !py-2 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2 border-t border-border !mt-1 !pt-2">
+                                {/* <button className="w-full text-left !px-4 !py-2 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2 border-t border-border !mt-1 !pt-2">
                                     <Icon icon="material-symbols:delete-rounded" /> Xóa
-                                </button>
+                                </button> */}
                             </div>
                         )}
                     </div>

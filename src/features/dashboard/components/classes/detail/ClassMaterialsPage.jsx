@@ -7,6 +7,7 @@ import learningMaterialService from '../../../api/learningMaterialService';
 import AddMaterialModal from './components/AddMaterialModal';
 import MaterialDetailModal from './components/MaterialDetailModal';
 import ConfirmModal from '../../../../../components/ui/ConfirmModal';
+import { formatViFullDate, formatViTime } from '../../../../../utils/dateUtils';
 
 const getFileIcon = (type, attachments) => {
     // If multiple attachments, use folder icon
@@ -210,10 +211,10 @@ const ClassMaterialsPage = () => {
                                         <td className="!p-5">
                                             <div className="flex flex-col">
                                                 <span className="text-sm font-bold text-text-main">
-                                                    {new Date(material.createdAt).toLocaleDateString('vi-VN')}
+                                                    {formatViFullDate(material.createdAt)}
                                                 </span>
                                                 <span className="text-[10px] text-text-muted font-medium">
-                                                    {new Date(material.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                                                    {formatViTime(material.createdAt)}
                                                 </span>
                                             </div>
                                         </td>

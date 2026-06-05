@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import useAuthStore from '../../../../../../store/authStore';
 import learningMaterialService from '../../../../api/learningMaterialService';
 import { extractErrorMessage } from '../../../../../../utils/errorHandler';
+import { formatViDate } from '../../../../../../utils/dateUtils';
 
 const MaterialDetailModal = ({ isOpen, onClose, materialId }) => {
     const { user } = useAuthStore();
@@ -79,7 +80,7 @@ const MaterialDetailModal = ({ isOpen, onClose, materialId }) => {
                                     </div>
                                     <div className="flex items-center gap-1.5">
                                         <Icon icon="material-symbols:calendar-today-outline-rounded" className="text-lg" />
-                                        <span>{new Date(material.createdAt).toLocaleString('vi-VN')}</span>
+                                        <span>{formatViDate(material.createdAt)}</span>
                                     </div>
                                 </div>
                             </div>

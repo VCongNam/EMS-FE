@@ -278,6 +278,26 @@ const ClassReportsTab = () => {
         return reports.slice(indexOfFirstItem, indexOfLastItem);
     }, [reports, currentPage, itemsPerPage]);
 
+    // Calculate if the selected period is unlocked for actions (unlocked starting from the last 5 days of that month, and in subsequent months/years)
+    const isPeriodUnlocked = React.useMemo(() => {
+        const today = new Date();
+        const currentYear = today.getFullYear();
+        const currentMonth = today.getMonth() + 1; // 1-indexed (Jan = 1, Dec = 12)
+        const currentDay = today.getDate();
+
+        if (currentYear > selectedYear) return true;
+        if (currentYear < selectedYear) return false;
+        
+        // currentYear === selectedYear
+        if (currentMonth > selectedMonth) return true;
+        if (currentMonth < selectedMonth) return false;
+        
+        // currentMonth === selectedMonth: check if in last 5 days
+        const totalDaysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
+        const startDayOfUnlock = totalDaysInMonth - 4; // last 5 days (e.g. 31 - 4 = 27)
+        return currentDay >= startDayOfUnlock;
+    }, [selectedMonth, selectedYear]);
+
     return (
         <div className="animate-fade-in-up space-y-6">
             {/* Header / Stats */}
@@ -297,7 +317,7 @@ const ClassReportsTab = () => {
                     </div>
                 </div>
                 
-                <div className="relative w-full md:w-56 mt-3 md:mt-0">
+                <div className="relative w-full md:w-56 !mt-3 md:!mt-0">
                     <select 
                         value={`${selectedMonth}-${selectedYear}`}
                         onChange={(e) => {
@@ -318,8 +338,8 @@ const ClassReportsTab = () => {
             </div>
 
             {/* List */}
-            <div className="bg-surface rounded-2xl border border-border shadow-sm overflow-hidden">
-                <div className="!px-6 !py-4 border-b border-border bg-background/50 flex flex-wraps items-center justify-between">
+            <div className="bg-surface rounded-2xl border border-border shadow-sm overflow-hidden !mt-2">
+                <div className="!px-6 !py-4 border-b border-border !bg-background/50 flex flex-wraps items-center justify-between">
                     <div className="flex items-center gap-3">
                         <Icon icon="solar:clipboard-list-bold-duotone" className="text-xl text-primary" />
                         <h3 className="text-base font-bold text-text-main">Danh sách báo cáo lớp</h3>
@@ -330,6 +350,16 @@ const ClassReportsTab = () => {
                     <div className="!py-20 flex flex-col items-center justify-center">
                         <Icon icon="line-md:loading-loop" className="text-4xl text-primary !mb-3" />
                         <p className="text-text-muted font-medium text-sm">Đang tải dữ liệu...</p>
+                    </div>
+                ) : (!isPeriodUnlocked && !isStudent) ? (
+                    <div className="flex flex-col items-center justify-center !py-16 !px-4 text-center">
+                        <div className="w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-600 !mb-4 shadow-inner">
+                            <Icon icon="solar:lock-bold-duotone" className="text-3xl" />
+                        </div>
+                        <h3 className="text-lg font-bold text-text-main">Kỳ báo cáo Tháng {selectedMonth}/{selectedYear} đang tạm khóa</h3>
+                        <p className="text-sm text-text-muted max-w-md !mt-2 font-medium">
+                            Hệ thống chỉ cho phép tạo, sửa hoặc gửi báo cáo tiến độ học tập vào 5 ngày cuối của tháng báo cáo (bắt đầu từ ngày {new Date(selectedYear, selectedMonth, 0).getDate() - 4}/{selectedMonth.toString().padStart(2, '0')}/{selectedYear}).
+                        </p>
                     </div>
                 ) : reports.length > 0 ? (
                     <div className="overflow-x-auto">
@@ -406,27 +436,28 @@ const ClassReportsTab = () => {
                                                         <>
                                                             {report.status === 'Ready' ? (
                                                                 <button 
-                                                                    title="Tạo báo cáo" 
+                                                                    title={isPeriodUnlocked ? "Tạo báo cáo" : "Chưa đến thời gian tạo báo cáo (Chỉ mở vào 5 ngày cuối tháng)"} 
                                                                     onClick={() => handleOpenModal(report)} 
-                                                                    className="!p-2.5 !rounded-xl !bg-primary/10 !text-primary hover:!bg-primary hover:!text-white transition-all shadow-sm"
+                                                                    className="!p-2.5 !rounded-xl !bg-primary/10 !text-primary hover:!bg-primary hover:!text-white transition-all shadow-sm disabled:opacity-30 disabled:cursor-not-allowed"
+                                                                    disabled={!isPeriodUnlocked}
                                                                 >
                                                                     <Icon icon="material-symbols:add-chart-rounded" className="text-xl" />
                                                                 </button>
                                                             ) : (
                                                                 <>
                                                                     <button 
-                                                                        title="Gửi báo cáo" 
+                                                                        title={isPeriodUnlocked ? "Gửi báo cáo" : "Chưa đến thời gian gửi báo cáo"} 
                                                                         onClick={() => setConfirmModal({ isOpen: true, report: report, type: 'send' })} 
                                                                         className="!p-2.5 !rounded-xl !bg-emerald-50 !text-emerald-600 hover:!bg-emerald-600 hover:!text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm border border-emerald-100"
-                                                                        disabled={report.status !== 'Draft'}
+                                                                        disabled={!isPeriodUnlocked || report.status !== 'Draft'}
                                                                     >
                                                                         <Icon icon="material-symbols:send-rounded" className="text-xl" />
                                                                     </button>
                                                                     <button 
-                                                                        title="Sửa báo cáo" 
+                                                                        title={isPeriodUnlocked ? "Sửa báo cáo" : "Chưa đến thời gian sửa báo cáo"} 
                                                                         onClick={() => handleOpenModal(report)} 
                                                                         className="!p-2.5 !rounded-xl !bg-amber-50 !text-amber-600 hover:!bg-amber-600 hover:!text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm border border-amber-100"
-                                                                        disabled={report.status === 'Published' || report.status === 'Sent'}
+                                                                        disabled={!isPeriodUnlocked || report.status === 'Published' || report.status === 'Sent'}
                                                                     >
                                                                         <Icon icon="material-symbols:edit-document-rounded" className="text-xl" />
                                                                     </button>

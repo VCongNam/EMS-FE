@@ -6,6 +6,36 @@ import { taService } from '../api/taService';
 import Pagination from '../../../components/ui/Pagination';
 import { formatViDate } from '../../../utils/dateUtils';
 
+const TASK_TYPE_MAP = {
+    'Attendance': 'Điểm danh',
+    'Grade': 'Chấm điểm',
+    'Report': 'Báo cáo',
+    'Assignment': 'Bài tập',
+    'Feedback': 'Phản hồi'
+};
+
+const getTaskTypeStyles = (type) => {
+    switch (type) {
+        case 'Attendance': return "text-green-600 !bg-green-500/5 border-green-500/10";
+        case 'Grade': return "text-blue-600 !bg-blue-500/5 border-blue-500/10";
+        case 'Report': return "text-amber-600 !bg-amber-500/5 border-amber-500/10";
+        case 'Assignment': return "text-indigo-600 !bg-indigo-500/5 border-indigo-500/10";
+        case 'Feedback': return "text-pink-600 !bg-pink-500/5 border-pink-500/10";
+        default: return "text-purple-600 !bg-purple-500/5 border-purple-500/10";
+    }
+};
+
+const getTaskTypeIcon = (type) => {
+    switch (type) {
+        case 'Attendance': return "solar:calendar-check-bold-duotone";
+        case 'Grade': return "solar:pen-new-square-bold-duotone";
+        case 'Report': return "solar:chart-2-bold-duotone";
+        case 'Assignment': return "solar:document-add-bold-duotone";
+        case 'Feedback': return "solar:chat-round-dots-bold-duotone";
+        default: return "solar:tag-linear";
+    }
+};
+
 
 const MyTasksPage = () => {
     const { user } = useAuthStore();
@@ -153,9 +183,9 @@ const MyTasksPage = () => {
                                         <span>Lớp: {task.className || task.classId}</span>
                                     </div>
                                     {task.type && (
-                                        <div className="flex items-center gap-1.5 text-[11px] font-semibold text-purple-600 !bg-purple-500/5 !px-2 !py-1 rounded-lg border border-purple-500/10 w-fit">
-                                            <Icon icon="solar:tag-linear" />
-                                            <span>Loại: {task.type}</span>
+                                        <div className={`flex items-center gap-1.5 text-[11px] font-semibold !px-2 !py-1 rounded-lg border w-fit ${getTaskTypeStyles(task.type)}`}>
+                                            <Icon icon={getTaskTypeIcon(task.type)} />
+                                            <span>Loại: {TASK_TYPE_MAP[task.type] || task.type}</span>
                                         </div>
                                     )}
                                 </div>

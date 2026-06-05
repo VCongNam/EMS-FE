@@ -8,6 +8,7 @@ import { toast } from 'react-toastify';
 import { progressReportService } from '../../dashboard/api/progressReportService';
 import useAuthStore from '../../../store/authStore';
 import { extractErrorMessage } from '../../../utils/errorHandler';
+import { formatViDate } from '../../../utils/dateUtils';
 
 // Mock constants removed
 
@@ -292,6 +293,26 @@ const ClassReportsPage = () => {
         });
     };
 
+    // Calculate if the selected period is unlocked for actions (unlocked starting from the last 5 days of that month, and in subsequent months/years)
+    const isPeriodUnlocked = React.useMemo(() => {
+        const today = new Date();
+        const currentYear = today.getFullYear();
+        const currentMonth = today.getMonth() + 1; // 1-indexed (Jan = 1, Dec = 12)
+        const currentDay = today.getDate();
+
+        if (currentYear > year) return true;
+        if (currentYear < year) return false;
+        
+        // currentYear === year
+        if (currentMonth > month) return true;
+        if (currentMonth < month) return false;
+        
+        // currentMonth === month: check if in last 5 days
+        const totalDaysInMonth = new Date(year, month, 0).getDate();
+        const startDayOfUnlock = totalDaysInMonth - 4; // last 5 days (e.g. 31 - 4 = 27)
+        return currentDay >= startDayOfUnlock;
+    }, [month, year]);
+
     return (
         <div className="!min-h-full !p-4 sm:!p-6 !animate-fade-in custom-scrollbar">
             {/* Breadcrumbs & Navigation */}
@@ -321,6 +342,8 @@ const ClassReportsPage = () => {
                     </div>
                 </div>
             </div>
+
+
 
             {/* Controls Section */}
             <div className="!bg-white !p-4 !rounded-2xl !border !border-border !shadow-sm !mb-6 !flex !flex-wrap !items-center !justify-between !gap-4">
@@ -367,7 +390,9 @@ const ClassReportsPage = () => {
                         <span className="!text-xs !font-bold !text-primary">Đã chọn {selectedReports.length} mục</span>
                         <button 
                             onClick={handleBatchSend}
-                            className="!flex-1 sm:!flex-none !bg-primary/10 !text-primary !px-4 !py-2 !rounded-lg !text-sm !font-bold hover:!bg-primary/20 !transition-all !flex !items-center !justify-center !gap-2"
+                            className="!flex-1 sm:!flex-none !bg-primary/10 !text-primary !px-4 !py-2 !rounded-lg !text-sm !font-bold hover:!bg-primary/20 !transition-all !flex !items-center !justify-center !gap-2 disabled:opacity-30 disabled:cursor-not-allowed"
+                            disabled={!isPeriodUnlocked}
+                            title={isPeriodUnlocked ? "Gửi hàng loạt" : "Chưa đến thời gian gửi báo cáo"}
                         >
                             <Icon icon="material-symbols:send-rounded" />
                             Gửi hàng loạt
@@ -378,221 +403,234 @@ const ClassReportsPage = () => {
 
             {/* Main Content - Responsive */}
             <div className="!bg-white !rounded-3xl !border !border-border !shadow-sm !overflow-hidden">
-
-                {/* ── Desktop Table (md+) ─────────────────────────── */}
-                <div className="hidden md:block overflow-x-auto">
-                    <table className="!w-full !text-left !border-collapse">
-                        <thead>
-                            <tr className="!bg-background/50 !border-b !border-border">
-                                <th className="!p-4 !w-12">
-                                    <input 
-                                        type="checkbox" 
-                                        checked={selectedReports.length === classReports.length && classReports.length > 0}
-                                        onChange={toggleSelectAll}
-                                        className="!w-5 !h-5 accent-primary"
-                                    />
-                                </th>
-                                <th className="!p-4 !text-xs !font-black !text-text-muted !uppercase !tracking-widest">Học sinh</th>
-                                <th className="!p-4 !text-xs !font-black !text-text-muted !uppercase !tracking-widest !text-center">GPA & Attendance</th>
-                                <th className="!p-4 !text-xs !font-black !text-text-muted !uppercase !tracking-widest text-center">Trạng thái</th>
-                                <th className="!p-4 !text-xs !font-black !text-text-muted !uppercase !tracking-widest">Hành động</th>
-                            </tr>
-                        </thead>
-                        <tbody className="!divide-y !divide-border">
-                            {classReports.filter(r => filterStatus === 'All' || r.status === filterStatus).map(report => (
-                                <tr key={report.reportId} className="hover:!bg-background/20 !transition-colors !group">
-                                    <td className="!p-4">
-                                        <input 
-                                            type="checkbox" 
-                                            checked={selectedReports.includes(report.reportId)}
-                                            onChange={() => toggleSelect(report.reportId)}
-                                            className="!w-5 !h-5 accent-primary"
-                                        />
-                                    </td>
-                                    <td className="!p-4">
-                                        <div className="!flex !items-center !gap-3">
-                                            <div className="!w-10 !h-10 !bg-primary/5 !rounded-full !flex !items-center !justify-center !border !border-primary/10">
-                                                <Icon icon="material-symbols:person-rounded" className="!text-primary !text-xl" />
-                                            </div>
-                                            <div>
-                                                <div className="!font-bold !text-text-main">{report.studentName}</div>
-                                                <div className="!text-xs !text-text-muted">{report.studentId}</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="!p-4">
-                                        <div className="!flex !flex-col !items-center !gap-1">
-                                            <div className="!flex !items-center !gap-3 !w-full !max-w-[140px]">
-                                                <span className="!text-[10px] !font-bold !text-text-muted !w-8">GPA</span>
-                                                <div className="!flex-1 !h-1.5 !bg-background !rounded-full !overflow-hidden">
-                                                    <div className="!h-full !bg-primary" style={{ width: `${(report.gpa || 0) * 10}%` }}></div>
-                                                </div>
-                                                <span className="!text-[10px] !font-black !text-primary">{report.gpa || 0}</span>
-                                            </div>
-                                            <div className="!flex !items-center !gap-3 !w-full !max-w-[140px]">
-                                                <span className="!text-[10px] !font-bold !text-text-muted !w-8">ATT</span>
-                                                <div className="!flex-1 !h-1.5 !bg-background !rounded-full !overflow-hidden">
-                                                    <div className="!h-full !bg-emerald-500" style={{ width: `${report.attendanceRate || 0}%` }}></div>
-                                                </div>
-                                                <span className="!text-[10px] !font-black !text-emerald-600">{report.attendanceRate || 0}%</span>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="!p-4 text-center">
-                                        <div className={`!inline-flex !items-center !gap-1.5 !px-3 !py-1 !rounded-full !text-[11px] !font-bold ${getStatusStyle(report.status)}`}>
-                                            <div className="!w-1.5 !h-1.5 !rounded-full !bg-current"></div>
-                                            {getStatusLabel(report.status)}
-                                        </div>
-                                        {report.updatedAt && (report.status === 'Published' || report.status === 'Sent') && (
-                                            <div className="!text-[10px] !text-text-muted !mt-1">
-                                                {new Date(report.updatedAt).toLocaleString('vi-VN')}
-                                            </div>
-                                        )}
-                                    </td>
-                                    <td className="!p-4">
-                                        <div className="!flex !items-center !gap-2">
-                                            {report.status === 'Ready' ? (
-                                                <button 
-                                                    title="Tạo báo cáo" 
-                                                    onClick={() => handleEdit(report)} 
-                                                    className="!p-2 !rounded-lg !bg-primary/10 !text-primary hover:!bg-primary hover:!text-white !transition-all"
-                                                >
-                                                    <Icon icon="material-symbols:add-chart-rounded" className="text-xl" />
-                                                </button>
-                                            ) : (
-                                                <>
-                                                    <button 
-                                                        title="Gửi báo cáo" 
-                                                        onClick={() => handleSendClick(report)} 
-                                                        className="!p-2 !rounded-lg !bg-emerald-50 !text-emerald-600 hover:!bg-emerald-600 hover:!text-white !transition-all disabled:!opacity-30 disabled:!cursor-not-allowed"
-                                                        disabled={report.status !== 'Draft' && report.status !== 'Ready'}
-                                                    >
-                                                        <Icon icon="material-symbols:send-rounded" className="text-xl" />
-                                                    </button>
-                                                    <button 
-                                                        title="Sửa báo cáo" 
-                                                        onClick={() => handleEdit(report)} 
-                                                        className="!p-2 !rounded-lg !bg-amber-50 !text-amber-600 hover:!bg-amber-600 hover:!text-white !transition-all disabled:!opacity-30 disabled:!cursor-not-allowed"
-                                                        disabled={report.status === 'Published' || report.status === 'Sent'}
-                                                    >
-                                                        <Icon icon="material-symbols:edit-document-rounded" className="text-xl" />
-                                                    </button>
-                                                </>
-                                            )}
-                                            <button title="Xuất PDF" onClick={() => toast.info('Tính năng xuất PDF đang được phát triển!')} className="!p-2 !rounded-lg !bg-gray-50 !text-gray-500 hover:!bg-gray-700 hover:!text-white !transition-all">
-                                                <Icon icon="material-symbols:picture-as-pdf-rounded" className="text-xl" />
-                                            </button>
-                                            <button title="Xóa báo cáo" onClick={() => handleDeleteClick(report.reportId)} className="!p-2 !rounded-lg !bg-red-50 !text-red-600 hover:!bg-red-500 hover:!text-white !transition-all">
-                                                <Icon icon="material-symbols:delete-rounded" className="text-xl" />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-
-                {/* ── Mobile Card List (below md) ─────────────────── */}
-                <div className="md:hidden divide-y divide-border">
-                    {classReports.filter(r => filterStatus === 'All' || r.status === filterStatus).map(report => (
-                        <div key={report.reportId} className="!p-4 space-y-3">
-                            <div className="flex items-center justify-between gap-3">
-                                <div className="flex items-center gap-3">
-                                    <input 
-                                        type="checkbox" 
-                                        checked={selectedReports.includes(report.reportId)}
-                                        onChange={() => toggleSelect(report.reportId)}
-                                        className="!w-5 !h-5 accent-primary shrink-0"
-                                    />
-                                    <div className="!w-9 !h-9 !bg-primary/5 !rounded-full !flex !items-center !justify-center !border !border-primary/10 shrink-0">
-                                        <Icon icon="material-symbols:person-rounded" className="!text-primary" />
-                                    </div>
-                                    <div>
-                                        <p className="font-bold text-text-main text-sm">{report.studentName}</p>
-                                        <p className="text-xs text-text-muted">{report.studentId}</p>
-                                    </div>
-                                </div>
-                                <div className={`!inline-flex !items-center !gap-1.5 !px-2.5 !py-1 !rounded-full !text-[11px] !font-bold shrink-0 ${getStatusStyle(report.status)}`}>
-                                    <div className="!w-1.5 !h-1.5 !rounded-full !bg-current"></div>
-                                    {getStatusLabel(report.status)}
-                                </div>
-                            </div>
-
-                            <div className="!bg-background/50 !rounded-xl !p-3 space-y-2">
-                                <div className="flex items-center gap-3">
-                                    <span className="text-[10px] font-black text-text-muted w-6 shrink-0">GPA</span>
-                                    <div className="flex-1 !h-1.5 !bg-border !rounded-full !overflow-hidden">
-                                        <div className="!h-full !bg-primary !rounded-full" style={{ width: `${(report.gpa || 0) * 10}%` }}></div>
-                                    </div>
-                                    <span className="text-[11px] font-black text-primary w-8 text-right">{report.gpa || 0}</span>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <span className="text-[10px] font-black text-text-muted w-6 shrink-0">ATT</span>
-                                    <div className="flex-1 !h-1.5 !bg-border !rounded-full !overflow-hidden">
-                                        <div className="!h-full !bg-emerald-500 !rounded-full" style={{ width: `${report.attendanceRate || 0}%` }}></div>
-                                    </div>
-                                    <span className="text-[11px] font-black text-emerald-600 w-8 text-right">{report.attendanceRate || 0}%</span>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center justify-between gap-2">
-                                <div className="flex items-center gap-1.5">
-                                    {report.status === 'Ready' ? (
-                                        <button 
-                                            title="Tạo" 
-                                            onClick={() => handleEdit(report)} 
-                                            className="!p-2 !rounded-lg !bg-primary/10 !text-primary hover:!bg-primary hover:!text-white !transition-all"
-                                        >
-                                            <Icon icon="material-symbols:add-chart-rounded" className="text-base" />
-                                        </button>
-                                    ) : (
-                                        <>
-                                            <button 
-                                                title="Gửi" 
-                                                onClick={() => handleSendClick(report)} 
-                                                className="!p-2 !rounded-lg !bg-emerald-50 !text-emerald-600 hover:!bg-emerald-600 hover:!text-white !transition-all disabled:!opacity-30 disabled:!cursor-not-allowed"
-                                                disabled={report.status !== 'Draft'}
-                                            >
-                                                <Icon icon="material-symbols:send-rounded" className="text-base" />
-                                            </button>
-                                            <button 
-                                                title="Sửa" 
-                                                onClick={() => handleEdit(report)} 
-                                                className="!p-2 !rounded-lg !bg-amber-50 !text-amber-600 hover:!bg-amber-600 hover:!text-white !transition-all disabled:!opacity-30 disabled:!cursor-not-allowed"
-                                                disabled={report.status === 'Published' || report.status === 'Sent'}
-                                            >
-                                                <Icon icon="material-symbols:edit-document-rounded" className="text-base" />
-                                            </button>
-                                        </>
-                                    )}
-                                    <button title="PDF" onClick={() => toast.info('Tính năng xuất PDF đang được phát triển!')} className="!p-2 !rounded-lg !bg-gray-50 !text-gray-500 hover:!bg-gray-700 hover:!text-white !transition-all">
-                                        <Icon icon="material-symbols:picture-as-pdf-rounded" className="text-base" />
-                                    </button>
-                                    <button title="Xóa" onClick={() => handleDeleteClick(report.reportId)} className="!p-2 !rounded-lg !bg-red-50 !text-red-600 hover:!bg-red-500 hover:!text-white !transition-all">
-                                        <Icon icon="material-symbols:delete-rounded" className="text-base" />
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-
-                {isLoading && (
+                {isLoading ? (
                     <div className="!py-20 !flex !flex-col !items-center !justify-center">
                         <Icon icon="line-md:loading-loop" className="!text-4xl !text-primary !mb-2" />
                         <p className="!text-text-muted !font-medium">Đang tải danh sách báo cáo...</p>
                     </div>
-                )}
-
-                {!isLoading && classReports.length === 0 && (
-                    <div className="!p-16 !text-center">
-                        <div className="!w-20 !h-20 !bg-background/50 !rounded-full !flex !items-center !justify-center !mx-auto !mb-4">
-                            <Icon icon="material-symbols:analytics-rounded" className="!text-4xl !text-text-muted/30" />
+                ) : !isPeriodUnlocked ? (
+                    <div className="flex flex-col items-center justify-center !py-16 !px-4 text-center">
+                        <div className="w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-600 !mb-4 shadow-inner">
+                            <Icon icon="solar:lock-bold-duotone" className="text-3xl" />
                         </div>
-                        <h3 className="!text-lg !font-bold !text-text-main">Chưa có báo cáo nào cho kỳ học này</h3>
-                        <p className="!text-sm !text-text-muted !mt-1">Thay đổi kỳ báo cáo để tra cứu dữ liệu.</p>
+                        <h3 className="text-lg font-bold text-text-main">Kỳ báo cáo Tháng {month}/{year} đang tạm khóa</h3>
+                        <p className="text-sm text-text-muted max-w-md !mt-2 font-medium">
+                            Hệ thống chỉ cho phép tạo, sửa hoặc gửi báo cáo tiến độ học tập vào 5 ngày cuối của tháng báo cáo (bắt đầu từ ngày {new Date(year, month, 0).getDate() - 4}/{month.toString().padStart(2, '0')}/{year}).
+                        </p>
                     </div>
+                ) : (
+                    <>
+                        {/* ── Desktop Table (md+) ─────────────────────────── */}
+                        <div className="hidden md:block overflow-x-auto">
+                            <table className="!w-full !text-left !border-collapse">
+                                <thead>
+                                    <tr className="!bg-background/50 !border-b !border-border">
+                                        <th className="!p-4 !w-12">
+                                            <input 
+                                                type="checkbox" 
+                                                checked={selectedReports.length === classReports.length && classReports.length > 0}
+                                                onChange={toggleSelectAll}
+                                                className="!w-5 !h-5 accent-primary"
+                                            />
+                                        </th>
+                                        <th className="!p-4 !text-xs !font-black !text-text-muted !uppercase !tracking-widest">Học sinh</th>
+                                        <th className="!p-4 !text-xs !font-black !text-text-muted !uppercase !tracking-widest !text-center">GPA & Attendance</th>
+                                        <th className="!p-4 !text-xs !font-black !text-text-muted !uppercase !tracking-widest text-center">Trạng thái</th>
+                                        <th className="!p-4 !text-xs !font-black !text-text-muted !uppercase !tracking-widest">Hành động</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="!divide-y !divide-border">
+                                    {classReports.filter(r => filterStatus === 'All' || r.status === filterStatus).map(report => (
+                                        <tr key={report.reportId} className="hover:!bg-background/20 !transition-colors !group">
+                                            <td className="!p-4">
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={selectedReports.includes(report.reportId)}
+                                                    onChange={() => toggleSelect(report.reportId)}
+                                                    className="!w-5 !h-5 accent-primary"
+                                                />
+                                            </td>
+                                            <td className="!p-4">
+                                                <div className="!flex !items-center !gap-3">
+                                                    <div className="!w-10 !h-10 !bg-primary/5 !rounded-full !flex !items-center !justify-center !border !border-primary/10">
+                                                        <Icon icon="material-symbols:person-rounded" className="!text-primary !text-xl" />
+                                                    </div>
+                                                    <div>
+                                                        <div className="!font-bold !text-text-main">{report.studentName}</div>
+                                                        <div className="!text-xs !text-text-muted">{report.studentId}</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="!p-4">
+                                                <div className="!flex !flex-col !items-center !gap-1">
+                                                    <div className="!flex !items-center !gap-3 !w-full !max-w-[140px]">
+                                                        <span className="!text-[10px] !font-bold !text-text-muted !w-8">GPA</span>
+                                                        <div className="!flex-1 !h-1.5 !bg-background !rounded-full !overflow-hidden">
+                                                            <div className="!h-full !bg-primary" style={{ width: `${(report.gpa || 0) * 10}%` }}></div>
+                                                        </div>
+                                                        <span className="!text-[10px] !font-black !text-primary">{report.gpa || 0}</span>
+                                                    </div>
+                                                    <div className="!flex !items-center !gap-3 !w-full !max-w-[140px]">
+                                                        <span className="!text-[10px] !font-bold !text-text-muted !w-8">ATT</span>
+                                                        <div className="!flex-1 !h-1.5 !bg-background !rounded-full !overflow-hidden">
+                                                            <div className="!h-full !bg-emerald-500" style={{ width: `${report.attendanceRate || 0}%` }}></div>
+                                                        </div>
+                                                        <span className="!text-[10px] !font-black !text-emerald-600">{report.attendanceRate || 0}%</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="!p-4 text-center">
+                                                <div className={`!inline-flex !items-center !gap-1.5 !px-3 !py-1 !rounded-full !text-[11px] !font-bold ${getStatusStyle(report.status)}`}>
+                                                    <div className="!w-1.5 !h-1.5 !rounded-full !bg-current"></div>
+                                                    {getStatusLabel(report.status)}
+                                                </div>
+                                                {report.updatedAt && (report.status === 'Published' || report.status === 'Sent') && (
+                                                    <div className="!text-[10px] !text-text-muted !mt-1">
+                                                        {formatViDate(report.updatedAt)}
+                                                    </div>
+                                                )}
+                                            </td>
+                                            <td className="!p-4">
+                                                <div className="!flex !items-center !gap-2">
+                                                    {report.status === 'Ready' ? (
+                                                        <button 
+                                                            title={isPeriodUnlocked ? "Tạo báo cáo" : "Chưa đến thời gian tạo báo cáo (Chỉ mở vào 5 ngày cuối tháng)"} 
+                                                            onClick={() => handleEdit(report)} 
+                                                            className="!p-2 !rounded-lg !bg-primary/10 !text-primary hover:!bg-primary hover:!text-white !transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                                                            disabled={!isPeriodUnlocked}
+                                                        >
+                                                            <Icon icon="material-symbols:add-chart-rounded" className="text-xl" />
+                                                        </button>
+                                                    ) : (
+                                                        <>
+                                                            <button 
+                                                                title={isPeriodUnlocked ? "Gửi báo cáo" : "Chưa đến thời gian gửi báo cáo"} 
+                                                                onClick={() => handleSendClick(report)} 
+                                                                className="!p-2 !rounded-lg !bg-emerald-50 !text-emerald-600 hover:!bg-emerald-600 hover:!text-white !transition-all disabled:!opacity-30 disabled:!cursor-not-allowed"
+                                                                disabled={!isPeriodUnlocked || (report.status !== 'Draft' && report.status !== 'Ready')}
+                                                            >
+                                                                <Icon icon="material-symbols:send-rounded" className="text-xl" />
+                                                            </button>
+                                                            <button 
+                                                                title={isPeriodUnlocked ? "Sửa báo cáo" : "Chưa đến thời gian sửa báo cáo"} 
+                                                                onClick={() => handleEdit(report)} 
+                                                                className="!p-2 !rounded-lg !bg-amber-50 !text-amber-600 hover:!bg-amber-600 hover:!text-white !transition-all disabled:!opacity-30 disabled:!cursor-not-allowed"
+                                                                disabled={!isPeriodUnlocked || report.status === 'Published' || report.status === 'Sent'}
+                                                            >
+                                                                <Icon icon="material-symbols:edit-document-rounded" className="text-xl" />
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                    <button title="Xuất PDF" onClick={() => toast.info('Tính năng xuất PDF đang được phát triển!')} className="!p-2 !rounded-lg !bg-gray-50 !text-gray-500 hover:!bg-gray-700 hover:!text-white !transition-all">
+                                                        <Icon icon="material-symbols:picture-as-pdf-rounded" className="text-xl" />
+                                                    </button>
+                                                    <button title="Xóa báo cáo" onClick={() => handleDeleteClick(report.reportId)} className="!p-2 !rounded-lg !bg-red-50 !text-red-600 hover:!bg-red-500 hover:!text-white !transition-all">
+                                                        <Icon icon="material-symbols:delete-rounded" className="text-xl" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* ── Mobile Card List (below md) ─────────────────── */}
+                        <div className="md:hidden divide-y divide-border">
+                            {classReports.filter(r => filterStatus === 'All' || r.status === filterStatus).map(report => (
+                                <div key={report.reportId} className="!p-4 space-y-3">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div className="flex items-center gap-3">
+                                            <input 
+                                                type="checkbox" 
+                                                checked={selectedReports.includes(report.reportId)}
+                                                onChange={() => toggleSelect(report.reportId)}
+                                                className="!w-5 !h-5 accent-primary shrink-0"
+                                            />
+                                            <div className="!w-9 !h-9 !bg-primary/5 !rounded-full !flex !items-center !justify-center !border !border-primary/10 shrink-0">
+                                                <Icon icon="material-symbols:person-rounded" className="!text-primary" />
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-text-main text-sm">{report.studentName}</p>
+                                                <p className="text-xs text-text-muted">{report.studentId}</p>
+                                            </div>
+                                        </div>
+                                        <div className={`!inline-flex !items-center !gap-1.5 !px-2.5 !py-1 !rounded-full !text-[11px] !font-bold shrink-0 ${getStatusStyle(report.status)}`}>
+                                            <div className="!w-1.5 !h-1.5 !rounded-full !bg-current"></div>
+                                            {getStatusLabel(report.status)}
+                                        </div>
+                                    </div>
+
+                                    <div className="!bg-background/50 !rounded-xl !p-3 space-y-2">
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-[10px] font-black text-text-muted w-6 shrink-0">GPA</span>
+                                            <div className="flex-1 !h-1.5 !bg-border !rounded-full !overflow-hidden">
+                                                <div className="!h-full !bg-primary !rounded-full" style={{ width: `${(report.gpa || 0) * 10}%` }}></div>
+                                            </div>
+                                            <span className="text-[11px] font-black text-primary w-8 text-right">{report.gpa || 0}</span>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-[10px] font-black text-text-muted w-6 shrink-0">ATT</span>
+                                            <div className="flex-1 !h-1.5 !bg-border !rounded-full !overflow-hidden">
+                                                <div className="!h-full !bg-emerald-500 !rounded-full" style={{ width: `${report.attendanceRate || 0}%` }}></div>
+                                            </div>
+                                            <span className="text-[11px] font-black text-emerald-600 w-8 text-right">{report.attendanceRate || 0}%</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between gap-2">
+                                        <div className="flex items-center gap-1.5">
+                                            {report.status === 'Ready' ? (
+                                                <button 
+                                                    title={isPeriodUnlocked ? "Tạo" : "Chưa đến thời gian tạo báo cáo (Chỉ mở vào 5 ngày cuối tháng)"} 
+                                                    onClick={() => handleEdit(report)} 
+                                                    className="!p-2 !rounded-lg !bg-primary/10 !text-primary hover:!bg-primary hover:!text-white !transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                                                    disabled={!isPeriodUnlocked}
+                                                >
+                                                    <Icon icon="material-symbols:add-chart-rounded" className="text-base" />
+                                                </button>
+                                            ) : (
+                                                <>
+                                                    <button 
+                                                        title={isPeriodUnlocked ? "Gửi" : "Chưa đến thời gian gửi báo cáo"} 
+                                                        onClick={() => handleSendClick(report)} 
+                                                        className="!p-2 !rounded-lg !bg-emerald-50 !text-emerald-600 hover:!bg-emerald-600 hover:!text-white !transition-all disabled:!opacity-30 disabled:!cursor-not-allowed"
+                                                        disabled={!isPeriodUnlocked || report.status !== 'Draft'}
+                                                    >
+                                                        <Icon icon="material-symbols:send-rounded" className="text-base" />
+                                                    </button>
+                                                    <button 
+                                                        title={isPeriodUnlocked ? "Sửa" : "Chưa đến thời gian sửa báo cáo"} 
+                                                        onClick={() => handleEdit(report)} 
+                                                        className="!p-2 !rounded-lg !bg-amber-50 !text-amber-600 hover:!bg-amber-600 hover:!text-white !transition-all disabled:!opacity-30 disabled:!cursor-not-allowed"
+                                                        disabled={!isPeriodUnlocked || report.status === 'Published' || report.status === 'Sent'}
+                                                    >
+                                                        <Icon icon="material-symbols:edit-document-rounded" className="text-base" />
+                                                    </button>
+                                                </>
+                                            )}
+                                            <button title="PDF" onClick={() => toast.info('Tính năng xuất PDF đang được phát triển!')} className="!p-2 !rounded-lg !bg-gray-50 !text-gray-500 hover:!bg-gray-700 hover:!text-white !transition-all">
+                                                <Icon icon="material-symbols:picture-as-pdf-rounded" className="text-base" />
+                                            </button>
+                                            <button title="X" onClick={() => handleDeleteClick(report.reportId)} className="!p-2 !rounded-lg !bg-red-50 !text-red-600 hover:!bg-red-500 hover:!text-white !transition-all">
+                                                <Icon icon="material-symbols:delete-rounded" className="text-base" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {classReports.length === 0 && (
+                            <div className="!p-16 !text-center">
+                                <div className="!w-20 !h-20 !bg-background/50 !rounded-full !flex !items-center !justify-center !mx-auto !mb-4">
+                                    <Icon icon="material-symbols:analytics-rounded" className="!text-4xl !text-text-muted/30" />
+                                </div>
+                                <h3 className="!text-lg !font-bold !text-text-main">Chưa có báo cáo nào cho kỳ học này</h3>
+                                <p className="!text-sm !text-text-muted !mt-1">Thay đổi kỳ báo cáo để tra cứu dữ liệu.</p>
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
 

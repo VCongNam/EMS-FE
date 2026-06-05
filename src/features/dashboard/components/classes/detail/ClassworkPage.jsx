@@ -5,6 +5,7 @@ import useAuthStore from '../../../../../store/authStore';
 import { assignmentService } from '../../../api/assignmentService';
 import { studentAssignmentService } from '../../../api/studentAssignmentService';
 import { toast } from 'react-toastify';
+import { formatViDate } from '../../../../../utils/dateUtils';
 import ConfirmModal from '../../../../../components/ui/ConfirmModal';
 import Pagination from '../../../../../components/ui/Pagination';
 import { useTAPermission } from '../../../../dashboard/context/TAPermissionContext';
@@ -149,7 +150,7 @@ const ClassworkPage = () => {
         return {
             id: a.assignmentID || a.assignmentId,
             title: a.title || 'Chưa có tiêu đề',
-            dueDateDisplay: isNaN(dDate) ? 'Không xác định' : dDate.toLocaleString('vi-VN', {
+            dueDateDisplay: isNaN(dDate) ? 'Không xác định' : formatViDate(a.dueDate, {
                hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric'
             }),
             statusLabel: stInfo.label,
@@ -238,11 +239,6 @@ const ClassworkPage = () => {
                                                 <span className="text-[10px] font-medium text-text-muted bg-background border border-border !px-2 !py-0.5 rounded-lg flex items-center gap-1">
                                                     <Icon icon="material-symbols:category-outline-rounded" />
                                                     {assignment.gradeCategoryName}
-                                                </span>
-                                            )}
-                                            {!assignment.isGraded && (
-                                                <span className="text-[10px] font-medium text-text-muted italic">
-                                                    (Không tính điểm)
                                                 </span>
                                             )}
                                         </div>

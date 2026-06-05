@@ -61,7 +61,7 @@ const TakeAttendancePage = () => {
                     <div className="flex gap-4">
                         <div className="flex flex-col items-center justify-center min-w-[80px] bg-background border border-border rounded-2xl p-3">
                             <span className="text-2xl font-extrabold text-green-500">{presentCount}</span>
-                            <span className="text-xs uppercase tracking-wider font-bold text-text-muted mt-1">có mặt</span>
+                            <span className="text-xs uppercase tracking-wider font-bold text-text-muted mt-1">Có mặt</span>
                         </div>
                         <div className="flex flex-col items-center justify-center min-w-[80px] bg-background border border-border rounded-2xl p-3">
                             <span className="text-2xl font-extrabold text-red-500">{absentCount}</span>
@@ -105,7 +105,7 @@ const TakeAttendancePage = () => {
                                                 <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${student.status === 'present' ? 'border-green-500' : 'border-gray-400'}`}>
                                                     {student.status === 'present' && <div className="w-2 h-2 rounded-full bg-green-500"></div>}
                                                 </div>
-                                                <span className="hidden sm:inline">có mặt</span>
+                                                <span className="hidden sm:inline">Có mặt</span>
                                             </button>
 
 

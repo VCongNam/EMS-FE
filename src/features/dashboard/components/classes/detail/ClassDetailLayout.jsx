@@ -288,14 +288,10 @@ const ClassDetailLayout = () => {
                                 {classInfo.name}
                             </h1>
                             <p className="text-blue-100 font-medium text-lg drop-shadow flex items-center gap-2">
-                                {isStudentPortal ? (
-                                    <>
-                                        <Icon icon="solar:user-bold" className="text-blue-200" />
-                                        Giảng viên: {classInfo.teacherName || 'Đang cập nhật...'}
-                                    </>
-                                ) : (
-                                    <>Mã lớp: {classInfo.code}</>
-                                )}
+                                <>
+                                    <Icon icon="solar:user-bold" className="text-blue-200" />
+                                    Giảng viên: {classInfo.teacherName || 'Đang cập nhật...'}
+                                </>
                             </p>
                         </div>
                         {/* TA permission loading indicator */}

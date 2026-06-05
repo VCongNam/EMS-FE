@@ -11,6 +11,36 @@ import { classService } from '../../dashboard/api/classService';
 import { extractErrorMessage } from '../../../utils/errorHandler';
 import { formatViFullDate } from '../../../utils/dateUtils';
 
+const TASK_TYPE_MAP = {
+    'Attendance': 'Điểm danh',
+    'Grade': 'Chấm điểm',
+    'Report': 'Báo cáo',
+    'Assignment': 'Bài tập',
+    'Feedback': 'Phản hồi'
+};
+
+const getTaskTypeStyles = (type) => {
+    switch (type) {
+        case 'Attendance': return "bg-green-500/10 text-green-600";
+        case 'Grade': return "bg-blue-500/10 text-blue-600";
+        case 'Report': return "bg-amber-500/10 text-amber-600";
+        case 'Assignment': return "bg-indigo-500/10 text-indigo-600";
+        case 'Feedback': return "bg-pink-500/10 text-pink-600";
+        default: return "bg-purple-500/10 text-purple-600";
+    }
+};
+
+const getTaskTypeIcon = (type) => {
+    switch (type) {
+        case 'Attendance': return "solar:calendar-check-bold-duotone";
+        case 'Grade': return "solar:pen-new-square-bold-duotone";
+        case 'Report': return "solar:chart-2-bold-duotone";
+        case 'Assignment': return "solar:document-add-bold-duotone";
+        case 'Feedback': return "solar:chat-round-dots-bold-duotone";
+        default: return "solar:clipboard-list-bold-duotone";
+    }
+};
+
 
 const TATaskManagementTab = ({ classId }) => {
     const { user } = useAuthStore();
@@ -182,10 +212,8 @@ const TATaskManagementTab = ({ classId }) => {
                 className="bg-surface rounded-2xl border border-border shadow-sm hover:shadow-md hover:border-primary/30 transition-all !p-4 sm:!p-5 flex flex-col sm:flex-row sm:items-center justify-between !gap-4 group cursor-pointer"
             >
                 <div className="flex items-start !gap-4 flex-1">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                        task.type === 'Grade' ? 'bg-blue-500/10 text-blue-500' : 'bg-purple-500/10 text-purple-500'
-                    }`}>
-                        <Icon icon={task.type === 'Grade' ? "solar:pen-new-square-bold-duotone" : "solar:clipboard-list-bold-duotone"} className="text-xl" />
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${getTaskTypeStyles(task.type)}`}>
+                        <Icon icon={getTaskTypeIcon(task.type)} className="text-xl" />
                     </div>
                     <div className="min-w-0 flex-1">
                         <div className="flex items-center !gap-3 !mb-1">
@@ -201,7 +229,7 @@ const TATaskManagementTab = ({ classId }) => {
                             </div>
                             <div className="flex items-center !gap-1.5">
                                 <Icon icon="solar:tag-linear" className="text-text-muted/70" />
-                                <span>{task.type || 'Nhiệm vụ'}</span>
+                                <span>{TASK_TYPE_MAP[task.type] || task.type || 'Nhiệm vụ'}</span>
                             </div>
                         </div>
                     </div>
@@ -312,7 +340,7 @@ const TATaskManagementTab = ({ classId }) => {
                                 classTAID: taskData.classTAId || taskData.assignedTo,
                                 title: taskData.title,
                                 dueDate: taskData.deadline,
-                                type: taskData.type || 'Grade'
+                                type: taskData.type || 'Attendance'
                             };
                             const res = await taService.createTask(payload, user.token);
                             if (res.ok) {
