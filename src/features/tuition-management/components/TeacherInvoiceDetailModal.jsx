@@ -62,7 +62,7 @@ const TeacherInvoiceDetailModal = ({ isOpen, onClose, data, onExtend }) => {
                 {isLoading ? (
                     <div className="!flex !flex-col !justify-center !items-center !py-20 text-text-muted">
                         <Icon icon="solar:spinner-linear" className="!animate-spin !text-4xl" />
-                        <p className="mt-2">Đang tải dữ liệu...</p>
+                        <p className="!mt-2">Đang tải dữ liệu...</p>
                     </div>
                 ) : (
                     <>
