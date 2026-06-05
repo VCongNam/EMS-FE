@@ -158,7 +158,6 @@ const LoginPage = () => {
                                 </div>
                                 <div className="!flex-1">
                                     <h4 className="!font-black !text-text-main !group-hover:text-primary !transition-colors">{p.fullName}</h4>
-                                    <p className="!text-xs !text-text-muted">Mã HS: {p.studentId.substring(0, 8).toUpperCase()}</p>
                                 </div>
                                 <Icon icon="solar:alt-arrow-right-bold-duotone" className="!text-text-muted !group-hover:text-primary !group-hover:translate-x-1 !transition-all" />
                             </button>

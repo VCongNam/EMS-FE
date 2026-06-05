@@ -160,7 +160,28 @@ const ClassworkPage = () => {
     };
 
     const formattedAssignments = assignments.map(a => {
-        const dDate = new Date(a.dueDate);
+        let dDate;
+        if (typeof a.dueDate === 'string' && a.dueDate.includes('T')) {
+            const parts = a.dueDate.split('T');
+            const timePart = parts[1];
+            const hasTimezone = timePart && (timePart.endsWith('Z') || timePart.includes('+') || timePart.includes('-'));
+            
+            if (a.isOffline) {
+                if (timePart && !hasTimezone) {
+                    dDate = new Date(a.dueDate + '+07:00');
+                } else {
+                    dDate = new Date(a.dueDate);
+                }
+            } else {
+                if (timePart && !hasTimezone) {
+                    dDate = new Date(a.dueDate + 'Z');
+                } else {
+                    dDate = new Date(a.dueDate);
+                }
+            }
+        } else {
+            dDate = new Date(a.dueDate);
+        }
         const isOverdue = !isNaN(dDate) && dDate < new Date() && !a.isSubmitted;
         const statusRaw = a.studentStatus || a.status || 'Published';
         const stInfo = getStatusInfo(statusRaw, isOverdue, a.isSubmitted, isTeacherOrTA);
@@ -168,7 +189,7 @@ const ClassworkPage = () => {
         return {
             id: a.assignmentID || a.assignmentId,
             title: a.title || 'Chưa có tiêu đề',
-            dueDateDisplay: isNaN(dDate) ? 'Không xác định' : formatViDate(a.dueDate, {
+            dueDateDisplay: isNaN(dDate) ? 'Không xác định' : formatViDate(dDate, {
                hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric'
             }),
             statusLabel: stInfo.label,

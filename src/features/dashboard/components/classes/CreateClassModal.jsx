@@ -319,7 +319,7 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <InputField label="Khối lớp" required error={errors.gradeLevel}>
+                                <InputField label="Khối lớp" error={errors.gradeLevel}>
                                     <input
                                         type="number"
                                         placeholder="Ví dụ: 12"
@@ -354,7 +354,7 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
                             </div>
 
                             {/* Tuition & Billing Settings */}
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <InputField label="Học phí (VNĐ / buổi)" required error={errors.tuitionFee}>
                                     <input
                                         type="number"
@@ -367,15 +367,12 @@ const CreateClassModal = ({ isOpen, onClose, initialData, onSubmit }) => {
                                     />
                                 </InputField>
 
-                                <InputField label="Hình thức thanh toán">
-                                    <select
-                                        disabled
-                                        value="PostPaid"
-                                        className={`${inputBase} !my-1 bg-background-muted opacity-80 cursor-not-allowed`}
-                                    >
-                                        <option value="PostPaid">Trả sau</option>
-                                    </select>
-                                </InputField>
+                                {/* <InputField label="Hình thức thanh toán">
+                                    <span className={`${inputBase} !my-1 bg-background-muted opacity-80`}>
+                                        Trả sau
+                                    </span>
+                                </InputField> */}
+
 
                                 <InputField label="Hạn đóng (1-7 ngày)" required error={errors.paymentDeadlineDays}>
                                     <input
