@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useOutletContext, useParams } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import { toast } from 'react-toastify';
 import SetupRecurringScheduleModal from './components/SetupRecurringScheduleModal';
@@ -9,9 +9,6 @@ import useAuthStore from '../../../../../store/authStore';
 import { sessionService } from '../../../api/sessionService';
 import studentScheduleService from '../../../api/studentScheduleService';
 import ConfirmModal from '../../../../../components/ui/ConfirmModal';
-import { useTAPermission } from '../../../../dashboard/context/TAPermissionContext';
-import Loading from '../../../../../components/ui/Loading';
-import { extractErrorMessage } from '../../../../../utils/errorHandler';
 
 const DAYS_OF_WEEK = [
     { id: 'MON', label: 'T2' }, { id: 'TUE', label: 'T3' }, { id: 'WED', label: 'T4' },
@@ -28,6 +25,23 @@ const STATUS_CONFIG = {
     'đã hủy': { label: 'Đã hủy', className: '!bg-red-100 text-red-700 border-red-200', dot: '!bg-red-400' },
 };
 
+const isLessonPast = (lesson) => {
+    if (!lesson?.date) return false;
+
+    const endTime = lesson.endTime && lesson.endTime !== '--:--' ? lesson.endTime : '23:59';
+    const lessonEnd = new Date(`${lesson.date}T${endTime.length === 5 ? `${endTime}:00` : endTime}`);
+
+    return !Number.isNaN(lessonEnd.getTime()) && lessonEnd < new Date();
+};
+
+const canModifyLesson = (lesson) => {
+    const status = lesson?.status?.toLowerCase() || '';
+    const isCancelled = status.includes('hủy') || status === 'cancelled' || status === 'canceled';
+    const isCompleted = status.includes('kết thúc') || status === 'completed';
+
+    return !isCancelled && !isCompleted && !isLessonPast(lesson);
+};
+
 const MOCK_SCHEDULE_CONFIG = {
     openingDate: '2026-04-07',
     transcriptTemplateId: 'T1',
@@ -40,10 +54,10 @@ const MOCK_SCHEDULE_CONFIG = {
 
 const ClassSchedulePage = () => {
     const { classId } = useParams();
+    const { isClassArchived = false } = useOutletContext() || {};
     const { user } = useAuthStore();
     const isTeacherOrTA = ['TEACHER', 'TA'].includes(user?.role?.toUpperCase());
-    const { hasPermission, isTA } = useTAPermission();
-    const canAttend = !isTA || hasPermission('Attendance');
+    const canManageClass = isTeacherOrTA && !isClassArchived;
 
     const [scheduleConfig, setScheduleConfig] = useState(MOCK_SCHEDULE_CONFIG);
     const [lessons, setLessons] = useState([]);
@@ -85,73 +99,9 @@ const ClassSchedulePage = () => {
                 const sessionData = Array.isArray(response) ? response : response.data || [];
 
                 const mappedLessons = sessionData.map((item, index) => {
-                    // Helper to safely parse date & time components
-                    const parseDateTime = (timeStr, dateFallback) => {
-                        if (!timeStr && !dateFallback) return new Date(NaN);
-
-                        // 1. If it's already a full ISO/Date string with date part
-                        if (timeStr && (timeStr.includes('T') || timeStr.includes('-'))) {
-                            const d = new Date(timeStr);
-                            if (!isNaN(d.getTime())) return d;
-                        }
-
-                        // 2. If it's just a time string (HH:mm:ss) or we need fallback
-                        const datePart = (dateFallback || '').split('T')[0] || new Date().toISOString().split('T')[0];
-                        const timePart = (timeStr && timeStr.length >= 5) ? timeStr : '00:00:00';
-
-                        // Try combining date and time parts
-                        // We use a simple T separator which parses as local time in most browsers
-                        const combined = new Date(`${datePart}T${timePart.substring(0, 8)}`);
-                        if (!isNaN(combined.getTime())) return combined;
-
-                        // Last ditch effort: raw fallback
-                        return new Date(dateFallback || timeStr);
-                    };
-
-                    const dateObj = parseDateTime(item.startTime, item.date);
-                    const endDateObj = parseDateTime(item.endTime, item.date);
-
-                    // Format to GMT+7 (Asia/Ho_Chi_Minh)
-                    const gmt7Formatter = new Intl.DateTimeFormat('en-GB', {
-                        timeZone: 'Asia/Ho_Chi_Minh',
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: false,
-                        weekday: 'short'
-                    });
-
-                    // Safety: handle invalid dates to prevent RangeError in formatToParts
-                    let parts = [], endParts = [];
-                    const isValidDate = !isNaN(dateObj.getTime());
-                    const isValidEndDate = !isNaN(endDateObj.getTime());
-
-                    if (isValidDate) {
-                        parts = gmt7Formatter.formatToParts(dateObj);
-                    }
-                    if (isValidEndDate) {
-                        endParts = gmt7Formatter.formatToParts(endDateObj);
-                    }
-
-                    const getPart = (type, pList) => pList.find(p => p.type === type)?.value || '??';
-
-                    const gmt7Date = isValidDate
-                        ? `${getPart('year', parts)}-${getPart('month', parts)}-${getPart('day', parts)}`
-                        : (item.date ? item.date.split('T')[0] : '????-??-??');
-
-                    const gmt7StartTime = isValidDate
-                        ? `${getPart('hour', parts)}:${getPart('minute', parts)}`
-                        : (item.startTime ? item.startTime.substring(0, 5) : '??:??');
-
-                    const gmt7EndTime = isValidEndDate
-                        ? `${getPart('hour', endParts)}:${getPart('minute', endParts)}`
-                        : (item.endTime ? item.endTime.substring(0, 5) : '??:??');
-
+                    const dateObj = new Date(item.date);
+                    const dayIdx = dateObj.getDay();
                     const dayLabels = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
-                    const dayNameMap = { 'Sun': 0, 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6 };
-                    const dayIdx = isValidDate ? (dayNameMap[getPart('weekday', parts)] ?? dateObj.getDay()) : 0;
 
                     // Normalize status: handle both English keys and Vietnamese strings
                     const rawStatus = item.status || '';
@@ -161,9 +111,9 @@ const ClassSchedulePage = () => {
                         id: item.sessionId || item.sessionID,
                         session: index + 1,
                         day: dayLabels[dayIdx],
-                        date: gmt7Date,
-                        startTime: gmt7StartTime,
-                        endTime: gmt7EndTime,
+                        date: item.date ? item.date.split('T')[0] : '',
+                        startTime: item.startTime?.substring(0, 5) || '--:--',
+                        endTime: item.endTime?.substring(0, 5) || '--:--',
                         status: normalizedStatus || 'scheduled',
                         attendanceStatus: item.attendanceStatus || null,
                         title: item.title || item.className,
@@ -218,12 +168,14 @@ const ClassSchedulePage = () => {
     };
 
     const handleDeleteSchedule = () => {
+        if (!canManageClass) return;
         setScheduleConfig(null);
         toast.success('Đã xóa cấu hình lịch định kỳ.');
     };
 
-    const handleDeleteLessonAPI = (id) => {
-        setConfirmModal({ isOpen: true, sessionId: id });
+    const handleDeleteLessonAPI = (lesson) => {
+        if (!canManageClass || !canModifyLesson(lesson)) return;
+        setConfirmModal({ isOpen: true, sessionId: lesson.id });
     };
 
     const handleConfirmDelete = async () => {
@@ -240,12 +192,11 @@ const ClassSchedulePage = () => {
                 toast.success('Đã xóa kết quả buổi học thành công!');
                 fetchSessions();
             } else {
-                const errorData = await res.json().catch(() => ({}));
-                toast.error(extractErrorMessage(errorData, 'Có lỗi xảy ra khi hủy buổi học'));
+                toast.error('Có lỗi xảy ra khi xóa buổi học');
             }
         } catch (error) {
             console.error(error);
-            toast.error(extractErrorMessage(error, 'Lỗi kết nối máy chủ'));
+            toast.error('Lỗi kết nối máy chủ');
         } finally {
             setDeletingId(null);
             setConfirmModal({ isOpen: false, sessionId: null });
@@ -253,8 +204,9 @@ const ClassSchedulePage = () => {
     };
 
     const handleSaveSessionAPI = async (formData) => {
+        if (!canManageClass) return;
         const token = useAuthStore.getState().user?.token;
-        if (!token) return false;
+        if (!token) return;
 
         try {
             const payload = {
@@ -275,51 +227,14 @@ const ClassSchedulePage = () => {
 
             if (res.ok) {
                 toast.success(isEdit ? 'Cập nhật lịch buổi học thành công' : 'Thêm buổi học thành công');
+                setSessionModalState({ isOpen: false, initialData: null });
                 fetchSessions();
-                return true;
             } else {
-                const errorData = await res.json().catch(() => ({}));
-                toast.error(extractErrorMessage(errorData, 'Lỗi khi lưu thông tin buổi học'));
-                return false;
+                toast.error('Lỗi khi lưu thông tin buổi học');
             }
         } catch (error) {
             console.error(error);
-            toast.error(extractErrorMessage(error, 'Lỗi kết nối máy chủ'));
-            return false;
-        }
-    };
-
-    const handleOpenEditSession = async (lesson) => {
-        try {
-            const token = useAuthStore.getState().user?.token;
-            if (!token) return;
-
-            // Optional: Hiển thị loading toast nếu cần, hoặc dùng loading state
-            const loadingToast = toast.loading("Đang tải chi tiết buổi học...");
-            
-            const res = await sessionService.getSessionById(lesson.id, token);
-            if (res.ok) {
-                const result = await res.json();
-                const detailedData = result.data || result;
-                
-                toast.dismiss(loadingToast);
-                setSessionModalState({ 
-                    isOpen: true, 
-                    initialData: {
-                        ...lesson.raw,
-                        ...detailedData
-                    } 
-                });
-            } else {
-                toast.dismiss(loadingToast);
-                const errorData = await res.json().catch(() => ({}));
-                toast.error(extractErrorMessage(errorData, "Không thể lấy thông tin chi tiết buổi học"));
-                // Fallback to basic data if detail API fails
-                setSessionModalState({ isOpen: true, initialData: lesson.raw });
-            }
-        } catch (error) {
-            console.error(error);
-            toast.error(extractErrorMessage(error, "Lỗi khi kết nối máy chủ"));
+            toast.error('Lỗi kết nối máy chủ');
         }
     };
 
@@ -340,13 +255,35 @@ const ClassSchedulePage = () => {
     return (
         <div className="!space-y-6 animate-fade-in relative min-h-[400px]">
             {isLoading && (
-                <Loading overlay text="Đang tải lịch học..." />
+                <div className="absolute z-10 inset-0 !bg-background/50 backdrop-blur-[2px] rounded-[2rem] flex items-center justify-center">
+                    <Icon icon="line-md:loading-loop" className="text-4xl text-primary" />
+                </div>
             )}
 
             {/* ── Config Summary Card ── */}
-            {/* {scheduleConfig ? (
+            {scheduleConfig ? (
                 <div className="!bg-surface !p-6 rounded-[2rem] border border-border shadow-sm">
-                    
+                    <div className="flex items-start justify-between !mb-5">
+                        <div className="flex items-center !gap-3">
+                            <div className="w-10 h-10 rounded-2xl !bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                                <Icon icon="solar:settings-bold-duotone" className="text-xl" />
+                            </div>
+                            <div>
+                                <h2 className="text-base font-bold text-text-main">Cấu hình lịch định kỳ</h2>
+                                <p className="text-xs text-text-muted">Thông tin thiết lập hiện tại của lớp</p>
+                            </div>
+                        </div>
+                        {canManageClass && (
+                            <div className="flex items-center !gap-2">
+                                <button onClick={() => setIsModalOpen(true)} className="flex items-center !gap-1.5 text-xs font-semibold text-primary !px-3 !py-2 border border-primary/30 rounded-xl hover:!bg-primary/5 transition-colors">
+                                    <Icon icon="solar:pen-bold-duotone" className="text-sm" /> Chỉnh sửa
+                                </button>
+                                <button onClick={handleDeleteSchedule} className="flex items-center !gap-1.5 text-xs font-semibold text-red-500 !px-3 !py-2 border border-red-200 rounded-xl hover:!bg-red-50 transition-colors">
+                                    <Icon icon="solar:trash-bin-2-bold-duotone" className="text-sm" /> Xóa cấu hình
+                                </button>
+                            </div>
+                        )}
+                    </div>
 
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 !gap-3">
                         {[
@@ -376,13 +313,13 @@ const ClassSchedulePage = () => {
                         <h2 className="text-lg font-bold text-text-main">Chưa có Luật Lịch Định Kỳ</h2>
                         <p className="text-text-muted mt-1 text-sm">Cấu hình luật tự động đẻ lịch học hàng tuần</p>
                     </div>
-                    {isTeacherOrTA && (
+                    {canManageClass && (
                         <button onClick={() => setIsModalOpen(true)} className="!bg-primary text-white font-bold !py-2 !px-6 rounded-xl hover:!bg-primary/90 text-sm">
                             Thiết lập ngay
                         </button>
                     )}
                 </div>
-            )} */}
+            )}
 
             {/* ── Lesson List ── */}
             <div className="!bg-surface !p-6 rounded-[2rem] border border-border shadow-sm min-h-[400px]">
@@ -418,7 +355,7 @@ const ClassSchedulePage = () => {
                         </div>
 
                         {/* Add Session Button */}
-                        {isTeacherOrTA && (
+                        {canManageClass && (
                             <button
                                 onClick={() => setSessionModalState({ isOpen: true, initialData: null })}
                                 className="flex shrink-0 items-center justify-center !w-10 !h-10 sm:!w-auto sm:!px-4 !bg-primary text-white rounded-xl shadow-md shadow-primary/30 hover:!bg-primary/90 hover:scale-105 transition-all"
@@ -441,16 +378,6 @@ const ClassSchedulePage = () => {
                         {paginatedLessons.map((lesson, idx) => {
                             const cfg = STATUS_CONFIG[lesson.status] || STATUS_CONFIG.scheduled;
                             const isDeleting = deletingId === lesson.id;
-
-                            // Attendance rules logic: Strictly on or after session day, lock after 7 days
-                            const now = new Date();
-                            now.setHours(0, 0, 0, 0);
-                            const lessonDate = new Date(lesson.date + 'T00:00:00');
-                            const diffDays = Math.floor((lessonDate - now) / (1000 * 60 * 60 * 24));
-
-                            const tooEarly = diffDays > 0;
-                            const isLocked = diffDays < -7;
-
                             return (
                                 <div key={lesson.id || idx}
                                     className={`flex flex-col sm:flex-row items-start sm:items-center justify-between !gap-4 !p-4 rounded-2xl border transition-all group ${isDeleting ? 'opacity-0 scale-95 border-red-200 !bg-red-50' :
@@ -470,22 +397,6 @@ const ClassSchedulePage = () => {
                                                     <Icon icon="solar:clock-linear" className="text-primary/70" />
                                                     {lesson.date} | {lesson.startTime} – {lesson.endTime}
                                                 </span>
-                                                {(lesson.raw?.topic || lesson.raw?.note) && (
-                                                    <div className="flex items-center !gap-3">
-                                                        {lesson.raw?.topic && (
-                                                            <span className="flex items-center !gap-1 text-primary/80 font-medium">
-                                                                <Icon icon="solar:tag-horizontal-linear" />
-                                                                {lesson.raw.topic}
-                                                            </span>
-                                                        )}
-                                                        {lesson.raw?.note && (
-                                                            <span className="flex items-center !gap-1 text-orange-600/80 italic">
-                                                                <Icon icon="solar:document-text-linear" />
-                                                                {lesson.raw.note}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                )}
                                                 {lesson.raw?.meetingLink && (
                                                     <a href={lesson.raw.meetingLink} target="_blank" rel="noreferrer" className="flex items-center !gap-1 text-blue-500 hover:underline">
                                                         <Icon icon="solar:link-minimalistic-linear" /> Link Meeting
@@ -503,39 +414,33 @@ const ClassSchedulePage = () => {
 
                                         {isTeacherOrTA && (
                                             <div className="flex items-center !gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                                                {tooEarly ? (
-                                                    <div className="flex items-center !gap-1.5 !px-3 !py-1.5 text-xs font-semibold rounded-xl border border-border bg-background text-text-muted cursor-not-allowed" title="Cần đợi đến ngày học để điểm danh (Không được điểm danh trước)">
-                                                        <Icon icon="solar:calendar-linear" className="text-sm" />
-                                                        Chưa đến hạn
-                                                    </div>
-                                                ) : canAttend ? (
+                                                {!isClassArchived && (
                                                     <button
-                                                        onClick={() => handleOpenAttendance({ ...lesson, isLocked })}
-                                                        className={`flex items-center !gap-1.5 !px-3 !py-1.5 text-xs font-bold rounded-xl shadow-sm transition-all whitespace-nowrap ${!isLocked && lesson.status === 'scheduled' ? '!bg-primary text-white hover:!bg-primary/90' : '!bg-background border border-border text-text-main hover:border-primary'}`}
+                                                        onClick={() => handleOpenAttendance(lesson)}
+                                                        className={`flex items-center !gap-1.5 !px-3 !py-1.5 text-xs font-bold rounded-xl shadow-sm transition-all whitespace-nowrap ${lesson.status === 'scheduled' ? '!bg-primary text-white hover:!bg-primary/90' : '!bg-background border border-border text-text-main hover:border-primary'}`}
                                                     >
-                                                        <Icon icon={isLocked ? "material-symbols:visibility-rounded" : (lesson.status === 'scheduled' ? "material-symbols:fact-check-rounded" : "material-symbols:edit-rounded")} className="text-sm" />
-                                                        {isLocked ? 'Xem điểm danh' : 'Điểm danh'}
-                                                    </button>
-                                                ) : (
-                                                    <div className="flex items-center !gap-1.5 !px-3 !py-1.5 text-xs font-semibold rounded-xl border border-amber-200 bg-amber-50 text-amber-600 cursor-not-allowed" title="Không có quyền điểm danh">
-                                                        <Icon icon="material-symbols:lock-rounded" className="text-sm" />
+                                                        <Icon icon={lesson.status === 'scheduled' ? "material-symbols:fact-check-rounded" : "material-symbols:visibility-rounded"} className="text-sm" />
                                                         Điểm danh
-                                                    </div>
+                                                    </button>
                                                 )}
-                                                <button
-                                                    title="Sửa thông tin"
-                                                    onClick={() => handleOpenEditSession(lesson)}
-                                                    className="!p-2 text-text-muted hover:text-primary hover:!bg-primary/10 rounded-xl transition-colors border border-transparent hover:border-primary/20 !bg-background"
-                                                >
-                                                    <Icon icon="solar:pen-bold-duotone" className="text-lg" />
-                                                </button>
-                                                <button
-                                                    title="Xóa kết quả buổi học"
-                                                    onClick={() => handleDeleteLessonAPI(lesson.id)}
-                                                    className="!p-2 text-text-muted hover:text-red-500 hover:!bg-red-50 rounded-xl transition-colors border border-transparent hover:border-red-200 !bg-background"
-                                                >
-                                                    <Icon icon="material-symbols:delete-outline-rounded" className="text-lg" />
-                                                </button>
+                                                {canManageClass && canModifyLesson(lesson) && (
+                                                    <>
+                                                        <button
+                                                            title="Sửa thông tin"
+                                                            onClick={() => setSessionModalState({ isOpen: true, initialData: lesson.raw })}
+                                                            className="!p-2 text-text-muted hover:text-primary hover:!bg-primary/10 rounded-xl transition-colors border border-transparent hover:border-primary/20 !bg-background"
+                                                        >
+                                                            <Icon icon="solar:pen-bold-duotone" className="text-lg" />
+                                                        </button>
+                                                        <button
+                                                            title="Xóa kết quả buổi học"
+                                                            onClick={() => handleDeleteLessonAPI(lesson)}
+                                                            className="!p-2 text-text-muted hover:text-red-500 hover:!bg-red-50 rounded-xl transition-colors border border-transparent hover:border-red-200 !bg-background"
+                                                        >
+                                                            <Icon icon="material-symbols:delete-outline-rounded" className="text-lg" />
+                                                        </button>
+                                                    </>
+                                                )}
                                             </div>
                                         )}
                                     </div>
@@ -607,16 +512,15 @@ const ClassSchedulePage = () => {
                 lesson={attendanceTarget?.lesson}
                 onClose={() => setAttendanceTarget(null)}
                 onSave={handleSaveAttendance}
-                readOnly={!canAttend || attendanceTarget?.lesson?.isLocked}
             />
 
             <ConfirmModal
                 isOpen={confirmModal.isOpen}
                 onClose={() => setConfirmModal({ isOpen: false, sessionId: null })}
                 onConfirm={handleConfirmDelete}
-                title="Xác nhận hủy buổi học"
-                message="Bạn có chắc chắn muốn hủy buổi học này không? Hành động này không thể hoàn tác và dữ liệu điểm danh liên quan sẽ bị mất."
-                confirmText="hủy buổi học"
+                title="Xác nhận xóa buổi học"
+                message="Bạn có chắc chắn muốn xóa buổi học này không? Hành động này không thể hoàn tác và dữ liệu điểm danh liên quan sẽ bị mất."
+                confirmText="Xóa buổi học"
                 cancelText="Hủy bỏ"
                 type="danger"
             />

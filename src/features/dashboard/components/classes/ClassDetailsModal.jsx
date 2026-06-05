@@ -21,6 +21,7 @@ const ClassDetailsModal = ({ isOpen, onClose, classData, onEdit }) => {
     };
 
     const statusConfig = getStatusConfig(classData.status);
+    const isArchived = (classData.status || '').toLowerCase() === 'archived';
     const progressPercent = classData.progress?.totalSessions > 0 
         ? Math.round((classData.progress.currentSession / classData.progress.totalSessions) * 100) 
         : 0;
@@ -128,16 +129,18 @@ const ClassDetailsModal = ({ isOpen, onClose, classData, onEdit }) => {
                         >
                             Đóng
                         </button>
-                        <button
-                            onClick={() => {
-                                onClose();
-                                if (onEdit) onEdit(classData);
-                            }}
-                            className="w-full !px-4 !py-3 rounded-xl bg-primary text-outline font-semibold hover:bg-primary-hover transition-all shadow-md shadow-primary/20 flex items-center justify-center gap-2"
-                        >
-                            <Icon icon="material-symbols:edit-rounded" className="text-lg" />
-                            Chỉnh sửa lớp học
-                        </button>
+                        {!isArchived && (
+                            <button
+                                onClick={() => {
+                                    onClose();
+                                    if (onEdit) onEdit(classData);
+                                }}
+                                className="w-full !px-4 !py-3 rounded-xl bg-primary text-outline font-semibold hover:bg-primary-hover transition-all shadow-md shadow-primary/20 flex items-center justify-center gap-2"
+                            >
+                                <Icon icon="material-symbols:edit-rounded" className="text-lg" />
+                                Chỉnh sửa lớp học
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
