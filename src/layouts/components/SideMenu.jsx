@@ -72,7 +72,7 @@ const SideMenu = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
                             <Icon icon="material-symbols:school" className="text-2xl text-white" />
                         </div>
                         <span className="text-2xl font-bold font-['Outfit'] tracking-tight truncate">
-                            {role === 'student' ? 'EMS' : role === 'admin' ? 'EMS Admin' : 'EMS'}
+                            {role === 'student' ? 'ECMS' : role === 'admin' ? 'ECMS Admin' : 'ECMS'}
                         </span>
                     </div>
                     

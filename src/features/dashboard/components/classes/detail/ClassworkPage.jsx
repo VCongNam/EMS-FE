@@ -12,24 +12,170 @@ import { useTAPermission } from '../../../../dashboard/context/TAPermissionConte
 import { extractErrorMessage } from '../../../../../utils/errorHandler';
 import Loading from '../../../../../components/ui/Loading';
 
+/* ─────────────────────────────────────────────
+   Status helpers
+───────────────────────────────────────────── */
+const STATUS_BORDER_CLASS = {
+    submitted: '!border-l-emerald-500',
+    overdue:   '!border-l-red-500',
+    draft:     '!border-l-slate-400',
+    published: '!border-l-blue-600',
+    graded:    '!border-l-purple-500',
+};
+
+const STATUS_PILL = {
+    submitted: { label: 'Đã nộp',       cls: '!bg-emerald-50 !text-emerald-800' },
+    overdue:   { label: 'Quá hạn',       cls: '!bg-red-50 !text-red-800' },
+    draft:     { label: 'Bản nháp',       cls: '!bg-slate-100 !text-slate-600' },
+    published: { label: 'Đã giao',        cls: '!bg-blue-50 !text-blue-800' },
+    graded:    { label: 'Đã chấm điểm',   cls: '!bg-purple-50 !text-purple-800' },
+};
+
+const getStatusKey = (status, isOverdue, isSubmitted) => {
+    if (isSubmitted) {
+        const s = (status || '').toLowerCase();
+        if (s === 'graded') return 'graded';
+        return 'submitted';
+    }
+    if (isOverdue) return 'overdue';
+    const s = (status || '').toLowerCase();
+    if (s === 'draft')                          return 'draft';
+    if (s === 'turned in' || s === 'submitted') return 'submitted';
+    if (s === 'graded')                         return 'graded';
+    return 'published';
+};
+
+/* ─────────────────────────────────────────────
+   Row component (table-style)
+───────────────────────────────────────────── */
+const STATUS_DOT = {
+    submitted: 'bg-emerald-500',
+    overdue:   'bg-red-500',
+    draft:     'bg-slate-400',
+    published: 'bg-blue-500',
+    graded:    'bg-purple-500',
+};
+
+const AssignmentRow = ({ assignment, isTeacherOrTA, canManageAssignment, onEdit, onDelete, navigate, index }) => {
+    const {
+        id, title, dueDateDisplay, statusKey, isOverdue,
+        isDraft, isOffline, totalSubmissions, totalStudents,
+        gradeCategoryName, grade, isGraded,
+    } = assignment;
+
+    const pill = STATUS_PILL[statusKey] || STATUS_PILL.published;
+    const dot  = STATUS_DOT[statusKey]  || STATUS_DOT.published;
+
+    return (
+        <tr
+            onClick={() => navigate(`../assignment/${id}`, { relative: 'path' })}
+            className={`group cursor-pointer transition-colors border-b border-border last:border-b-0 ${index % 2 === 0 ? 'bg-white' : 'bg-background/40'} hover:bg-primary/5`}
+        >
+            {/* # */}
+            <td className="!px-4 !py-3 !text-xs !text-text-muted !font-medium !w-8 !text-center !tabular-nums">
+                {index + 1}
+            </td>
+
+            {/* Title */}
+            <td className="!px-3 !py-3 !min-w-0">
+                <p className="!text-sm !font-semibold !text-text-main !truncate group-hover:!text-primary !transition-colors !max-w-xs md:!max-w-sm lg:!max-w-md">
+                    {title}
+                </p>
+                {gradeCategoryName && (
+                    <span className="!text-[10px] !text-text-muted !font-medium">
+                        {gradeCategoryName}
+                    </span>
+                )}
+            </td>
+
+            {/* Hình thức */}
+            <td className="!px-3 !py-3 !hidden sm:!table-cell">
+                <span className={`!inline-flex !items-center !gap-1 !text-[10px] !font-semibold !px-2 !py-0.5 !rounded !uppercase !tracking-wider ${
+                    isOffline ? '!bg-amber-50 !text-amber-700' : '!bg-sky-50 !text-sky-700'
+                }`}>
+                    {isOffline ? 'Offline' : 'Online'}
+                </span>
+            </td>
+
+            {/* Trạng thái */}
+            <td className="!px-3 !py-3 !hidden md:!table-cell">
+                <span className={`!inline-flex !items-center !gap-1.5 !text-[11px] !font-medium !px-2.5 !py-1 !rounded-full !whitespace-nowrap ${pill.cls}`}>
+                    <span className={`!w-1.5 !h-1.5 !rounded-full !inline-block ${dot}`} />
+                    {pill.label}
+                </span>
+            </td>
+
+            {/* Nộp bài (teacher) / Điểm (student) */}
+            <td className="!px-3 !py-3 !hidden lg:!table-cell !text-center">
+                {isTeacherOrTA ? (
+                    isDraft ? (
+                        <span className="!text-sm !text-text-muted">—</span>
+                    ) : (
+                        <div>
+                            <span className="!text-sm !font-bold !text-text-main">{totalSubmissions}</span>
+                            <span className="!text-xs !text-text-muted !font-normal">/{totalStudents}</span>
+                        </div>
+                    )
+                ) : (
+                    isGraded && grade != null ? (
+                        <span className="!text-sm !font-bold !text-primary">{grade}</span>
+                    ) : (
+                        <span className="!text-xs !text-text-muted">—</span>
+                    )
+                )}
+            </td>
+
+            {/* Đến hạn */}
+            <td className="!px-3 !py-3 !text-right !whitespace-nowrap">
+                <span className={`!text-xs !font-medium ${isOverdue ? '!text-red-600' : '!text-text-muted'}`}>
+                    {dueDateDisplay}
+                </span>
+            </td>
+
+            {/* Actions */}
+            {isTeacherOrTA && canManageAssignment && (
+                <td className="!px-3 !py-3 !text-right !w-24" onClick={e => e.stopPropagation()}>
+                    <div className="!flex !items-center !justify-end !gap-1.5 !opacity-0 group-hover:!opacity-100 !transition-opacity">
+                        <button
+                            onClick={() => onEdit(id)}
+                            className="!text-[11px] !font-semibold !px-2.5 !py-1 !rounded-lg !border !border-blue-200 !text-blue-600 hover:!bg-blue-50 !transition-colors !bg-transparent !cursor-pointer"
+                        >
+                            Sửa
+                        </button>
+                        <button
+                            onClick={() => onDelete(id)}
+                            className="!text-[11px] !font-semibold !px-2.5 !py-1 !rounded-lg !border !border-red-200 !text-red-500 hover:!bg-red-50 !transition-colors !bg-transparent !cursor-pointer"
+                        >
+                            Xóa
+                        </button>
+                    </div>
+                </td>
+            )}
+        </tr>
+    );
+};
+
+/* ─────────────────────────────────────────────
+   Main page
+───────────────────────────────────────────── */
 const ClassworkPage = () => {
-    const { user } = useAuthStore();
+    const { user }    = useAuthStore();
     const { classId } = useParams();
-    const navigate = useNavigate();
+    const navigate    = useNavigate();
     const { hasPermission, isTA } = useTAPermission();
 
-    // RBAC check
-    const userRole = user?.role?.toUpperCase();
-    const isTeacherOrTA = userRole === 'TEACHER' || userRole === 'TA';
+    const userRole            = user?.role?.toUpperCase();
+    const isTeacherOrTA       = userRole === 'TEACHER' || userRole === 'TA';
     const canManageAssignment = !isTA || hasPermission('Assignment');
 
-    const [assignments, setAssignments] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [totalItems, setTotalItems] = useState(0);
-    const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 8;
+    const [assignments,  setAssignments]  = useState([]);
+    const [isLoading,    setIsLoading]    = useState(true);
+    const [totalItems,   setTotalItems]   = useState(0);
+    const [currentPage,  setCurrentPage]  = useState(1);
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, assignmentId: null });
+    const itemsPerPage = 8;
 
+    /* ── Fetch ── */
     const fetchAssignments = async () => {
         if (!classId) return;
         try {
@@ -43,14 +189,9 @@ const ClassworkPage = () => {
 
             if (res.ok) {
                 const result = await res.json();
-                
-                // Handle different response structures
-                let items = [];
-                let total = 0;
-
+                let items = [], total = 0;
                 if (Array.isArray(result)) {
-                    items = result;
-                    total = result.length;
+                    items = result; total = result.length;
                 } else if (result.data?.items) {
                     items = result.data.items;
                     total = result.data.totalCount || result.data.totalItems || items.length;
@@ -58,33 +199,27 @@ const ClassworkPage = () => {
                     items = Array.isArray(result.data) ? result.data : [result.data];
                     total = items.length;
                 }
-
                 setAssignments(items);
                 setTotalItems(total);
             } else {
                 const errData = await res.json().catch(() => ({}));
-                console.error("Lỗi API khi tải bài tập:", extractErrorMessage(errData, `Status: ${res.status}`));
+                console.error('Lỗi API:', extractErrorMessage(errData, `Status: ${res.status}`));
             }
         } catch (err) {
-            console.error("Lỗi mạng khi tải bài tập:", err);
+            console.error('Lỗi mạng:', err);
         } finally {
             setIsLoading(false);
         }
     };
 
-    useEffect(() => {
-        fetchAssignments();
-    }, [classId, user?.token, isTeacherOrTA, currentPage]);
+    useEffect(() => { fetchAssignments(); }, [classId, user?.token, isTeacherOrTA, currentPage]);
 
-    const handleDeleteClick = (e, id) => {
-        e.stopPropagation();
-        setConfirmModal({ isOpen: true, assignmentId: id });
-    };
+    /* ── Handlers ── */
+    const handleDeleteClick = (id) => setConfirmModal({ isOpen: true, assignmentId: id });
 
     const handleConfirmDelete = async () => {
         const id = confirmModal.assignmentId;
         if (!id) return;
-
         try {
             const res = await assignmentService.deleteAssignment(id, user?.token);
             if (res.ok) {
@@ -102,214 +237,156 @@ const ClassworkPage = () => {
         }
     };
 
-    const handlePublish = async (e, id) => {
-        e.stopPropagation();
-        try {
-            const res = await assignmentService.publishAssignment(id, user?.token);
-            if (res.ok) {
-                toast.success('Giao bài tập thành công!');
-                // Update local state to reflect the status change
-                setAssignments(prev => prev.map(a => {
-                    const aId = a.assignmentID || a.assignmentId;
-                    if (aId === id) {
-                        return { ...a, status: 'Published' };
-                    }
-                    return a;
-                }));
-            } else {
-                const errData = await res.json().catch(() => ({}));
-                toast.error(extractErrorMessage(errData, 'Có lỗi xảy ra khi giao bài tập.'));
-            }
-        } catch (err) {
-            console.error(err);
-            toast.error('Lỗi khi giao bài tập.');
-        }
-    };
-
-    const getStatusInfo = (status, isOverdue, isSubmitted) => {
-        const s = (status || '').toLowerCase();
-        
-        // Priority: Submitted > Overdue > Status-based
-        if (isSubmitted) return { label: 'Đã nộp', color: '!bg-green-500/10 text-green-600 border-green-200' };
-        if (isOverdue) return { label: 'Quá hạn', color: '!bg-red-500/10 text-red-600 border-red-200' };
-        
-        if (s === 'draft') return { label: 'Bản nháp', color: '!bg-slate-500/15 text-slate-600 border-slate-500/20' };
-        if (s === 'published') return { label: 'Đã giao', color: '!bg-primary/10 text-primary border-primary/20' };
-        if (s === 'turned in' || s === 'submitted') return { label: 'Đã nộp', color: '!bg-green-500/10 text-green-600 border-green-200' };
-        if (s === 'graded') return { label: 'Đã chấm điểm', color: '!bg-purple-500/10 text-purple-600 border-purple-200' };
-        
-        return { label: status || 'Đã giao', color: '!bg-blue-500/10 text-blue-600 border-blue-200' };
-    };
-
+    /* ── Format data ── */
     const formattedAssignments = assignments.map(a => {
-        const dDate = new Date(a.dueDate);
+        const dDate     = new Date(a.dueDate);
         const isOverdue = !isNaN(dDate) && dDate < new Date() && !a.isSubmitted;
         const statusRaw = a.studentStatus || a.status || 'Published';
-        const stInfo = getStatusInfo(statusRaw, isOverdue, a.isSubmitted);
+        const statusKey = getStatusKey(statusRaw, isOverdue, a.isSubmitted);
 
         return {
-            id: a.assignmentID || a.assignmentId,
-            title: a.title || 'Chưa có tiêu đề',
-            dueDateDisplay: isNaN(dDate) ? 'Không xác định' : formatViDate(a.dueDate, {
-               hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric'
+            id:               a.assignmentID || a.assignmentId,
+            title:            a.title || 'Chưa có tiêu đề',
+            dueDateDisplay:   isNaN(dDate) ? 'Không xác định' : formatViDate(a.dueDate, {
+                hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric',
             }),
-            statusLabel: stInfo.label,
-            statusColor: stInfo.color,
-            isSubmitted: a.isSubmitted || false,
-            grade: a.grade,
-            isOverdue: isOverdue,
-            isDraft: statusRaw.toLowerCase() === 'draft',
-            // New fields from API
+            statusKey,
+            isSubmitted:      a.isSubmitted || false,
+            grade:            a.grade,
+            isOverdue,
+            isDraft:          statusRaw.toLowerCase() === 'draft',
             totalSubmissions: a.totalSubmissions || 0,
-            totalStudents: a.totalStudents || 0,
+            totalStudents:    a.totalStudents    || 0,
             gradeCategoryName: a.gradeCategoryName,
-            isOffline: a.isOffline || false,
-            isGraded: a.isGraded ?? a.isgraded ?? false
+            isOffline:        a.isOffline || false,
+            isGraded:         a.isGraded ?? a.isgraded ?? false,
         };
     });
 
-    return (
-        <div className="!space-y-6 animate-fade-in-up">
-            {/* Header / Actions */}
-            <div className="bg-surface rounded-2xl border border-border !p-6 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                    <h2 className="text-2xl font-bold text-text-main !mb-1">Bài tập trên lớp</h2>
-                    <p className="text-text-muted text-sm">Theo dõi hạn nộp và làm bài tập</p>
-                </div>
+    /* ── Stats ── */
+    const totalDraft     = formattedAssignments.filter(a => a.isDraft).length;
+    const totalPublished = formattedAssignments.filter(a => !a.isDraft).length;
+    const totalOverdue   = formattedAssignments.filter(a => a.isOverdue).length;
 
-                <div className="flex items-center gap-3 w-full sm:w-auto">
+    /* ── Render ── */
+    return (
+        <div className="!space-y-4 animate-fade-in-up">
+
+            {/* ── Header bar ── */}
+            {/* <div className="!flex !flex-col sm:!flex-row !justify-between !items-start sm:!items-center !gap-3">
+                <div>
+                    <h2 className="!text-xl !font-bold !text-text-main">Bài tập trên lớp</h2>
+                    <p className="!text-sm !text-text-muted !mt-0.5">Quản lý và theo dõi bài tập của lớp học</p>
+                </div>
+                <div className="!flex-shrink-0">
                     {!isTeacherOrTA && (
-                        <button className="flex items-center gap-2 font-semibold text-primary hover:!bg-primary/10 transition-colors !px-4 !py-2 rounded-xl">
-                            <Icon icon="material-symbols:person-rounded" className="text-xl" />
+                        <button className="!flex !items-center !gap-2 !text-sm !font-medium !text-primary hover:!bg-primary/10 !px-4 !py-2 !rounded-xl !transition-colors">
                             Xem bài tập của bạn
                         </button>
                     )}
-
                     {isTeacherOrTA && (
                         <button
-                            onClick={() => canManageAssignment && navigate(`../create-assignment`, { relative: 'path' })}
+                            onClick={() => canManageAssignment && navigate('../create-assignment', { relative: 'path' })}
                             disabled={!canManageAssignment}
                             title={!canManageAssignment ? 'Bạn không có quyền tạo bài tập' : ''}
-                            className={`w-full sm:w-auto flex items-center justify-center gap-2 font-semibold !px-6 !py-2.5 rounded-xl transition-colors shadow-sm ${
+                            className={`!flex !items-center !gap-2 !text-sm !font-semibold !px-5 !py-2 !rounded-xl !transition-colors !shadow-sm ${
                                 canManageAssignment
-                                    ? '!bg-primary text-white hover:!bg-primary-hover shadow-primary/20'
-                                    : '!bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
+                                    ? '!bg-primary !text-white hover:!bg-primary-hover'
+                                    : '!bg-gray-100 !text-gray-400 !cursor-not-allowed'
                             }`}
                         >
-                            <Icon icon={canManageAssignment ? 'material-symbols:add-rounded' : 'material-symbols:lock-rounded'} className="text-xl" />
-                            Tạo bài tập
+                            + Tạo bài tập
                         </button>
                     )}
                 </div>
-            </div>
+            </div> */}
 
-            {/* Assignments List */}
+            {/* ── Stat chips (teacher only) ── */}
+            {isTeacherOrTA && !isLoading && formattedAssignments.length > 0 && (
+                <div className="!flex !flex-wrap !gap-2">
+                    {[
+                        { label: 'Tổng',     value: totalItems || formattedAssignments.length, cls: '!bg-slate-100 !text-slate-700' },
+                        { label: 'Đã giao',  value: totalPublished, cls: '!bg-blue-50 !text-blue-700' },
+                        { label: 'Bản nháp', value: totalDraft,     cls: '!bg-slate-100 !text-slate-500' },
+                        { label: 'Quá hạn',  value: totalOverdue,   cls: '!bg-red-50 !text-red-600' },
+                    ].map(chip => (
+                        <span key={chip.label} className={`!inline-flex !items-center !gap-1.5 !text-xs !font-semibold !px-3 !py-1.5 !rounded-full ${chip.cls}`}>
+                            {chip.label}
+                            <span className="!font-bold">{chip.value}</span>
+                        </span>
+                    ))}
+                </div>
+            )}
+
+            {/* ── Table / Loading / Empty ── */}
             {isLoading ? (
-                <div className="!py-20 flex justify-center">
+                <div className="!py-20 !flex !justify-center">
                     <Loading text="Đang tải danh sách bài tập..." />
                 </div>
             ) : formattedAssignments.length > 0 ? (
-                <div className="!space-y-4">
-                    <div className="!space-y-3">
-                        {formattedAssignments.map(assignment => (
-                            <div 
-                                onClick={() => navigate(`../assignment/${assignment.id}`, { relative: 'path' })}
-                                key={assignment.id} 
-                                className="!bg-surface rounded-2xl border !border-border !p-4 hover:!bg-surface-hover hover:!border-primary/50 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4 group shadow-sm"
-                            >
-                                <div className="flex items-start gap-4">
-                                    <div className="w-12 h-12 rounded-full !bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:!bg-primary group-hover:text-white transition-colors">
-                                        <Icon icon="material-symbols:assignment-rounded" className="text-2xl text-primary group-hover:text-white" />
-                                    </div>
-                                    <div>
-                                        <h4 className="font-bold text-text-main text-lg group-hover:text-primary transition-colors flex items-center gap-2">
-                                            {assignment.title}
-                                            {assignment.isOffline && (
-                                                <span className="!bg-amber-100 text-amber-700 text-[10px] !px-2 !py-0.5 rounded-md border border-amber-200 flex items-center gap-1">
-                                                    <Icon icon="material-symbols:edit-document-outline-rounded" />
-                                                    Offline
-                                                </span>
-                                            )}
-                                        </h4>
-                                        <div className="flex flex-wrap items-center gap-2 mt-1">
-                                            <span className={`text-[10px] font-bold uppercase tracking-wider !px-2 !py-0.5 rounded-lg border ${assignment.statusColor}`}>
-                                                {assignment.statusLabel}
-                                            </span>
-                                            {assignment.gradeCategoryName && (
-                                                <span className="text-[10px] font-medium text-text-muted bg-background border border-border !px-2 !py-0.5 rounded-lg flex items-center gap-1">
-                                                    <Icon icon="material-symbols:category-outline-rounded" />
-                                                    {assignment.gradeCategoryName}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div className="flex items-center justify-between sm:justify-end gap-6 sm:w-1/2">
-                                    {isTeacherOrTA && (
-                                        <div className="text-center px-4 border-r border-border hidden md:block">
-                                            <p className="text-xs text-text-muted font-medium !mb-0.5">Nộp bài</p>
-                                            <p className="text-sm font-bold text-text-main">
-                                                {assignment.totalSubmissions}<span className="text-text-muted font-normal">/{assignment.totalStudents}</span>
-                                            </p>
-                                        </div>
+                <div className="!bg-white !rounded-2xl !border !border-border !shadow-sm !overflow-hidden">
+                    <div className="!overflow-x-auto">
+                        <table className="!w-full !border-collapse">
+                            <thead>
+                                <tr className="bg-background/80 border-b border-border">
+                                    <th className="!p-4 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap text-center w-10">#</th>
+                                    <th className="!p-4 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap">Tên bài tập</th>
+                                    <th className="!p-4 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap hidden sm:table-cell">Hình thức</th>
+                                    <th className="!p-4 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap hidden md:table-cell">Trạng thái</th>
+                                    <th className="!p-4 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap text-center hidden lg:table-cell">
+                                        {isTeacherOrTA ? 'Nộp bài' : 'Điểm'}
+                                    </th>
+                                    <th className="!p-4 font-semibold text-text-muted uppercase tracking-wider text-xs whitespace-nowrap text-right">Đến hạn</th>
+                                    {isTeacherOrTA && canManageAssignment && (
+                                        <th className="!p-4 w-24" />
                                     )}
-                                    {!isTeacherOrTA && (
-                                        <span className={`text-xs font-bold !px-3 !py-1.5 rounded-xl border ${assignment.statusColor}`}>
-                                            {assignment.statusLabel}
-                                        </span>
-                                    )}
-                                    <div className="text-right flex-shrink-0">
-                                        <p className="text-sm text-text-main font-semibold">{assignment.isOffline ? 'Ngày thi' : 'Đến hạn'}</p>
-                                        <p className={`text-sm ${assignment.isOverdue ? 'text-red-500 font-bold' : 'text-text-muted'}`}>{assignment.dueDateDisplay}</p>
-                                    </div>
-                                    <div className="flex items-center gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity mt-2 sm:mt-0">
-                                        {isTeacherOrTA && canManageAssignment && (
-                                            <>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); navigate(`../edit-assignment/${assignment.id}`, { relative: 'path' }); }}
-                                                    className="p-1.5 text-text-muted hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                                                    title="Chỉnh sửa"
-                                                >
-                                                    <Icon icon="material-symbols:edit-outline-rounded" className="text-xl" />
-                                                </button>
-                                                <button
-                                                    onClick={(e) => handleDeleteClick(e, assignment.id)}
-                                                    className="p-1.5 text-text-muted hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
-                                                    title="Xóa"
-                                                >
-                                                    <Icon icon="material-symbols:delete-outline-rounded" className="text-xl" />
-                                                </button>
-                                            </>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {formattedAssignments.map((a, idx) => (
+                                    <AssignmentRow
+                                        key={a.id}
+                                        assignment={a}
+                                        index={idx}
+                                        isTeacherOrTA={isTeacherOrTA}
+                                        canManageAssignment={canManageAssignment}
+                                        onEdit={(id) => navigate(`../edit-assignment/${id}`, { relative: 'path' })}
+                                        onDelete={handleDeleteClick}
+                                        navigate={navigate}
+                                    />
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             ) : (
-                <div className="!bg-surface rounded-2xl border !border-border !p-12 shadow-sm  !text-center">
-                    <h3 className="text-xl font-bold text-text-main !mb-2">Chưa có bài tập nào</h3>
-                    <p className="text-text-muted">
-                        {isTeacherOrTA ? 'Nhấp vào nút "Tạo bài tập" để giao bài cho lớp.' : 'Giáo viên chưa giao bài tập nào cho lớp.'}
+                <div className="!bg-white !rounded-2xl !border !border-border !px-8 !py-14 !shadow-sm !text-center">
+                    <div className="!w-12 !h-12 !rounded-2xl !bg-background !flex !items-center !justify-center !mx-auto !mb-4">
+                        <Icon icon="solar:clipboard-remove-bold-duotone" width={28} className="!text-text-muted" />
+                    </div>
+                    <h3 className="!text-base !font-semibold !text-text-main !mb-1">Chưa có bài tập nào</h3>
+                    <p className="!text-sm !text-text-muted">
+                        {isTeacherOrTA
+                            ? 'Nhấp vào nút "+ Tạo bài tập" để giao bài cho lớp.'
+                            : 'Giáo viên chưa giao bài tập nào cho lớp.'}
                     </p>
-                 </div>
+                </div>
             )}
 
-            {/* Pagination */}
+            {/* ── Pagination ── */}
             {!isLoading && totalItems > itemsPerPage && (
-                <div className="flex justify-center !mt-8">
+                <div className="!flex !justify-center !pt-2">
                     <Pagination
                         currentPage={currentPage}
                         totalItems={totalItems}
                         itemsPerPage={itemsPerPage}
-                        onPageChange={(page) => setCurrentPage(page)}
+                        onPageChange={setCurrentPage}
                     />
                 </div>
             )}
 
-            <ConfirmModal 
+            {/* ── Confirm delete ── */}
+            <ConfirmModal
                 isOpen={confirmModal.isOpen}
                 onClose={() => setConfirmModal({ isOpen: false, assignmentId: null })}
                 onConfirm={handleConfirmDelete}
@@ -324,3 +401,5 @@ const ClassworkPage = () => {
 };
 
 export default ClassworkPage;
+
+
