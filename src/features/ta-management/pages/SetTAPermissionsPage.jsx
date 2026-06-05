@@ -115,10 +115,10 @@ const SetTAPermissionsPage = ({ classId }) => {
     };
 
     const permissionItems = [
-        { key: 'takeAttendance', label: 'Điểm danh học sinh', desc: 'Cho phép TA thực hiện điểm danh trong lớp học do mình phụ trách.', icon: 'material-symbols:fact-check-rounded' },
-        { key: 'editScores', label: 'Chấm điểm & Nhập điểm', desc: 'Cho phép TA nhập, sửa điểm các bài kiểm tra của học sinh.', icon: 'material-symbols:edit-note-rounded' },
-        { key: 'viewReports', label: 'Xem Báo cáo học tập', desc: 'Xem biểu đồ thống kê, báo cáo học tập của lớp học.', icon: 'material-symbols:insert-chart-rounded' },
-        { key: 'createAssignments', label: 'Tạo Bài tập & Assignment', desc: 'Đăng tải bài tập, quản lý tài liệu, thông báo lớp.', icon: 'material-symbols:assignment-rounded' },
+        { key: 'takeAttendance', label: 'Điểm danh học sinh', desc: 'Cho phép Trợ giảng thực hiện điểm danh trong lớp học do mình phụ trách.', icon: 'material-symbols:fact-check-rounded' },
+        { key: 'editScores', label: 'Chấm điểm & Nhập điểm', desc: 'Cho phép Trợ giảng nhập, sửa điểm các bài kiểm tra của học sinh.', icon: 'material-symbols:edit-note-rounded' },
+        { key: 'viewReports', label: 'Xem Báo cáo học tập', desc: 'Cho phép Trợ giảng xem báo cáo học tập của lớp học.', icon: 'material-symbols:insert-chart-rounded' },
+        { key: 'createAssignments', label: 'Tạo Bài tập', desc: 'Cho phép Trợ giảng đăng tải bài tập, quản lý tài liệu.', icon: 'material-symbols:assignment-rounded' },
     ];
 
     if (isLoading && tas.length === 0) {

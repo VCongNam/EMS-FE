@@ -20,6 +20,7 @@ const ClassDetailLayout = () => {
     const isStudentPortal = location.pathname.startsWith('/student/classes');
     const isAssistantPortal = location.pathname.startsWith('/assisted-classes');
     const isTA = user?.role?.toUpperCase() === 'TA';
+    const isTeacher = user?.role?.toUpperCase() === 'TEACHER' || location.pathname.startsWith('/teacher/classes');
 
     const basePath = isStudentPortal
         ? '/student/classes'
@@ -152,14 +153,32 @@ const ClassDetailLayout = () => {
     const tabs = [
         { path: 'stream', label: 'Bảng tin', icon: 'material-symbols:stream-rounded' },
         { path: 'materials', label: 'Tài liệu', icon: 'material-symbols:folder-open-rounded' },
-        { path: 'classwork', label: 'Bài tập', icon: 'material-symbols:assignment-rounded' },
+        { 
+            path: 'classwork', 
+            label: 'Bài tập', 
+            icon: 'material-symbols:assignment-rounded',
+            // Khóa tab Bài tập nếu là TA nhưng không có quyền 'Assignment'
+            disabled: isAssistantPortal && !hasPermission('Assignment') 
+        },
         { path: 'people', label: 'Thành viên', icon: 'material-symbols:group-rounded' },
-        { path: 'grades', label: 'Điểm số', icon: 'material-symbols:grading-rounded' },
+        { 
+            path: 'grades', 
+            label: 'Điểm số', 
+            icon: 'material-symbols:grading-rounded',
+            // Khóa tab Điểm số nếu là TA nhưng không có quyền 'Grade'
+            disabled: isAssistantPortal && !hasPermission('Grade')
+        },
         { path: 'schedule', label: 'Lịch học', icon: 'solar:calendar-bold-duotone' },
     ];
 
     if (!isStudentPortal) {
-        tabs.push({ path: 'attendance', label: 'Điểm danh', icon: 'material-symbols:fact-check-rounded' });
+        tabs.push({ 
+            path: 'attendance', 
+            label: 'Điểm danh', 
+            icon: 'material-symbols:fact-check-rounded',
+            // Khóa tab Điểm danh nếu là TA nhưng không có quyền 'Attendance'
+            disabled: isAssistantPortal && !hasPermission('Attendance')
+        });
     }
 
     // Reports tab: visible for teacher always; for TA always visible but disabled if no Report perm
@@ -287,12 +306,13 @@ const ClassDetailLayout = () => {
                             <h1 className="text-3xl !text-white md:text-5xl font-bold font-['Outfit'] !mb-2 drop-shadow-md">
                                 {classInfo.name}
                             </h1>
-                            <p className="text-blue-100 font-medium text-lg drop-shadow flex items-center gap-2">
-                                <>
+                            {/* CHỈ HIỂN THỊ DÒNG NÀY NẾU KHÔNG PHẢI LÀ GIÁO VIÊN */}
+                            {!isTeacher && (
+                                <p className="text-blue-100 font-medium text-lg drop-shadow flex items-center gap-2">
                                     <Icon icon="solar:user-bold" className="text-blue-200" />
                                     Giảng viên: {classInfo.teacherName || 'Đang cập nhật...'}
-                                </>
-                            </p>
+                                </p>
+                            )}
                         </div>
                         {/* TA permission loading indicator */}
                         {isTA && taPermLoading && (
