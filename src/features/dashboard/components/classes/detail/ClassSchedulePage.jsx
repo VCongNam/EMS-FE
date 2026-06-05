@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useOutletContext, useParams } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import { toast } from 'react-toastify';
 import SetupRecurringScheduleModal from './components/SetupRecurringScheduleModal';
@@ -25,6 +25,23 @@ const STATUS_CONFIG = {
     'đã hủy': { label: 'Đã hủy', className: '!bg-red-100 text-red-700 border-red-200', dot: '!bg-red-400' },
 };
 
+const isLessonPast = (lesson) => {
+    if (!lesson?.date) return false;
+
+    const endTime = lesson.endTime && lesson.endTime !== '--:--' ? lesson.endTime : '23:59';
+    const lessonEnd = new Date(`${lesson.date}T${endTime.length === 5 ? `${endTime}:00` : endTime}`);
+
+    return !Number.isNaN(lessonEnd.getTime()) && lessonEnd < new Date();
+};
+
+const canModifyLesson = (lesson) => {
+    const status = lesson?.status?.toLowerCase() || '';
+    const isCancelled = status.includes('hủy') || status === 'cancelled' || status === 'canceled';
+    const isCompleted = status.includes('kết thúc') || status === 'completed';
+
+    return !isCancelled && !isCompleted && !isLessonPast(lesson);
+};
+
 const MOCK_SCHEDULE_CONFIG = {
     openingDate: '2026-04-07',
     transcriptTemplateId: 'T1',
@@ -37,8 +54,10 @@ const MOCK_SCHEDULE_CONFIG = {
 
 const ClassSchedulePage = () => {
     const { classId } = useParams();
+    const { isClassArchived = false } = useOutletContext() || {};
     const { user } = useAuthStore();
     const isTeacherOrTA = ['TEACHER', 'TA'].includes(user?.role?.toUpperCase());
+    const canManageClass = isTeacherOrTA && !isClassArchived;
 
     const [scheduleConfig, setScheduleConfig] = useState(MOCK_SCHEDULE_CONFIG);
     const [lessons, setLessons] = useState([]);
@@ -149,12 +168,14 @@ const ClassSchedulePage = () => {
     };
 
     const handleDeleteSchedule = () => {
+        if (!canManageClass) return;
         setScheduleConfig(null);
         toast.success('Đã xóa cấu hình lịch định kỳ.');
     };
 
-    const handleDeleteLessonAPI = (id) => {
-        setConfirmModal({ isOpen: true, sessionId: id });
+    const handleDeleteLessonAPI = (lesson) => {
+        if (!canManageClass || !canModifyLesson(lesson)) return;
+        setConfirmModal({ isOpen: true, sessionId: lesson.id });
     };
 
     const handleConfirmDelete = async () => {
@@ -183,6 +204,7 @@ const ClassSchedulePage = () => {
     };
 
     const handleSaveSessionAPI = async (formData) => {
+        if (!canManageClass) return;
         const token = useAuthStore.getState().user?.token;
         if (!token) return;
 
@@ -251,7 +273,7 @@ const ClassSchedulePage = () => {
                                 <p className="text-xs text-text-muted">Thông tin thiết lập hiện tại của lớp</p>
                             </div>
                         </div>
-                        {isTeacherOrTA && (
+                        {canManageClass && (
                             <div className="flex items-center !gap-2">
                                 <button onClick={() => setIsModalOpen(true)} className="flex items-center !gap-1.5 text-xs font-semibold text-primary !px-3 !py-2 border border-primary/30 rounded-xl hover:!bg-primary/5 transition-colors">
                                     <Icon icon="solar:pen-bold-duotone" className="text-sm" /> Chỉnh sửa
@@ -291,7 +313,7 @@ const ClassSchedulePage = () => {
                         <h2 className="text-lg font-bold text-text-main">Chưa có Luật Lịch Định Kỳ</h2>
                         <p className="text-text-muted mt-1 text-sm">Cấu hình luật tự động đẻ lịch học hàng tuần</p>
                     </div>
-                    {isTeacherOrTA && (
+                    {canManageClass && (
                         <button onClick={() => setIsModalOpen(true)} className="!bg-primary text-white font-bold !py-2 !px-6 rounded-xl hover:!bg-primary/90 text-sm">
                             Thiết lập ngay
                         </button>
@@ -333,7 +355,7 @@ const ClassSchedulePage = () => {
                         </div>
 
                         {/* Add Session Button */}
-                        {isTeacherOrTA && (
+                        {canManageClass && (
                             <button
                                 onClick={() => setSessionModalState({ isOpen: true, initialData: null })}
                                 className="flex shrink-0 items-center justify-center !w-10 !h-10 sm:!w-auto sm:!px-4 !bg-primary text-white rounded-xl shadow-md shadow-primary/30 hover:!bg-primary/90 hover:scale-105 transition-all"
@@ -392,27 +414,33 @@ const ClassSchedulePage = () => {
 
                                         {isTeacherOrTA && (
                                             <div className="flex items-center !gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                                                <button
-                                                    onClick={() => handleOpenAttendance(lesson)}
-                                                    className={`flex items-center !gap-1.5 !px-3 !py-1.5 text-xs font-bold rounded-xl shadow-sm transition-all whitespace-nowrap ${lesson.status === 'scheduled' ? '!bg-primary text-white hover:!bg-primary/90' : '!bg-background border border-border text-text-main hover:border-primary'}`}
-                                                >
-                                                    <Icon icon={lesson.status === 'scheduled' ? "material-symbols:fact-check-rounded" : "material-symbols:visibility-rounded"} className="text-sm" />
-                                                    Điểm danh
-                                                </button>
-                                                <button
-                                                    title="Sửa thông tin"
-                                                    onClick={() => setSessionModalState({ isOpen: true, initialData: lesson.raw })}
-                                                    className="!p-2 text-text-muted hover:text-primary hover:!bg-primary/10 rounded-xl transition-colors border border-transparent hover:border-primary/20 !bg-background"
-                                                >
-                                                    <Icon icon="solar:pen-bold-duotone" className="text-lg" />
-                                                </button>
-                                                <button
-                                                    title="Xóa kết quả buổi học"
-                                                    onClick={() => handleDeleteLessonAPI(lesson.id)}
-                                                    className="!p-2 text-text-muted hover:text-red-500 hover:!bg-red-50 rounded-xl transition-colors border border-transparent hover:border-red-200 !bg-background"
-                                                >
-                                                    <Icon icon="material-symbols:delete-outline-rounded" className="text-lg" />
-                                                </button>
+                                                {!isClassArchived && (
+                                                    <button
+                                                        onClick={() => handleOpenAttendance(lesson)}
+                                                        className={`flex items-center !gap-1.5 !px-3 !py-1.5 text-xs font-bold rounded-xl shadow-sm transition-all whitespace-nowrap ${lesson.status === 'scheduled' ? '!bg-primary text-white hover:!bg-primary/90' : '!bg-background border border-border text-text-main hover:border-primary'}`}
+                                                    >
+                                                        <Icon icon={lesson.status === 'scheduled' ? "material-symbols:fact-check-rounded" : "material-symbols:visibility-rounded"} className="text-sm" />
+                                                        Điểm danh
+                                                    </button>
+                                                )}
+                                                {canManageClass && canModifyLesson(lesson) && (
+                                                    <>
+                                                        <button
+                                                            title="Sửa thông tin"
+                                                            onClick={() => setSessionModalState({ isOpen: true, initialData: lesson.raw })}
+                                                            className="!p-2 text-text-muted hover:text-primary hover:!bg-primary/10 rounded-xl transition-colors border border-transparent hover:border-primary/20 !bg-background"
+                                                        >
+                                                            <Icon icon="solar:pen-bold-duotone" className="text-lg" />
+                                                        </button>
+                                                        <button
+                                                            title="Xóa kết quả buổi học"
+                                                            onClick={() => handleDeleteLessonAPI(lesson)}
+                                                            className="!p-2 text-text-muted hover:text-red-500 hover:!bg-red-50 rounded-xl transition-colors border border-transparent hover:border-red-200 !bg-background"
+                                                        >
+                                                            <Icon icon="material-symbols:delete-outline-rounded" className="text-lg" />
+                                                        </button>
+                                                    </>
+                                                )}
                                             </div>
                                         )}
                                     </div>

@@ -200,7 +200,7 @@ const ClassDetailLayout = () => {
 
             {/* Tab Content Area */}
             <div className="mt-4">
-                <Outlet />
+                <Outlet context={{ classInfo, isClassArchived: classInfo.status === 'archived' }} />
             </div>
 
             <ClassStaffModal

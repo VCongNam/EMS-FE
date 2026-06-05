@@ -45,6 +45,23 @@ const toDateStr = (d) => {
     return d_copy.toISOString().split('T')[0];
 };
 
+const isLessonPast = (lesson) => {
+    if (!lesson?.date) return false;
+
+    const endTime = lesson.endTime && lesson.endTime !== '--:--' ? lesson.endTime : '23:59';
+    const lessonEnd = new Date(`${lesson.date}T${endTime.length === 5 ? `${endTime}:00` : endTime}`);
+
+    return !Number.isNaN(lessonEnd.getTime()) && lessonEnd < new Date();
+};
+
+const canModifyLesson = (lesson) => {
+    const status = lesson?.status?.toLowerCase() || '';
+    const isCancelled = status.includes('hủy') || status === 'cancelled' || status === 'canceled';
+    const isCompleted = status.includes('kết thúc') || status === 'completed';
+
+    return !isCancelled && !isCompleted && !isLessonPast(lesson);
+};
+
 const WEEKDAYS_VN = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'];
 const MONTHS_VN = ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
 
@@ -102,6 +119,7 @@ const StudentLessonCard = ({ lesson }) => {
 const TeacherLessonCard = ({ lesson, onEdit, onDelete }) => {
     const isCancelled = lesson.status === 'cancelled' || lesson.status === 'canceled';
     const c = COLOR_MAP[isCancelled ? 'red' : lesson.color];
+    const isModifiable = canModifyLesson(lesson);
 
     return (
         <div className={`flex flex-col rounded-xl overflow-hidden border border-border bg-background shadow-sm hover:shadow-md hover:border-primary/40 transition-all ${isCancelled ? 'opacity-70 grayscale' : ''}`}>
@@ -125,18 +143,20 @@ const TeacherLessonCard = ({ lesson, onEdit, onDelete }) => {
                 )}
             </div>
 
-            <div className="flex gap-1.5 p-1.5 bg-surface shrink-0">
-                <button onClick={(e) => { e.stopPropagation(); onEdit(lesson); }}
-                    className="flex flex-1 items-center justify-center !p-1 sm:!px-0 sm:!py-1.5 bg-orange-100 text-orange-600 rounded-lg hover:bg-orange-500 hover:text-white transition-colors"
-                    title="Chỉnh sửa buổi học">
-                    <Icon icon="solar:pen-bold-duotone" className="text-sm sm:text-base cursor-pointer" />
-                </button>
-                <button onClick={(e) => { e.stopPropagation(); onDelete(lesson.id); }}
-                    className="flex flex-1 items-center justify-center !p-1 sm:!px-0 sm:!py-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-500 hover:text-white transition-colors"
-                    title="Xóa buổi học">
-                    <Icon icon="solar:trash-bin-trash-bold-duotone" className="text-sm sm:text-base cursor-pointer" />
-                </button>
-            </div>
+            {isModifiable && (
+                <div className="flex gap-1.5 p-1.5 bg-surface shrink-0">
+                    <button onClick={(e) => { e.stopPropagation(); onEdit(lesson); }}
+                        className="flex flex-1 items-center justify-center !p-1 sm:!px-0 sm:!py-1.5 bg-orange-100 text-orange-600 rounded-lg hover:bg-orange-500 hover:text-white transition-colors"
+                        title="Chỉnh sửa buổi học">
+                        <Icon icon="solar:pen-bold-duotone" className="text-sm sm:text-base cursor-pointer" />
+                    </button>
+                    <button onClick={(e) => { e.stopPropagation(); onDelete(lesson.id); }}
+                        className="flex flex-1 items-center justify-center !p-1 sm:!px-0 sm:!py-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-500 hover:text-white transition-colors"
+                        title="Xóa buổi học">
+                        <Icon icon="solar:trash-bin-trash-bold-duotone" className="text-sm sm:text-base cursor-pointer" />
+                    </button>
+                </div>
+            )}
         </div>
     );
 };
@@ -501,8 +521,15 @@ const ScheduleManagementPage = () => {
     }, [isStudent, fetchStudentSchedule, fetchTeacherSchedule]);
 
     // --- Teacher handlers ---
-    const handleEditLesson = (lesson) => setSessionModalState({ isOpen: true, initialData: lesson.raw });
-    const handleDeleteLesson = (id) => setConfirmModal({ isOpen: true, sessionId: id });
+    const handleEditLesson = (lesson) => {
+        if (!canModifyLesson(lesson)) return;
+        setSessionModalState({ isOpen: true, initialData: lesson.raw });
+    };
+    const handleDeleteLesson = (id) => {
+        const lesson = lessons.find(l => l.id === id);
+        if (!canModifyLesson(lesson)) return;
+        setConfirmModal({ isOpen: true, sessionId: id });
+    };
 
     const handleConfirmDelete = async () => {
         const id = confirmModal.sessionId;

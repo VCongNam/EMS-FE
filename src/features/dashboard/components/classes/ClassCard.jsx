@@ -38,6 +38,7 @@ const ClassCard = ({
     
     const [showOptions, setShowOptions] = useState(false);
     const optionsRef = useRef(null);
+    const isArchived = (classData.status || '').toLowerCase() === 'archived';
     const hasOptions = Boolean(onEdit || onArchive || onUnarchive || onViewDetails);
 
     // Xử lý click ra ngoài để đóng menu
@@ -97,17 +98,19 @@ const ClassCard = ({
                                 >
                                     <Icon icon="material-symbols:visibility-rounded" /> Xem chi tiết
                                 </button>
-                                <button 
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setShowOptions(false);
-                                        if(onEdit) onEdit();
-                                    }}
-                                    className="w-full text-left !px-4 !py-2 text-sm text-text-main hover:bg-primary/5 hover:text-primary transition-colors flex items-center gap-2"
-                                >
-                                    <Icon icon="material-symbols:edit-rounded" /> Chỉnh sửa
-                                </button>
-                                {classData.status !== 'archived' ? (
+                                {!isArchived && (
+                                    <button 
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setShowOptions(false);
+                                            if(onEdit) onEdit();
+                                        }}
+                                        className="w-full text-left !px-4 !py-2 text-sm text-text-main hover:bg-primary/5 hover:text-primary transition-colors flex items-center gap-2"
+                                    >
+                                        <Icon icon="material-symbols:edit-rounded" /> Chỉnh sửa
+                                    </button>
+                                )}
+                                {!isArchived && (
                                     <button 
                                         onClick={(e) => {
                                             e.stopPropagation();
@@ -118,21 +121,12 @@ const ClassCard = ({
                                     >
                                         <Icon icon="material-symbols:archive-rounded" /> Lưu trữ
                                     </button>
-                                ) : (
-                                    <button 
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setShowOptions(false);
-                                            if (onUnarchive) onUnarchive();
-                                        }}
-                                        className="w-full text-left !px-4 !py-2 text-sm text-green-600 hover:bg-green-50 transition-colors flex items-center gap-2"
-                                    >
-                                        <Icon icon="material-symbols:unarchive-rounded" /> Bỏ lưu trữ
+                                )}
+                                {!isArchived && (
+                                    <button className="w-full text-left !px-4 !py-2 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2 border-t border-border !mt-1 !pt-2">
+                                        <Icon icon="material-symbols:delete-rounded" /> Xóa
                                     </button>
                                 )}
-                                <button className="w-full text-left !px-4 !py-2 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2 border-t border-border !mt-1 !pt-2">
-                                    <Icon icon="material-symbols:delete-rounded" /> Xóa
-                                </button>
                             </div>
                         )}
                     </div>
