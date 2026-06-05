@@ -138,9 +138,6 @@ const ClassCard = ({
                 <h3 className="text-lg font-bold text-text-main font-['Outfit'] !mb-1 group-hover:text-primary transition-colors line-clamp-2">
                     {classData.name}
                 </h3>
-                <p className="font-mono text-sm text-text-muted bg-background inline-block !px-2 !py-0.5 rounded border border-border/50 !mb-3">
-                    {classData.code}
-                </p>
 
                 <div className="space-y-2 !mt-2">
                     <div className="flex items-center text-sm text-text-muted gap-2">
@@ -155,7 +152,7 @@ const ClassCard = ({
                     )}
                     <div className="flex items-center text-sm text-text-muted gap-2">
                         <Icon icon="material-symbols:group-outline-rounded" className="text-primary text-base" />
-                        <span>{classData.students?.count || classData.studentCount || 0} / {classData.students?.max || '--'} học viên</span>
+                        <span>{classData.students?.count || classData.studentCount || 0} học viên</span>
                     </div>
                 </div>
 
@@ -183,7 +180,7 @@ const ClassCard = ({
             </div>
 
             {/* Progress Bar */}
-            {showProgress && classData.progress && (
+            {/* {showProgress && classData.progress && (
                 <>
                 <div className="flex justify-between items-end !mb-3">
                     <span className="text-xs font-bold text-text-muted uppercase tracking-wider">Tiến độ</span>
@@ -196,7 +193,7 @@ const ClassCard = ({
                     ></div>
                 </div>
                 </>
-            )}
+            )} */}
         </div>
     );
 };
