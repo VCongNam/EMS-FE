@@ -342,7 +342,7 @@ const ClassReportsTab = () => {
                 <div className="!px-6 !py-4 border-b border-border !bg-background/50 flex flex-wraps items-center justify-between">
                     <div className="flex items-center gap-3">
                         <Icon icon="solar:clipboard-list-bold-duotone" className="text-xl text-primary" />
-                        <h3 className="text-base font-bold text-text-main">Danh sách báo cáo lớp</h3>
+                        <h3 className="text-base font-bold text-text-main">Danh sách báo cáo</h3>
                     </div>
                 </div>
 
@@ -576,7 +576,7 @@ const ClassReportsTab = () => {
                         <div className="w-16 h-16 bg-background rounded-full flex items-center justify-center !mb-3 border border-border">
                             <Icon icon="solar:box-linear" className="text-3xl text-text-muted" />
                         </div>
-                        <h3 className="text-base font-bold text-text-main !mb-1">Không có học sinh</h3>
+                        <h3 className="text-base font-bold text-text-main !mb-1">Không có báo cáo</h3>
                         <p className="text-text-muted text-sm font-medium">Chưa có dữ liệu báo cáo cho kỳ này.</p>
                     </div>
                 )}
