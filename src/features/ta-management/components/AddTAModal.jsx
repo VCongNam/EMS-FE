@@ -21,7 +21,6 @@ const AddTAModal = ({ isOpen, onClose, onAdd, classId }) => {
         { key: 'Grade', label: 'Chấm điểm & Nhập điểm', icon: 'solar:pen-new-square-bold-duotone' },
         { key: 'Report', label: 'Xem Báo cáo học tập', icon: 'solar:chart-2-bold-duotone' },
         { key: 'Assignment', label: 'Quản lý bài tập', icon: 'solar:document-add-bold-duotone' },
-        { key: 'Feedback', label: 'Nhận xét & Phản hồi', icon: 'solar:chat-round-dots-bold-duotone' },
     ];
 
     // Assignment fields
